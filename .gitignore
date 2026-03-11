@@ -1,0 +1,5 @@
+# Build folders
+bin/
+obj/
+# Publish folder
+publish/
