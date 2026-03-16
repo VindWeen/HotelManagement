@@ -53,7 +53,6 @@ CREATE TABLE [dbo].[Users](
     [gender]               [nvarchar](10)   NULL,        -- phân tích khách hàng
     [address]              [nvarchar](500)  NULL,        -- xuất hóa đơn VAT
     [national_id]          [nvarchar](20)   NULL,        -- số CCCD/Hộ chiếu
-    [nationality]          [nvarchar](100)  NULL,        -- quy định lưu trú
     -- Auth
     [password_hash]        [nvarchar](max)  NOT NULL,
     [avatar_url]           [nvarchar](max)  NULL,        -- Cloudinary URL
@@ -442,13 +441,13 @@ GO
 -- ============================================================
 SET ANSI_PADDING ON
 GO
-ALTER TABLE [dbo].[Article_Categories] ADD UNIQUE NONCLUSTERED ([slug] ASC) WHERE [slug] IS NOT NULL
+CREATE UNIQUE NONCLUSTERED INDEX [UQ_Article_Categories_Slug] ON [dbo].[Article_Categories] ([slug] ASC) WHERE [slug] IS NOT NULL
 GO
 ALTER TABLE [dbo].[Articles]           ADD UNIQUE NONCLUSTERED ([slug] ASC)
 GO
 ALTER TABLE [dbo].[Bookings]           ADD UNIQUE NONCLUSTERED ([booking_code] ASC)
 GO
-ALTER TABLE [dbo].[Room_Types]         ADD UNIQUE NONCLUSTERED ([slug] ASC) WHERE [slug] IS NOT NULL
+CREATE UNIQUE NONCLUSTERED INDEX [UQ_Room_Types_Slug] ON [dbo].[Room_Types] ([slug] ASC) WHERE [slug] IS NOT NULL
 GO
 ALTER TABLE [dbo].[Users]              ADD UNIQUE NONCLUSTERED ([email] ASC)
 GO
