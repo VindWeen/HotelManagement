@@ -20,13 +20,7 @@ public class UserManagementController : ControllerBase
         _db = db;
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // GET /api/UserManagement
-    // [MANAGE_USERS]
-    // Bảng liên quan: Users, Roles, Memberships
-    // Danh sách nhân viên + tên Role. Filter theo role, is_active.
-    // Phân trang. Không trả password_hash.
-    // ══════════════════════════════════════════════════════════════
+    
     [HttpGet]
     [RequirePermission(PermissionCodes.ManageUsers)]
     public async Task<IActionResult> GetUsers(
@@ -98,13 +92,7 @@ public class UserManagementController : ControllerBase
         });
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // GET /api/UserManagement/{id}
-    // [MANAGE_USERS]
-    // Bảng liên quan: Users, Roles, Memberships
-    // Chi tiết 1 user kèm tên Role, tên Membership, loyalty_points.
-    // FE cần để load form sửa thông tin nhân viên.
-    // ══════════════════════════════════════════════════════════════
+  
     [HttpGet("{id:int}")]
     [RequirePermission(PermissionCodes.ManageUsers)]
     public async Task<IActionResult> GetUserById(int id)
@@ -145,13 +133,7 @@ public class UserManagementController : ControllerBase
         return Ok(user);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // POST /api/UserManagement
-    // [MANAGE_USERS]
-    // Bảng liên quan: Users, Roles
-    // Tạo tài khoản nhân viên. BCrypt hash password trước khi INSERT.
-    // Không nhận avatar_url — phải upload riêng.
-    // ══════════════════════════════════════════════════════════════
+    
     [HttpPost]
     [RequirePermission(PermissionCodes.ManageUsers)]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
@@ -196,13 +178,7 @@ public class UserManagementController : ControllerBase
         });
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // PUT /api/UserManagement/{id}
-    // [MANAGE_USERS]
-    // Bảng liên quan: Users
-    // Cập nhật thông tin cơ bản (full_name, phone, address...).
-    // Không cho đổi password và email qua đây.
-    // ══════════════════════════════════════════════════════════════
+    
     [HttpPut("{id:int}")]
     [RequirePermission(PermissionCodes.ManageUsers)]
     public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserRequest request)
@@ -225,13 +201,7 @@ public class UserManagementController : ControllerBase
         return Ok(new { message = "Cập nhật thông tin thành công." });
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // DELETE /api/UserManagement/{id}
-    // [MANAGE_USERS]
-    // Bảng liên quan: Users, Audit_Logs
-    // Soft Delete: UPDATE is_active = 0. Không bao giờ DELETE cứng.
-    // Ghi Audit_Log. Không thể tự xóa chính mình.
-    // ══════════════════════════════════════════════════════════════
+    
     [HttpDelete("{id:int}")]
     [RequirePermission(PermissionCodes.ManageUsers)]
     public async Task<IActionResult> SoftDeleteUser(int id)
@@ -272,14 +242,7 @@ public class UserManagementController : ControllerBase
         return Ok(new { message = "Đã vô hiệu hóa tài khoản thành công." });
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // PUT /api/UserManagement/{id}/change-role
-    // [MANAGE_USERS + MANAGE_ROLES]
-    // Bảng liên quan: Users, Roles
-    // Body: { newRoleId }. Chỉ cập nhật role_id.
-    // Quyền hạn đổi ngay lần đăng nhập tiếp theo
-    // (JWT cũ còn hiệu lực đến khi hết hạn).
-    // ══════════════════════════════════════════════════════════════
+    
     [HttpPut("{id:int}/change-role")]
     [RequirePermission(PermissionCodes.ManageUsers)]
     [RequirePermission(PermissionCodes.ManageRoles)]
@@ -309,14 +272,7 @@ public class UserManagementController : ControllerBase
         });
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // PATCH /api/UserManagement/{id}/toggle-status
-    // [MANAGE_USERS]
-    // Bảng liên quan: Users, Audit_Logs
-    // Khóa/mở khóa tài khoản (status = true/false).
-    // Khác với Soft Delete (is_active): user bị khóa vẫn tồn tại
-    // và có thể mở lại, không đăng nhập được. Ghi Audit_Log.
-    // ══════════════════════════════════════════════════════════════
+    
     [HttpPatch("{id:int}/toggle-status")]
     [RequirePermission(PermissionCodes.ManageUsers)]
     public async Task<IActionResult> ToggleStatus(int id)
@@ -358,9 +314,7 @@ public class UserManagementController : ControllerBase
     }
 }
 
-// ══════════════════════════════════════════════════════════════════
-// Request DTOs
-// ══════════════════════════════════════════════════════════════════
+
 
 public record CreateUserRequest(
     string FullName,
