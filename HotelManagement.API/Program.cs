@@ -9,8 +9,17 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+// ── Redis ──────────────────────────────────────────────────
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379,abortConnect=false";
+    return ConnectionMultiplexer.Connect(configuration);
+});
 
 // ── 1. Database ──────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -66,7 +75,12 @@ builder.Services.AddScoped<JwtHelper>();
 builder.Services.AddMapster();
 
 // ── 6. Controllers ───────────────────────────────────────────────
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = 
+            System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 // ── 7. Swagger với Bearer token ──────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
