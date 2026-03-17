@@ -181,7 +181,7 @@ public class UserProfileController : ControllerBase
         using var stream = file.OpenReadStream();
         var uploadParams = new CloudinaryDotNet.Actions.ImageUploadParams()
         {
-            File = new CloudinaryDotNet.Actions.FileDescription(file.FileName, stream),
+            File = new CloudinaryDotNet.FileDescription(file.FileName, stream),
             Folder = "hotel_avatars",
             Transformation = new CloudinaryDotNet.Transformation()
                                 .Width(500).Height(500).Crop("thumb").Gravity("face")
