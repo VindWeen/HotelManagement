@@ -22,8 +22,8 @@ public class JwtHelper
     /// </summary>
     public string GenerateToken(User user, string roleName, IEnumerable<string> permissionCodes)
     {
-        var key     = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-        var creds   = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.UtcNow.AddMinutes(double.Parse(_config["Jwt:ExpiresInMinutes"]!));
 
         var claims = new List<Claim>
@@ -41,10 +41,10 @@ public class JwtHelper
             claims.Add(new Claim("permission", code));
 
         var token = new JwtSecurityToken(
-            issuer:             _config["Jwt:Issuer"],
-            audience:           _config["Jwt:Audience"],
-            claims:             claims,
-            expires:            expires,
+            issuer: _config["Jwt:Issuer"],
+            audience: _config["Jwt:Audience"],
+            claims: claims,
+            expires: expires,
             signingCredentials: creds
         );
 
@@ -57,15 +57,12 @@ public class JwtHelper
     /// </summary>
     public static int GetUserId(ClaimsPrincipal principal)
     {
-        var sub = principal.FindFirstValue(JwtRegisteredClaimNames.Sub)
-               ?? principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        var sub = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+               ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         return int.Parse(sub!);
     }
 
-    /// <summary>
-    /// Lấy email từ token — dùng cho logging hoặc audit.
-    /// </summary>
     public static string? GetEmail(ClaimsPrincipal principal)
-        => principal.FindFirstValue(JwtRegisteredClaimNames.Email);
+        => principal.FindFirst(JwtRegisteredClaimNames.Email)?.Value;
 }
