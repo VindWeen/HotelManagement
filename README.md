@@ -42,4 +42,3 @@ dotnet run --project HotelManagement.API
 
 API sẽ chạy tại:
 - http://localhost:5279
-- https://localhost:7062
