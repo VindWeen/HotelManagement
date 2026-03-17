@@ -134,9 +134,8 @@ public class UserProfileController : ControllerBase
     // POST /api/UserProfile/upload-avatar
     // [Authenticated — mọi role]
     // Bảng liên quan: Users
-    // Upload IFormFile → Cloudinary (crop 500×500 face).
-    // Xóa ảnh cũ trên Cloud (dùng cloudinary_public_id lưu ở đâu đó
-    // hoặc trích từ URL). Lưu avatar_url mới.
+    // Upload IFormFile → Cloudinary (crop 500×500 face, signed upload).
+    // Tự động tạo folder hotel_avatars, xóa ảnh cũ nếu có.
     // ══════════════════════════════════════════════════════════════
     [HttpPost("upload-avatar")]
     public async Task<IActionResult> UploadAvatar(IFormFile file)
@@ -164,60 +163,50 @@ public class UserProfileController : ControllerBase
         var apiKey    = _config["Cloudinary:ApiKey"]!;
         var apiSecret = _config["Cloudinary:ApiSecret"]!;
 
+        var account = new CloudinaryDotNet.Account(cloudName, apiKey, apiSecret);
+        var cloudinary = new CloudinaryDotNet.Cloudinary(account);
+
         // Xóa ảnh cũ trên Cloudinary nếu có
         if (!string.IsNullOrEmpty(user.AvatarUrl))
         {
             var oldPublicId = ExtractPublicIdFromUrl(user.AvatarUrl);
             if (!string.IsNullOrEmpty(oldPublicId))
             {
-                await DeleteFromCloudinary(cloudName, apiKey, apiSecret, oldPublicId);
+                var deletionParams = new CloudinaryDotNet.Actions.DeletionParams(oldPublicId);
+                await cloudinary.DestroyAsync(deletionParams);
             }
         }
 
-        // Cấu hình Unsigned Upload
-        // LƯU Ý CHO DEV: Bạn cần vào Cloudinary Dashboard > Settings > Upload > Add upload preset
-        // - Name: "hotel_avatar_preset" (hoặc sửa chuỗi bên dưới)
-        // - Signing Mode: Unsigned
-        // - Thêm thư mục (Folder): "hotel_avatars" (tùy chọn)
-        var uploadPreset = "hotel_avatar_preset"; 
-
+        // Tự động tạo thư mục và tải ảnh lên (Signed Upload)
         using var stream = file.OpenReadStream();
-        using var httpClient = new HttpClient();
+        var uploadParams = new CloudinaryDotNet.Actions.ImageUploadParams()
+        {
+            File = new CloudinaryDotNet.Actions.FileDescription(file.FileName, stream),
+            Folder = "hotel_avatars",
+            Transformation = new CloudinaryDotNet.Transformation()
+                                .Width(500).Height(500).Crop("thumb").Gravity("face")
+        };
 
-        var uploadUrl = $"https://api.cloudinary.com/v1_1/{cloudName}/image/upload";
+        var uploadResult = await cloudinary.UploadAsync(uploadParams);
 
-        using var content = new MultipartFormDataContent();
-        var fileContent = new StreamContent(stream);
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
-        content.Add(fileContent, "file", file.FileName);
-        content.Add(new StringContent(uploadPreset), "upload_preset");
-
-        var response = await httpClient.PostAsync(uploadUrl, content);
-        var responseBody = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
+        if (uploadResult.Error != null)
+        {
             return StatusCode(502, new
             {
-                message = "Upload ảnh lên Cloudinary thất bại. Hãy chắc chắn bạn đã tạo Upload Preset 'Unsigned' trên Cloudinary Dashboard.",
-                detail = responseBody
+                message = "Upload ảnh lên Cloudinary thất bại.",
+                detail = uploadResult.Error.Message
             });
-
-        // Parse URL từ response
-        using var doc = JsonDocument.Parse(responseBody);
-        var secureUrl = doc.RootElement.GetProperty("secure_url").GetString()!;
-
-        // Chèn transformation crop 500x500 face vào URL
-        var avatarUrl = secureUrl.Replace("/image/upload/", "/image/upload/c_thumb,g_face,w_500,h_500/");
+        }
 
         // Lưu avatar_url mới
-        user.AvatarUrl = avatarUrl;
+        user.AvatarUrl = uploadResult.SecureUrl.ToString();
         user.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
         return Ok(new
         {
             message   = "Upload avatar thành công.",
-            avatarUrl
+            avatarUrl = user.AvatarUrl
         });
     }
 
@@ -257,42 +246,6 @@ public class UserProfileController : ControllerBase
         }
     }
 
-    // ── Helper: Xóa ảnh cũ trên Cloudinary ──────────────────────
-    // LƯU Ý: Xóa ảnh qua REST API yêu cầu Server Signature.
-    // Nếu bạn đang dùng API key để sign thủ công mà lỗi, tốt nhất phần xóa ảnh 
-    // nên được thực hiện thông qua SDK (CloudinaryDotNet).
-    // Ở đây ta dùng signature cơ bản để thử xóa.
-    private static async Task DeleteFromCloudinary(
-        string cloudName, string apiKey, string apiSecret, string publicId)
-    {
-        try
-        {
-            using var httpClient = new HttpClient();
-            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-            
-            // Sign destroy
-            var stringToSign = $"public_id={publicId}&timestamp={timestamp}{apiSecret}";
-            using var sha1 = System.Security.Cryptography.SHA1.Create();
-            var hashBytes = sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(stringToSign));
-            var signature = Convert.ToHexStringLower(hashBytes);
-
-            var destroyUrl = $"https://api.cloudinary.com/v1_1/{cloudName}/image/destroy";
-
-            var formContent = new FormUrlEncodedContent(new[]
-            {
-                new KeyValuePair<string, string>("public_id", publicId),
-                new KeyValuePair<string, string>("api_key", apiKey),
-                new KeyValuePair<string, string>("timestamp", timestamp),
-                new KeyValuePair<string, string>("signature", signature)
-            });
-
-            await httpClient.PostAsync(destroyUrl, formContent);
-        }
-        catch
-        {
-            // Không block flow nếu xóa ảnh cũ thất bại
-        }
-    }
 }
 
 // ══════════════════════════════════════════════════════════════════
