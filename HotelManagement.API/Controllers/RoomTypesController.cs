@@ -15,6 +15,7 @@ namespace HotelManagement.Controllers
         private readonly IConfiguration _configuration;
         private readonly Cloudinary _cloudinary;
 
+        // Constructor
         public RoomTypesController(IConfiguration configuration)
         {
             _configuration = configuration;
@@ -41,7 +42,7 @@ namespace HotelManagement.Controllers
         {
             using var conn = GetConnection();
             await conn.OpenAsync();
-
+            // Lấy tất cả loại phòng + ảnh primary + amenities trong 1 query để giảm số round-trip DB
             var query = @"
                 SELECT rt.id, rt.name, rt.base_price,
                        img.image_url,
@@ -56,11 +57,10 @@ namespace HotelManagement.Controllers
             var reader = await cmd.ExecuteReaderAsync();
 
             var dict = new Dictionary<int, dynamic>();
-
             while (await reader.ReadAsync())
             {
                 int id = (int)reader["id"];
-
+                // nếu chưa có trong dict thì tạo mới
                 if (!dict.ContainsKey(id))
                 {
                     dict[id] = new
@@ -72,7 +72,7 @@ namespace HotelManagement.Controllers
                         amenities = new List<object>()
                     };
                 }
-
+                // thêm amenity nếu có
                 if (reader["amenity_id"] != DBNull.Value)
                 {
                     dict[id].amenities.Add(new
@@ -101,6 +101,7 @@ namespace HotelManagement.Controllers
                 WHERE id = @id AND is_active = 1";
 
             using var cmd = new SqlCommand(roomQuery, conn);
+            
             cmd.Parameters.AddWithValue("@id", id);
 
             using var reader = await cmd.ExecuteReaderAsync();
@@ -118,7 +119,7 @@ namespace HotelManagement.Controllers
 
             reader.Close();
 
-            // images
+            // Thêm images vào bảng Room_Images để có thêm thông tin is_primary, sort_order
             var images = new List<object>();
             var imgQuery = @"
                 SELECT id, image_url, is_primary, sort_order
