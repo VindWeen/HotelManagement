@@ -22,13 +22,7 @@ public class UserProfileController : ControllerBase
         _config = config;
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // GET /api/UserProfile/my-profile
-    // [Authenticated — mọi role]
-    // Bảng liên quan: Users, Memberships, Roles
-    // Lấy id từ JWT claim, không nhận userId từ body.
-    // Trả về profile kèm tên membership, loyalty_points.
-    // ══════════════════════════════════════════════════════════════
+    
     [HttpGet("my-profile")]
     public async Task<IActionResult> GetMyProfile()
     {
@@ -72,13 +66,7 @@ public class UserProfileController : ControllerBase
         return Ok(profile);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // PUT /api/UserProfile/update-profile
-    // [Authenticated — mọi role]
-    // Bảng liên quan: Users
-    // Chỉ cho sửa: full_name, phone, address, date_of_birth, gender.
-    // Cập nhật updated_at. Không cho sửa email, role, is_active.
-    // ══════════════════════════════════════════════════════════════
+    
     [HttpPut("update-profile")]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
     {
@@ -101,13 +89,7 @@ public class UserProfileController : ControllerBase
         return Ok(new { message = "Cập nhật thông tin cá nhân thành công." });
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // PUT /api/UserProfile/change-password
-    // [Authenticated — mọi role]
-    // Bảng liên quan: Users
-    // Body: { oldPassword, newPassword }. BCrypt verify old → hash new.
-    // Nếu oldPassword sai trả 400. Chống session hijacking.
-    // ══════════════════════════════════════════════════════════════
+    
     [HttpPut("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
@@ -130,13 +112,7 @@ public class UserProfileController : ControllerBase
         return Ok(new { message = "Đổi mật khẩu thành công. Vui lòng đăng nhập lại." });
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // POST /api/UserProfile/upload-avatar
-    // [Authenticated — mọi role]
-    // Bảng liên quan: Users
-    // Upload IFormFile → Cloudinary (crop 500×500 face, signed upload).
-    // Tự động tạo folder hotel_avatars, xóa ảnh cũ nếu có.
-    // ══════════════════════════════════════════════════════════════
+    
     [HttpPost("upload-avatar")]
     public async Task<IActionResult> UploadAvatar(IFormFile file)
     {
@@ -248,9 +224,7 @@ public class UserProfileController : ControllerBase
 
 }
 
-// ══════════════════════════════════════════════════════════════════
-// Request DTOs
-// ══════════════════════════════════════════════════════════════════
+
 
 public record UpdateProfileRequest(
     string? FullName,
