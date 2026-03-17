@@ -12,6 +12,7 @@ namespace HotelManagement.API.Controllers;
 #region DTOs
 public class CreateBookingRequest
 {
+    public int? UserId { get; set; } 
     public string GuestName { get; set; } = null!;
     public string GuestPhone { get; set; } = null!;
     public string GuestEmail { get; set; } = null!;
@@ -158,7 +159,7 @@ public async Task<IActionResult> Create(CreateBookingRequest request)
 
         var booking = new Booking
         {
-            UserId = currentUserId,
+            UserId     = request.UserId, 
             GuestName = request.GuestName,
             GuestPhone = request.GuestPhone,
             GuestEmail = request.GuestEmail,
