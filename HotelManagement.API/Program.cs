@@ -1,22 +1,22 @@
-using HotelManagement.API.Authorization;
+using System.Text;
+using HotelManagement.Core.Authorization;
+using HotelManagement.Core.Helpers;
 using HotelManagement.Infrastructure.Data;
-using HotelManagement.Infrastructure.Services;
 using Mapster;
+using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── 1. Database ───────────────────────────────────────────────
+// ── 1. Database ──────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ── 2. JWT Authentication ─────────────────────────────────────
-var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("Jwt:Key chưa được cấu hình trong appsettings.");
+// ── 2. JWT Authentication ────────────────────────────────────────
+var jwtKey = builder.Configuration["Jwt:Key"]!;
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -30,7 +30,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer              = builder.Configuration["Jwt:Issuer"],
             ValidAudience            = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-            ClockSkew                = TimeSpan.Zero, // không cho phép trễ giờ
+            ClockSkew                = TimeSpan.Zero
         };
 
         // Trả về JSON thay vì redirect khi 401/403
@@ -42,99 +42,49 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 ctx.Response.StatusCode  = 401;
                 ctx.Response.ContentType = "application/json";
                 return ctx.Response.WriteAsync(
-                    """{"message":"Token không hợp lệ hoặc đã hết hạn."}""");
+                    "{\"error\":\"Unauthorized\",\"message\":\"Token không hợp lệ hoặc đã hết hạn.\"}");
             },
             OnForbidden = ctx =>
             {
                 ctx.Response.StatusCode  = 403;
                 ctx.Response.ContentType = "application/json";
                 return ctx.Response.WriteAsync(
-                    """{"message":"Bạn không có quyền truy cập tài nguyên này."}""");
+                    "{\"error\":\"Forbidden\",\"message\":\"Bạn không có quyền thực hiện hành động này.\"}");
             }
         };
     });
 
+// ── 3. RBAC ──────────────────────────────────────────────────────
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 builder.Services.AddAuthorization();
 
-// ── 3. Controllers + Global Permission Filter ─────────────────
-// Đăng ký PermissionAuthorizationFilter global
-// → tự động áp dụng cho mọi action có [RequirePermission(...)]
-builder.Services.AddControllers(options =>
-{
-    options.Filters.Add<PermissionAuthorizationFilter>();
-});
+// ── 4. Helpers ───────────────────────────────────────────────────
+builder.Services.AddScoped<JwtHelper>();
 
-// ── 4. Mapster ────────────────────────────────────────────────
+// ── 5. Mapster ───────────────────────────────────────────────────
 builder.Services.AddMapster();
 
-// ── 5. DI Services ────────────────────────────────────────────
-builder.Services.AddScoped<IJwtService, JwtService>();
+// ── 6. Controllers ───────────────────────────────────────────────
+builder.Services.AddControllers();
 
-// ── 6. Swagger với nút "Authorize" nhập JWT ───────────────────
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title   = "Hotel Management API",
-        Version = "v1"
-    });
+// ── 7. OpenAPI / Swagger UI ──────────────────────────────────────
+// Dùng AddOpenApi() built-in của .NET 10 — không cần Microsoft.OpenApi.Models
+builder.Services.AddOpenApi();
 
-    // Thêm ô nhập Bearer token vào Swagger UI
-    var securityScheme = new OpenApiSecurityScheme
-    {
-        Name         = "Authorization",
-        Type         = SecuritySchemeType.Http,
-        Scheme       = "Bearer",
-        BearerFormat = "JWT",
-        In           = ParameterLocation.Header,
-        Description  = "Nhập JWT token. Ví dụ: eyJhbGci..."
-    };
-    options.AddSecurityDefinition("Bearer", securityScheme);
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id   = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
-});
-
-// ── 7. CORS (nếu FE chạy port khác) ──────────────────────────
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-        policy.WithOrigins(
-                "http://localhost:3000",  // React / Next.js
-                "http://localhost:5173"   // Vite
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials());
-});
-
-// ─────────────────────────────────────────────────────────────
+// ── Build ────────────────────────────────────────────────────────
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
+    app.MapOpenApi();       // endpoint: /openapi/v1.json
     app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Hotel Management API v1");
-        c.DisplayRequestDuration(); // hiện thời gian response
-    });
+        c.SwaggerEndpoint("/openapi/v1.json", "Hotel Management API v1"));
 }
 
-app.UseCors("AllowFrontend");
-app.UseAuthentication(); // ← phải trước UseAuthorization
+// Thứ tự PHẢI đúng: Authentication trước Authorization
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 app.Run();
