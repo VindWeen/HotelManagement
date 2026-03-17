@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,7 +34,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew                = TimeSpan.Zero
         };
 
-        // Trả về JSON thay vì redirect khi 401/403
         options.Events = new JwtBearerEvents
         {
             OnChallenge = ctx =>
@@ -68,18 +68,50 @@ builder.Services.AddMapster();
 // ── 6. Controllers ───────────────────────────────────────────────
 builder.Services.AddControllers();
 
-// ── 7. OpenAPI / Swagger UI ──────────────────────────────────────
-// Dùng AddOpenApi() built-in của .NET 10 — không cần Microsoft.OpenApi.Models
-builder.Services.AddOpenApi();
+// ── 7. Swagger với Bearer token ──────────────────────────────────
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title   = "Hotel Management API",
+        Version = "v1"
+    });
+
+    // Thêm ô nhập Bearer token — tạo nút Authorize và ổ khóa trên mỗi endpoint
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name         = "Authorization",
+        Type         = SecuritySchemeType.Http,
+        Scheme       = "bearer",
+        BearerFormat = "JWT",
+        In           = ParameterLocation.Header,
+        Description  = "Nhập JWT token. Ví dụ: eyJhbGci..."
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id   = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 // ── Build ────────────────────────────────────────────────────────
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();       // endpoint: /openapi/v1.json
-    app.UseSwaggerUI(c =>
-        c.SwaggerEndpoint("/openapi/v1.json", "Hotel Management API v1"));
+    app.UseSwagger();
+    app.UseSwaggerUI();  // mặc định mở tại /swagger
 }
 
 // Thứ tự PHẢI đúng: Authentication trước Authorization

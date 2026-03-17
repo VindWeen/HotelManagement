@@ -598,7 +598,7 @@ GO
 -- 4. Users
 SET IDENTITY_INSERT [dbo].[Users] ON
 INSERT [dbo].[Users] ([id],[role_id],[membership_id],[full_name],[email],[phone],[password_hash],[status],[is_active],[loyalty_points],[loyalty_points_usable],[created_at])
-VALUES (1,  1,  NULL, N'Nguyễn Admin',    N'admin@hotel.com',       N'0900000001', N'hash1',  1, 1, 0,    0,    CAST(N'2026-01-01T00:00:00.000' AS DateTime))
+VALUES (1,  1,  NULL, N'Nguyễn Admin',    N'admin@hotel.com',       N'0900000001', N'$2a$11$oFBpZq/8S8DAE2qhAt0TCOIsOXB3WlBlmdybSneBVxZBdqcKzm9Qu',  1, 1, 0,    0,    CAST(N'2026-01-01T00:00:00.000' AS DateTime))
 INSERT [dbo].[Users] ([id],[role_id],[membership_id],[full_name],[email],[phone],[password_hash],[status],[is_active],[loyalty_points],[loyalty_points_usable],[created_at])
 VALUES (2,  2,  NULL, N'Trần Manager',    N'manager@hotel.com',     N'0900000002', N'hash2',  1, 1, 0,    0,    CAST(N'2026-01-01T00:00:00.000' AS DateTime))
 INSERT [dbo].[Users] ([id],[role_id],[membership_id],[full_name],[email],[phone],[password_hash],[status],[is_active],[loyalty_points],[loyalty_points_usable],[created_at])
