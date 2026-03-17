@@ -116,7 +116,7 @@ public class ArticleCategoriesController : ControllerBase
     // ──────────────────────────────────────────────────────────────────────────
     // PUT /api/ArticleCategories/{id}
     // [MANAGE_CONTENT]
-    // Chỉ cập nhật name. Slug giữ nguyên để tránh phá URL cũ.
+    // Cập nhật name. Slug tự động sinh lại từ name mới.
     // ──────────────────────────────────────────────────────────────────────────
     [HttpPut("{id:int}")]
     [RequirePermission(PermissionCodes.ManageContent)]
@@ -137,8 +137,14 @@ public class ArticleCategoriesController : ControllerBase
         if (nameExists)
             return Conflict(new { message = $"Danh mục '{request.Name.Trim()}' đã tồn tại." });
 
+        // Nếu Name thay đổi → sinh lại Slug từ Name mới
+        if (category.Name != request.Name.Trim())
+        {
+            var baseSlug = GenerateSlug(request.Name);
+            category.Slug = await EnsureUniqueSlug(baseSlug, excludeId: id);
+        }
+
         category.Name = request.Name.Trim();
-        // Slug giữ nguyên — không tái sinh để tránh phá URL cũ
 
         await _db.SaveChangesAsync();
 
@@ -147,7 +153,7 @@ public class ArticleCategoriesController : ControllerBase
             message = "Cập nhật danh mục thành công.",
             category.Id,
             category.Name,
-            category.Slug   // trả về slug cũ để FE confirm không đổi
+            category.Slug   // trả về slug mới đã được sinh lại
         });
     }
 
@@ -175,7 +181,7 @@ public class ArticleCategoriesController : ControllerBase
 
         return Ok(new
         {
-            message      = $"Đã xoá danh mục '{category.Name}' thành công.",
+            message          = $"Đã xoá danh mục '{category.Name}' thành công.",
             affectedArticles = articleCount   // FE hiển thị cảnh báo nếu > 0
         });
     }
@@ -203,6 +209,7 @@ public class ArticleCategoriesController : ControllerBase
         var slug = sb.ToString().Normalize(NormalizationForm.FormC);
 
         slug = slug.ToLowerInvariant();
+        slug = slug.Replace("đ", "d");
         slug = Regex.Replace(slug, @"[^a-z0-9\s-]", "");
         slug = Regex.Replace(slug, @"\s+", "-");
         slug = Regex.Replace(slug, @"-{2,}", "-");

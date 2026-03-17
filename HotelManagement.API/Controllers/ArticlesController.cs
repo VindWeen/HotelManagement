@@ -181,7 +181,7 @@ public class ArticlesController : ControllerBase
     // ──────────────────────────────────────────────────────────────────────────
     // PUT /api/Articles/{id}
     // [MANAGE_CONTENT]  Cập nhật nội dung & status.
-    // Admin: được set Published.  Editor: chỉ Draft / Pending_Review.
+    // Chỉ role "Admin" mới được set Status = "Published".
     // ──────────────────────────────────────────────────────────────────────────
     [HttpPut("{id:int}")]
     [RequirePermission(PermissionCodes.ManageContent)]
@@ -198,10 +198,18 @@ public class ArticlesController : ControllerBase
             if (!allowed.Contains(request.Status))
                 return BadRequest(new { message = "Status không hợp lệ. Dùng: Draft | Pending_Review | Published." });
 
-            // Chỉ Admin (role = "Admin") mới được Published
+            // Chỉ role "Admin" mới được đặt Published
             var roleClaim = User.FindFirst("role")?.Value ?? string.Empty;
-            if (request.Status == "Published" && !string.Equals(roleClaim, "Admin", StringComparison.OrdinalIgnoreCase))
-                return Forbid(); // 403
+            if (request.Status == "Published" &&
+                !string.Equals(roleClaim, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                // ← Trả về 403 kèm message rõ ràng thay vì Forbid()
+                return StatusCode(403, new
+                {
+                    error   = "Forbidden",
+                    message = "Chỉ Admin mới được xuất bản (Published) bài viết."
+                });
+            }
 
             article.Status = request.Status;
 
@@ -342,8 +350,9 @@ public class ArticlesController : ControllerBase
 
         var slug = sb.ToString().Normalize(NormalizationForm.FormC);
 
-        // Lowercase, thay khoảng trắng thành '-', loại ký tự đặc biệt
+        // Lowercase, xử lý 'đ' → 'd', thay khoảng trắng thành '-', loại ký tự đặc biệt
         slug = slug.ToLowerInvariant();
+        slug = slug.Replace("đ", "d");   // ← fix: 'đ' không bị xử lý bởi NFD
         slug = Regex.Replace(slug, @"[^a-z0-9\s-]", "");
         slug = Regex.Replace(slug, @"\s+", "-");
         slug = Regex.Replace(slug, @"-{2,}", "-");
