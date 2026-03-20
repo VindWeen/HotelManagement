@@ -1,3 +1,12 @@
+--============================================== TẠO DATABASE ============================================
+use master
+if exists(select * from sys.databases where name = 'HotelManagementDB')
+    drop database [HotelManagementDB]
+go
+create database [HotelManagementDB]
+
+--============================================ TẠO BẢNG =================================
+go 
 USE [HotelManagementDB]
 GO
 
