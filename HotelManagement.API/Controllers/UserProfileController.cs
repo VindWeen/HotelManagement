@@ -1,5 +1,3 @@
-using System.Net.Http.Headers;
-using System.Text.Json;
 using HotelManagement.Core.Helpers;
 using HotelManagement.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -18,11 +16,11 @@ public class UserProfileController : ControllerBase
 
     public UserProfileController(AppDbContext db, IConfiguration config)
     {
-        _db = db;
+        _db     = db;
         _config = config;
     }
 
-    
+    // GET /api/UserProfile/my-profile
     [HttpGet("my-profile")]
     public async Task<IActionResult> GetMyProfile()
     {
@@ -47,16 +45,15 @@ public class UserProfileController : ControllerBase
                 u.LoyaltyPoints,
                 u.LoyaltyPointsUsable,
                 u.Status,
-                u.IsActive,
                 u.LastLoginAt,
                 u.CreatedAt,
                 u.UpdatedAt,
-                RoleId = u.RoleId,
-                RoleName = u.Role != null ? u.Role.Name : null,
-                MembershipId = u.MembershipId,
-                MembershipTier = u.Membership != null ? u.Membership.TierName : null,
+                RoleId             = u.RoleId,
+                RoleName           = u.Role       != null ? u.Role.Name             : null,
+                MembershipId       = u.MembershipId,
+                MembershipTier     = u.Membership != null ? u.Membership.TierName   : null,
                 MembershipDiscount = u.Membership != null ? u.Membership.DiscountPercent : null,
-                MembershipColor = u.Membership != null ? u.Membership.ColorHex : null
+                MembershipColor    = u.Membership != null ? u.Membership.ColorHex   : null
             })
             .FirstOrDefaultAsync();
 
@@ -66,7 +63,7 @@ public class UserProfileController : ControllerBase
         return Ok(profile);
     }
 
-    
+    // PUT /api/UserProfile/update-profile
     [HttpPut("update-profile")]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
     {
@@ -76,12 +73,11 @@ public class UserProfileController : ControllerBase
         if (user is null)
             return NotFound(new { message = "Không tìm thấy thông tin người dùng." });
 
-        // Chỉ cập nhật các trường được phép
-        user.FullName    = request.FullName?.Trim()    ?? user.FullName;
-        user.Phone       = request.Phone?.Trim()       ?? user.Phone;
-        user.Address     = request.Address?.Trim()     ?? user.Address;
-        user.DateOfBirth = request.DateOfBirth          ?? user.DateOfBirth;
-        user.Gender      = request.Gender?.Trim()      ?? user.Gender;
+        user.FullName    = request.FullName?.Trim()  ?? user.FullName;
+        user.Phone       = request.Phone?.Trim()     ?? user.Phone;
+        user.Address     = request.Address?.Trim()   ?? user.Address;
+        user.DateOfBirth = request.DateOfBirth       ?? user.DateOfBirth;
+        user.Gender      = request.Gender?.Trim()    ?? user.Gender;
         user.UpdatedAt   = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
@@ -89,7 +85,7 @@ public class UserProfileController : ControllerBase
         return Ok(new { message = "Cập nhật thông tin cá nhân thành công." });
     }
 
-    
+    // PUT /api/UserProfile/change-password
     [HttpPut("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
@@ -99,32 +95,28 @@ public class UserProfileController : ControllerBase
         if (user is null)
             return NotFound(new { message = "Không tìm thấy thông tin người dùng." });
 
-        // Verify mật khẩu cũ
         if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
             return BadRequest(new { message = "Mật khẩu cũ không chính xác." });
 
-        // Hash mật khẩu mới
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
         user.UpdatedAt    = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
 
-        return Ok(new { message = "Đổi mật khẩu thành công. Vui lòng đăng nhập lại." });
+        return Ok(new { message = "Đổi mật khẩu thành công!" });
     }
 
-    
+    // POST /api/UserProfile/upload-avatar
     [HttpPost("upload-avatar")]
     public async Task<IActionResult> UploadAvatar(IFormFile file)
     {
         if (file is null || file.Length == 0)
             return BadRequest(new { message = "Vui lòng chọn file ảnh." });
 
-        // Validate file type
         var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp", "image/gif" };
         if (!allowedTypes.Contains(file.ContentType.ToLower()))
             return BadRequest(new { message = "Chỉ chấp nhận file ảnh (JPEG, PNG, WebP, GIF)." });
 
-        // Validate file size (max 5MB)
         if (file.Length > 5 * 1024 * 1024)
             return BadRequest(new { message = "File ảnh không được vượt quá 5MB." });
 
@@ -134,12 +126,10 @@ public class UserProfileController : ControllerBase
         if (user is null)
             return NotFound(new { message = "Không tìm thấy thông tin người dùng." });
 
-        // Cloudinary config
-        var cloudName = _config["Cloudinary:CloudName"]!;
-        var apiKey    = _config["Cloudinary:ApiKey"]!;
-        var apiSecret = _config["Cloudinary:ApiSecret"]!;
-
-        var account = new CloudinaryDotNet.Account(cloudName, apiKey, apiSecret);
+        var cloudName  = _config["Cloudinary:CloudName"]!;
+        var apiKey     = _config["Cloudinary:ApiKey"]!;
+        var apiSecret  = _config["Cloudinary:ApiSecret"]!;
+        var account    = new CloudinaryDotNet.Account(cloudName, apiKey, apiSecret);
         var cloudinary = new CloudinaryDotNet.Cloudinary(account);
 
         // Xóa ảnh cũ trên Cloudinary nếu có
@@ -153,12 +143,11 @@ public class UserProfileController : ControllerBase
             }
         }
 
-        // Tự động tạo thư mục và tải ảnh lên (Signed Upload)
         using var stream = file.OpenReadStream();
-        var uploadParams = new CloudinaryDotNet.Actions.ImageUploadParams()
+        var uploadParams = new CloudinaryDotNet.Actions.ImageUploadParams
         {
-            File = new CloudinaryDotNet.FileDescription(file.FileName, stream),
-            Folder = "hotel_avatars",
+            File           = new CloudinaryDotNet.FileDescription(file.FileName, stream),
+            Folder         = "hotel_avatars",
             Transformation = new CloudinaryDotNet.Transformation()
                                 .Width(500).Height(500).Crop("thumb").Gravity("face")
         };
@@ -166,15 +155,12 @@ public class UserProfileController : ControllerBase
         var uploadResult = await cloudinary.UploadAsync(uploadParams);
 
         if (uploadResult.Error != null)
-        {
             return StatusCode(502, new
             {
                 message = "Upload ảnh lên Cloudinary thất bại.",
-                detail = uploadResult.Error.Message
+                detail  = uploadResult.Error.Message
             });
-        }
 
-        // Lưu avatar_url mới
         user.AvatarUrl = uploadResult.SecureUrl.ToString();
         user.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
@@ -186,20 +172,20 @@ public class UserProfileController : ControllerBase
         });
     }
 
-    // ── Helper: Trích public_id từ Cloudinary URL ────────────────
+    // ── Helper ────────────────────────────────────────────────────
     private static string? ExtractPublicIdFromUrl(string url)
     {
         try
         {
-            var uri = new Uri(url);
-            var path = uri.AbsolutePath;
+            var uri         = new Uri(url);
+            var path        = uri.AbsolutePath;
             var uploadIndex = path.IndexOf("/upload/", StringComparison.Ordinal);
             if (uploadIndex < 0) return null;
 
             var afterUpload = path[(uploadIndex + 8)..];
+            var segments    = afterUpload.Split('/');
+            var startIndex  = 0;
 
-            var segments = afterUpload.Split('/');
-            var startIndex = 0;
             for (var i = 0; i < segments.Length; i++)
             {
                 if (segments[i].Length > 1 && segments[i][0] == 'v' &&
@@ -213,7 +199,7 @@ public class UserProfileController : ControllerBase
             if (startIndex >= segments.Length) return null;
 
             var publicIdWithExt = string.Join('/', segments[startIndex..]);
-            var dotIndex = publicIdWithExt.LastIndexOf('.');
+            var dotIndex        = publicIdWithExt.LastIndexOf('.');
             return dotIndex > 0 ? publicIdWithExt[..dotIndex] : publicIdWithExt;
         }
         catch
@@ -221,17 +207,14 @@ public class UserProfileController : ControllerBase
             return null;
         }
     }
-
 }
 
-
-
 public record UpdateProfileRequest(
-    string? FullName,
-    string? Phone,
-    string? Address,
+    string?   FullName,
+    string?   Phone,
+    string?   Address,
     DateOnly? DateOfBirth,
-    string? Gender
+    string?   Gender
 );
 
 public record ChangePasswordRequest(

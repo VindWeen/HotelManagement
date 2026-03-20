@@ -20,16 +20,15 @@ public class UserManagementController : ControllerBase
         _db = db;
     }
 
-    
+    // GET /api/UserManagement?roleId=&page=&pageSize=
     [HttpGet]
     [RequirePermission(PermissionCodes.ManageUsers)]
     public async Task<IActionResult> GetUsers(
         [FromQuery] int? roleId,
-        [FromQuery] bool? isActive,
-        [FromQuery] int page = 1,
+        [FromQuery] int page     = 1,
         [FromQuery] int pageSize = 10)
     {
-        if (page < 1) page = 1;
+        if (page     < 1) page     = 1;
         if (pageSize < 1) pageSize = 10;
         if (pageSize > 100) pageSize = 100;
 
@@ -42,10 +41,6 @@ public class UserManagementController : ControllerBase
         // Filter theo role
         if (roleId.HasValue)
             query = query.Where(u => u.RoleId == roleId.Value);
-
-        // Filter theo is_active
-        if (isActive.HasValue)
-            query = query.Where(u => u.IsActive == isActive.Value);
 
         var totalItems = await query.CountAsync();
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
@@ -68,20 +63,19 @@ public class UserManagementController : ControllerBase
                 u.LoyaltyPoints,
                 u.LoyaltyPointsUsable,
                 u.Status,
-                u.IsActive,
                 u.LastLoginAt,
                 u.CreatedAt,
                 u.UpdatedAt,
-                RoleId = u.RoleId,
-                RoleName = u.Role != null ? u.Role.Name : null,
-                MembershipId = u.MembershipId,
+                RoleId         = u.RoleId,
+                RoleName       = u.Role       != null ? u.Role.Name       : null,
+                MembershipId   = u.MembershipId,
                 MembershipTier = u.Membership != null ? u.Membership.TierName : null
             })
             .ToListAsync();
 
         return Ok(new
         {
-            data = users,
+            data       = users,
             pagination = new
             {
                 currentPage = page,
@@ -92,7 +86,7 @@ public class UserManagementController : ControllerBase
         });
     }
 
-  
+    // GET /api/UserManagement/{id}
     [HttpGet("{id:int}")]
     [RequirePermission(PermissionCodes.ManageUsers)]
     public async Task<IActionResult> GetUserById(int id)
@@ -116,13 +110,12 @@ public class UserManagementController : ControllerBase
                 u.LoyaltyPoints,
                 u.LoyaltyPointsUsable,
                 u.Status,
-                u.IsActive,
                 u.LastLoginAt,
                 u.CreatedAt,
                 u.UpdatedAt,
-                RoleId = u.RoleId,
-                RoleName = u.Role != null ? u.Role.Name : null,
-                MembershipId = u.MembershipId,
+                RoleId         = u.RoleId,
+                RoleName       = u.Role       != null ? u.Role.Name       : null,
+                MembershipId   = u.MembershipId,
                 MembershipTier = u.Membership != null ? u.Membership.TierName : null
             })
             .FirstOrDefaultAsync();
@@ -133,13 +126,14 @@ public class UserManagementController : ControllerBase
         return Ok(user);
     }
 
-    
+    // POST /api/UserManagement
     [HttpPost]
     [RequirePermission(PermissionCodes.ManageUsers)]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
         // 1. Kiểm tra email trùng
-        var emailExists = await _db.Users.AnyAsync(u => u.Email == request.Email.Trim().ToLower());
+        var emailExists = await _db.Users
+            .AnyAsync(u => u.Email == request.Email.Trim().ToLower());
         if (emailExists)
             return Conflict(new { message = "Email này đã được sử dụng." });
 
@@ -164,7 +158,6 @@ public class UserManagementController : ControllerBase
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             RoleId       = request.RoleId,
             Status       = true,
-            IsActive     = true,
             CreatedAt    = DateTime.UtcNow
         };
 
@@ -178,7 +171,7 @@ public class UserManagementController : ControllerBase
         });
     }
 
-    
+    // PUT /api/UserManagement/{id}
     [HttpPut("{id:int}")]
     [RequirePermission(PermissionCodes.ManageUsers)]
     public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserRequest request)
@@ -188,50 +181,52 @@ public class UserManagementController : ControllerBase
             return NotFound(new { message = $"Không tìm thấy user #{id}." });
 
         // Cập nhật thông tin cơ bản — KHÔNG cho đổi email và password
-        user.FullName    = request.FullName?.Trim()    ?? user.FullName;
-        user.Phone       = request.Phone?.Trim()       ?? user.Phone;
-        user.DateOfBirth = request.DateOfBirth          ?? user.DateOfBirth;
-        user.Gender      = request.Gender?.Trim()      ?? user.Gender;
-        user.Address     = request.Address?.Trim()     ?? user.Address;
-        user.NationalId  = request.NationalId?.Trim()  ?? user.NationalId;
-        user.UpdatedAt   = DateTime.UtcNow;
+        user.FullName   = request.FullName?.Trim()   ?? user.FullName;
+        user.Phone      = request.Phone?.Trim()      ?? user.Phone;
+        user.DateOfBirth = request.DateOfBirth       ?? user.DateOfBirth;
+        user.Gender     = request.Gender?.Trim()     ?? user.Gender;
+        user.Address    = request.Address?.Trim()    ?? user.Address;
+        user.NationalId = request.NationalId?.Trim() ?? user.NationalId;
+        user.UpdatedAt  = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
 
         return Ok(new { message = "Cập nhật thông tin thành công." });
     }
 
-    
+    // DELETE /api/UserManagement/{id}  — khoá tài khoản thay vì soft delete
+    // Vì đã bỏ is_active, hành động "xoá" nhân viên nghỉ việc nay đổi thành
+    // khoá tài khoản (status = false) để họ không thể đăng nhập nữa.
     [HttpDelete("{id:int}")]
     [RequirePermission(PermissionCodes.ManageUsers)]
-    public async Task<IActionResult> SoftDeleteUser(int id)
+    public async Task<IActionResult> LockUser(int id)
     {
         var currentUserId = JwtHelper.GetUserId(User);
 
-        // Không thể tự xóa chính mình
+        // Không thể tự khoá chính mình
         if (currentUserId == id)
-            return BadRequest(new { message = "Bạn không thể tự xóa chính mình." });
+            return BadRequest(new { message = "Bạn không thể tự khoá chính mình." });
 
         var user = await _db.Users.FindAsync(id);
         if (user is null)
             return NotFound(new { message = $"Không tìm thấy user #{id}." });
 
-        if (!user.IsActive)
-            return BadRequest(new { message = "User này đã bị vô hiệu hóa trước đó." });
+        if (user.Status == false)
+            return BadRequest(new { message = "Tài khoản này đã bị khoá trước đó." });
 
-        // Soft delete
-        user.IsActive  = false;
+        // Khoá tài khoản
+        user.Status    = false;
         user.UpdatedAt = DateTime.UtcNow;
 
         // Ghi Audit_Log
         _db.AuditLogs.Add(new AuditLog
         {
             UserId    = currentUserId,
-            Action    = "SOFT_DELETE",
+            Action    = "LOCK_ACCOUNT",
             TableName = "Users",
             RecordId  = id,
-            OldValue  = $"{{\"is_active\": true}}",
-            NewValue  = $"{{\"is_active\": false}}",
+            OldValue  = "{\"status\": true}",
+            NewValue  = "{\"status\": false}",
             IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
             UserAgent = Request.Headers["User-Agent"].ToString(),
             CreatedAt = DateTime.UtcNow
@@ -239,10 +234,10 @@ public class UserManagementController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        return Ok(new { message = "Đã vô hiệu hóa tài khoản thành công." });
+        return Ok(new { message = "Đã khoá tài khoản thành công." });
     }
 
-    
+    // PUT /api/UserManagement/{id}/change-role
     [HttpPut("{id:int}/change-role")]
     [RequirePermission(PermissionCodes.ManageUsers)]
     [RequirePermission(PermissionCodes.ManageRoles)]
@@ -252,12 +247,11 @@ public class UserManagementController : ControllerBase
         if (user is null)
             return NotFound(new { message = $"Không tìm thấy user #{id}." });
 
-        // Kiểm tra role mới có tồn tại
         var role = await _db.Roles.FindAsync(request.NewRoleId);
         if (role is null)
             return BadRequest(new { message = $"Role #{request.NewRoleId} không tồn tại." });
 
-        var oldRoleId = user.RoleId;
+        var oldRoleId  = user.RoleId;
         user.RoleId    = request.NewRoleId;
         user.UpdatedAt = DateTime.UtcNow;
 
@@ -272,7 +266,7 @@ public class UserManagementController : ControllerBase
         });
     }
 
-    
+    // PATCH /api/UserManagement/{id}/toggle-status
     [HttpPatch("{id:int}/toggle-status")]
     [RequirePermission(PermissionCodes.ManageUsers)]
     public async Task<IActionResult> ToggleStatus(int id)
@@ -283,8 +277,7 @@ public class UserManagementController : ControllerBase
         if (user is null)
             return NotFound(new { message = $"Không tìm thấy user #{id}." });
 
-        // Đảo trạng thái status
-        var oldStatus = user.Status;
+        var oldStatus  = user.Status;
         user.Status    = !(user.Status ?? true);
         user.UpdatedAt = DateTime.UtcNow;
 
@@ -314,27 +307,25 @@ public class UserManagementController : ControllerBase
     }
 }
 
-
-
 public record CreateUserRequest(
-    string FullName,
-    string Email,
-    string Password,
-    string? Phone,
+    string    FullName,
+    string    Email,
+    string    Password,
+    string?   Phone,
     DateOnly? DateOfBirth,
-    string? Gender,
-    string? Address,
-    string? NationalId,
-    int? RoleId
+    string?   Gender,
+    string?   Address,
+    string?   NationalId,
+    int?      RoleId
 );
 
 public record UpdateUserRequest(
-    string? FullName,
-    string? Phone,
+    string?   FullName,
+    string?   Phone,
     DateOnly? DateOfBirth,
-    string? Gender,
-    string? Address,
-    string? NationalId
+    string?   Gender,
+    string?   Address,
+    string?   NationalId
 );
 
 public record ChangeRoleRequest(int NewRoleId);
