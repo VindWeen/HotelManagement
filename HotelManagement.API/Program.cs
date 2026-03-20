@@ -9,8 +9,17 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+// ── Redis ──────────────────────────────────────────────────
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379,abortConnect=false";
+    return ConnectionMultiplexer.Connect(configuration);
+});
 
 // ── 1. Database ──────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -62,11 +71,25 @@ builder.Services.AddAuthorization();
 // ── 4. Helpers ───────────────────────────────────────────────────
 builder.Services.AddScoped<JwtHelper>();
 
+// ── 4.5 Cloudinary ──────────────────────────────────────────────────
+var cloudCfg     = builder.Configuration.GetSection("Cloudinary");
+var cloudAccount = new CloudinaryDotNet.Account(
+    cloudCfg["CloudName"],
+    cloudCfg["ApiKey"],
+    cloudCfg["ApiSecret"]
+);
+builder.Services.AddSingleton(new CloudinaryDotNet.Cloudinary(cloudAccount));
+
 // ── 5. Mapster ───────────────────────────────────────────────────
 builder.Services.AddMapster();
 
 // ── 6. Controllers ───────────────────────────────────────────────
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = 
+            System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 // ── 7. Swagger với Bearer token ──────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
@@ -104,7 +127,15 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-
+// ── Cloudinary ───────────────────────────────────────────
+var cloudinaryConfig = builder.Configuration.GetSection("Cloudinary");
+var cloudinary = new CloudinaryDotNet.Cloudinary(new CloudinaryDotNet.Account(
+    cloudinaryConfig["CloudName"],
+    cloudinaryConfig["ApiKey"],
+    cloudinaryConfig["ApiSecret"]
+));
+cloudinary.Api.Secure = true;
+builder.Services.AddSingleton(cloudinary);
 // ── Build ────────────────────────────────────────────────────────
 var app = builder.Build();
 
