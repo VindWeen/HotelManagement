@@ -5,6 +5,7 @@ using HotelManagement.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using HotelManagement.Core.Models.Enum;
 
 namespace HotelManagement.API.Controllers;
 
@@ -296,7 +297,15 @@ public class UserManagementController : ControllerBase
         });
 
         await _db.SaveChangesAsync();
-
+        var notification = new Notification
+        {
+            UserId         = id,
+            Type           = NotificationType.Info,
+            Action         = user.Status == true ? NotificationAction.UnlockAccount : NotificationAction.LockAccount,
+            Message        = $"Tài khoản của bạn đã bị {(user.Status == true ? "mở khóa" : "khóa")}.",
+            CreatedAt      = DateTime.UtcNow,
+            IsRead         = false
+        };
         var statusText = user.Status == true ? "mở khóa" : "khóa";
         return Ok(new
         {
