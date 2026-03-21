@@ -137,72 +137,7 @@
     }
   </style>
 </head>
-<!-- Thêm modal HTML (đặt trước </body>) -->
-<div id="addUserModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
-  <div class="bg-white rounded-2xl p-8 w-full max-w-md">
-    <h3 class="text-xl font-bold mb-6">Thêm người dùng mới</h3>
-    <form id="addUserForm">
-      <div class="mb-4">
-        <label class="block text-sm font-medium mb-1">Họ và tên</label>
-        <input name="fullName" class="w-full border rounded-xl px-4 py-2" required />
-      </div>
-      <div class="mb-4">
-        <label class="block text-sm font-medium mb-1">Email</label>
-        <input name="email" type="email" class="w-full border rounded-xl px-4 py-2" required />
-      </div>
-      <div class="mb-4">
-        <label class="block text-sm font-medium mb-1">SĐT</label>
-        <input name="phone" class="w-full border rounded-xl px-4 py-2" />
-      </div>
-      <div class="mb-4">
-        <label class="block text-sm font-medium mb-1">Vai trò</label>
-        <select name="role" class="w-full border rounded-xl px-4 py-2">
-          <option value="Receptionist">Receptionist</option>
-          <option value="Manager">Manager</option>
-          <option value="Accountant">Accountant</option>
-        </select>
-      </div>
-      <div class="mb-4">
-        <label class="block text-sm font-medium mb-1">Mật khẩu</label>
-        <input name="password" type="password" class="w-full border rounded-xl px-4 py-2" required />
-      </div>
-      <div class="flex justify-end gap-3">
-        <button type="button" id="closeModal" class="px-5 py-2 border rounded-xl">Hủy</button>
-        <button type="submit" class="px-5 py-2 bg-primary text-on-primary rounded-xl">Thêm</button>
-      </div>
-    </form>
-  </div>
-</div>
 
-<script>
-  // Mở modal
-  document.querySelectorAll('button:contains("Thêm người dùng")').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.getElementById('addUserModal').classList.remove('hidden');
-    });
-  });
-
-  document.getElementById('closeModal').addEventListener('click', () => {
-    document.getElementById('addUserModal').classList.add('hidden');
-  });
-
-  document.getElementById('addUserForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData);
-
-    try {
-      await axios.post(`${API_BASE}/api/users` || `${API_BASE}/api/auth/register`, data, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      alert('Thêm thành công!');
-      document.getElementById('addUserModal').classList.add('hidden');
-      loadStaffList(); // reload danh sách
-    } catch (err) {
-      alert('Lỗi: ' + (err.response?.data?.title || err.message));
-    }
-  });
-</script>
 <body class="bg-surface text-on-surface">
   <!-- SideNavBar -->
   <aside class="h-screen w-64 fixed left-0 top-0 border-r border-stone-100 bg-white flex flex-col py-8 px-4 z-50">
@@ -264,7 +199,10 @@
       </nav>
     </div>
     <div class="flex items-center gap-4">
-      <div class="flex gap-1">
+      <div class="flex gap-1"><button class="p-2 text-stone-500 hover:bg-stone-100 rounded-full transition-colors"
+          id="theme-toggle">
+          <span class="material-symbols-outlined" data-icon="light_mode">light_mode</span>
+        </button>
         <button class="p-2 text-stone-500 hover:bg-stone-100 rounded-full transition-colors relative">
           <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
           <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
@@ -383,7 +321,10 @@
                   </div>
                 </td>
                 <td class="px-6 py-4 text-right">
-                  <div class="flex justify-end gap-1">
+                  <div class="flex justify-end gap-1"><button
+                      class="p-2 text-stone-400 hover:text-primary transition-colors hover:bg-stone-100 rounded-lg">
+                      <span class="material-symbols-outlined text-xl" data-icon="shield">shield</span>
+                    </button>
                     <button
                       class="p-2 text-stone-400 hover:text-primary transition-colors hover:bg-stone-100 rounded-lg">
                       <span class="material-symbols-outlined text-xl" data-icon="visibility">visibility</span>
@@ -420,7 +361,10 @@
                   </div>
                 </td>
                 <td class="px-6 py-4 text-right">
-                  <div class="flex justify-end gap-1">
+                  <div class="flex justify-end gap-1"><button
+                      class="p-2 text-stone-400 hover:text-primary transition-colors hover:bg-stone-100 rounded-lg">
+                      <span class="material-symbols-outlined text-xl" data-icon="shield">shield</span>
+                    </button>
                     <button
                       class="p-2 text-stone-400 hover:text-primary transition-colors hover:bg-stone-100 rounded-lg">
                       <span class="material-symbols-outlined text-xl" data-icon="visibility">visibility</span>
@@ -457,7 +401,10 @@
                   </div>
                 </td>
                 <td class="px-6 py-4 text-right">
-                  <div class="flex justify-end gap-1">
+                  <div class="flex justify-end gap-1"><button
+                      class="p-2 text-stone-400 hover:text-primary transition-colors hover:bg-stone-100 rounded-lg">
+                      <span class="material-symbols-outlined text-xl" data-icon="shield">shield</span>
+                    </button>
                     <button
                       class="p-2 text-stone-400 hover:text-primary transition-colors hover:bg-stone-100 rounded-lg">
                       <span class="material-symbols-outlined text-xl" data-icon="visibility">visibility</span>
@@ -475,13 +422,7 @@
         <!-- Pagination -->
         <div class="px-6 py-4 border-t border-stone-100 flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <span class="text-sm text-stone-500">Hiển thị</span>
-            <select
-              class="bg-stone-50 border border-stone-200 rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-primary/40">
-              <option>10/trang</option>
-              <option>20/trang</option>
-              <option>50/trang</option>
-            </select>
+            <span class="text-sm text-stone-500">Tổng số người dùng: 10</span>
           </div>
           <div class="flex items-center gap-1">
             <button
