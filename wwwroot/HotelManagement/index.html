@@ -254,7 +254,7 @@ document.getElementById('loginForm').addEventListener('submit',async(e)=>{
     }
 
     /* Lưu auth */
-    const store=fRemember.checked?localStorage:sessionStorage;
+    const store=localStorage;
     store.setItem(KEYS.token,data.token);
     store.setItem(KEYS.refresh,data.refreshToken);
     store.setItem(KEYS.user,JSON.stringify({userId:data.userId,fullName:data.fullName,email:data.email,role:data.role,avatarUrl:data.avatarUrl,permissions:data.permissions}));
