@@ -59,7 +59,13 @@ public class UserProfileController : ControllerBase
             .FirstOrDefaultAsync();
 
         if (profile is null)
-            return NotFound(new { message = "Không tìm thấy thông tin người dùng." });
+            return NotFound(new Notification
+            {
+                Title = "Không tìm thấy thông tin người dùng",
+                Message = "Không tìm thấy thông tin người dùng.",
+                Type = NotificationType.Error,
+                Action = NotificationAction.Other
+            });
 
         return Ok(profile);
     }
@@ -72,7 +78,13 @@ public class UserProfileController : ControllerBase
 
         var user = await _db.Users.FindAsync(userId);
         if (user is null)
-            return NotFound(new { message = "Không tìm thấy thông tin người dùng." });
+            return NotFound(new Notification
+            {
+                Title = "Không tìm thấy thông tin người dùng",
+                Message = "Không tìm thấy thông tin người dùng.",
+                Type = NotificationType.Error,
+                Action = NotificationAction.Other
+            });
 
         user.FullName    = request.FullName?.Trim()  ?? user.FullName;
         user.Phone       = request.Phone?.Trim()     ?? user.Phone;
@@ -83,16 +95,13 @@ public class UserProfileController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        var Notification = new Notification
-        {
-            UserId         = user.Id,
-            Type           = NotificationType.Info,
-            Action         = NotificationAction.UpdateAccount,
-            Message        = "Thông tin cá nhân của bạn đã được cập nhật.",
-            CreatedAt      = DateTime.UtcNow,
-            IsRead         = false
-        };
-
+            var Notification = new Notification
+            {
+                Title = "Cập nhật thông tin thành công",
+                Message = "Thông tin cá nhân của bạn đã được cập nhật.",
+                Type = NotificationType.Success,
+                Action = NotificationAction.UpdateProfile
+            };
         return Ok(new { notification = Notification });
     }
 
@@ -116,14 +125,11 @@ public class UserProfileController : ControllerBase
 
         var Notification = new Notification
         {
-            UserId         = user.Id,
-            Type           = NotificationType.Success,
-            Action         = NotificationAction.ResetPassword,
-            Message        = "Mật khẩu của bạn đã được thay đổi thành công.",
-            CreatedAt      = DateTime.UtcNow,
-            IsRead         = false
+            Title = "Đổi mật khẩu thành công",
+            Message = "Mật khẩu của bạn đã được thay đổi.",
+            Type = NotificationType.Success,
+            Action = NotificationAction.UpdateProfile
         };
-
         return Ok(new { notification = Notification });
     }
 

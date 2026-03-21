@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HotelManagement.Core.Models.Enum;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace HotelManagement.API.Controllers;
 
@@ -61,15 +62,13 @@ public class AuthController : ControllerBase
         user.RefreshToken       = refreshToken;
         user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(RefreshTokenExpiryDays);
         await _db.SaveChangesAsync();
-
+        
         var Notification = new Notification
         {
-            UserId         = user.Id,
-            Type           = NotificationType.Success,
-            Action         = NotificationAction.LoginAccount,
-            Message        = "Đăng nhập thành công!",
-            CreatedAt      = DateTime.UtcNow,
-            IsRead         = false
+            Title = "Thông báo đăng nhập",
+            Message = $"Chào mừng {user.FullName} đã đăng nhập thành công!",
+            Type = NotificationType.Success,
+            Action = NotificationAction.LoginAccount
         };
 
         // 6. Tạo access token
@@ -132,12 +131,10 @@ public class AuthController : ControllerBase
 
         var Notification = new Notification
         {
-            UserId         = user.Id,
-            Type           = NotificationType.Success,
-            Action         = NotificationAction.CreateAccount,
-            Message        = "Chào mừng bạn đã đăng ký tài khoản thành công!",
-            CreatedAt      = DateTime.Now,
-            IsRead         = false
+            Title = "Thông báo đăng ký",
+            Message = $"Chào mừng {user.FullName} đã đăng ký tài khoản thành công!",
+            Type = NotificationType.Success,
+            Action = NotificationAction.CreateAccount
         };
 
         // 5. Lấy permissions và tạo token
@@ -266,13 +263,4 @@ public record RegisterRequest(
     string  ConfirmPassword,
     string? Phone
 );
-class Notification
-{
-    public int UserId { get; set; }
-    public NotificationType Type { get; set; }
-    public NotificationAction Action { get; set; }
-    public string Message { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public bool IsRead { get; set; }
-}
 public record RefreshTokenRequest(string RefreshToken);
