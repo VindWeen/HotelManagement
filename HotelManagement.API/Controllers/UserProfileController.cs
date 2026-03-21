@@ -3,6 +3,7 @@ using HotelManagement.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using HotelManagement.Core.Models.Enum;
 
 namespace HotelManagement.API.Controllers;
 
@@ -82,7 +83,17 @@ public class UserProfileController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        return Ok(new { message = "Cập nhật thông tin cá nhân thành công." });
+        var Notification = new Notification
+        {
+            UserId         = user.Id,
+            Type           = NotificationType.Info,
+            Action         = NotificationAction.UpdateAccount,
+            Message        = "Thông tin cá nhân của bạn đã được cập nhật.",
+            CreatedAt      = DateTime.UtcNow,
+            IsRead         = false
+        };
+
+        return Ok(new { notification = Notification });
     }
 
     // PUT /api/UserProfile/change-password
@@ -103,7 +114,17 @@ public class UserProfileController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        return Ok(new { message = "Đổi mật khẩu thành công!" });
+        var Notification = new Notification
+        {
+            UserId         = user.Id,
+            Type           = NotificationType.Success,
+            Action         = NotificationAction.ResetPassword,
+            Message        = "Mật khẩu của bạn đã được thay đổi thành công.",
+            CreatedAt      = DateTime.UtcNow,
+            IsRead         = false
+        };
+
+        return Ok(new { notification = Notification });
     }
 
     // POST /api/UserProfile/upload-avatar
