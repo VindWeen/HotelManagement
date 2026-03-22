@@ -165,7 +165,6 @@ export default function UserListPage() {
         if (all.data) users = all.data.data || users;
       }
       setAllUsers(users);
-      if (data.notification) showNotif(data.notification);
     } catch (e) {
       showNotif(e?.response?.data?.notification, e?.response?.data?.message || "Không thể tải danh sách người dùng.", "error");
     } finally {
@@ -590,6 +589,7 @@ export default function UserListPage() {
           </nav>
 
           <div style={{ marginTop: "auto", paddingLeft: 16, paddingRight: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+            {/* User info */}
             <button onClick={handleLogout} style={{ width: "100%", padding: "10px", borderRadius: 12, background: "none", border: "1px solid #e2e8e1", color: "#6b7280", fontWeight: 500, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <span className="material-symbols-outlined" style={{fontSize:18}}>logout</span>Đăng xuất
             </button>
@@ -633,7 +633,7 @@ export default function UserListPage() {
         </header>
 
         {/* ── Main Content ── */}
-        <main style={{ marginLeft: -250, paddingTop: 20, padding: "96px 32px 32px 288px" }}>
+        <main style={{ marginLeft: -250, paddingTop: 10, padding: "96px 32px 32px 288px" }}>
 
           {/* Page Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
