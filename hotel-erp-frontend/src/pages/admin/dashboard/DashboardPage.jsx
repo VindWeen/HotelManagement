@@ -1,6 +1,4 @@
 // src/pages/admin/dashboard/DashboardPage.jsx
-// TRANG TEST DASHBOARD - HIỂN THỊ AUTH STATE SAU KHI LOGIN
-
 // Minimal version để test — chỉ hiển thị auth state sau khi login
 import { useAdminAuthStore } from '../../../store/adminAuthStore';
 import { useNavigate } from 'react-router-dom';

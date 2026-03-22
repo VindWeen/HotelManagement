@@ -1,5 +1,4 @@
 // src/pages/LoginPage.jsx
-// TRANG LOGIN + REGISTER
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { login, register } from "../api/authApi";

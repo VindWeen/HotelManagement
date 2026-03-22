@@ -1,39 +1,39 @@
-## ── .NET ────────────────────────────────────────────
+## Ignore Visual Studio temporary files
 [Bb]in/
 [Oo]bj/
 
-## NuGet
+## Ignore NuGet Packages
 *.nupkg
+# NuGet Symbol Packages
 *.snupkg
 
-## User-specific
+## Ignore .NET Core / .NET 10 temporary files
+bin/
+obj/
+
+## Ignore user-specific files
+.DS_Store
+Thumbs.db
+
+## Ignore log files
+*.log
+
+## Ignore appsettings secrets
+# appsettings.*.json
+
+## User secrets
+secrets.json
 *.user
 *.userosx
 *.sln.DotSettings.user
-secrets.json
 
-## Global Usings (auto-generated)
-GlobalUsings.cs.g.cs
-
-## ── IDE ─────────────────────────────────────────────
 ## JetBrains Rider
 .idea/
 *.sln.iml
 
 ## Visual Studio Code
-.vscode/
-!.vscode/extensions.json
+.vscode/settings.json
 
-## ── Frontend (Node.js / Vite) ───────────────────────
-node_modules/
-dist/
-dist-ssr/
-.vite/
-*.tsbuildinfo
+## Global Usings
+GlobalUsings.cs.g.cs
 
-## ── OS ──────────────────────────────────────────────
-.DS_Store
-Thumbs.db
-
-## ── Logs ────────────────────────────────────────────
-*.log
