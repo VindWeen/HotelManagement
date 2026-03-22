@@ -1,1 +1,0 @@
-// Đóng gói logic WebSocket, dùng lại ở nhiều nơi
