@@ -20,6 +20,63 @@ public class RolesController : ControllerBase
         _db = db;
     }
 
+    // ──────────────────────────────────────────────────────────────
+    // GET /api/Roles  [Authorize]
+    // Danh sách toàn bộ roles — FE dùng để populate dropdown chọn role.
+    // ──────────────────────────────────────────────────────────────
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var roles = await _db.Roles
+            .AsNoTracking()
+            .OrderBy(r => r.Id)
+            .Select(r => new
+            {
+                r.Id,
+                r.Name,
+                r.Description
+            })
+            .ToListAsync();
+
+        return Ok(new { data = roles, total = roles.Count });
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // GET /api/Roles/{id}  [MANAGE_ROLES]
+    // Chi tiết 1 role kèm danh sách permissions đang được gán.
+    // ──────────────────────────────────────────────────────────────
+    [HttpGet("{id:int}")]
+    [RequirePermission(PermissionCodes.ManageRoles)]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var role = await _db.Roles
+            .AsNoTracking()
+            .Where(r => r.Id == id)
+            .Select(r => new
+            {
+                r.Id,
+                r.Name,
+                r.Description,
+                Permissions = r.RolePermissions
+                    .Select(rp => new
+                    {
+                        rp.Permission.Id,
+                        rp.Permission.Name,
+                        rp.Permission.PermissionCode,
+                        rp.Permission.ModuleName
+                    })
+                    .OrderBy(p => p.ModuleName)
+                    .ThenBy(p => p.Name)
+                    .ToList()
+            })
+            .FirstOrDefaultAsync();
+
+        if (role is null)
+            return NotFound(new { message = $"Không tìm thấy role #{id}." });
+
+        return Ok(role);
+    }
+
     /// <summary>
     /// Gán hoặc thu hồi permission cho một role.
     /// Body: { roleId, permissionId, grant: true = gán / false = thu hồi }
@@ -50,6 +107,21 @@ public class RolesController : ControllerBase
                     RoleId       = request.RoleId,
                     PermissionId = request.PermissionId
                 });
+
+                var currentUserId = JwtHelper.GetUserId(User);
+                _db.AuditLogs.Add(new AuditLog
+                {
+                    UserId    = currentUserId,
+                    Action    = "GRANT_PERMISSION",
+                    TableName = "Role_Permissions",
+                    RecordId  = request.RoleId,
+                    OldValue  = null,
+                    NewValue  = $"{{\"roleId\": {request.RoleId}, \"permissionId\": {request.PermissionId}}}",
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = Request.Headers["User-Agent"].ToString(),
+                    CreatedAt = DateTime.UtcNow
+                });
+
                 await _db.SaveChangesAsync();
             }
 
@@ -60,6 +132,21 @@ public class RolesController : ControllerBase
             if (existing is not null)
             {
                 _db.RolePermissions.Remove(existing);
+
+                var currentUserId = JwtHelper.GetUserId(User);
+                _db.AuditLogs.Add(new AuditLog
+                {
+                    UserId    = currentUserId,
+                    Action    = "REVOKE_PERMISSION",
+                    TableName = "Role_Permissions",
+                    RecordId  = request.RoleId,
+                    OldValue  = $"{{\"roleId\": {request.RoleId}, \"permissionId\": {request.PermissionId}}}",
+                    NewValue  = null,
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = Request.Headers["User-Agent"].ToString(),
+                    CreatedAt = DateTime.UtcNow
+                });
+
                 await _db.SaveChangesAsync();
             }
 
