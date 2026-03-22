@@ -67,14 +67,18 @@ Frontend sẽ chạy tại:
 - http://localhost:5173
 
 ### ⚠️ Lưu ý
-Backend (API) và Frontend cần chạy song song
-Nếu chưa chạy API, hãy mở terminal khác và chạy:
+Backend (API) và Frontend cần chạy song song. Nếu chưa chạy API, hãy mở terminal khác và chạy:
+
+```bash
 dotnet run --project HotelManagement.API
+```
+
 ### 📌 Quy trình chạy tổng quát
 Chạy database (SQL Server)
 Mở terminal 1 → chạy API
 Mở terminal 2 → chạy Frontend
-Truy cập Frontend tại: http://localhost:5173
+Truy cập Frontend tại: 
+- http://localhost:5173
 
 # 🏨 HotelManagement — Tổng Hợp Dự Án
 
