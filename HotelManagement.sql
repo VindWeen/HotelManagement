@@ -564,6 +564,67 @@ CREATE UNIQUE INDEX [UQ_Reviews_User_Booking]
 GO
 
 -- ============================================================
+-- BẢNG Activity_Logs
+-- Lưu thông báo hệ thống cho Admin/Manager/Staff
+-- ============================================================
+
+CREATE TABLE [dbo].[Activity_Logs](
+    [id]            [int]            IDENTITY(1,1) NOT NULL,
+    [user_id]       [int]            NULL,                        -- FK Users.id (ai thực hiện)
+    [role_name]     [nvarchar](100)  NULL,                        -- cache tên role lúc thực hiện
+    [action_code]   [nvarchar](100)  NOT NULL,                    -- APPROVE_REVIEW, CREATE_BOOKING...
+    [action_label]  [nvarchar](255)  NOT NULL,                    -- "Duyệt đánh giá", "Tạo đặt phòng"
+    [entity_type]   [nvarchar](100)  NULL,                        -- "Review", "Booking", "User"...
+    [entity_id]     [int]            NULL,                        -- ID bản ghi bị tác động
+    [entity_label]  [nvarchar](500)  NULL,                        -- mô tả thêm: "BK-0001", "Khách Hàng A"
+    [severity]      [nvarchar](20)   NOT NULL DEFAULT 'Info',     -- Info / Warning / Success / Critical
+    [message]       [nvarchar](max)  NOT NULL,                    -- nội dung thông báo hiển thị
+    [metadata]      [nvarchar](max)  NULL,                        -- JSON thêm nếu cần
+    [created_at]    [datetime]       NOT NULL DEFAULT GETDATE(),
+PRIMARY KEY CLUSTERED ([id] ASC)
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+-- FK về Users
+ALTER TABLE [dbo].[Activity_Logs]
+    WITH CHECK ADD FOREIGN KEY([user_id]) REFERENCES [dbo].[Users]([id])
+GO
+
+-- Index để query nhanh theo user và thời gian
+CREATE NONCLUSTERED INDEX [IX_Activity_Logs_UserId_CreatedAt]
+    ON [dbo].[Activity_Logs] ([user_id] ASC, [created_at] DESC)
+GO
+
+CREATE NONCLUSTERED INDEX [IX_Activity_Logs_EntityType_EntityId]
+    ON [dbo].[Activity_Logs] ([entity_type] ASC, [entity_id] ASC)
+GO
+
+-- Index cho filter ActionCode trong backend
+CREATE NONCLUSTERED INDEX [IX_Activity_Logs_ActionCode]
+    ON [dbo].[Activity_Logs] ([action_code] ASC)
+GO
+
+-- Tạo lại bảng với tên cột dạng snake_case (theo đúng convention của AppDbContext)
+CREATE TABLE [dbo].[Activity_Log_Reads] (
+    [id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [activity_log_id] INT NOT NULL,
+    [user_id] INT NOT NULL,
+    [read_at] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    
+    CONSTRAINT [fk_activity_log_reads_activity_logs] FOREIGN KEY ([activity_log_id]) REFERENCES [dbo].[Activity_Logs] ([id]) ON DELETE CASCADE,
+    CONSTRAINT [fk_activity_log_reads_users] FOREIGN KEY ([user_id]) REFERENCES [dbo].[Users] ([id]) ON DELETE CASCADE
+);
+GO
+
+-- Tạo lại Index unique
+CREATE UNIQUE INDEX [uk_activity_log_user] ON [dbo].[Activity_Log_Reads] ([activity_log_id], [user_id]);
+GO
+
+-- Tạo index cho user_id để truy vấn nhanh
+CREATE INDEX [ix_activity_log_reads_user_id] ON [dbo].[Activity_Log_Reads] ([user_id]);
+GO
+
+-- ============================================================
 -- SEED DATA — THỨ TỰ CHA TRƯỚC CON
 -- ============================================================
 

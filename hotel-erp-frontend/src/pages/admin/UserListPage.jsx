@@ -1,5 +1,5 @@
 // src/pages/admin/staff/UserListPage.jsx
-// Giao diện khớp UserManagement.html + tích hợp API thực tế
+// Giao diện khớp 1:1 với UserManagement.html + tích hợp API thực tế
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   getUsers,
@@ -8,13 +8,14 @@ import {
   updateUser,
   toggleStatus,
   changeRole,
-} from "../../../api/userManagementApi";
-import { getRoles } from "../../../api/rolesApi";
-import { useAdminAuthStore } from "../../../store/adminAuthStore";
-import { logout } from "../../../api/authApi";
+  resetUserPassword,
+} from "../../api/userManagementApi";
+import { getRoles } from "../../api/rolesApi";
+import { useAdminAuthStore } from "../../store/adminAuthStore";
+
 import { useNavigate } from "react-router-dom";
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 const ROLE_BADGE = {
   Admin: "bg-purple-50 text-purple-600",
   Manager: "bg-emerald-50 text-emerald-600",
@@ -28,7 +29,7 @@ const ROLE_BADGE = {
   Guest: "bg-gray-100 text-gray-500",
 };
 
-const ACTION_LABEL = {
+const ACTION_LABELS = {
   LoginAccount: "Đăng nhập",
   CreateAccount: "Tạo tài khoản",
   UpdateAccount: "Cập nhật",
@@ -37,37 +38,30 @@ const ACTION_LABEL = {
   ViewUsers: "Xem danh sách",
 };
 
-const esc = (s) =>
-  String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-
-// ─── Toast System ─────────────────────────────────────────────────────────────
-const TOAST_STYLE = {
-  Success: {
+// ─── Toast Component ──────────────────────────────────────────────────────────
+const TOAST_STYLES = {
+  success: {
     bg: "#1e3a2f",
     border: "#2d5a45",
     text: "#a7f3d0",
     prog: "#34d399",
     icon: "check_circle",
   },
-  Error: {
+  error: {
     bg: "#3a1e1e",
     border: "#5a2d2d",
     text: "#fca5a5",
     prog: "#f87171",
     icon: "error",
   },
-  Warning: {
+  warning: {
     bg: "#3a2e1a",
     border: "#5a4820",
     text: "#fcd34d",
     prog: "#fbbf24",
     icon: "warning",
   },
-  Info: {
+  info: {
     bg: "#1e2f3a",
     border: "#2d4a5a",
     text: "#93c5fd",
@@ -76,72 +70,65 @@ const TOAST_STYLE = {
   },
 };
 
-function Toast({ id, msg, type = "Success", action, dur = 4000, onDismiss }) {
-  const s = TOAST_STYLE[type] || TOAST_STYLE.Info;
-  const actTag = action && ACTION_LABEL[action] ? ACTION_LABEL[action] : null;
-  const [leaving, setLeaving] = useState(false);
-
-  const dismiss = useCallback(() => {
-    setLeaving(true);
-    setTimeout(() => onDismiss(id), 300);
-  }, [id, onDismiss]);
-
+function Toast({ id, msg, type = "success", action, dur = 4000, onDismiss }) {
+  const s = TOAST_STYLES[type] || TOAST_STYLES.info;
+  const actLabel =
+    action && ACTION_LABELS[action] ? ACTION_LABELS[action] : null;
   useEffect(() => {
-    const t = setTimeout(dismiss, dur);
+    const t = setTimeout(() => onDismiss(id), dur);
     return () => clearTimeout(t);
   }, []);
-
   return (
     <div
-      className={leaving ? "toast-out" : "toast-in"}
       style={{
         background: s.bg,
         border: `1px solid ${s.border}`,
         color: s.text,
-        borderRadius: "16px",
+        borderRadius: 16,
         overflow: "hidden",
         boxShadow: "0 8px 32px rgba(0,0,0,.3)",
         pointerEvents: "auto",
-        marginBottom: "10px",
+        marginBottom: 10,
+        animation: "toastIn .35s cubic-bezier(.22,1,.36,1) forwards",
       }}
     >
       <div
         style={{
           display: "flex",
           alignItems: "flex-start",
-          gap: "10px",
+          gap: 10,
           padding: "13px 13px 9px",
         }}
       >
         <span
           className="material-symbols-outlined"
           style={{
-            fontSize: "19px",
+            fontSize: 19,
             flexShrink: 0,
-            marginTop: "1px",
+            marginTop: 1,
             fontVariationSettings: "'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20",
           }}
         >
           {s.icon}
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          {actTag && (
+          {actLabel && (
             <div
               style={{
-                fontSize: "10px",
+                fontSize: 10,
                 fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: ".08em",
                 opacity: 0.5,
-                marginBottom: "2px",
+                marginBottom: 2,
               }}
             >
-              {actTag}
+              {actLabel}
             </div>
           )}
           <p
             style={{
-              fontSize: "13px",
+              fontSize: 13,
               fontWeight: 600,
               lineHeight: 1.4,
               margin: 0,
@@ -151,21 +138,17 @@ function Toast({ id, msg, type = "Success", action, dur = 4000, onDismiss }) {
           </p>
         </div>
         <button
-          onClick={dismiss}
+          onClick={() => onDismiss(id)}
           style={{
             background: "none",
             border: "none",
             cursor: "pointer",
             opacity: 0.4,
-            padding: "2px",
-            flexShrink: 0,
+            padding: 2,
             color: "inherit",
           }}
         >
-          <span
-            className="material-symbols-outlined"
-            style={{ fontSize: "14px" }}
-          >
+          <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
             close
           </span>
         </button>
@@ -173,8 +156,8 @@ function Toast({ id, msg, type = "Success", action, dur = 4000, onDismiss }) {
       <div
         style={{
           margin: "0 12px 9px",
-          height: "3px",
-          borderRadius: "9999px",
+          height: 3,
+          borderRadius: 9999,
           background: "rgba(255,255,255,.1)",
           overflow: "hidden",
         }}
@@ -182,7 +165,7 @@ function Toast({ id, msg, type = "Success", action, dur = 4000, onDismiss }) {
         <div
           style={{
             height: "100%",
-            borderRadius: "9999px",
+            borderRadius: 9999,
             background: s.prog,
             animation: `toastProgress ${dur}ms linear forwards`,
           }}
@@ -197,11 +180,11 @@ function ToastContainer({ toasts, onDismiss }) {
     <div
       style={{
         position: "fixed",
-        top: "24px",
-        right: "24px",
-        zIndex: 200,
-        minWidth: "280px",
-        maxWidth: "360px",
+        top: 24,
+        right: 24,
+        zIndex: 300,
+        minWidth: 280,
+        maxWidth: 360,
         pointerEvents: "none",
       }}
     >
@@ -215,41 +198,40 @@ function ToastContainer({ toasts, onDismiss }) {
 // ─── Skeleton Rows ────────────────────────────────────────────────────────────
 function SkeletonRows() {
   return Array.from({ length: 5 }).map((_, i) => (
-    <tr key={i} className="border-b border-stone-50">
-      <td className="px-6 py-3">
+    <tr key={i}>
+      <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="skeleton w-8 h-8 rounded-full flex-shrink-0" />
+          <div className="skeleton w-9 h-9 rounded-full" />
           <div>
-            <div className="skeleton w-28 h-4 mb-1.5" />
+            <div className="skeleton w-28 h-4 mb-1" />
             <div className="skeleton w-10 h-3" />
           </div>
         </div>
       </td>
-      <td className="px-6 py-3">
+      <td className="px-6 py-4">
         <div className="skeleton w-40 h-4" />
       </td>
-      <td className="px-6 py-3">
+      <td className="px-6 py-4">
         <div className="skeleton w-28 h-4" />
       </td>
-      <td className="px-6 py-3">
-        <div className="skeleton w-20 h-5 rounded-full" />
+      <td className="px-6 py-4">
+        <div className="skeleton w-24 h-5 rounded-full" />
       </td>
-      <td className="px-6 py-3">
-        <div className="skeleton w-28 h-6 rounded-full" />
+      <td className="px-6 py-4">
+        <div className="skeleton w-32 h-6 rounded-full" />
       </td>
-      <td className="px-6 py-3 text-right">
-        <div className="skeleton w-14 h-7 rounded-lg ml-auto" />
+      <td className="px-6 py-4">
+        <div className="skeleton w-16 h-8 rounded-lg ml-auto" />
       </td>
     </tr>
   ));
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function UserManagement() {
-  const { user: currentUser, permissions, clearAuth } = useAdminAuthStore();
+export default function UserListPage() {
+  const { permissions } = useAdminAuthStore();
   const navigate = useNavigate();
 
-  // State
   const [allUsers, setAllUsers] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -262,17 +244,11 @@ export default function UserManagement() {
     status: "",
   });
   const [toasts, setToasts] = useState([]);
-
-  // Modal state
-  const [addModalOpen, setAddModalOpen] = useState(false);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [detailUser, setDetailUser] = useState(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [formLoading, setFormLoading] = useState(false);
   const [togglingIds, setTogglingIds] = useState(new Set());
 
-  // Form fields
+  // Modal: Thêm/Sửa
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [fFullName, setFFullName] = useState("");
   const [fEmail, setFEmail] = useState("");
   const [fPhone, setFPhone] = useState("");
@@ -281,31 +257,42 @@ export default function UserManagement() {
   const [fGender, setFGender] = useState("");
   const [formError, setFormError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [formLoading, setFormLoading] = useState(false);
 
-  // Top search sync
+  // Modal: Chi tiết
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailUser, setDetailUser] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+
   const [topSearch, setTopSearch] = useState("");
   const debounceRef = useRef(null);
 
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-
   // ── Toast helpers ──
   const showToast = useCallback(
-    (msg, type = "Success", action = null, dur = 4000) => {
+    (msg, type = "success", action = null, dur = 4000) => {
       const id = Date.now() + Math.random();
       setToasts((prev) => [...prev, { id, msg, type, action, dur }]);
     },
     [],
   );
 
-  const dismissToast = useCallback((id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+  const dismissToast = useCallback(
+    (id) => setToasts((prev) => prev.filter((t) => t.id !== id)),
+    [],
+  );
 
   const showNotif = useCallback(
-    (notif, fallbackMsg = "", fallbackType = "Info") => {
+    (notif, fallbackMsg = "", fallbackType = "info") => {
       if (notif?.message) {
-        const t = notif.type || fallbackType;
-        showToast(notif.message, t, notif.action || null);
+        const t = (notif.type || fallbackType).toLowerCase();
+        showToast(
+          notif.message,
+          ["success", "error", "warning", "info"].includes(t)
+            ? t
+            : fallbackType,
+          notif.action || null,
+        );
       } else if (fallbackMsg) {
         showToast(fallbackMsg, fallbackType);
       }
@@ -313,7 +300,7 @@ export default function UserManagement() {
     [showToast],
   );
 
-  // ── Load data ──
+  // ── Load users ──
   const loadUsers = useCallback(async () => {
     if (loading) return;
     setLoading(true);
@@ -331,7 +318,7 @@ export default function UserManagement() {
       showNotif(
         e?.response?.data?.notification,
         e?.response?.data?.message || "Không thể tải danh sách người dùng.",
-        "Error",
+        "error",
       );
     } finally {
       setLoading(false);
@@ -354,17 +341,15 @@ export default function UserManagement() {
   useEffect(() => {
     let users = [...allUsers];
     const q = filters.search.toLowerCase().trim();
-    if (q) {
+    if (q)
       users = users.filter(
         (u) =>
           (u.fullName || "").toLowerCase().includes(q) ||
           (u.email || "").toLowerCase().includes(q) ||
           (u.phone || "").toLowerCase().includes(q),
       );
-    }
-    if (filters.roleId) {
+    if (filters.roleId)
       users = users.filter((u) => u.roleId === parseInt(filters.roleId));
-    }
     if (filters.status === "active")
       users = users.filter((u) => u.status === true);
     if (filters.status === "locked") users = users.filter((u) => !u.status);
@@ -372,12 +357,11 @@ export default function UserManagement() {
     setPage(1);
   }, [allUsers, filters]);
 
-  // ── Pagination ──
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginatedUsers = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   // ── Toggle status ──
-  const handleToggle = async (userId, currentStatus) => {
+  const handleToggle = async (userId) => {
     if (togglingIds.has(userId)) return;
     setTogglingIds((prev) => new Set(prev).add(userId));
     try {
@@ -390,67 +374,86 @@ export default function UserManagement() {
       showNotif(
         data.notification,
         isActive ? "Đã mở khóa tài khoản." : "Đã khóa tài khoản.",
-        isActive ? "Success" : "Warning",
+        isActive ? "success" : "warning",
       );
     } catch (e) {
       showNotif(
         e?.response?.data?.notification,
         e?.response?.data?.message || "Không thể thay đổi trạng thái.",
-        "Error",
+        "error",
       );
     } finally {
       setTogglingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(userId);
-        return next;
+        const n = new Set(prev);
+        n.delete(userId);
+        return n;
       });
     }
   };
 
-  // ── Detail modal ──
+  // ── Detail modal — fetch trước, mở modal sau (tránh flash skeleton) ──
   const openDetail = async (userId) => {
-    setDetailUser(null);
-    setDetailModalOpen(true);
-    setDetailLoading(true);
     try {
       const res = await getUserById(userId);
       setDetailUser(res.data);
+      setDetailModalOpen(true);
     } catch (e) {
-      setDetailModalOpen(false);
       showToast(
         e?.response?.data?.message || "Không thể tải thông tin.",
-        "Error",
+        "error",
       );
-    } finally {
-      setDetailLoading(false);
     }
   };
 
-  // ── Add modal ──
+  // ── Reset Password ──
+  const handleResetPassword = async (userId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn thiết lập lại mật khẩu cho người dùng này? Mật khẩu mới sẽ được gởi qua email.")) {
+      return;
+    }
+    setResetPasswordLoading(true);
+    try {
+      const res = await resetUserPassword(userId);
+      showNotif(
+        res.data?.notification,
+        res.data?.message || "Đã reset mật khẩu thành công.",
+        "success"
+      );
+    } catch (e) {
+      showNotif(
+        e?.response?.data?.notification,
+        e?.response?.data?.message || "Không thể reset mật khẩu.",
+        "error"
+      );
+    } finally {
+      setResetPasswordLoading(false);
+    }
+  };
+
+
+  // ── Add/Edit modal ──
   const openAdd = () => {
     setEditingId(null);
     resetForm();
     setAddModalOpen(true);
   };
 
-  // ── Edit modal ──
   const openEdit = async (userId) => {
-    setEditingId(userId);
-    resetForm();
-    setAddModalOpen(true);
     try {
       const res = await getUserById(userId);
       const u = res.data;
+      setEditingId(userId);
       setFFullName(u.fullName || "");
       setFEmail(u.email || "");
       setFPhone(u.phone || "");
       setFGender(u.gender || "");
       setFRoleId(u.roleId?.toString() || "");
+      setFormError("");
+      setFieldErrors({});
+      setAddModalOpen(true);
     } catch (e) {
-      setAddModalOpen(false);
       showToast(
         e?.response?.data?.message || "Không thể tải thông tin.",
-        "Error",
+        "error",
       );
     }
   };
@@ -466,7 +469,7 @@ export default function UserManagement() {
     setFieldErrors({});
   };
 
-  // ── Form submit ──
+  // ── Form validation & submit ──
   const validateForm = () => {
     const errs = {};
     if (!fFullName.trim()) errs.fullName = "Họ và tên không được để trống.";
@@ -489,25 +492,22 @@ export default function UserManagement() {
     setFormError("");
     try {
       if (editingId) {
-        // Update
-        const res = await updateUser(editingId, {
-          fullName: fFullName,
-          phone: fPhone || null,
-          gender: fGender || null,
-        });
-        // Change role if changed
         const cur = allUsers.find((u) => u.id === editingId);
-        if (fRoleId && cur && parseInt(fRoleId) !== cur.roleId) {
-          const rRes = await changeRole(editingId, parseInt(fRoleId));
-          showNotif(rRes.data?.notification);
-        }
+        const roleChanged = fRoleId && cur && parseInt(fRoleId) !== cur.roleId;
+
+        const promises = [
+          updateUser(editingId, { fullName: fFullName, phone: fPhone || null, gender: fGender || null }),
+          ...(roleChanged ? [changeRole(editingId, parseInt(fRoleId))] : []),
+        ];
+
+        const [res, rRes] = await Promise.all(promises);
+        if (roleChanged && rRes) showNotif(rRes.data?.notification);
         showNotif(
           res.data?.notification,
           res.data?.message || "Cập nhật thành công!",
-          "Success",
+          "success",
         );
       } else {
-        // Create
         const res = await createUser({
           fullName: fFullName,
           email: fEmail,
@@ -519,7 +519,7 @@ export default function UserManagement() {
         showNotif(
           res.data?.notification,
           res.data?.message || "Tạo tài khoản thành công!",
-          "Success",
+          "success",
         );
       }
       setAddModalOpen(false);
@@ -536,16 +536,17 @@ export default function UserManagement() {
   const onSearch = (val) => {
     setTopSearch(val);
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setFilters((f) => ({ ...f, search: val.trim() }));
-    }, 320);
+    debounceRef.current = setTimeout(
+      () => setFilters((f) => ({ ...f, search: val.trim() })),
+      320,
+    );
   };
 
   // ── Export CSV ──
   const exportCSV = () => {
     const users = filtered.length ? filtered : allUsers;
     if (!users.length) {
-      showToast("Không có dữ liệu để xuất.", "Warning");
+      showToast("Không có dữ liệu để xuất.", "warning");
       return;
     }
     const h = [
@@ -583,46 +584,30 @@ export default function UserManagement() {
     });
     a.click();
     URL.revokeObjectURL(url);
-    showToast(`Đã xuất ${users.length} bản ghi.`, "Success");
+    showToast(`Đã xuất ${users.length} bản ghi.`, "success");
   };
 
-  // ── Logout ──
-  const handleLogout = async () => {
-    try {
-      const res = await logout();
-      showNotif(
-        res?.data?.notification,
-        res?.data?.message || "Đã đăng xuất.",
-        "Info",
-      );
-    } catch {}
-    clearAuth();
-    setTimeout(() => navigate("/login"), 700);
-  };
 
-  // ── Pagination buttons ──
+
+  // ── Pagination ──
   const renderPagination = () => {
     if (totalPages <= 1) return null;
     const DELTA = 2;
-    const lo = Math.max(1, page - DELTA);
-    const hi = Math.min(totalPages, page + DELTA);
-    const nums = [];
-    for (let i = lo; i <= hi; i++) nums.push(i);
+    const lo = Math.max(1, page - DELTA),
+      hi = Math.min(totalPages, page + DELTA);
+    const nums = Array.from({ length: hi - lo + 1 }, (_, i) => lo + i);
 
-    const btn = (p, label, disabled, isActive = false) => (
+    const Btn = ({ p, label, disabled, active }) => (
       <button
         key={`pg-${p}-${label}`}
         onClick={() => !disabled && setPage(p)}
         disabled={disabled}
-        className={`pg-btn${isActive ? " active" : ""}${typeof label !== "number" ? " icon" : ""}`}
+        className={`pg-btn${active ? " active" : ""}${typeof label !== "number" ? " icon" : ""}`}
       >
         {typeof label === "number" ? (
           label
         ) : (
-          <span
-            className="material-symbols-outlined"
-            style={{ fontSize: "18px" }}
-          >
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
             {label}
           </span>
         )}
@@ -631,48 +616,42 @@ export default function UserManagement() {
 
     return (
       <div className="flex items-center gap-1">
-        {btn(page - 1, "chevron_left", page <= 1)}
+        <Btn p={page - 1} label="chevron_left" disabled={page <= 1} />
         {nums[0] > 1 && (
           <>
-            {btn(1, 1, false)}
+            <Btn p={1} label={1} />
             {nums[0] > 2 && (
               <span className="px-1 text-stone-300 text-sm">...</span>
             )}
           </>
         )}
-        {nums.map((n) => btn(n, n, false, n === page))}
+        {nums.map((n) => (
+          <Btn key={n} p={n} label={n} active={n === page} />
+        ))}
         {nums[nums.length - 1] < totalPages && (
           <>
             {nums[nums.length - 1] < totalPages - 1 && (
               <span className="px-1 text-stone-300 text-sm">...</span>
             )}
-            {btn(totalPages, totalPages, false)}
+            <Btn p={totalPages} label={totalPages} />
           </>
         )}
-        {btn(page + 1, "chevron_right", page >= totalPages)}
+        <Btn p={page + 1} label="chevron_right" disabled={page >= totalPages} />
       </div>
     );
   };
 
-  const hasPermission = (code) =>
-    permissions.some(
-      (p) =>
-        (typeof p === "string" && p === code) ||
-        (typeof p === "object" && p.permissionCode === code),
-    );
-
-  const ch = (currentUser?.fullName || "A")[0].toUpperCase();
-  const s = (page - 1) * pageSize + 1;
-  const e2 = Math.min(page * pageSize, filtered.length);
   const hasFilter = filters.search || filters.roleId || filters.status;
+  const start = (page - 1) * pageSize + 1,
+    end = Math.min(page * pageSize, filtered.length);
 
   return (
-    <div className="bg-surface text-on-surface antialiased font-body min-h-screen">
-      {/* ─ Styles ─ */}
+    <>
+      {/* ── Global Styles ── */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
-        body { font-family: 'Manrope', sans-serif; -webkit-font-smoothing: antialiased; }
+
         .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
 
         .toggle-switch { position:relative; display:inline-block; width:44px; height:24px; }
@@ -683,8 +662,8 @@ export default function UserManagement() {
         input:checked + .slider:before { transform:translateX(20px); }
         input:disabled + .slider { opacity:0.5; cursor:not-allowed; }
 
-        @keyframes spin { to{transform:rotate(360deg)} }
-        .spinner-sm { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.35); border-top-color:white; border-radius:50%; animation:spin .65s linear infinite; vertical-align:middle; margin-right:6px; }
+        @keyframes spin { to { transform:rotate(360deg) } }
+        .spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.35); border-top-color:white; border-radius:50%; animation:spin .65s linear infinite; vertical-align:middle; margin-right:6px; }
         .spinner-dark { border-color:rgba(79,100,91,.2); border-top-color:#4f645b; }
 
         @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
@@ -692,8 +671,6 @@ export default function UserManagement() {
 
         @keyframes toastIn  { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
         @keyframes toastOut { from{transform:translateX(0);opacity:1} to{transform:translateX(110%);opacity:0} }
-        .toast-in  { animation:toastIn  .35s cubic-bezier(.22,1,.36,1) forwards; }
-        .toast-out { animation:toastOut .28s cubic-bezier(.55,0,1,.45) forwards; }
         @keyframes toastProgress { from{width:100%} to{width:0} }
 
         @keyframes fadeRow { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
@@ -702,29 +679,21 @@ export default function UserManagement() {
 
         .modal-backdrop { backdrop-filter:blur(4px); }
 
-        .pg-btn {
-          width:2rem; height:2rem; border-radius:.5rem;
-          display:flex; align-items:center; justify-content:center;
-          font-size:.875rem; font-weight:500;
-          color:#6b7280; background:transparent; border:none; cursor:pointer;
-          transition:background .15s, color .15s;
-        }
+        .pg-btn { width:2rem; height:2rem; border-radius:.5rem; display:flex; align-items:center; justify-content:center; font-size:.875rem; font-weight:500; color:#6b7280; background:transparent; border:none; cursor:pointer; transition:background .15s,color .15s; }
         .pg-btn:hover:not(:disabled) { background:#f3f4f6; }
         .pg-btn.active { background:#4f645b; color:#e7fef3; font-weight:700; cursor:default; }
         .pg-btn:disabled { opacity:.35; cursor:not-allowed; }
         .pg-btn.icon { color:#9ca3af; }
       `}</style>
 
-      {/* ─ Toast Container ─ */}
+      {/* Toast Container */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-      {/* ═══════ MODAL: THÊM / SỬA ═══════ */}
+      {/* ══════ MODALS ══════ */}
       {addModalOpen && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-backdrop"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setAddModalOpen(false);
-          }}
+          className="fixed inset-0 bg-black/50 modal-backdrop flex items-center justify-center z-50"
+          onClick={(e) => e.target === e.currentTarget && setAddModalOpen(false)}
         >
           <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl">
             <div className="flex items-center justify-between mb-6">
@@ -739,11 +708,8 @@ export default function UserManagement() {
               </button>
             </div>
             <form noValidate onSubmit={handleSubmit}>
-              {/* Full Name */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">
-                  Họ và tên *
-                </label>
+                <label className="block text-sm font-medium mb-1">Họ và tên *</label>
                 <input
                   type="text"
                   placeholder="Nguyễn Văn A"
@@ -752,16 +718,11 @@ export default function UserManagement() {
                   className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-1 focus:ring-primary/40 outline-none transition"
                 />
                 {fieldErrors.fullName && (
-                  <p className="text-xs mt-1 text-error">
-                    {fieldErrors.fullName}
-                  </p>
+                  <p className="text-xs mt-1 text-red-600">{fieldErrors.fullName}</p>
                 )}
               </div>
-              {/* Email */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">
-                  Email *
-                </label>
+                <label className="block text-sm font-medium mb-1">Email *</label>
                 <input
                   type="email"
                   placeholder="email@hotel.com"
@@ -771,10 +732,9 @@ export default function UserManagement() {
                   className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-1 focus:ring-primary/40 outline-none transition disabled:opacity-60 disabled:cursor-not-allowed"
                 />
                 {fieldErrors.email && (
-                  <p className="text-xs mt-1 text-error">{fieldErrors.email}</p>
+                  <p className="text-xs mt-1 text-red-600">{fieldErrors.email}</p>
                 )}
               </div>
-              {/* Phone */}
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-1">SĐT</label>
                 <input
@@ -785,12 +745,9 @@ export default function UserManagement() {
                   className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-1 focus:ring-primary/40 outline-none transition"
                 />
               </div>
-              {/* Password — only for create */}
               {!editingId && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1">
-                    Mật khẩu *
-                  </label>
+                  <label className="block text-sm font-medium mb-1">Mật khẩu *</label>
                   <input
                     type="password"
                     placeholder="Tối thiểu 6 ký tự"
@@ -799,17 +756,12 @@ export default function UserManagement() {
                     className="w-full border rounded-xl px-4 py-2 text-sm focus:ring-1 focus:ring-primary/40 outline-none transition"
                   />
                   {fieldErrors.password && (
-                    <p className="text-xs mt-1 text-error">
-                      {fieldErrors.password}
-                    </p>
+                    <p className="text-xs mt-1 text-red-600">{fieldErrors.password}</p>
                   )}
                 </div>
               )}
-              {/* Role */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">
-                  Vai trò
-                </label>
+                <label className="block text-sm font-medium mb-1">Vai trò</label>
                 <select
                   value={fRoleId}
                   onChange={(e) => setFRoleId(e.target.value)}
@@ -817,17 +769,12 @@ export default function UserManagement() {
                 >
                   <option value="">-- Chọn vai trò --</option>
                   {roles.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name}
-                    </option>
+                    <option key={r.id} value={r.id}>{r.name}</option>
                   ))}
                 </select>
               </div>
-              {/* Gender */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">
-                  Giới tính
-                </label>
+                <label className="block text-sm font-medium mb-1">Giới tính</label>
                 <select
                   value={fGender}
                   onChange={(e) => setFGender(e.target.value)}
@@ -839,15 +786,9 @@ export default function UserManagement() {
                   <option value="Khác">Khác</option>
                 </select>
               </div>
-              {/* Form error */}
               {formError && (
                 <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
-                  <span
-                    className="material-symbols-outlined text-red-500 mt-0.5"
-                    style={{ fontSize: "16px" }}
-                  >
-                    error
-                  </span>
+                  <span className="material-symbols-outlined text-red-500 mt-0.5" style={{ fontSize: 16 }}>error</span>
                   <span>{formError}</span>
                 </div>
               )}
@@ -863,8 +804,9 @@ export default function UserManagement() {
                   type="submit"
                   disabled={formLoading}
                   className="px-5 py-2 bg-primary text-on-primary rounded-xl text-sm font-bold hover:opacity-90 transition-all disabled:opacity-60 flex items-center"
+                  style={{ backgroundColor: "#4f645b", color: "#e7fef3" }}
                 >
-                  {formLoading && <span className="spinner-sm" />}
+                  {formLoading && <span className="spinner" />}
                   {editingId ? "Lưu" : "Thêm"}
                 </button>
               </div>
@@ -873,21 +815,14 @@ export default function UserManagement() {
         </div>
       )}
 
-      {/* ═══════ MODAL: CHI TIẾT ═══════ */}
       {detailModalOpen && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-backdrop"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setDetailModalOpen(false);
-          }}
+          className="fixed inset-0 bg-black/50 modal-backdrop flex items-center justify-center z-50"
+          onClick={(e) => e.target === e.currentTarget && setDetailModalOpen(false)}
         >
           <div
             className="bg-white rounded-2xl w-full max-w-md shadow-2xl"
-            style={{
-              maxHeight: "90vh",
-              display: "flex",
-              flexDirection: "column",
-            }}
+            style={{ maxHeight: "90vh", display: "flex", flexDirection: "column" }}
           >
             <div className="flex items-center justify-between px-8 pt-7 pb-4 border-b border-stone-100 flex-shrink-0">
               <h3 className="text-xl font-bold">Chi tiết người dùng</h3>
@@ -901,52 +836,25 @@ export default function UserManagement() {
             <div className="px-8 py-5 overflow-y-auto flex-1">
               {detailLoading ? (
                 <div className="py-10 flex justify-center">
-                  <div
-                    className="spinner-sm spinner-dark"
-                    style={{
-                      width: "24px",
-                      height: "24px",
-                      borderWidth: "3px",
-                    }}
-                  />
+                  <div className="spinner-dark" style={{ width: 24, height: 24, border: "3px solid rgba(79,100,91,.2)", borderTopColor: "#4f645b", borderRadius: "50%", animation: "spin .65s linear infinite" }} />
                 </div>
               ) : detailUser ? (
                 <>
                   <div className="flex items-center gap-4 mb-5 pb-4 border-b border-stone-100">
-                    {detailUser.avatarUrl ? (
-                      <img
-                        src={detailUser.avatarUrl}
-                        className="w-14 h-14 rounded-full object-cover"
-                        alt=""
-                      />
-                    ) : (
-                      <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-2xl">
-                        {(detailUser.fullName || "?")[0].toUpperCase()}
-                      </div>
-                    )}
+                    <div
+                      className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-2xl"
+                      style={{ background: "rgba(79,100,91,.2)", color: "#4f645b" }}
+                    >
+                      {(detailUser.fullName || "?")[0].toUpperCase()}
+                    </div>
                     <div>
-                      <p className="text-lg font-bold">
-                        {detailUser.fullName || "—"}
-                      </p>
-                      <p className="text-sm text-stone-500">
-                        {detailUser.email || "—"}
-                      </p>
+                      <p className="text-lg font-bold">{detailUser.fullName || "—"}</p>
+                      <p className="text-sm text-stone-500">{detailUser.email || "—"}</p>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                            detailUser.status
-                              ? "bg-emerald-50 text-emerald-600"
-                              : "bg-stone-100 text-stone-500"
-                          }`}
-                        >
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${detailUser.status ? "bg-emerald-50 text-emerald-600" : "bg-stone-100 text-stone-500"}`}>
                           {detailUser.status ? "Hoạt động" : "Đã khóa"}
                         </span>
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                            ROLE_BADGE[detailUser.roleName] ||
-                            "bg-stone-100 text-stone-500"
-                          }`}
-                        >
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${ROLE_BADGE[detailUser.roleName] || "bg-stone-100 text-stone-500"}`}>
                           {detailUser.roleName || "—"}
                         </span>
                       </div>
@@ -960,50 +868,37 @@ export default function UserManagement() {
                       ["Giới tính", detailUser.gender || "—"],
                       ["Ngày sinh", detailUser.dateOfBirth || "—"],
                       ["CCCD / Hộ chiếu", detailUser.nationalId || "—"],
-                      ["Điểm tích lũy", detailUser.loyaltyPoints ?? "—"],
-                      ["Điểm khả dụng", detailUser.loyaltyPointsUsable ?? "—"],
+                      ["Điểm tích lũy", detailUser.loyaltyPoints ?? "-"],
+                      ["Điểm khả dụng", detailUser.loyaltyPointsUsable ?? "-"],
                       ["Địa chỉ", detailUser.address || "—"],
-                      [
-                        "Đăng nhập lần cuối",
-                        detailUser.lastLoginAt
-                          ? new Date(detailUser.lastLoginAt).toLocaleString(
-                              "vi-VN",
-                            )
-                          : "—",
-                      ],
-                      [
-                        "Ngày tạo",
-                        detailUser.createdAt
-                          ? new Date(detailUser.createdAt).toLocaleDateString(
-                              "vi-VN",
-                            )
-                          : "—",
-                      ],
+                      ["Ngày tạo", detailUser.createdAt ? new Date(detailUser.createdAt).toLocaleDateString("vi-VN") : "—"],
                     ].map(([k, v], i) => (
                       <div key={i} className="bg-stone-50 rounded-xl p-2.5">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">
-                          {k}
-                        </p>
-                        <p
-                          className="text-sm font-semibold text-stone-700 truncate"
-                          title={String(v)}
-                        >
-                          {String(v)}
-                        </p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">{k}</p>
+                        <p className="text-sm font-semibold text-stone-700 truncate" title={String(v)}>{String(v)}</p>
                       </div>
                     ))}
                   </div>
-                  <div className="flex justify-end mt-4 pt-4 border-t border-stone-100">
+                  <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-stone-100">
                     <button
-                      onClick={() => {
-                        setDetailModalOpen(false);
-                        openEdit(detailUser.id);
-                      }}
-                      className="px-4 py-2 text-sm font-bold bg-primary text-on-primary rounded-xl hover:opacity-90 transition-all flex items-center gap-1.5"
+                      onClick={() => handleResetPassword(detailUser.id)}
+                      disabled={resetPasswordLoading}
+                      className="px-4 py-2 text-sm font-bold rounded-xl hover:opacity-90 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                      style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fee2e2" }}
                     >
-                      <span className="material-symbols-outlined text-base">
-                        edit_square
-                      </span>
+                      {resetPasswordLoading ? (
+                        <span className="spinner-dark" style={{ borderColor: "rgba(220,38,38,0.2)", borderTopColor: "#dc2626", width: 16, height: 16 }} />
+                      ) : (
+                        <span className="material-symbols-outlined text-base">key</span>
+                      )}
+                      Quên mật khẩu
+                    </button>
+                    <button
+                      onClick={() => { setDetailModalOpen(false); openEdit(detailUser.id); }}
+                      className="px-4 py-2 text-sm font-bold rounded-xl hover:opacity-90 transition-all flex items-center gap-1.5"
+                      style={{ background: "#4f645b", color: "#e7fef3" }}
+                    >
+                      <span className="material-symbols-outlined text-base">edit_square</span>
                       Chỉnh sửa
                     </button>
                   </div>
@@ -1014,200 +909,91 @@ export default function UserManagement() {
         </div>
       )}
 
-      {/* ═══════ LAYOUT ═══════ */}
-      {/* SideNavBar */}
-      <aside className="h-screen w-56 fixed left-0 top-0 border-r border-stone-100 bg-white flex flex-col py-8 px-4 z-40">
-        <div className="mb-10 px-4">
-          <h1 className="text-xl font-bold tracking-widest text-emerald-900 uppercase">
-            The Ethereal
-          </h1>
-          <p className="text-[10px] tracking-[0.2em] text-stone-500 uppercase mt-1">
-            Hotel ERP
-          </p>
-        </div>
-        <nav className="flex-1 space-y-1">
-          <a
-            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-stone-500 hover:text-emerald-700 hover:bg-emerald-50 no-underline"
-            href="#"
-          >
-            <span className="material-symbols-outlined">dashboard</span>
-            <span className="text-sm font-medium">Dashboard</span>
-          </a>
-          <a
-            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-stone-500 hover:text-emerald-700 hover:bg-emerald-50 no-underline"
-            href="#"
-          >
-            <span className="material-symbols-outlined">meeting_room</span>
-            <span className="text-sm font-medium">Quản lý Phòng</span>
-          </a>
-          <a
-            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-stone-500 hover:text-emerald-700 hover:bg-emerald-50 no-underline"
-            href="#"
-          >
-            <span className="material-symbols-outlined">inventory_2</span>
-            <span className="text-sm font-medium">Vật tư &amp; Minibar</span>
-          </a>
-          <a
-            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-stone-500 hover:text-emerald-700 hover:bg-emerald-50 no-underline"
-            href="#"
-          >
-            <span className="material-symbols-outlined">
-              confirmation_number
-            </span>
-            <span className="text-sm font-medium">Booking &amp; Voucher</span>
-          </a>
-          <a
-            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-emerald-900 bg-emerald-50/50 font-bold no-underline"
-            href="#"
-          >
-            <span
-              className="material-symbols-outlined"
-              style={{
-                fontVariationSettings: "'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24",
-              }}
-            >
-              group
-            </span>
-            <span className="text-sm font-medium">Danh sách Nhân sự</span>
-          </a>
-        </nav>
-        <div className="mt-auto px-4 space-y-2">
-          <div className="px-2 py-2 rounded-xl bg-stone-50 flex items-center gap-2">
-            {currentUser?.avatarUrl ? (
-              <img
-                src={currentUser.avatarUrl}
-                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                alt=""
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                {ch}
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-stone-800 truncate">
-                {currentUser?.fullName || "—"}
-              </p>
-              <p className="text-[10px] text-stone-500 truncate">
-                {currentUser?.role || "—"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </aside>
 
-      {/* TopNavBar */}
-      <header className="fixed top-0 right-0 w-[calc(100%-14rem)] h-16 z-30 bg-white/80 backdrop-blur-md border-b border-stone-100 flex items-center justify-between px-8">
-        <div className="flex items-center gap-8">
-          <div className="relative w-80">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-[13px]">
-              search
-            </span>
-            <input
-              className="w-full bg-stone-100 border-none rounded-full py-2 pl-10 pr-4 text-xs focus:ring-1 focus:ring-primary/40 outline-none"
-              placeholder="Tìm kiếm tài nguyên..."
-              type="text"
-              value={topSearch}
-              onChange={(e) => onSearch(e.target.value)}
-            />
-          </div>
-          <nav className="flex gap-6">
-            <a
-              className="text-stone-500 font-medium text-sm hover:text-emerald-700 transition-all no-underline"
-              href="#"
-            >
-              Hotels
-            </a>
-            <a
-              className="text-emerald-800 border-b-2 border-emerald-800 pb-2 font-semibold text-sm no-underline"
-              href="#"
-            >
-              Analytics
-            </a>
-            <a
-              className="text-stone-500 font-medium text-sm hover:text-emerald-700 transition-all no-underline"
-              href="#"
-            >
-              Reports
-            </a>
-          </nav>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex gap-1">
-            <button className="p-2 text-stone-500 bg-transparent border-none hover:bg-stone-200/50 rounded-full transition-colors relative cursor-pointer outline-none">
-              <span className="material-symbols-outlined">notifications</span>
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-            </button>
-            <button className="p-2 text-stone-500 bg-transparent border-none hover:bg-stone-200/50 rounded-full transition-colors cursor-pointer outline-none">
-              <span className="material-symbols-outlined">help_outline</span>
-            </button>
-          </div>
-          <div className="h-8 w-px bg-stone-200 mx-2" />
-          <div className="flex items-center gap-3 cursor-pointer relative" onClick={() => setProfileMenuOpen(!profileMenuOpen)}>
-            <div className="text-right">
-              <p className="text-xs font-bold text-on-surface">
-                {currentUser?.fullName || "—"}
-              </p>
-              <p className="text-[10px] text-stone-500">
-                {currentUser?.role || "—"}
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
-              {ch}
-            </div>
-            {profileMenuOpen && (
-              <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-stone-100 rounded-xl shadow-xl py-2 z-50">
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleLogout(); }}
-                  className="w-full text-left px-4 py-2 text-sm text-stone-600 bg-transparent border-none hover:bg-stone-50 hover:text-error transition-colors flex items-center gap-2 cursor-pointer outline-none"
-                >
-                  <span className="material-symbols-outlined text-sm">logout</span>
-                  Đăng xuất
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="ml-56 pt-24 pb-12 min-h-screen bg-[#f8f9fa]">
-        <div className="w-[94%] lg:w-[92%] max-w-[1200px] mx-auto">
-          {/* Page Header */}
-          <div className="flex justify-between items-center mb-5">
+      {/* ── Main Content Area ── */}
+      <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+        {/* Page Header */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 32,
+            }}
+          >
             <div>
-              <h2 className="text-2xl font-bold text-on-surface tracking-tight">
+              <h2
+                style={{
+                  fontSize: 24,
+                  fontWeight: 700,
+                  color: "#1c1917",
+                  letterSpacing: "-0.025em",
+                  margin: 0,
+                }}
+              >
                 Quản lý Nhân sự &amp; Người dùng
               </h2>
-              <p className="text-sm text-stone-500 mt-1">
+              <p style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
                 Tổng:{" "}
-                <span className="font-semibold text-on-surface">
+                <span style={{ fontWeight: 600, color: "#1c1917" }}>
                   {allUsers.length}
                 </span>{" "}
                 người dùng
                 {hasFilter && filtered.length !== allUsers.length && (
-                  <span className="text-primary ml-1">
+                  <span style={{ color: "#4f645b", marginLeft: 4 }}>
                     (lọc:{" "}
-                    <span className="font-semibold">{filtered.length}</span>)
+                    <span style={{ fontWeight: 600 }}>{filtered.length}</span>)
                   </span>
                 )}
               </p>
             </div>
-            <div className="flex gap-3">
+            <div style={{ display: "flex", gap: 12 }}>
               <button
                 onClick={exportCSV}
-                className="px-5 py-1.5 rounded-lg text-sm font-medium bg-white text-on-surface border border-stone-200 hover:bg-stone-50 transition-colors flex items-center gap-2 shadow-sm"
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: 12,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  background: "white",
+                  color: "#1c1917",
+                  border: "1px solid #e2e8e1",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  boxShadow: "0 1px 3px rgba(0,0,0,.06)",
+                }}
               >
-                <span className="material-symbols-outlined text-sm">
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: 18 }}
+                >
                   file_download
                 </span>
                 Xuất báo cáo
               </button>
               <button
                 onClick={openAdd}
-                className="px-5 py-1.5 rounded-lg text-sm font-medium bg-primary text-on-primary hover:opacity-90 transition-all flex items-center gap-2 shadow-md cursor-pointer outline-none"
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: 12,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  background: "#4f645b",
+                  color: "#e7fef3",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+                }}
               >
-                <span className="material-symbols-outlined text-sm">
+                <span
+                  className="material-symbols-outlined"
+                  style={{ fontSize: 18 }}
+                >
                   person_add
                 </span>
                 Thêm người dùng
@@ -1215,29 +1001,94 @@ export default function UserManagement() {
             </div>
           </div>
 
-          {/* Filters */}
-          <section className="flex flex-wrap gap-4 items-end mb-6">
-            <div className="flex-1 min-w-[320px]">
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-base">
+          {/* Filters Section — khớp HTML */}
+          <section
+            style={{
+              background: "white",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              boxShadow: "0 1px 3px rgba(0,0,0,.06)",
+              border: "1px solid #f1f0ea",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 16,
+              alignItems: "flex-end",
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 300 }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  color: "#6b7280",
+                  marginBottom: 8,
+                }}
+              >
+                Họ tên, Email, SĐT
+              </label>
+              <div style={{ position: "relative" }}>
+                <span
+                  className="material-symbols-outlined"
+                  style={{
+                    position: "absolute",
+                    left: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#9ca3af",
+                    fontSize: 20,
+                  }}
+                >
                   search
                 </span>
                 <input
-                  className="w-full bg-stone-50 border border-stone-200 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:ring-1 focus:ring-primary/40 focus:bg-white outline-none"
-                  placeholder="Họ tên, Email, SĐT..."
-                  type="text"
                   value={topSearch}
                   onChange={(e) => onSearch(e.target.value)}
+                  style={{
+                    width: "100%",
+                    background: "#f9f8f3",
+                    border: "1px solid #e2e8e1",
+                    borderRadius: 12,
+                    padding: "10px 16px 10px 40px",
+                    fontSize: 14,
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                  placeholder="Gõ từ khóa..."
                 />
               </div>
             </div>
-            <div className="w-48">
+            <div style={{ width: 224 }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  color: "#6b7280",
+                  marginBottom: 8,
+                }}
+              >
+                Lọc theo Vai trò
+              </label>
               <select
-                className="w-full bg-stone-50 border border-stone-200 rounded-xl py-2.5 px-4 text-sm focus:ring-1 focus:ring-primary/40 outline-none"
                 value={filters.roleId}
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, roleId: e.target.value }))
                 }
+                style={{
+                  width: "100%",
+                  background: "#f9f8f3",
+                  border: "1px solid #e2e8e1",
+                  borderRadius: 12,
+                  padding: "10px 16px",
+                  fontSize: 14,
+                  outline: "none",
+                }}
               >
                 <option value="">Chọn vai trò</option>
                 {roles.map((r) => (
@@ -1247,13 +1098,34 @@ export default function UserManagement() {
                 ))}
               </select>
             </div>
-            <div className="w-48">
+            <div style={{ width: 224 }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  color: "#6b7280",
+                  marginBottom: 8,
+                }}
+              >
+                Lọc theo Trạng thái
+              </label>
               <select
-                className="w-full bg-stone-50 border border-stone-200 rounded-xl py-2.5 px-4 text-sm focus:ring-1 focus:ring-primary/40 outline-none"
                 value={filters.status}
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, status: e.target.value }))
                 }
+                style={{
+                  width: "100%",
+                  background: "#f9f8f3",
+                  border: "1px solid #e2e8e1",
+                  borderRadius: 12,
+                  padding: "10px 16px",
+                  fontSize: 14,
+                  outline: "none",
+                }}
               >
                 <option value="">Chọn trạng thái</option>
                 <option value="active">Hoạt động</option>
@@ -1266,40 +1138,71 @@ export default function UserManagement() {
                 setTopSearch("");
                 setFilters({ search: "", roleId: "", status: "" });
               }}
-              className="bg-stone-50 border border-stone-200 text-stone-600 p-2.5 rounded-xl hover:bg-stone-100 transition-colors"
+              style={{
+                background: "#f3f4f6",
+                border: "1px solid #e2e8e1",
+                color: "#4b5563",
+                padding: 10,
+                borderRadius: 12,
+                cursor: "pointer",
+              }}
               title="Xóa bộ lọc"
             >
               <span className="material-symbols-outlined">tune</span>
             </button>
           </section>
 
-          {/* Data Table */}
-          <div className="bg-white shadow-sm border border-stone-100 overflow-hidden rounded-2xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+          {/* Data Table — khớp HTML */}
+          <div
+            style={{
+              background: "white",
+              borderRadius: 16,
+              boxShadow: "0 1px 3px rgba(0,0,0,.06)",
+              border: "1px solid #f1f0ea",
+              overflow: "hidden",
+            }}
+          >
+            <div style={{ overflowX: "auto" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  textAlign: "left",
+                }}
+              >
                 <thead>
-                  <tr className="border-b border-stone-100">
-                    <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                      Họ và tên
-                    </th>
-                    <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                      Số điện thoại
-                    </th>
-                    <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                      Vai trò
-                    </th>
-                    <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                      Trạng thái
-                    </th>
-                    <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-stone-500 text-right">
-                      Thao tác
-                    </th>
+                  <tr
+                    style={{
+                      background: "rgba(249,248,243,.5)",
+                      borderBottom: "1px solid #f1f0ea",
+                    }}
+                  >
+                    {[
+                      "Họ và tên",
+                      "Email",
+                      "Số điện thoại",
+                      "Vai trò",
+                      "Trạng thái",
+                      "Thao tác",
+                    ].map((h, i) => (
+                      <th
+                        key={h}
+                        style={{
+                          padding: "16px 24px",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                          color: "#6b7280",
+                          textAlign: i === 5 ? "right" : "left",
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody style={{ borderTop: "1px solid #f1f0ea" }}>
                   {loading ? (
                     <SkeletonRows />
                   ) : paginatedUsers.length === 0 ? null : (
@@ -1311,53 +1214,116 @@ export default function UserManagement() {
                       return (
                         <tr
                           key={u.id}
-                          className="hover:bg-stone-50/50 transition-colors fade-row border-b border-stone-50"
+                          className="fade-row"
                           style={{
+                            borderBottom: "1px solid #fafaf8",
                             animationDelay: `${Math.min(i * 25, 200)}ms`,
                           }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.background = "#fafaf8")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.background = "")
+                          }
                         >
-                          <td className="px-6 py-3">
-                            <div className="flex items-center gap-3">
+                          <td style={{ padding: "16px 24px" }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 12,
+                              }}
+                            >
                               {u.avatarUrl ? (
                                 <img
-                                  alt="Avatar"
-                                  className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                                  alt=""
                                   src={u.avatarUrl}
+                                  style={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: "50%",
+                                    objectFit: "cover",
+                                  }}
                                 />
                               ) : (
-                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
+                                <div
+                                  style={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: "50%",
+                                    background: "rgba(79,100,91,.2)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#4f645b",
+                                    fontWeight: 700,
+                                    fontSize: 14,
+                                  }}
+                                >
                                   {initial}
                                 </div>
                               )}
                               <div>
-                                <span className="font-medium text-stone-800 text-sm">
+                                <span
+                                  style={{
+                                    fontWeight: 500,
+                                    color: "#292524",
+                                    fontSize: 14,
+                                  }}
+                                >
                                   {u.fullName || "—"}
                                 </span>
-                                <p className="text-xs text-stone-400">
+                                <p
+                                  style={{
+                                    fontSize: 12,
+                                    color: "#9ca3af",
+                                    margin: 0,
+                                  }}
+                                >
                                   #{u.id}
                                 </p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-3 text-sm text-stone-600">
+                          <td
+                            style={{
+                              padding: "16px 24px",
+                              fontSize: 14,
+                              color: "#4b5563",
+                            }}
+                          >
                             {u.email || "—"}
                           </td>
-                          <td className="px-6 py-3 text-sm text-stone-600">
+                          <td
+                            style={{
+                              padding: "16px 24px",
+                              fontSize: 14,
+                              color: "#4b5563",
+                            }}
+                          >
                             {u.phone || "—"}
                           </td>
-                          <td className="px-6 py-3">
+                          <td style={{ padding: "16px 24px" }}>
                             <span
-                              className={`px-2.5 py-0.5 ${roleClass} text-[10px] font-bold rounded-full uppercase`}
+                              className={`px-3 py-1 ${roleClass} text-[10px] font-bold rounded-full uppercase`}
                             >
                               {u.roleName || "—"}
                             </span>
                           </td>
-                          <td className="px-6 py-3">
-                            <div className="flex items-center gap-2">
+                          <td style={{ padding: "16px 24px" }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                              }}
+                            >
                               <span
-                                className={`text-xs font-medium ${
-                                  active ? "text-emerald-600" : "text-stone-400"
-                                }`}
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: 500,
+                                  color: active ? "#059669" : "#9ca3af",
+                                }}
                               >
                                 {active ? "Hoạt động" : "Đã khóa"}
                               </span>
@@ -1366,30 +1332,48 @@ export default function UserManagement() {
                                   type="checkbox"
                                   checked={active}
                                   disabled={togglingIds.has(u.id)}
-                                  onChange={() => handleToggle(u.id, active)}
+                                  onChange={() => handleToggle(u.id)}
                                 />
                                 <span className="slider" />
                               </label>
                             </div>
                           </td>
-                          <td className="px-6 py-3 text-right">
-                            <div className="flex justify-end gap-2">
+                          <td
+                            style={{ padding: "16px 24px", textAlign: "right" }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                gap: 4,
+                              }}
+                            >
                               <button
                                 onClick={() => openDetail(u.id)}
-                                className="p-1 text-stone-400 bg-transparent border-none hover:bg-stone-200/50 hover:text-stone-600 rounded-md transition-all cursor-pointer outline-none flex items-center justify-center"
+                                style={{
+                                  padding: 8,
+                                  color: "#9ca3af",
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  borderRadius: 8,
+                                  transition: "all .15s",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = "#f3f4f6";
+                                  e.currentTarget.style.color = "#4f645b";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = "";
+                                  e.currentTarget.style.color = "#9ca3af";
+                                }}
                                 title="Xem chi tiết"
                               >
-                                <span className="material-symbols-outlined text-lg">
+                                <span
+                                  className="material-symbols-outlined"
+                                  style={{ fontSize: 22 }}
+                                >
                                   visibility
-                                </span>
-                              </button>
-                              <button
-                                onClick={() => openEdit(u.id)}
-                                className="p-1 text-stone-400 bg-transparent border-none hover:bg-stone-200/50 hover:text-stone-600 rounded-md transition-all cursor-pointer outline-none flex items-center justify-center"
-                                title="Chỉnh sửa"
-                              >
-                                <span className="material-symbols-outlined text-lg">
-                                  edit_square
                                 </span>
                               </button>
                             </div>
@@ -1404,43 +1388,67 @@ export default function UserManagement() {
 
             {/* Empty state */}
             {!loading && paginatedUsers.length === 0 && (
-              <div className="py-16 text-center">
-                <span className="material-symbols-outlined text-5xl text-stone-300 mb-3 block">
+              <div style={{ padding: "64px 0", textAlign: "center" }}>
+                <span
+                  className="material-symbols-outlined"
+                  style={{
+                    fontSize: 48,
+                    color: "#d1d5db",
+                    display: "block",
+                    marginBottom: 12,
+                  }}
+                >
                   group_off
                 </span>
-                <p className="text-stone-400 font-medium">
+                <p style={{ color: "#9ca3af", fontWeight: 500 }}>
                   Không tìm thấy người dùng nào
                 </p>
               </div>
             )}
 
-            {/* Pagination */}
-            <div className="px-6 py-4 border-t border-stone-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-stone-500">Hiển thị</span>
+            {/* Pagination — khớp HTML */}
+            <div
+              style={{
+                padding: "16px 24px",
+                borderTop: "1px solid #f1f0ea",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 14, color: "#6b7280" }}>Hiển thị</span>
                 <select
                   value={pageSize}
                   onChange={(e) => {
                     setPageSize(parseInt(e.target.value));
                     setPage(1);
                   }}
-                  className="bg-stone-50 border border-stone-200 rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-primary/40 outline-none"
+                  style={{
+                    background: "#f9f8f3",
+                    border: "1px solid #e2e8e1",
+                    borderRadius: 8,
+                    padding: "4px 8px",
+                    fontSize: 12,
+                    outline: "none",
+                  }}
                 >
                   <option value="10">10/trang</option>
                   <option value="20">20/trang</option>
                   <option value="50">50/trang</option>
                 </select>
                 {filtered.length > 0 && (
-                  <span className="text-xs text-stone-400">
-                    {s}–{e2} / {filtered.length}
+                  <span style={{ fontSize: 12, color: "#9ca3af" }}>
+                    {start}–{end} / {filtered.length}
                   </span>
                 )}
               </div>
+
+              {/* Nút chuyển trang (1, 2, 3...) gọi từ hàm cũ */}
               {renderPagination()}
             </div>
           </div>
         </div>
-      </main>
-    </div>
-  );
-}
+      </>
+    );
+  }
