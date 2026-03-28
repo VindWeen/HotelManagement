@@ -235,24 +235,27 @@ function StatusDropdown({ options, current, onSelect, configMap }) {
 }
 
 // ─── Create Room Modal ─────────────────────────────────────────────────────────
-function CreateRoomModal({ roomTypes, allRooms, onClose, onCreated, showToast }) {
-    const [mode, setMode] = useState("single"); // single | bulk
+// ─── Create Room Wizard ─────────────────────────────────────────────────────────
+function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast }) {
+    const [step, setStep] = useState(1);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    // Step 1 states
     const [roomNumber, setRoomNumber] = useState("");
     const [floor, setFloor] = useState("");
     const [roomTypeId, setRoomTypeId] = useState("");
     const [viewType, setViewType] = useState("");
+    const [roomId, setRoomId] = useState(null);
+
+    // Step 3 states
     const [cloneFromRoomId, setCloneFromRoomId] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const [inventories, setInventories] = useState([]);
+    const [loadingInv, setLoadingInv] = useState(false);
 
-    // Bulk create
-    const [bulkText, setBulkText] = useState("");
-
-    // Get selected room type details
     const selectedType = roomTypes.find((rt) => rt.id === parseInt(roomTypeId));
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleCreateMainInfo = async () => {
         setError("");
         if (!roomNumber.trim()) return setError("Số phòng không được để trống.");
         if (!roomTypeId) return setError("Vui lòng chọn hạng phòng.");
@@ -263,20 +266,11 @@ function CreateRoomModal({ roomTypes, allRooms, onClose, onCreated, showToast })
                 roomNumber: roomNumber.trim(),
                 floor: floor ? parseInt(floor) : null,
                 roomTypeId: parseInt(roomTypeId),
-                viewType: viewType || null,
+                viewType: viewType || undefined,
             });
-
-            // Clone inventory if selected
-            if (cloneFromRoomId && res.data?.id) {
-                try {
-                    await cloneInventory(parseInt(cloneFromRoomId), [res.data.id]);
-                    showToast("Đã clone vật tư từ phòng mẫu.", "info");
-                } catch (_) { }
-            }
-
+            setRoomId(res.data.id);
             showToast(`Đã tạo phòng ${roomNumber} thành công!`, "success");
-            onCreated();
-            onClose();
+            setStep(2);
         } catch (err) {
             setError(err?.response?.data?.message || "Tạo phòng thất bại.");
         } finally {
@@ -284,276 +278,274 @@ function CreateRoomModal({ roomTypes, allRooms, onClose, onCreated, showToast })
         }
     };
 
-    const handleBulkSubmit = async (e) => {
-        e.preventDefault();
-        setError("");
-        if (!roomTypeId) return setError("Vui lòng chọn hạng phòng.");
-        const lines = bulkText.split("\n").map(l => l.trim()).filter(Boolean);
-        if (lines.length === 0) return setError("Nhập ít nhất 1 số phòng.");
-
-        const items = lines.map(line => {
-            const parts = line.split(/[\s,]+/);
-            return {
-                roomNumber: parts[0],
-                floor: parts[1] ? parseInt(parts[1]) : null,
-                roomTypeId: parseInt(roomTypeId),
-                viewType: viewType || null,
-            };
-        });
-
-        setLoading(true);
+    const fetchInventory = async (rId) => {
+        setLoadingInv(true);
         try {
-            const res = await bulkCreateRooms(items);
-            const { created = [], skipped = [], invalid = [] } = res.data || {};
-            showToast(`Tạo ${created.length} phòng. Bỏ qua: ${skipped.length}. Lỗi: ${invalid.length}.`, "success");
-            onCreated();
-            onClose();
+            const res = await getInventoryByRoom(rId);
+            const grouped = res.data?.data || [];
+            const items = grouped.flatMap(g => g.items || []);
+            setInventories(items);
         } catch (err) {
-            setError(err?.response?.data?.message || "Thêm nhiều phòng thất bại.");
+            console.error("Fetch inv error", err);
         } finally {
-            setLoading(false);
+            setLoadingInv(false);
         }
     };
 
+    const handleClone = async (fromRoomId) => {
+        setCloneFromRoomId(fromRoomId);
+        if (!fromRoomId) {
+            setInventories([]);
+            return;
+        }
+        setLoadingInv(true);
+        try {
+            await cloneInventory(parseInt(fromRoomId), [roomId]);
+            showToast("Đã clone vật tư thành công.", "success");
+            await fetchInventory(roomId);
+        } catch (err) {
+            showToast(err?.response?.data?.message || "Lỗi khi sao chép vật tư.", "error");
+            setCloneFromRoomId("");
+        } finally {
+            setLoadingInv(false);
+        }
+    };
+
+    const handleFinish = () => {
+        onCreated();
+        onClose();
+    };
+
+    // UI Styles
+    const activeColor = "#4f645b";
+
     return (
-        <div
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", backdropFilter: "blur(5px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 16 }}
-            onClick={e => e.target === e.currentTarget && onClose()}
-        >
-            <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 680, maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,.18)" }}>
-                {/* Header */}
-                <div style={{ padding: "24px 28px 16px", borderBottom: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-                    <div>
-                        <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: 0, fontFamily: "Manrope, sans-serif" }}>Thêm phòng mới</h3>
-                        <p style={{ fontSize: 12, color: "#6b7280", margin: "3px 0 0" }}>Điền thông tin để tạo phòng trong hệ thống</p>
-                    </div>
-                    <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 6, borderRadius: 8, color: "#9ca3af", display: "flex" }}>
-                        <span className="material-symbols-outlined">close</span>
-                    </button>
-                </div>
+        <div style={{ background: "#f9f8f3", display: "flex", flexDirection: "column", borderRadius: 20, border: "1px solid #e2e8e1", overflow: "hidden", minHeight: "calc(100vh - 120px)", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+            {/* Header */}
+            <div style={{ padding: "20px 40px", background: "white", borderBottom: "1px solid #e2e8e1", display: "flex", alignItems: "center" }}>
+                <button onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", color: "#4b5563", fontSize: 16, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_back</span>
+                    Quy trình thiết lập phòng trọn gói
+                </button>
+            </div>
 
-                {/* Mode Tabs */}
-                <div style={{ padding: "16px 28px 0", display: "flex", gap: 8, flexShrink: 0 }}>
-                    {["single", "bulk"].map(m => (
-                        <button
-                            key={m}
-                            onClick={() => { setMode(m); setError(""); }}
-                            style={{
-                                padding: "8px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Manrope, sans-serif",
-                                background: mode === m ? "#4f645b" : "#f1f0ea",
-                                color: mode === m ? "#e7fef3" : "#6b7280",
-                                transition: "all .15s",
-                            }}
-                        >
-                            {m === "single" ? "Tạo 1 phòng" : "Tạo nhiều phòng"}
-                        </button>
-                    ))}
-                </div>
+            {/* Stepper */}
+            <div style={{ padding: "40px 20px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+                <StepItem active={step >= 1} current={step === 1} icon="home" label="Thông tin chính" color={activeColor} />
+                <div style={{ height: 2, width: 100, background: step >= 2 ? activeColor : "#e5e7eb", margin: "0 16px" }} />
+                <StepItem active={step >= 2} current={step === 2} icon="local_cafe" label="Tiện ích" color={activeColor} />
+                <div style={{ height: 2, width: 100, background: step >= 3 ? activeColor : "#e5e7eb", margin: "0 16px" }} />
+                <StepItem active={step >= 3} current={step === 3} icon="key" label="Vật tư & Minibar" color={activeColor} />
+            </div>
 
-                {/* Body */}
-                <div style={{ padding: "20px 28px 0", overflowY: "auto", flex: 1 }}>
-                    {mode === "single" ? (
-                        <form id="create-room-form" onSubmit={handleSubmit} noValidate>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                                <div>
-                                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#6b7280", marginBottom: 6 }}>Số phòng *</label>
+            {/* Content Container */}
+            <div style={{ maxWidth: 1000, margin: "0 auto", width: "100%", padding: "0 20px 60px" }}>
+                {step === 1 && (
+                    <div style={{ display: "flex", gap: 60 }}>
+                        {/* Form area */}
+                        <div style={{ flex: 1 }}>
+                            <div style={{ display: "flex", gap: 20, marginBottom: 24 }}>
+                                <div style={{ flex: 3 }}>
+                                    <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>* Số phòng</label>
                                     <input
                                         value={roomNumber}
                                         onChange={e => setRoomNumber(e.target.value)}
-                                        placeholder="VD: 101, VILLA-1"
-                                        style={{ width: "100%", borderRadius: 12, border: "1.5px solid #e2e8e1", padding: "10px 14px", fontSize: 14, background: "#f9f8f3", outline: "none", boxSizing: "border-box" }}
-                                        onFocus={e => e.target.style.borderColor = "#4f645b"}
-                                        onBlur={e => e.target.style.borderColor = "#e2e8e1"}
+                                        style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 15, outline: "none", background: "white", boxSizing: "border-box", fontFamily: "Manrope, sans-serif" }}
                                     />
                                 </div>
-                                <div>
-                                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#6b7280", marginBottom: 6 }}>Tầng</label>
+                                <div style={{ flex: 2 }}>
+                                    <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>* Tầng</label>
                                     <input
+                                        type="number"
                                         value={floor}
                                         onChange={e => setFloor(e.target.value)}
-                                        type="number"
-                                        placeholder="VD: 1, 2, 3..."
-                                        style={{ width: "100%", borderRadius: 12, border: "1.5px solid #e2e8e1", padding: "10px 14px", fontSize: 14, background: "#f9f8f3", outline: "none", boxSizing: "border-box" }}
-                                        onFocus={e => e.target.style.borderColor = "#4f645b"}
-                                        onBlur={e => e.target.style.borderColor = "#e2e8e1"}
+                                        style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 15, outline: "none", background: "white", boxSizing: "border-box", fontFamily: "Manrope, sans-serif" }}
                                     />
                                 </div>
                             </div>
 
-                            <div style={{ marginBottom: 16 }}>
-                                <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#6b7280", marginBottom: 6 }}>Hạng phòng *</label>
-                                <select
-                                    value={roomTypeId}
-                                    onChange={e => setRoomTypeId(e.target.value)}
-                                    style={{ width: "100%", borderRadius: 12, border: "1.5px solid #e2e8e1", padding: "10px 14px", fontSize: 14, background: "#f9f8f3", outline: "none" }}
-                                    onFocus={e => e.target.style.borderColor = "#4f645b"}
-                                    onBlur={e => e.target.style.borderColor = "#e2e8e1"}
-                                >
-                                    <option value="">-- Chọn hạng phòng --</option>
-                                    {roomTypes.map(rt => (
-                                        <option key={rt.id} value={rt.id}>
-                                            {rt.name} — {new Intl.NumberFormat("vi-VN").format(rt.basePrice)}đ/đêm · {rt.capacityAdults} người lớn
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Room Type Preview Card */}
-                            {selectedType && (
-                                <div style={{ marginBottom: 16, borderRadius: 16, overflow: "hidden", border: "1.5px solid #e2e8e1" }}>
-                                    {selectedType.primaryImage && (
-                                        <div style={{ position: "relative", height: 160 }}>
-                                            <img
-                                                src={selectedType.primaryImage.imageUrl}
-                                                alt={selectedType.name}
-                                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                                onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
-                                            />
-                                            <div style={{ display: "none", width: "100%", height: "100%", background: "linear-gradient(135deg, #d1e8dd 0%, #c3dacf 100%)", alignItems: "center", justifyContent: "center" }}>
-                                                <span className="material-symbols-outlined" style={{ fontSize: 48, color: "#4f645b", opacity: 0.5 }}>bed</span>
-                                            </div>
-                                            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(to top, rgba(0,0,0,.6) 0%, transparent 100%)", padding: "20px 16px 10px" }}>
-                                                <p style={{ color: "white", fontSize: 15, fontWeight: 800, margin: 0, fontFamily: "Manrope, sans-serif" }}>{selectedType.name}</p>
-                                                <p style={{ color: "rgba(255,255,255,.75)", fontSize: 12, margin: "2px 0 0" }}>
-                                                    {selectedType.bedType} · {selectedType.areaSqm}m² · {selectedType.viewType}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {!selectedType.primaryImage && (
-                                        <div style={{ height: 100, background: "linear-gradient(135deg, #d1e8dd 0%, #c3dacf 100%)", display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
-                                            <span className="material-symbols-outlined" style={{ fontSize: 36, color: "#4f645b", opacity: 0.7 }}>bed</span>
-                                            <div>
-                                                <p style={{ color: "#2f433c", fontSize: 14, fontWeight: 800, margin: 0, fontFamily: "Manrope, sans-serif" }}>{selectedType.name}</p>
-                                                <p style={{ color: "#4f645b", fontSize: 12, margin: "2px 0 0" }}>{selectedType.bedType} · {selectedType.areaSqm}m²</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {selectedType.amenities && selectedType.amenities.length > 0 && (
-                                        <div style={{ padding: "12px 14px", background: "#fafaf8" }}>
-                                            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "#9ca3af", margin: "0 0 8px" }}>Tiện nghi</p>
-                                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                                                {selectedType.amenities.map(a => (
-                                                    <span key={a.id} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", background: "#e8f5f0", color: "#2f433c", borderRadius: 9999, fontSize: 11, fontWeight: 600 }}>
-                                                        <span className="material-symbols-outlined" style={{ fontSize: 13, fontVariationSettings: "'FILL' 1" }}>
-                                                            {a.iconUrl || "star"}
-                                                        </span>
-                                                        {a.name}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                                <div>
-                                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#6b7280", marginBottom: 6 }}>Hướng nhìn</label>
+                            <div style={{ display: "flex", gap: 20, marginBottom: 32 }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>* Hạng phòng</label>
                                     <select
-                                        value={viewType}
-                                        onChange={e => setViewType(e.target.value)}
-                                        style={{ width: "100%", borderRadius: 12, border: "1.5px solid #e2e8e1", padding: "10px 14px", fontSize: 14, background: "#f9f8f3", outline: "none" }}
-                                        onFocus={e => e.target.style.borderColor = "#4f645b"}
-                                        onBlur={e => e.target.style.borderColor = "#e2e8e1"}
+                                        value={roomTypeId}
+                                        onChange={e => setRoomTypeId(e.target.value)}
+                                        style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 15, outline: "none", background: "white", boxSizing: "border-box", cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
                                     >
-                                        <option value="">-- Chọn hướng nhìn --</option>
-                                        {VIEW_TYPES.map(v => <option key={v} value={v}>{v}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#6b7280", marginBottom: 6 }}>Clone vật tư từ phòng</label>
-                                    <select
-                                        value={cloneFromRoomId}
-                                        onChange={e => setCloneFromRoomId(e.target.value)}
-                                        style={{ width: "100%", borderRadius: 12, border: "1.5px solid #e2e8e1", padding: "10px 14px", fontSize: 14, background: "#f9f8f3", outline: "none" }}
-                                        onFocus={e => e.target.style.borderColor = "#4f645b"}
-                                        onBlur={e => e.target.style.borderColor = "#e2e8e1"}
-                                    >
-                                        <option value="">-- Không clone --</option>
-                                        {allRooms.map(r => (
-                                            <option key={r.id} value={r.id}>
-                                                {r.roomNumber} ({r.roomTypeName || "N/A"})
+                                        <option value="">Chọn hạng phòng</option>
+                                        {roomTypes.map(rt => (
+                                            <option key={rt.id} value={rt.id}>
+                                                {rt.name}
                                             </option>
                                         ))}
                                     </select>
-                                    {cloneFromRoomId && (
-                                        <p style={{ fontSize: 11, color: "#4f645b", margin: "4px 0 0", fontWeight: 600 }}>
-                                            <span className="material-symbols-outlined" style={{ fontSize: 13, verticalAlign: "middle" }}>info</span>
-                                            {" "}Vật tư & minibar sẽ được sao chép từ phòng đã chọn
-                                        </p>
-                                    )}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>View phòng (Tùy chọn)</label>
+                                    <select
+                                        value={viewType}
+                                        onChange={e => setViewType(e.target.value)}
+                                        style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 15, outline: "none", background: "white", boxSizing: "border-box", cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
+                                    >
+                                        <option value="">Không có view</option>
+                                        {VIEW_TYPES.map(vt => (
+                                            <option key={vt} value={vt}>{vt}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
-                        </form>
-                    ) : (
-                        <form id="create-room-form" onSubmit={handleBulkSubmit} noValidate>
-                            <div style={{ marginBottom: 16 }}>
-                                <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#6b7280", marginBottom: 6 }}>Hạng phòng *</label>
-                                <select
-                                    value={roomTypeId}
-                                    onChange={e => setRoomTypeId(e.target.value)}
-                                    style={{ width: "100%", borderRadius: 12, border: "1.5px solid #e2e8e1", padding: "10px 14px", fontSize: 14, background: "#f9f8f3", outline: "none" }}
-                                >
-                                    <option value="">-- Chọn hạng phòng --</option>
-                                    {roomTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
-                                </select>
-                            </div>
-                            <div style={{ marginBottom: 16 }}>
-                                <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#6b7280", marginBottom: 6 }}>Hướng nhìn</label>
-                                <select
-                                    value={viewType}
-                                    onChange={e => setViewType(e.target.value)}
-                                    style={{ width: "100%", borderRadius: 12, border: "1.5px solid #e2e8e1", padding: "10px 14px", fontSize: 14, background: "#f9f8f3", outline: "none" }}
-                                >
-                                    <option value="">-- Chọn hướng nhìn --</option>
-                                    {VIEW_TYPES.map(v => <option key={v} value={v}>{v}</option>)}
-                                </select>
-                            </div>
-                            <div style={{ marginBottom: 8 }}>
-                                <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#6b7280", marginBottom: 6 }}>
-                                    Danh sách phòng (mỗi dòng 1 phòng) *
-                                </label>
-                                <textarea
-                                    value={bulkText}
-                                    onChange={e => setBulkText(e.target.value)}
-                                    rows={8}
-                                    placeholder={"101 1\n102 1\n201 2\n202 2\n(Định dạng: số_phòng tầng)"}
-                                    style={{ width: "100%", borderRadius: 12, border: "1.5px solid #e2e8e1", padding: "10px 14px", fontSize: 13, background: "#f9f8f3", outline: "none", resize: "vertical", fontFamily: "monospace", boxSizing: "border-box" }}
-                                    onFocus={e => e.target.style.borderColor = "#4f645b"}
-                                    onBlur={e => e.target.style.borderColor = "#e2e8e1"}
-                                />
-                                <p style={{ fontSize: 11, color: "#9ca3af", margin: "4px 0 0" }}>
-                                    Định dạng: <code style={{ background: "#f1f0ea", padding: "1px 5px", borderRadius: 4 }}>số_phòng tầng</code> — Tầng có thể bỏ qua. VD: <code style={{ background: "#f1f0ea", padding: "1px 5px", borderRadius: 4 }}>101 1</code>
-                                </p>
-                            </div>
-                        </form>
-                    )}
 
-                    {error && (
-                        <div style={{ padding: "10px 14px", background: "rgba(168,56,54,.08)", border: "1px solid rgba(168,56,54,.2)", borderRadius: 12, display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: 16, color: "#a83836", fontVariationSettings: "'FILL' 1" }}>error</span>
-                            <span style={{ fontSize: 13, color: "#a83836", fontWeight: 500 }}>{error}</span>
+                            <button
+                                onClick={handleCreateMainInfo}
+                                disabled={loading}
+                                style={{ background: "linear-gradient(135deg, #4f645b 0%, #43574f 100%)", color: "white", padding: "12px 24px", borderRadius: 8, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(79,100,91,.2)", fontFamily: "Manrope, sans-serif", opacity: loading ? 0.7 : 1 }}
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_forward</span>
+                                {loading ? "Đang xử lý..." : "Tạo phòng & Tiếp tục"}
+                            </button>
+                            {error && <p style={{ color: "#ef4444", marginTop: 12, fontSize: 13, fontWeight: 600 }}>{error}</p>}
                         </div>
-                    )}
-                </div>
 
-                {/* Footer */}
-                <div style={{ padding: "16px 28px 24px", display: "flex", justifyContent: "flex-end", gap: 10, flexShrink: 0, borderTop: "1px solid #f1f0ea", marginTop: 8 }}>
-                    <button onClick={onClose} style={{ padding: "10px 22px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "none", border: "1.5px solid #e2e8e1", color: "#6b7280", cursor: "pointer" }}>
-                        Hủy
-                    </button>
-                    <button
-                        type="submit"
-                        form="create-room-form"
-                        disabled={loading}
-                        style={{ padding: "10px 22px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "linear-gradient(135deg, #4f645b 0%, #43574f 100%)", color: "#e7fef3", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, opacity: loading ? 0.6 : 1 }}
-                    >
-                        {loading && <div style={{ width: 14, height: 14, border: "2px solid rgba(231,254,243,.4)", borderTopColor: "#e7fef3", borderRadius: "50%", animation: "spin .65s linear infinite" }} />}
-                        {mode === "bulk" ? "Tạo nhiều phòng" : "Tạo phòng"}
-                    </button>
-                </div>
+                        {/* Image preview area */}
+                        <div style={{ flex: 1 }}>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: "#4b5563", marginBottom: 8 }}>Hình ảnh hạng phòng</p>
+                            <div style={{ background: "#e2e8e0", borderRadius: 16, height: 260, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#6b7280", overflow: "hidden", position: "relative" }}>
+                                {selectedType && selectedType.primaryImage ? (
+                                    <img src={selectedType.primaryImage.imageUrl} alt={selectedType.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined" style={{ fontSize: 64, opacity: 0.5, marginBottom: 16 }}>image</span>
+                                        <span style={{ fontSize: 14, fontWeight: 600 }}>Chọn hạng phòng để xem ảnh</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {step === 2 && (
+                    <div style={{ maxWidth: 800, margin: "0 auto" }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: "#4b5563", marginBottom: 12 }}>Các tiện ích cố định theo hạng phòng {selectedType?.name}:</p>
+                        <div style={{ background: "#e8edea", borderRadius: 16, minHeight: 180, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+                            {selectedType?.amenities && selectedType.amenities.length > 0 ? (
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 12, width: "100%", justifyContent: "center" }}>
+                                    {selectedType.amenities.map(a => (
+                                        <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", padding: "10px 16px", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                                            <span className="material-symbols-outlined" style={{ fontSize: 20, color: activeColor }}>{a.iconUrl || "star"}</span>
+                                            <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>{a.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 56, color: "#9ca3af", marginBottom: 12 }}>inbox</span>
+                                    <p style={{ fontSize: 14, color: "#6b7280", fontWeight: 600 }}>Hạng phòng này chưa cấu hình tiện ích</p>
+                                </>
+                            )}
+                        </div>
+                        <div style={{ marginTop: 32 }}>
+                            <button
+                                onClick={() => setStep(3)}
+                                style={{ background: "linear-gradient(135deg, #4f645b 0%, #43574f 100%)", color: "white", padding: "12px 24px", borderRadius: 8, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(79,100,91,.2)", fontFamily: "Manrope, sans-serif" }}
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_forward</span>
+                                Tiếp theo: Thiết lập vật tư
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 3 && (
+                    <div style={{ maxWidth: 900, margin: "0 auto" }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 24, marginBottom: 32 }}>
+                            <div style={{ background: "white", padding: 20, borderRadius: 12, border: "1px solid #e2e8e1", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
+                                <label style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#4b5563", marginBottom: 16 }}>Thiết lập nhanh vật tư</label>
+                                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                                    <span style={{ fontSize: 14, color: "#6b7280", fontWeight: 500 }}>Sao chép định mức từ phòng mẫu:</span>
+                                    <select
+                                        value={cloneFromRoomId}
+                                        onChange={e => handleClone(e.target.value)}
+                                        style={{ width: 280, padding: "10px 16px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, outline: "none", background: "#f9f8f3", cursor: "pointer", fontFamily: "Manrope, sans-serif", fontWeight: 600 }}
+                                    >
+                                        <option value="">Chọn một phòng có sẵn</option>
+                                        {allRooms.map(r => (
+                                            <option key={r.id} value={r.id}>
+                                                {r.roomNumber} - {r.roomTypeName || "N/A"}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <span style={{ fontSize: 13, color: "#9ca3af", fontStyle: "italic" }}>(Tự động thêm Tivi, Tủ lạnh, đồ Minibar...)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: 32 }}>
+                            <p style={{ fontSize: 15, fontWeight: 800, color: "#4b5563", marginBottom: 16 }}>Danh sách vật tư hiện tại của phòng</p>
+                            <div style={{ background: "white", borderRadius: 12, border: "1px solid #e2e8e1", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
+                                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                    <thead>
+                                        <tr style={{ background: "#f9f8f3", borderBottom: "1px solid #e2e8e1" }}>
+                                            <th style={{ padding: "16px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Mã VT</th>
+                                            <th style={{ padding: "16px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tên vật tư</th>
+                                            <th style={{ padding: "16px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>ĐVT / Loại</th>
+                                            <th style={{ padding: "16px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>SL</th>
+                                            <th style={{ padding: "16px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Giá đền bù</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {loadingInv ? (
+                                            <tr>
+                                                <td colSpan={5} style={{ padding: "40px 0", textAlign: "center", color: "#6b7280" }}>Đang tải danh sách vật tư...</td>
+                                            </tr>
+                                        ) : inventories.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} style={{ padding: "60px 0", textAlign: "center", color: "#9ca3af" }}>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 40, opacity: 0.5, marginBottom: 8, display: "block" }}>inventory_2</span>
+                                                    Chưa có vật tư. Hãy chọn phòng mẫu để sao chép nhanh.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            inventories.map((inv, idx) => {
+                                                const code = inv.id ? `VT-${String(inv.id).padStart(4, "0")}` : (inv.itemCode || "N/A");
+                                                return (
+                                                    <tr key={idx} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                                                        <td style={{ padding: "16px 20px", fontSize: 14, color: "#4f645b", fontWeight: 700 }}>{code}</td>
+                                                        <td style={{ padding: "16px 20px", fontSize: 15, color: "#374151", fontWeight: 600 }}>{inv.itemName || "N/A"}</td>
+                                                        <td style={{ padding: "16px 20px", fontSize: 14, color: "#6b7280" }}>{inv.itemType === "Asset" ? "Tài sản" : (inv.itemType || "N/A")}</td>
+                                                        <td style={{ padding: "16px 20px", fontSize: 15, color: "#1c1917", fontWeight: 800 }}>{inv.quantity || 0}</td>
+                                                        <td style={{ padding: "16px 20px", fontSize: 14, color: "#6b7280", fontWeight: 600 }}>
+                                                            {inv.priceIfLost != null ? new Intl.NumberFormat("vi-VN").format(inv.priceIfLost) + " đ" : "—"}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div style={{ paddingBottom: 40 }}>
+                            <button
+                                onClick={handleFinish}
+                                style={{ background: "linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)", color: "white", padding: "14px 28px", borderRadius: 8, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 10, boxShadow: "0 4px 12px rgba(29,78,216,.25)", fontFamily: "Manrope, sans-serif" }}
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>check_circle</span>
+                                Hoàn tất và Quay về danh sách
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
+        </div>
+    );
+}
+
+function StepItem({ active, current, icon, label, color }) {
+    return (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, color: current ? color : active ? color : "#9ca3af", opacity: current ? 1 : active ? 0.8 : 0.6, fontWeight: current ? 800 : 700 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 24 }}>{icon}</span>
+            <span style={{ fontSize: 16 }}>{label}</span>
         </div>
     );
 }
@@ -649,278 +641,278 @@ export default function RoomManagementPage() {
                 {toasts.map(t => <Toast key={t.id} {...t} onDismiss={dismissToast} />)}
             </div>
 
-            {/* Create Modal */}
-            {createModalOpen && (
-                <CreateRoomModal
-                    roomTypes={roomTypes}
-                    allRooms={rooms}
-                    onClose={() => setCreateModalOpen(false)}
-                    onCreated={loadRooms}
-                    showToast={showToast}
-                />
-            )}
-
-            {/* Detail Modal Removed as we navigate to RoomDetailPage now */}
-
-            <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-                {/* Page Header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
-                    <div>
-                        <h2 style={{ fontSize: 26, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.025em", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>
-                            Quản lý Phòng
-                        </h2>
-                        <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-                            Tổng <span style={{ fontWeight: 700, color: "#1c1917" }}>{stats.total}</span> phòng
-                            {hasFilters && <span style={{ color: "#4f645b", fontWeight: 600, marginLeft: 4 }}>(đang lọc)</span>}
-                        </p>
-                    </div>
-                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                        {/* View toggle */}
-                        <div style={{ display: "flex", gap: 2, background: "#f1f0ea", padding: 4, borderRadius: 12 }}>
-                            {["table", "grid"].map(m => (
-                                <button
-                                    key={m}
-                                    onClick={() => setViewMode(m)}
-                                    style={{ padding: "7px 14px", borderRadius: 9, background: viewMode === m ? "white" : "transparent", border: "none", cursor: "pointer", color: viewMode === m ? "#1c1917" : "#9ca3af", display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, boxShadow: viewMode === m ? "0 1px 4px rgba(0,0,0,.1)" : "none", transition: "all .15s", fontFamily: "Manrope, sans-serif" }}
-                                >
-                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{m === "table" ? "table_rows" : "grid_view"}</span>
-                                    {m === "table" ? "Bảng" : "Lưới"}
-                                </button>
-                            ))}
-                        </div>
-                        <button
-                            onClick={() => setCreateModalOpen(true)}
-                            style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "#4f645b", color: "#e7fef3", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 4px 12px rgba(79,100,91,.2)", fontFamily: "Manrope, sans-serif" }}
-                        >
-                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_circle</span>
-                            Thêm phòng
-                        </button>
-                    </div>
+            {/* Create Wizard or List View */}
+            {createModalOpen ? (
+                <div style={{ maxWidth: 1400, margin: "0 auto", animation: "fadeRow .3s ease" }}>
+                    <CreateRoomWizard
+                        roomTypes={roomTypes}
+                        allRooms={rooms}
+                        onClose={() => setCreateModalOpen(false)}
+                        onCreated={loadRooms}
+                        showToast={showToast}
+                    />
                 </div>
-
-                {/* Summary Cards */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 24 }}>
-                    {[
-                        { label: "TỔNG PHÒNG", value: stats.total, bg: "#f8f9fa", color: "#6b7280", border: "#f1f0ea" },
-                        { label: "SẴN SÀNG", value: stats.available, bg: "#ecfdf5", color: "#059669", border: "#a7f3d0" },
-                        { label: "ĐANG DÙNG", value: stats.occupied, bg: "#fffbeb", color: "#d97706", border: "#fde68a" },
-                        { label: "BẢO TRÌ", value: stats.disabled, bg: "#f5f3ff", color: "#7c3aed", border: "#ddd6fe" },
-                        { label: "CẦN DỌN", value: stats.dirty, bg: "#fff7ed", color: "#ea580c", border: "#fed7aa" },
-                    ].map(s => (
-                        <div key={s.label} style={{ background: s.bg, border: `1.5px solid ${s.border}`, borderRadius: 16, padding: "16px 18px", textAlign: "center" }}>
-                            <p style={{ fontSize: 24, fontWeight: 800, color: s.color, margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>{s.value}</p>
-                            <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em", color: s.color, margin: 0, opacity: 0.7 }}>{s.label}</p>
+            ) : (
+                <div style={{ maxWidth: 1400, margin: "0 auto", animation: "fadeRow .3s ease" }}>
+                    {/* Page Header */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+                        <div>
+                            <h2 style={{ fontSize: 26, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.025em", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>
+                                Quản lý Phòng
+                            </h2>
+                            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+                                Tổng <span style={{ fontWeight: 700, color: "#1c1917" }}>{stats.total}</span> phòng
+                                {hasFilters && <span style={{ color: "#4f645b", fontWeight: 600, marginLeft: 4 }}>(đang lọc)</span>}
+                            </p>
                         </div>
-                    ))}
-                </div>
-
-                {/* Filter Bar */}
-                <div style={{ background: "white", borderRadius: 18, padding: "18px 22px", marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,.06)", border: "1px solid #f1f0ea", display: "flex", gap: 14, alignItems: "flex-end", flexWrap: "wrap" }}>
-                    {[
-                        {
-                            label: "Trạng thái KD",
-                            key: "businessStatus",
-                            options: [{ value: "", label: "Tất cả" }, { value: "Available", label: "Sẵn sàng" }, { value: "Occupied", label: "Đang dùng" }, { value: "Disabled", label: "Bảo trì" }],
-                        },
-                        {
-                            label: "Tình trạng vệ sinh",
-                            key: "cleaningStatus",
-                            options: [{ value: "", label: "Tất cả" }, { value: "Clean", label: "Sạch sẽ" }, { value: "Dirty", label: "Cần dọn" }],
-                        },
-                        {
-                            label: "Hạng phòng",
-                            key: "roomTypeId",
-                            options: [{ value: "", label: "Tất cả" }, ...roomTypes.map(rt => ({ value: rt.id.toString(), label: rt.name }))],
-                        },
-                        {
-                            label: "Tầng",
-                            key: "floor",
-                            options: [{ value: "", label: "Tất cả" }, ...floors.map(f => ({ value: f.toString(), label: `Tầng ${f}` }))],
-                        },
-                    ].map(f => (
-                        <div key={f.key} style={{ flex: 1, minWidth: 160 }}>
-                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em", color: "#9ca3af", marginBottom: 6 }}>{f.label}</label>
-                            <select
-                                value={filters[f.key]}
-                                onChange={e => setFilters(prev => ({ ...prev, [f.key]: e.target.value }))}
-                                style={{ width: "100%", background: "#f9f8f3", border: "1.5px solid #e2e8e1", borderRadius: 12, padding: "9px 12px", fontSize: 13, fontWeight: 500, outline: "none", fontFamily: "Manrope, sans-serif" }}
-                                onFocus={e => e.target.style.borderColor = "#4f645b"}
-                                onBlur={e => e.target.style.borderColor = "#e2e8e1"}
-                            >
-                                {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                            </select>
-                        </div>
-                    ))}
-                    {hasFilters && (
-                        <button
-                            onClick={clearFilters}
-                            style={{ padding: "9px 14px", borderRadius: 12, background: "#fee2e2", border: "1.5px solid #fecaca", color: "#dc2626", cursor: "pointer", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 5, flexShrink: 0, fontFamily: "Manrope, sans-serif" }}
-                        >
-                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>filter_alt_off</span>
-                            Xóa lọc
-                        </button>
-                    )}
-                </div>
-
-                {/* Table View */}
-                {viewMode === "table" && (
-                    <div style={{ background: "white", borderRadius: 18, boxShadow: "0 1px 4px rgba(0,0,0,.06)", border: "1px solid #f1f0ea", overflow: "hidden" }}>
-                        <div style={{ overflowX: "auto" }}>
-                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                                <thead>
-                                    <tr style={{ background: "rgba(249,248,243,.6)", borderBottom: "1px solid #f1f0ea" }}>
-                                        {["Số phòng", "Tầng", "Hạng phòng", "Trạng thái KD", "Vệ sinh", "Thao tác"].map((h, i) => (
-                                            <th key={h} style={{ padding: "15px 24px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#9ca3af", textAlign: i === 5 ? "right" : "left" }}>{h}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {loading ? (
-                                        <SkeletonRows />
-                                    ) : paginatedRooms.length === 0 ? null : (
-                                        paginatedRooms.map((room, i) => {
-                                            const bsCfg = BUSINESS_STATUS_CONFIG[room.businessStatus] || BUSINESS_STATUS_CONFIG.Available;
-                                            const clCfg = CLEANING_STATUS_CONFIG[room.cleaningStatus] || CLEANING_STATUS_CONFIG.Clean;
-                                            return (
-                                                <tr key={room.id} className="fade-row" style={{ borderBottom: "1px solid #fafaf8", animationDelay: `${i * 20}ms` }}>
-                                                    <td style={{ padding: "16px 24px" }}>
-                                                        <span style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", fontFamily: "Manrope, sans-serif" }}>{room.roomNumber}</span>
-                                                        <span style={{ marginLeft: 8, fontSize: 11, color: "#9ca3af" }}>#{room.id}</span>
-                                                    </td>
-                                                    <td style={{ padding: "16px 24px", fontSize: 14, color: "#4b5563", fontWeight: 500 }}>{room.floor || "—"}</td>
-                                                    <td style={{ padding: "16px 24px", fontSize: 13, color: "#374151", fontWeight: 500 }}>{room.roomTypeName || "—"}</td>
-                                                    <td style={{ padding: "16px 24px" }}>
-                                                        <StatusDropdown
-                                                            options={["Available", "Occupied", "Disabled"]}
-                                                            current={room.businessStatus}
-                                                            onSelect={async (val) => {
-                                                                try {
-                                                                    await updateBusinessStatus(room.id, val);
-                                                                    showToast(`Phòng ${room.roomNumber}: ${BUSINESS_STATUS_CONFIG[val]?.label}`, "success");
-                                                                    loadRooms();
-                                                                } catch (err) {
-                                                                    showToast(err?.response?.data?.message || "Lỗi cập nhật trạng thái.", "error");
-                                                                }
-                                                            }}
-                                                            configMap={BUSINESS_STATUS_CONFIG}
-                                                        />
-                                                    </td>
-                                                    <td style={{ padding: "16px 24px" }}>
-                                                        <StatusDropdown
-                                                            options={["Clean", "Dirty"]}
-                                                            current={room.cleaningStatus}
-                                                            onSelect={async (val) => {
-                                                                try {
-                                                                    await updateCleaningStatus(room.id, val);
-                                                                    showToast(`Phòng ${room.roomNumber}: ${CLEANING_STATUS_CONFIG[val]?.label}`, "success");
-                                                                    loadRooms();
-                                                                } catch (err) {
-                                                                    showToast(err?.response?.data?.message || "Lỗi cập nhật vệ sinh.", "error");
-                                                                }
-                                                            }}
-                                                            configMap={CLEANING_STATUS_CONFIG}
-                                                        />
-                                                    </td>
-                                                    <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                                                        <button
-                                                            onClick={() => navigate(`/admin/rooms/${room.id}`)}
-                                                            style={{ padding: "7px 14px", borderRadius: 10, background: "#f0faf5", border: "1.5px solid #a7f3d0", color: "#059669", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", fontFamily: "Manrope, sans-serif" }}
-                                                            onMouseEnter={e => { e.currentTarget.style.background = "#4f645b"; e.currentTarget.style.color = "#e7fef3"; e.currentTarget.style.borderColor = "#4f645b"; }}
-                                                            onMouseLeave={e => { e.currentTarget.style.background = "#f0faf5"; e.currentTarget.style.color = "#059669"; e.currentTarget.style.borderColor = "#a7f3d0"; }}
-                                                        >
-                                                            <span className="material-symbols-outlined" style={{ fontSize: 15 }}>visibility</span>
-                                                            Chi tiết
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Empty State */}
-                        {!loading && paginatedRooms.length === 0 && (
-                            <div style={{ padding: "64px 0", textAlign: "center" }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 52, color: "#d1d5db", display: "block", marginBottom: 12 }}>meeting_room</span>
-                                <p style={{ color: "#9ca3af", fontWeight: 600, fontSize: 14 }}>Không tìm thấy phòng nào</p>
-                                {hasFilters && (
-                                    <button onClick={clearFilters} style={{ marginTop: 12, padding: "7px 18px", borderRadius: 10, background: "#4f645b", color: "#e7fef3", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-                                        Xóa bộ lọc
+                        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                            {/* View toggle */}
+                            <div style={{ display: "flex", gap: 2, background: "#f1f0ea", padding: 4, borderRadius: 12 }}>
+                                {["table", "grid"].map(m => (
+                                    <button
+                                        key={m}
+                                        onClick={() => setViewMode(m)}
+                                        style={{ padding: "7px 14px", borderRadius: 9, background: viewMode === m ? "white" : "transparent", border: "none", cursor: "pointer", color: viewMode === m ? "#1c1917" : "#9ca3af", display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, boxShadow: viewMode === m ? "0 1px 4px rgba(0,0,0,.1)" : "none", transition: "all .15s", fontFamily: "Manrope, sans-serif" }}
+                                    >
+                                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{m === "table" ? "table_rows" : "grid_view"}</span>
+                                        {m === "table" ? "Bảng" : "Lưới"}
                                     </button>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Pagination */}
-                        {!loading && rooms.length > 0 && (
-                            <div style={{ padding: "14px 24px", borderTop: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 500 }}>
-                                    {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, rooms.length)} / {rooms.length} phòng
-                                </span>
-                                <div style={{ display: "flex", gap: 4 }}>
-                                    <button className="pg-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
-                                    </button>
-                                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                                        const n = totalPages <= 5 ? i + 1 : Math.max(1, page - 2) + i;
-                                        if (n > totalPages) return null;
-                                        return (
-                                            <button key={n} className={`pg-btn${n === page ? " active" : ""}`} onClick={() => setPage(n)}>{n}</button>
-                                        );
-                                    })}
-                                    <button className="pg-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Grid View */}
-                {viewMode === "grid" && (
-                    <>
-                        {loading ? (
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14 }}>
-                                {Array.from({ length: 12 }).map((_, i) => (
-                                    <div key={i} className="skeleton" style={{ height: 130, borderRadius: 16 }} />
                                 ))}
                             </div>
-                        ) : paginatedRooms.length === 0 ? (
-                            <div style={{ textAlign: "center", padding: "64px 0" }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 52, color: "#d1d5db", display: "block", marginBottom: 12 }}>meeting_room</span>
-                                <p style={{ color: "#9ca3af", fontWeight: 600 }}>Không tìm thấy phòng nào</p>
+                            <button
+                                onClick={() => setCreateModalOpen(true)}
+                                style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "#4f645b", color: "#e7fef3", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 4px 12px rgba(79,100,91,.2)", fontFamily: "Manrope, sans-serif" }}
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_circle</span>
+                                Thêm phòng
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Summary Cards */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 24 }}>
+                        {[
+                            { label: "TỔNG PHÒNG", value: stats.total, bg: "#f8f9fa", color: "#6b7280", border: "#f1f0ea" },
+                            { label: "SẴN SÀNG", value: stats.available, bg: "#ecfdf5", color: "#059669", border: "#a7f3d0" },
+                            { label: "ĐANG DÙNG", value: stats.occupied, bg: "#fffbeb", color: "#d97706", border: "#fde68a" },
+                            { label: "BẢO TRÌ", value: stats.disabled, bg: "#f5f3ff", color: "#7c3aed", border: "#ddd6fe" },
+                            { label: "CẦN DỌN", value: stats.dirty, bg: "#fff7ed", color: "#ea580c", border: "#fed7aa" },
+                        ].map(s => (
+                            <div key={s.label} style={{ background: s.bg, border: `1.5px solid ${s.border}`, borderRadius: 16, padding: "16px 18px", textAlign: "center" }}>
+                                <p style={{ fontSize: 24, fontWeight: 800, color: s.color, margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>{s.value}</p>
+                                <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em", color: s.color, margin: 0, opacity: 0.7 }}>{s.label}</p>
                             </div>
-                        ) : (
-                            <>
-                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14 }}>
-                                    {paginatedRooms.map(room => (
-                                        <RoomCard key={room.id} room={room} onDetail={(id) => navigate(`/admin/rooms/${id}`)} />
-                                    ))}
+                        ))}
+                    </div>
+
+                    {/* Filter Bar */}
+                    <div style={{ background: "white", borderRadius: 18, padding: "18px 22px", marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,.06)", border: "1px solid #f1f0ea", display: "flex", gap: 14, alignItems: "flex-end", flexWrap: "wrap" }}>
+                        {[
+                            {
+                                label: "Trạng thái KD",
+                                key: "businessStatus",
+                                options: [{ value: "", label: "Tất cả" }, { value: "Available", label: "Sẵn sàng" }, { value: "Occupied", label: "Đang dùng" }, { value: "Disabled", label: "Bảo trì" }],
+                            },
+                            {
+                                label: "Tình trạng vệ sinh",
+                                key: "cleaningStatus",
+                                options: [{ value: "", label: "Tất cả" }, { value: "Clean", label: "Sạch sẽ" }, { value: "Dirty", label: "Cần dọn" }],
+                            },
+                            {
+                                label: "Hạng phòng",
+                                key: "roomTypeId",
+                                options: [{ value: "", label: "Tất cả" }, ...roomTypes.map(rt => ({ value: rt.id.toString(), label: rt.name }))],
+                            },
+                            {
+                                label: "Tầng",
+                                key: "floor",
+                                options: [{ value: "", label: "Tất cả" }, ...floors.map(f => ({ value: f.toString(), label: `Tầng ${f}` }))],
+                            },
+                        ].map(f => (
+                            <div key={f.key} style={{ flex: 1, minWidth: 160 }}>
+                                <label style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em", color: "#9ca3af", marginBottom: 6 }}>{f.label}</label>
+                                <select
+                                    value={filters[f.key]}
+                                    onChange={e => setFilters(prev => ({ ...prev, [f.key]: e.target.value }))}
+                                    style={{ width: "100%", background: "#f9f8f3", border: "1.5px solid #e2e8e1", borderRadius: 12, padding: "9px 12px", fontSize: 13, fontWeight: 500, outline: "none", fontFamily: "Manrope, sans-serif" }}
+                                    onFocus={e => e.target.style.borderColor = "#4f645b"}
+                                    onBlur={e => e.target.style.borderColor = "#e2e8e1"}
+                                >
+                                    {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                </select>
+                            </div>
+                        ))}
+                        {hasFilters && (
+                            <button
+                                onClick={clearFilters}
+                                style={{ padding: "9px 14px", borderRadius: 12, background: "#fee2e2", border: "1.5px solid #fecaca", color: "#dc2626", cursor: "pointer", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 5, flexShrink: 0, fontFamily: "Manrope, sans-serif" }}
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>filter_alt_off</span>
+                                Xóa lọc
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Table View */}
+                    {viewMode === "table" && (
+                        <div style={{ background: "white", borderRadius: 18, boxShadow: "0 1px 4px rgba(0,0,0,.06)", border: "1px solid #f1f0ea", overflow: "hidden" }}>
+                            <div style={{ overflowX: "auto" }}>
+                                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                    <thead>
+                                        <tr style={{ background: "rgba(249,248,243,.6)", borderBottom: "1px solid #f1f0ea" }}>
+                                            {["Số phòng", "Tầng", "Hạng phòng", "Trạng thái KD", "Vệ sinh", "Thao tác"].map((h, i) => (
+                                                <th key={h} style={{ padding: "15px 24px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#9ca3af", textAlign: i === 5 ? "right" : "left" }}>{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {loading ? (
+                                            <SkeletonRows />
+                                        ) : paginatedRooms.length === 0 ? null : (
+                                            paginatedRooms.map((room, i) => {
+                                                const bsCfg = BUSINESS_STATUS_CONFIG[room.businessStatus] || BUSINESS_STATUS_CONFIG.Available;
+                                                const clCfg = CLEANING_STATUS_CONFIG[room.cleaningStatus] || CLEANING_STATUS_CONFIG.Clean;
+                                                return (
+                                                    <tr key={room.id} className="fade-row" style={{ borderBottom: "1px solid #fafaf8", animationDelay: `${i * 20}ms` }}>
+                                                        <td style={{ padding: "16px 24px" }}>
+                                                            <span style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", fontFamily: "Manrope, sans-serif" }}>{room.roomNumber}</span>
+                                                            <span style={{ marginLeft: 8, fontSize: 11, color: "#9ca3af" }}>#{room.id}</span>
+                                                        </td>
+                                                        <td style={{ padding: "16px 24px", fontSize: 14, color: "#4b5563", fontWeight: 500 }}>{room.floor || "—"}</td>
+                                                        <td style={{ padding: "16px 24px", fontSize: 13, color: "#374151", fontWeight: 500 }}>{room.roomTypeName || "—"}</td>
+                                                        <td style={{ padding: "16px 24px" }}>
+                                                            <StatusDropdown
+                                                                options={["Available", "Occupied", "Disabled"]}
+                                                                current={room.businessStatus}
+                                                                onSelect={async (val) => {
+                                                                    try {
+                                                                        await updateBusinessStatus(room.id, val);
+                                                                        showToast(`Phòng ${room.roomNumber}: ${BUSINESS_STATUS_CONFIG[val]?.label}`, "success");
+                                                                        loadRooms();
+                                                                    } catch (err) {
+                                                                        showToast(err?.response?.data?.message || "Lỗi cập nhật trạng thái.", "error");
+                                                                    }
+                                                                }}
+                                                                configMap={BUSINESS_STATUS_CONFIG}
+                                                            />
+                                                        </td>
+                                                        <td style={{ padding: "16px 24px" }}>
+                                                            <StatusDropdown
+                                                                options={["Clean", "Dirty"]}
+                                                                current={room.cleaningStatus}
+                                                                onSelect={async (val) => {
+                                                                    try {
+                                                                        await updateCleaningStatus(room.id, val);
+                                                                        showToast(`Phòng ${room.roomNumber}: ${CLEANING_STATUS_CONFIG[val]?.label}`, "success");
+                                                                        loadRooms();
+                                                                    } catch (err) {
+                                                                        showToast(err?.response?.data?.message || "Lỗi cập nhật vệ sinh.", "error");
+                                                                    }
+                                                                }}
+                                                                configMap={CLEANING_STATUS_CONFIG}
+                                                            />
+                                                        </td>
+                                                        <td style={{ padding: "16px 24px", textAlign: "right" }}>
+                                                            <button
+                                                                onClick={() => navigate(`/admin/rooms/${room.id}`)}
+                                                                style={{ padding: "7px 14px", borderRadius: 10, background: "#f0faf5", border: "1.5px solid #a7f3d0", color: "#059669", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", fontFamily: "Manrope, sans-serif" }}
+                                                                onMouseEnter={e => { e.currentTarget.style.background = "#4f645b"; e.currentTarget.style.color = "#e7fef3"; e.currentTarget.style.borderColor = "#4f645b"; }}
+                                                                onMouseLeave={e => { e.currentTarget.style.background = "#f0faf5"; e.currentTarget.style.color = "#059669"; e.currentTarget.style.borderColor = "#a7f3d0"; }}
+                                                            >
+                                                                <span className="material-symbols-outlined" style={{ fontSize: 15 }}>visibility</span>
+                                                                Chi tiết
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Empty State */}
+                            {!loading && paginatedRooms.length === 0 && (
+                                <div style={{ padding: "64px 0", textAlign: "center" }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 52, color: "#d1d5db", display: "block", marginBottom: 12 }}>meeting_room</span>
+                                    <p style={{ color: "#9ca3af", fontWeight: 600, fontSize: 14 }}>Không tìm thấy phòng nào</p>
+                                    {hasFilters && (
+                                        <button onClick={clearFilters} style={{ marginTop: 12, padding: "7px 18px", borderRadius: 10, background: "#4f645b", color: "#e7fef3", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                                            Xóa bộ lọc
+                                        </button>
+                                    )}
                                 </div>
-                                {/* Grid pagination */}
-                                {rooms.length > pageSize && (
-                                    <div style={{ marginTop: 20, display: "flex", justifyContent: "center", gap: 4 }}>
+                            )}
+
+                            {/* Pagination */}
+                            {!loading && rooms.length > 0 && (
+                                <div style={{ padding: "14px 24px", borderTop: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                    <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 500 }}>
+                                        {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, rooms.length)} / {rooms.length} phòng
+                                    </span>
+                                    <div style={{ display: "flex", gap: 4 }}>
                                         <button className="pg-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
                                             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
                                         </button>
                                         {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                                            const n = Math.max(1, page - 2) + i;
+                                            const n = totalPages <= 5 ? i + 1 : Math.max(1, page - 2) + i;
                                             if (n > totalPages) return null;
-                                            return <button key={n} className={`pg-btn${n === page ? " active" : ""}`} onClick={() => setPage(n)}>{n}</button>;
+                                            return (
+                                                <button key={n} className={`pg-btn${n === page ? " active" : ""}`} onClick={() => setPage(n)}>{n}</button>
+                                            );
                                         })}
                                         <button className="pg-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
                                             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
                                         </button>
                                     </div>
-                                )}
-                            </>
-                        )}
-                    </>
-                )}
-            </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Grid View */}
+                    {viewMode === "grid" && (
+                        <>
+                            {loading ? (
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14 }}>
+                                    {Array.from({ length: 12 }).map((_, i) => (
+                                        <div key={i} className="skeleton" style={{ height: 130, borderRadius: 16 }} />
+                                    ))}
+                                </div>
+                            ) : paginatedRooms.length === 0 ? (
+                                <div style={{ textAlign: "center", padding: "64px 0" }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 52, color: "#d1d5db", display: "block", marginBottom: 12 }}>meeting_room</span>
+                                    <p style={{ color: "#9ca3af", fontWeight: 600 }}>Không tìm thấy phòng nào</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14 }}>
+                                        {paginatedRooms.map(room => (
+                                            <RoomCard key={room.id} room={room} onDetail={(id) => navigate(`/admin/rooms/${id}`)} />
+                                        ))}
+                                    </div>
+                                    {/* Grid pagination */}
+                                    {rooms.length > pageSize && (
+                                        <div style={{ marginTop: 20, display: "flex", justifyContent: "center", gap: 4 }}>
+                                            <button className="pg-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
+                                            </button>
+                                            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                                                const n = Math.max(1, page - 2) + i;
+                                                if (n > totalPages) return null;
+                                                return <button key={n} className={`pg-btn${n === page ? " active" : ""}`} onClick={() => setPage(n)}>{n}</button>;
+                                            })}
+                                            <button className="pg-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </>
+                    )}
+                </div>
+            )}
         </>
     );
 }
