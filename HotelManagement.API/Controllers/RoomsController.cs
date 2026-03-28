@@ -234,12 +234,12 @@ public class RoomsController : ControllerBase
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // PATCH /api/Rooms/{id}/status  [MANAGE_ROOMS — Manager/Lễ tân]
+    // PATCH /api/Rooms/{id}/business_status  [MANAGE_ROOMS — Manager/Lễ tân]
     // Đổi business_status (Available / Occupied / Disabled). Ghi Audit_Log.
     // Housekeeping không có quyền này (cùng permission MANAGE_ROOMS, phân biệt
     // qua role nếu cần — hiện tại guard bằng MANAGE_ROOMS là đủ).
     // ──────────────────────────────────────────────────────────────────────────
-    [HttpPatch("{id:int}/status")]
+    [HttpPatch("{id:int}/business_status")]
     [RequirePermission(PermissionCodes.ManageRooms)]
     public async Task<IActionResult> UpdateBusinessStatus(
         int id,
@@ -256,8 +256,8 @@ public class RoomsController : ControllerBase
         var oldValue = room.BusinessStatus;
         room.BusinessStatus = request.BusinessStatus;
 
-        // Đồng bộ legacy status (tuỳ chọn giữ tương thích)
-        room.Status = request.BusinessStatus;
+        // Tính lại Status dựa trên tổ hợp BusinessStatus + CleaningStatus
+        room.Status = ComputeStatus(room.BusinessStatus, room.CleaningStatus);
 
         var currentUserId = JwtHelper.GetUserId(User);
         // Ghi Activity Log
@@ -313,6 +313,9 @@ public class RoomsController : ControllerBase
 
         var oldCleaningStatus = room.CleaningStatus;
         room.CleaningStatus = request.CleaningStatus;
+
+        // Tính lại Status dựa trên tổ hợp BusinessStatus + CleaningStatus
+        room.Status = ComputeStatus(room.BusinessStatus, room.CleaningStatus);
 
         var currentUserId = JwtHelper.GetUserId(User);
         // Ghi Activity Log
@@ -460,6 +463,21 @@ public class RoomsController : ControllerBase
             invalid
         });
     }
+    // ──────────────────────────────────────────────────────────────────────────
+    // Helper: tính Status từ tổ hợp BusinessStatus + CleaningStatus
+    // Available + Clean  → Available
+    // Available + Dirty  → Cleaning
+    // Occupied  (any)    → Occupied
+    // Disabled  (any)    → Maintenance
+    // ──────────────────────────────────────────────────────────────────────────
+    private static string ComputeStatus(string businessStatus, string cleaningStatus)
+        => businessStatus switch
+        {
+            "Occupied" => "Occupied",
+            "Disabled" => "Maintenance",
+            "Available" when cleaningStatus == "Dirty" => "Cleaning",
+            _ => "Available"
+        };
 }
 
 // ── Request DTOs ─────────────────────────────────────────────────────────────
