@@ -633,7 +633,7 @@ export default function UserListPage() {
         </header>
 
         {/* ── Main Content ── */}
-        <main style={{ marginLeft: -250, paddingTop: 10, padding: "96px 32px 32px 288px" }}>
+        <main style={{ marginLeft: -250, paddingTop: 10, padding: "20px 32px 32px 288px" }}>
 
           {/* Page Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
