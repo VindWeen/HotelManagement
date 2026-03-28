@@ -170,6 +170,24 @@ export default function AdminLayout() {
               </NavLink>
             )}
 
+            {hasPermission("MANAGE_ROOMS") && (
+              <NavLink to="/admin/room-types" style={navStyle}>
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className="material-symbols-outlined"
+                      style={{
+                        fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+                      }}
+                    >
+                      category
+                    </span>
+                    <span>Hạng phòng</span>
+                  </>
+                )}
+              </NavLink>
+            )}
+
             {hasPermission("MANAGE_INVENTORY") && (
               <NavLink to="/admin/items" style={navStyle}>
                 {({ isActive }) => (
@@ -349,24 +367,6 @@ export default function AdminLayout() {
                 placeholder="Tìm kiếm tài nguyên..."
               />
             </div>
-            <nav style={{ display: "flex", gap: 24 }}>
-              {["Hotels", "Analytics", "Reports"].map((item, i) => (
-                <a
-                  key={item}
-                  href="#"
-                  style={{
-                    fontSize: 14,
-                    fontWeight: i === 1 ? 600 : 500,
-                    color: i === 1 ? "#1a3826" : "#6b7280",
-                    textDecoration: "none",
-                    borderBottom: i === 1 ? "2px solid #1a3826" : "none",
-                    paddingBottom: i === 1 ? 4 : 0,
-                  }}
-                >
-                  {item}
-                </a>
-              ))}
-            </nav>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{ display: "flex", gap: 4 }}>
