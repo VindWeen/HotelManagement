@@ -34,6 +34,42 @@ const STATUS_CFG = {
   Cancelled:  { label: "Đã huỷ",     bg: "#fee2e2", color: "#991b1b", dot: "#ef4444" },
 };
 
+// ─── Room Business Status Config ──────────────────────────────────────────────
+// Dựa theo seed data SQL: Available / Occupied / Disabled
+const ROOM_BS_CFG = {
+  Available: {
+    bg: "#f0fdf4",
+    border: "#bbf7d0",
+    dot: "#16a34a",
+    label: "Trống",
+    badgeBg: "#dcfce7",
+    badgeColor: "#15803d",
+  },
+  Occupied: {
+    bg: "#eff6ff",
+    border: "#bfdbfe",
+    dot: "#2563eb",
+    label: "Có khách",
+    badgeBg: "#dbeafe",
+    badgeColor: "#1d4ed8",
+  },
+  Disabled: {
+    bg: "#f8fafc",
+    border: "#cbd5e1",
+    dot: "#94a3b8",
+    label: "Bảo trì",
+    badgeBg: "#f1f5f9",
+    badgeColor: "#475569",
+  },
+};
+
+// ─── Room Cleaning Status Config ──────────────────────────────────────────────
+// Dựa theo seed data SQL: Clean / Dirty
+const ROOM_CS_CFG = {
+  Clean: { color: "#15803d", icon: "check_circle", label: "Sạch" },
+  Dirty: { color: "#b45309", icon: "warning", label: "Cần dọn" },
+};
+
 // ─── Skeleton ──────────────────────────────────────────────────────────────────
 const Skel = ({ w = "100%", h = 16, r = 8, style = {} }) => (
   <div
@@ -47,33 +83,6 @@ const Skel = ({ w = "100%", h = 16, r = 8, style = {} }) => (
   />
 );
 
-// ─── Trend Sparkline ───────────────────────────────────────────────────────────
-function Sparkline({ data, color, h = 40 }) {
-  if (!data || data.length < 2) return null;
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  const w = 100;
-  const pts = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * w;
-    const y = h - ((v - min) / range) * (h - 4) - 2;
-    return `${x},${y}`;
-  });
-  const area = `M${pts[0]} L${pts.join(" L")} L${w},${h} L0,${h} Z`;
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} style={{ width: 80, height: h, overflow: "visible" }} preserveAspectRatio="none">
-      <defs>
-        <linearGradient id={`sg-${color.replace("#","")}`} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={area} fill={`url(#sg-${color.replace("#","")})`} />
-      <polyline points={pts.join(" ")} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 // ─── Mini Bar Chart ────────────────────────────────────────────────────────────
 function MiniBar({ data, labels, color = "#4f645b" }) {
   if (!data?.length) return null;
@@ -82,11 +91,7 @@ function MiniBar({ data, labels, color = "#4f645b" }) {
     <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 64 }}>
       {data.map((v, i) => (
         <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
-          <div
-            style={{
-              flex: 1, width: "100%", display: "flex", alignItems: "flex-end",
-            }}
-          >
+          <div style={{ flex: 1, width: "100%", display: "flex", alignItems: "flex-end" }}>
             <div
               style={{
                 width: "100%",
@@ -107,28 +112,6 @@ function MiniBar({ data, labels, color = "#4f645b" }) {
         </div>
       ))}
     </div>
-  );
-}
-
-// ─── Room Status Badge ──────────────────────────────────────────────────────────
-function RoomStatusDot({ status }) {
-  const map = {
-    Available: { bg: "#d1fae5", color: "#065f46", dot: "#10b981", label: "Trống" },
-    Occupied:  { bg: "#dbeafe", color: "#1e40af", dot: "#3b82f6", label: "Có khách" },
-    Disabled:  { bg: "#f1f5f9", color: "#475569", dot: "#94a3b8", label: "Bảo trì" },
-  };
-  const cfg = map[status] || map.Disabled;
-  return (
-    <span
-      style={{
-        display: "inline-flex", alignItems: "center", gap: 5,
-        padding: "3px 10px", borderRadius: 9999, fontSize: 11, fontWeight: 700,
-        background: cfg.bg, color: cfg.color,
-      }}
-    >
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.dot, flexShrink: 0 }} />
-      {cfg.label}
-    </span>
   );
 }
 
@@ -155,7 +138,6 @@ function Stars({ rating }) {
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
-  // Data states
   const [bookings, setBookings] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [users, setUsers] = useState([]);
@@ -163,7 +145,6 @@ export default function DashboardPage() {
   const [vouchers, setVouchers] = useState([]);
   const [roomTypes, setRoomTypes] = useState([]);
 
-  // Derived stats
   const [stats, setStats] = useState({
     totalRevenue: 0,
     todayRevenue: 0,
@@ -207,7 +188,6 @@ export default function DashboardPage() {
       setVouchers(vcList);
       setRoomTypes(rtList);
 
-      // ── Compute derived stats ──────────────────────────────────────────────
       const now = new Date();
       const todayStr = now.toDateString();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -224,6 +204,7 @@ export default function DashboardPage() {
       const activeBookings = bkList.filter(b => ["Confirmed","Checked_in","Pending"].includes(b.status)).length;
       const pendingBookings = bkList.filter(b => b.status === "Pending").length;
 
+      // Available = phòng trống (theo business_status trong SQL)
       const available = rmList.filter(r => r.businessStatus === "Available").length;
       const total = rmList.length || 1;
       const occupancyRate = Math.round(((total - available) / total) * 100);
@@ -243,7 +224,6 @@ export default function DashboardPage() {
 
       const activeVouchers = vcList.filter(v => v.isActive).length;
 
-      // Revenue by last 7 days
       const revenueByDay = Array.from({ length: 7 }, (_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - (6 - i));
@@ -259,7 +239,6 @@ export default function DashboardPage() {
       const bookingsByStatus = {};
       bkList.forEach(b => { bookingsByStatus[b.status] = (bookingsByStatus[b.status] || 0) + 1; });
 
-      // Room type occupancy
       const roomTypeOccupancy = rtList.slice(0, 5).map(rt => {
         const occupied = rmList.filter(r => r.roomTypeId === rt.id && r.businessStatus === "Occupied").length;
         const totalRt = rmList.filter(r => r.roomTypeId === rt.id).length;
@@ -291,26 +270,27 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // ─── Recent 8 bookings ──────────────────────────────────────────────────────
   const recentBookings = [...bookings]
     .sort((a, b) => b.id - a.id)
     .slice(0, 8);
 
-  // ─── Recent rooms ───────────────────────────────────────────────────────────
-  const recentRooms = rooms.slice(0, 6);
-
-  // ─── Status counts for donut ────────────────────────────────────────────────
   const statusEntries = Object.entries(stats.bookingsByStatus)
     .sort((a, b) => b[1] - a[1]);
 
   const totalBk = bookings.length || 1;
 
-  // ─── Day labels ─────────────────────────────────────────────────────────────
   const dayLabels = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
     return d.toLocaleDateString("vi-VN", { weekday: "short" });
   });
+
+  // ─── Đếm phòng theo từng trạng thái ───────────────────────────────────────
+  const roomCountByStatus = {
+    Available: rooms.filter(r => r.businessStatus === "Available").length,
+    Occupied:  rooms.filter(r => r.businessStatus === "Occupied").length,
+    Disabled:  rooms.filter(r => r.businessStatus === "Disabled").length,
+  };
 
   return (
     <>
@@ -326,8 +306,6 @@ export default function DashboardPage() {
         .refresh-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:10px; font-size:13px; font-weight:700; background:white; color:#1c1917; border:1.5px solid #e2e8e1; cursor:pointer; font-family:'Manrope',sans-serif; transition:background .15s; }
         .refresh-btn:hover { background:#f9f8f3; }
         .refresh-btn:active { transform:scale(.97); }
-        @keyframes spin { to { transform:rotate(360deg) } }
-        .spin { animation:spin .7s linear infinite; }
         .scroll-x { overflow-x:auto; }
         .scroll-x::-webkit-scrollbar { height: 4px; }
         .scroll-x::-webkit-scrollbar-track { background: transparent; }
@@ -335,6 +313,8 @@ export default function DashboardPage() {
         .progress-bar { height:6px; border-radius:9999px; background:#efeee7; overflow:hidden; }
         .progress-bar-inner { height:100%; border-radius:9999px; transition: width .6s ease; }
         tr.hover-row:hover td { background:rgba(249,248,243,.6); }
+        .room-card { transition: transform .15s, box-shadow .15s; cursor: default; }
+        .room-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
       `}</style>
 
       <div style={{ maxWidth: 1400, margin: "0 auto", fontFamily: "Manrope, sans-serif" }}>
@@ -353,7 +333,10 @@ export default function DashboardPage() {
             </p>
           </div>
           <button className="refresh-btn" onClick={fetchAll} disabled={loading}>
-            <span className="material-symbols-outlined" style={{ fontSize: 18, ...(loading ? { animation: "spin .7s linear infinite" } : {}) }}>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: 18, ...(loading ? { animation: "spin .7s linear infinite" } : {}) }}
+            >
               refresh
             </span>
             Làm mới
@@ -367,40 +350,33 @@ export default function DashboardPage() {
               icon: "payments", bg: "#d1e8dd", iconBg: "rgba(47,67,60,.1)", iconColor: "#2f433c",
               label: "Tổng doanh thu", value: loading ? null : fmtCurrency(stats.totalRevenue),
               sub: loading ? null : `Hôm nay: ${fmtCurrency(stats.todayRevenue)}`,
-              subColor: "#4f645b",
-              delay: 0,
+              subColor: "#4f645b", delay: 0,
             },
             {
               icon: "confirmation_number", bg: "#dbeafe", iconBg: "rgba(30,64,175,.1)", iconColor: "#1e40af",
               label: "Booking đang hoạt động", value: loading ? null : fmt(stats.activeBookings),
               sub: loading ? null : `${stats.pendingBookings} đang chờ xác nhận`,
-              subColor: "#f59e0b",
-              delay: 60,
+              subColor: "#f59e0b", delay: 60,
             },
             {
               icon: "meeting_room", bg: "#ffdad9", iconBg: "rgba(109,72,73,.1)", iconColor: "#6d4849",
               label: "Tỷ lệ lấp đầy", value: loading ? null : `${stats.occupancyRate}%`,
               sub: loading ? null : `${stats.availableRooms} phòng còn trống`,
-              subColor: "#10b981",
-              delay: 120,
+              subColor: "#10b981", delay: 120,
             },
             {
               icon: "group", bg: "#f7e8dd", iconBg: "rgba(95,85,77,.1)", iconColor: "#5f554d",
               label: "Người dùng", value: loading ? null : fmt(stats.totalUsers),
               sub: loading ? null : `+${stats.newUsersThisMonth} người dùng mới tháng này`,
-              subColor: "#6b7280",
-              delay: 180,
+              subColor: "#6b7280", delay: 180,
             },
           ].map((kpi, idx) => (
             <div
               key={idx}
               className="card-in"
               style={{
-                background: kpi.bg,
-                borderRadius: 18,
-                padding: 22,
-                animationDelay: `${kpi.delay}ms`,
-                animationFillMode: "both",
+                background: kpi.bg, borderRadius: 18, padding: 22,
+                animationDelay: `${kpi.delay}ms`, animationFillMode: "both",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
@@ -422,9 +398,7 @@ export default function DashboardPage() {
                   </h3>
                 </div>
               )}
-              {loading ? (
-                <Skel h={12} w={140} />
-              ) : (
+              {loading ? <Skel h={12} w={140} /> : (
                 <p style={{ fontSize: 11, fontWeight: 600, color: kpi.subColor, margin: 0 }}>{kpi.sub}</p>
               )}
             </div>
@@ -433,12 +407,7 @@ export default function DashboardPage() {
 
         {/* ── Row 2: Revenue Chart + Room Type Occupancy ───────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
-
-          {/* Revenue 7 days */}
-          <div
-            className="card-in"
-            style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "200ms", animationFillMode: "both" }}
-          >
+          <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "200ms", animationFillMode: "both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
               <div>
                 <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: "0 0 2px" }}>Doanh thu 7 ngày qua</h4>
@@ -461,11 +430,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Room Type Occupancy */}
-          <div
-            className="card-in"
-            style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "260ms", animationFillMode: "both" }}
-          >
+          <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "260ms", animationFillMode: "both" }}>
             <div style={{ marginBottom: 18 }}>
               <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: "0 0 2px" }}>Tình trạng loại phòng</h4>
               <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>Tỷ lệ lấp đầy theo loại</p>
@@ -492,13 +457,7 @@ export default function DashboardPage() {
                       </span>
                     </div>
                     <div className="progress-bar">
-                      <div
-                        className="progress-bar-inner"
-                        style={{
-                          width: `${rt.rate}%`,
-                          background: rt.rate > 70 ? "#4f645b" : rt.rate > 40 ? "#3b82f6" : "#cbd5e1",
-                        }}
-                      />
+                      <div className="progress-bar-inner" style={{ width: `${rt.rate}%`, background: rt.rate > 70 ? "#4f645b" : rt.rate > 40 ? "#3b82f6" : "#cbd5e1" }} />
                     </div>
                   </div>
                 ))}
@@ -507,14 +466,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Row 3: Booking Status + Quick Stats ────────────────────────────── */}
+        {/* ── Row 3: Booking Status + Reviews + Quick Stats ────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 20 }}>
-
-          {/* Booking by status */}
-          <div
-            className="card-in"
-            style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "300ms", animationFillMode: "both" }}
-          >
+          <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "300ms", animationFillMode: "both" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: "0 0 18px" }}>Phân loại booking</h4>
             {loading ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -546,11 +500,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Reviews summary */}
-          <div
-            className="card-in"
-            style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "360ms", animationFillMode: "both" }}
-          >
+          <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "360ms", animationFillMode: "both" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: "0 0 4px" }}>Đánh giá khách hàng</h4>
             <p style={{ fontSize: 12, color: "#9ca3af", margin: "0 0 18px" }}>Đã duyệt</p>
             {loading ? (
@@ -561,13 +511,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <>
-                <div
-                  style={{
-                    background: "linear-gradient(135deg, #4f645b 0%, #2f433c 100%)",
-                    borderRadius: 14, padding: "16px 20px", marginBottom: 16,
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                  }}
-                >
+                <div style={{ background: "linear-gradient(135deg, #4f645b 0%, #2f433c 100%)", borderRadius: 14, padding: "16px 20px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
                     <p style={{ fontSize: 11, color: "rgba(231,254,243,.6)", fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                       Điểm trung bình
@@ -583,20 +527,14 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 {stats.pendingReviews > 0 && (
-                  <div
-                    style={{
-                      display: "flex", alignItems: "center", gap: 8,
-                      background: "#fef3c7", borderRadius: 10, padding: "8px 12px",
-                    }}
-                  >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fef3c7", borderRadius: 10, padding: "8px 12px", marginBottom: 14 }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 16, color: "#f59e0b" }}>schedule</span>
                     <span style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>
                       {stats.pendingReviews} đánh giá chờ duyệt
                     </span>
                   </div>
                 )}
-                {/* Rating distribution */}
-                <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {[5,4,3,2,1].map(star => {
                     const cnt = reviews.filter(r => r.rating === star).length;
                     const pct = reviews.length > 0 ? Math.round((cnt / reviews.length) * 100) : 0;
@@ -616,13 +554,8 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Vouchers + Rooms quick info */}
-          <div
-            className="card-in"
-            style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "420ms", animationFillMode: "both", display: "flex", flexDirection: "column", gap: 16 }}
-          >
+          <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "420ms", animationFillMode: "both", display: "flex", flexDirection: "column", gap: 16 }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: 0 }}>Thống kê nhanh</h4>
-
             {loading ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {Array.from({ length: 4 }).map((_, i) => <Skel key={i} h={52} r={12} />)}
@@ -630,34 +563,12 @@ export default function DashboardPage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
-                  {
-                    icon: "local_offer", iconColor: "#1e40af", bg: "#dbeafe",
-                    label: "Voucher đang hoạt động", value: fmt(stats.activeVouchers),
-                    sub: `${fmt(vouchers.length)} tổng cộng`,
-                  },
-                  {
-                    icon: "bed", iconColor: "#065f46", bg: "#d1fae5",
-                    label: "Phòng trống", value: fmt(stats.availableRooms),
-                    sub: `${fmt(rooms.length)} phòng tổng`,
-                  },
-                  {
-                    icon: "category", iconColor: "#9333ea", bg: "#f3e8ff",
-                    label: "Loại phòng", value: fmt(roomTypes.length),
-                    sub: "Loại phòng đang hoạt động",
-                  },
-                  {
-                    icon: "people", iconColor: "#b45309", bg: "#fef3c7",
-                    label: "Nhân viên & Khách", value: fmt(stats.totalUsers),
-                    sub: `+${fmt(stats.newUsersThisMonth)} tháng này`,
-                  },
+                  { icon: "local_offer", iconColor: "#1e40af", bg: "#dbeafe", label: "Voucher đang hoạt động", value: fmt(stats.activeVouchers), sub: `${fmt(vouchers.length)} tổng cộng` },
+                  { icon: "bed", iconColor: "#065f46", bg: "#d1fae5", label: "Phòng trống", value: fmt(stats.availableRooms), sub: `${fmt(rooms.length)} phòng tổng` },
+                  { icon: "category", iconColor: "#9333ea", bg: "#f3e8ff", label: "Loại phòng", value: fmt(roomTypes.length), sub: "Loại phòng đang hoạt động" },
+                  { icon: "people", iconColor: "#b45309", bg: "#fef3c7", label: "Nhân viên & Khách", value: fmt(stats.totalUsers), sub: `+${fmt(stats.newUsersThisMonth)} tháng này` },
                 ].map((item, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 12,
-                      background: "#fafaf8", borderRadius: 12, padding: "10px 14px",
-                    }}
-                  >
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, background: "#fafaf8", borderRadius: 12, padding: "10px 14px" }}>
                     <div style={{ padding: 8, background: item.bg, borderRadius: 10, flexShrink: 0 }}>
                       <span className="material-symbols-outlined" style={{ fontSize: 18, color: item.iconColor, fontVariationSettings: "'FILL' 1" }}>
                         {item.icon}
@@ -676,41 +587,19 @@ export default function DashboardPage() {
         </div>
 
         {/* ── Recent Bookings Table ─────────────────────────────────────────── */}
-        <div
-          className="card-in"
-          style={{
-            background: "white", borderRadius: 18, border: "1px solid #f1f0ea",
-            boxShadow: "0 1px 4px rgba(0,0,0,.05)", overflow: "hidden",
-            animationDelay: "460ms", animationFillMode: "both",
-            marginBottom: 20,
-          }}
-        >
-          <div
-            style={{
-              padding: "20px 28px", borderBottom: "1px solid #f1f0ea",
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-            }}
-          >
+        <div className="card-in" style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", overflow: "hidden", animationDelay: "460ms", animationFillMode: "both", marginBottom: 20 }}>
+          <div style={{ padding: "20px 28px", borderBottom: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: 0 }}>Booking gần đây</h4>
             <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 500 }}>
               {loading ? "…" : `${recentBookings.length} booking`}
             </span>
           </div>
-
           <div className="scroll-x">
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
               <thead>
                 <tr style={{ background: "rgba(249,248,243,.5)" }}>
                   {["Mã", "Khách hàng", "Liên hệ", "Ngày đặt", "Tổng tiền", "Trạng thái"].map((h, i) => (
-                    <th
-                      key={h}
-                      style={{
-                        padding: "12px 20px", fontSize: 10, fontWeight: 700,
-                        textTransform: "uppercase", letterSpacing: "0.1em",
-                        color: "#9ca3af", textAlign: i === 4 ? "right" : "left",
-                        borderBottom: "1px solid #f1f0ea", whiteSpace: "nowrap",
-                      }}
-                    >
+                    <th key={h} style={{ padding: "12px 20px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#9ca3af", textAlign: i === 4 ? "right" : "left", borderBottom: "1px solid #f1f0ea", whiteSpace: "nowrap" }}>
                       {h}
                     </th>
                   ))}
@@ -738,11 +627,7 @@ export default function DashboardPage() {
                     const cfg = STATUS_CFG[b.status] || STATUS_CFG.Cancelled;
                     const initial = (b.guestName || "?")[0].toUpperCase();
                     return (
-                      <tr
-                        key={b.id}
-                        className="hover-row"
-                        style={{ borderBottom: "1px solid #fafaf8", animationDelay: `${i * 30}ms` }}
-                      >
+                      <tr key={b.id} className="hover-row" style={{ borderBottom: "1px solid #fafaf8" }}>
                         <td style={{ padding: "14px 20px" }}>
                           <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 700, color: "#4f645b", letterSpacing: "0.05em" }}>
                             {b.bookingCode}
@@ -750,14 +635,7 @@ export default function DashboardPage() {
                         </td>
                         <td style={{ padding: "14px 20px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <div
-                              style={{
-                                width: 30, height: 30, borderRadius: "50%",
-                                background: "rgba(79,100,91,.15)",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                color: "#4f645b", fontWeight: 800, fontSize: 11, flexShrink: 0,
-                              }}
-                            >
+                            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(79,100,91,.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f645b", fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
                               {initial}
                             </div>
                             <span style={{ fontSize: 13, fontWeight: 600, color: "#1c1917" }}>
@@ -777,14 +655,7 @@ export default function DashboardPage() {
                           </span>
                         </td>
                         <td style={{ padding: "14px 20px" }}>
-                          <span
-                            style={{
-                              display: "inline-flex", alignItems: "center", gap: 5,
-                              padding: "4px 12px", borderRadius: 9999,
-                              fontSize: 11, fontWeight: 700,
-                              background: cfg.bg, color: cfg.color,
-                            }}
-                          >
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 9999, fontSize: 11, fontWeight: 700, background: cfg.bg, color: cfg.color }}>
                             <span style={{ width: 5, height: 5, borderRadius: "50%", background: cfg.dot, flexShrink: 0 }} />
                             {cfg.label}
                           </span>
@@ -798,29 +669,28 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Recent Rooms ──────────────────────────────────────────────────── */}
-        <div
-          className="card-in"
-          style={{
-            background: "white", borderRadius: 18, border: "1px solid #f1f0ea",
-            boxShadow: "0 1px 4px rgba(0,0,0,.05)", overflow: "hidden",
-            animationDelay: "500ms", animationFillMode: "both",
-          }}
-        >
-          <div
-            style={{
-              padding: "20px 28px", borderBottom: "1px solid #f1f0ea",
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-            }}
-          >
+        {/* ── Trạng thái phòng ─────────────────────────────────────────────── */}
+        <div className="card-in" style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", overflow: "hidden", animationDelay: "500ms", animationFillMode: "both" }}>
+          {/* Header với legend 3 trạng thái */}
+          <div style={{ padding: "20px 28px", borderBottom: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: 0 }}>Trạng thái phòng</h4>
-            <div style={{ display: "flex", gap: 8 }}>
-              {["Available", "Occupied", "Disabled"].map(s => {
-                const cfg = { Available: { bg: "#d1fae5", color: "#065f46" }, Occupied: { bg: "#dbeafe", color: "#1e40af" }, Disabled: { bg: "#f1f5f9", color: "#475569" } }[s];
-                const cnt = rooms.filter(r => r.businessStatus === s).length;
+
+            {/* Legend badges — màu theo SQL: Available=xanh lá, Occupied=xanh dương, Disabled=xám */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {(["Available", "Occupied", "Disabled"] ).map(status => {
+                const cfg = ROOM_BS_CFG[status];
                 return (
-                  <span key={s} style={{ fontSize: 11, fontWeight: 700, background: cfg.bg, color: cfg.color, padding: "3px 10px", borderRadius: 9999 }}>
-                    {loading ? "…" : `${cnt} ${s === "Available" ? "trống" : s === "Occupied" ? "có khách" : "bảo trì"}`}
+                  <span
+                    key={status}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      fontSize: 11, fontWeight: 700,
+                      background: cfg.badgeBg, color: cfg.badgeColor,
+                      padding: "4px 12px", borderRadius: 9999,
+                    }}
+                  >
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: cfg.dot }} />
+                    {loading ? "…" : `${roomCountByStatus[status]} ${cfg.label}`}
                   </span>
                 );
               })}
@@ -829,77 +699,89 @@ export default function DashboardPage() {
 
           <div style={{ padding: "20px 28px" }}>
             {loading ? (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12 }}>
-                {Array.from({ length: 6 }).map((_, i) => <Skel key={i} h={80} r={12} />)}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12 }}>
+                {Array.from({ length: 6 }).map((_, i) => <Skel key={i} h={90} r={12} />)}
               </div>
             ) : rooms.length === 0 ? (
               <p style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Chưa có phòng nào</p>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12 }}>
-                {rooms.slice(0, 12).map((rm, i) => {
-                  const bsCfg = {
-                    Available: { bg: "#f0fdf4", border: "#bbf7d0", dot: "#10b981", label: "Trống" },
-                    Occupied:  { bg: "#eff6ff", border: "#bfdbfe", dot: "#3b82f6", label: "Có khách" },
-                    Disabled:  { bg: "#f8fafc", border: "#e2e8f0", dot: "#94a3b8", label: "Bảo trì" },
-                  }[rm.businessStatus] || { bg: "#f8fafc", border: "#e2e8f0", dot: "#94a3b8", label: "—" };
-
-                  const cleanCfg = rm.cleaningStatus === "Clean"
-                    ? { color: "#065f46", icon: "check_circle" }
-                    : { color: "#92400e", icon: "warning" };
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))", gap: 12 }}>
+                {rooms.slice(0, 12).map((rm) => {
+                  const bsCfg = ROOM_BS_CFG[rm.businessStatus] || ROOM_BS_CFG.Disabled;
+                  const csCfg = ROOM_CS_CFG[rm.cleaningStatus] || ROOM_CS_CFG.Dirty;
 
                   return (
                     <div
                       key={rm.id}
+                      className="room-card"
                       style={{
                         background: bsCfg.bg,
                         border: `1.5px solid ${bsCfg.border}`,
-                        borderRadius: 12,
-                        padding: "12px 14px",
-                        cursor: "default",
-                        transition: "transform .15s",
+                        borderRadius: 14,
+                        padding: "14px 16px",
                       }}
-                      onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-                      onMouseLeave={e => e.currentTarget.style.transform = ""}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: "#1c1917" }}>
+                      {/* Số phòng + dot trạng thái kinh doanh */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                        <span style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.01em" }}>
                           {rm.roomNumber}
                         </span>
                         <span
                           style={{
-                            width: 8, height: 8, borderRadius: "50%",
-                            background: bsCfg.dot, flexShrink: 0, marginTop: 4,
+                            width: 9, height: 9, borderRadius: "50%",
+                            background: bsCfg.dot,
+                            flexShrink: 0, marginTop: 3,
+                            boxShadow: `0 0 0 2.5px ${bsCfg.dot}33`,
                           }}
                         />
                       </div>
-                      <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(0,0,0,.4)", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+
+                      {/* Loại phòng */}
+                      <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(0,0,0,.38)", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.08em", lineHeight: 1.3 }}>
                         {rm.roomTypeName || `Tầng ${rm.floor || "?"}`}
                       </p>
+
+                      {/* Badge trạng thái kinh doanh */}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: bsCfg.badgeBg, color: bsCfg.badgeColor, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 9999, marginBottom: 6 }}>
+                        {bsCfg.label}
+                      </span>
+
+                      {/* Cleaning status */}
                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 13, color: cleanCfg.color, fontVariationSettings: "'FILL' 1" }}>
-                          {cleanCfg.icon}
+                        <span
+                          className="material-symbols-outlined"
+                          style={{ fontSize: 13, color: csCfg.color, fontVariationSettings: "'FILL' 1" }}
+                        >
+                          {csCfg.icon}
                         </span>
-                        <span style={{ fontSize: 10, fontWeight: 600, color: cleanCfg.color }}>
-                          {rm.cleaningStatus === "Clean" ? "Sạch" : "Cần dọn"}
+                        <span style={{ fontSize: 10, fontWeight: 600, color: csCfg.color }}>
+                          {csCfg.label}
                         </span>
                       </div>
                     </div>
                   );
                 })}
+
+                {/* Hiển thị phần còn lại nếu có */}
                 {rooms.length > 12 && (
-                  <div
-                    style={{
-                      background: "#f9f8f3", border: "1.5px dashed #d1d5db",
-                      borderRadius: 12, padding: "12px 14px",
-                      display: "flex", flexDirection: "column",
-                      alignItems: "center", justifyContent: "center",
-                      color: "#9ca3af", fontSize: 11, fontWeight: 600,
-                    }}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: 20, marginBottom: 4 }}>more_horiz</span>
-                    +{rooms.length - 12} phòng
+                  <div style={{ background: "#f9f8f3", border: "1.5px dashed #d1d5db", borderRadius: 14, padding: "14px 16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: 11, fontWeight: 600, gap: 4 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 22 }}>more_horiz</span>
+                    +{rooms.length - 12} phòng khác
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Ghi chú chú thích màu sắc */}
+            {!loading && rooms.length > 0 && (
+              <div style={{ marginTop: 20, padding: "12px 16px", background: "#f9f8f3", borderRadius: 10, display: "flex", gap: 24, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Chú thích trạng thái vệ sinh:</span>
+                {Object.entries(ROOM_CS_CFG).map(([key, cfg]) => (
+                  <span key={key} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: cfg.color }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 13, fontVariationSettings: "'FILL' 1" }}>{cfg.icon}</span>
+                    {cfg.label}
+                  </span>
+                ))}
               </div>
             )}
           </div>

@@ -88,7 +88,13 @@ export default function NotificationMenu() {
     );
 
     return (
-        <Popover content={content} trigger="click" placement="bottomRight" arrow={false} overlayInnerStyle={{ padding: 0, paddingTop: 8 }}>
+<Popover
+  content={content}
+  trigger="click"
+  placement="bottomRight"
+  arrow={false}
+  styles={{ container: { padding: 0, paddingTop: 8 } }}
+>
             <button
                 style={{
                     padding: 8,
