@@ -309,7 +309,7 @@ export default function DashboardPage() {
   const dayLabels = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
-    return d.toLocaleDateString("vi-VN", { weekday: "short" }).slice(0, 2);
+    return d.toLocaleDateString("vi-VN", { weekday: "short" });
   });
 
   return (
