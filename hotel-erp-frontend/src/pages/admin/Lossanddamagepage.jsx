@@ -150,8 +150,8 @@ function DetailModal({ open, item, onClose }) {
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                         <div>
-                             <h4 style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 16 }}>Thông tin chi tiết</h4>
-                             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                            <h4 style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginBottom: 16 }}>Thông tin chi tiết</h4>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                                 <div style={{ background: "#f1f5f9", padding: "16px 20px", borderRadius: 16 }}>
                                     <p style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", margin: "0 0 6px" }}>Vật tư bị hỏng/mất</p>
                                     <p style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: 0 }}>{item.itemName} · Phòng {item.roomNumber}</p>
@@ -175,7 +175,7 @@ function DetailModal({ open, item, onClose }) {
                                     <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, margin: 0 }}>{item.description || "— Không có ghi chú thêm —"}</p>
                                 </div>
                                 <p style={{ fontSize: 12, color: "#94a3b8", textAlign: "right", margin: 0 }}>Người báo: <strong>{item.reporterName}</strong> lúc {dt.time} {dt.date}</p>
-                             </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -188,9 +188,9 @@ function DetailModal({ open, item, onClose }) {
 function EditModal({ open, item, onClose, onSaved, showToast }) {
     const [form, setForm] = useState({});
     const [saving, setSaving] = useState(false);
-    const [existingImages, setExistingImages] = useState([]); 
-    const [newImageFiles, setNewImageFiles] = useState([]); 
-    const [newPreviews, setNewPreviews] = useState([]); 
+    const [existingImages, setExistingImages] = useState([]);
+    const [newImageFiles, setNewImageFiles] = useState([]);
+    const [newPreviews, setNewPreviews] = useState([]);
     const fileInputRef = useRef(null);
 
     useEffect(() => {
@@ -232,52 +232,52 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
                     <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", color: "#64748b" }}><span className="material-symbols-outlined">close</span></button>
                 </div>
                 <div style={{ padding: 32, maxHeight: "70vh", overflowY: "auto" }}>
-                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                             <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Số lượng hỏng</label>
                             <input type="number" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} style={{ ...inputStyle, background: "white", padding: "10px 14px" }} />
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                             <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Số tiền đền bù</label>
-                             <input type="number" value={form.penaltyAmount} onChange={e => setForm(f => ({ ...f, penaltyAmount: e.target.value }))} style={{ ...inputStyle, background: "white", padding: "10px 14px" }} />
+                            <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Số tiền đền bù</label>
+                            <input type="number" value={form.penaltyAmount} onChange={e => setForm(f => ({ ...f, penaltyAmount: e.target.value }))} style={{ ...inputStyle, background: "white", padding: "10px 14px" }} />
                         </div>
-                     </div>
-                     <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
-                         <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Trạng thái xử lý</label>
-                         <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={{ ...inputStyle, background: "white", padding: "10px 14px", cursor: "pointer" }}>
-                             <option value="Pending">Chờ xử lý</option>
-                             <option value="Confirmed">Đã xác nhận</option>
-                             <option value="Waived">Miễn trừ</option>
-                         </select>
-                     </div>
-                     <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
-                         <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Ghi chú sự cố</label>
-                         <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} style={{ ...inputStyle, background: "white", padding: "10px 14px", resize: "none" }} />
-                     </div>
-                     <div>
-                         <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 8, display: "block" }}>Hình ảnh minh chứng</label>
-                         <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                             {existingImages.map(img => (
-                                 <div key={img.url} style={{ position: "relative", width: 70, height: 70, borderRadius: 12, overflow: "hidden", border: "1px solid #f1f5f9" }}>
-                                     <img src={img.url} alt="old" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                     <button onClick={() => setExistingImages(p => p.filter(x => x.url !== img.url))} style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.5)", border: "none", color: "white", width: 18, height: 18, borderRadius: "50%", cursor: "pointer" }}><span style={{ fontSize: 12 }}>×</span></button>
-                                 </div>
-                             ))}
-                             {newPreviews.map((url, idx) => (
-                                 <div key={url} style={{ position: "relative", width: 70, height: 70, borderRadius: 12, overflow: "hidden", border: "2px solid #3b82f6" }}>
-                                     <img src={url} alt="new" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                     <button onClick={() => { setNewImageFiles(p => p.filter((_, i) => i !== idx)); setNewPreviews(p => p.filter((_, i) => i !== idx)); }} style={{ position: "absolute", top: 4, right: 4, background: "rgba(59,130,246,0.8)", border: "none", color: "white", width: 18, height: 18, borderRadius: "50%", cursor: "pointer" }}><span style={{ fontSize: 12 }}>×</span></button>
-                                 </div>
-                             ))}
-                             <button onClick={() => fileInputRef.current.click()} style={{ width: 70, height: 70, borderRadius: 12, border: "2px dashed #e2e8f0", background: "#f8fafc", cursor: "pointer", color: "#94a3b8" }}><span className="material-symbols-outlined">add_a_photo</span></button>
-                         </div>
-                         <input type="file" ref={fileInputRef} hidden multiple onChange={handleFileChange} />
-                     </div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
+                        <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Trạng thái xử lý</label>
+                        <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={{ ...inputStyle, background: "white", padding: "10px 14px", cursor: "pointer" }}>
+                            <option value="Pending">Chờ xử lý</option>
+                            <option value="Confirmed">Đã xác nhận</option>
+                            <option value="Waived">Miễn trừ</option>
+                        </select>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
+                        <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Ghi chú sự cố</label>
+                        <textarea rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} style={{ ...inputStyle, background: "white", padding: "10px 14px", resize: "none" }} />
+                    </div>
+                    <div>
+                        <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 8, display: "block" }}>Hình ảnh minh chứng</label>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                            {existingImages.map(img => (
+                                <div key={img.url} style={{ position: "relative", width: 70, height: 70, borderRadius: 12, overflow: "hidden", border: "1px solid #f1f5f9" }}>
+                                    <img src={img.url} alt="old" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    <button onClick={() => setExistingImages(p => p.filter(x => x.url !== img.url))} style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.5)", border: "none", color: "white", width: 18, height: 18, borderRadius: "50%", cursor: "pointer" }}><span style={{ fontSize: 12 }}>×</span></button>
+                                </div>
+                            ))}
+                            {newPreviews.map((url, idx) => (
+                                <div key={url} style={{ position: "relative", width: 70, height: 70, borderRadius: 12, overflow: "hidden", border: "2px solid #3b82f6" }}>
+                                    <img src={url} alt="new" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    <button onClick={() => { setNewImageFiles(p => p.filter((_, i) => i !== idx)); setNewPreviews(p => p.filter((_, i) => i !== idx)); }} style={{ position: "absolute", top: 4, right: 4, background: "rgba(59,130,246,0.8)", border: "none", color: "white", width: 18, height: 18, borderRadius: "50%", cursor: "pointer" }}><span style={{ fontSize: 12 }}>×</span></button>
+                                </div>
+                            ))}
+                            <button onClick={() => fileInputRef.current.click()} style={{ width: 70, height: 70, borderRadius: 12, border: "2px dashed #e2e8f0", background: "#f8fafc", cursor: "pointer", color: "#94a3b8" }}><span className="material-symbols-outlined">add_a_photo</span></button>
+                        </div>
+                        <input type="file" ref={fileInputRef} hidden multiple onChange={handleFileChange} />
+                    </div>
                 </div>
                 <div style={{ padding: "24px 32px", background: "#f8fafc", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end", gap: 12 }}>
                     <button onClick={onClose} style={{ padding: "10px 24px", borderRadius: 12, border: "1px solid #e2e8f0", background: "white", fontSize: 14, fontWeight: 700, color: "#64748b", cursor: "pointer" }}>Hủy</button>
                     <button onClick={handleSave} disabled={saving} style={{ padding: "10px 28px", borderRadius: 12, border: "none", background: "#0f172a", fontSize: 14, fontWeight: 700, color: "white", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-                         {saving ? <div style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} /> : "Lưu thay đổi"}
+                        {saving ? <div style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%", animation: "spin 0.6s linear infinite" }} /> : "Lưu thay đổi"}
                     </button>
                 </div>
             </div>
@@ -341,7 +341,7 @@ export default function LossAndDamagePage() {
         totalOnPage: records.slice((page - 1) * pageSize, page * pageSize).length,
         penaltyOnPage: records.slice((page - 1) * pageSize, page * pageSize).reduce((s, r) => s + (r.penaltyAmount || 0), 0)
     };
-    
+
     const totalPages = Math.max(1, Math.ceil(records.length / pageSize));
     const paged = records.slice((page - 1) * pageSize, page * pageSize);
 
@@ -383,35 +383,35 @@ export default function LossAndDamagePage() {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, marginBottom: 32 }}>
                     <div className="card-premium">
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                             <div>
-                                 <p style={{ fontSize: 13, fontWeight: 700, color: "#94a3b8", margin: "0 0 4px" }}>SỰ CỐ TRÊN TRANG NÀY</p>
-                                 <h2 style={{ fontSize: 32, fontWeight: 800, color: "#0f172a", margin: 0 }}>{stats.totalOnPage} <span style={{ fontSize: 14, color: "#94a3b8", fontWeight: 500 }}>Bản ghi</span></h2>
-                             </div>
-                             <div style={{ width: 48, height: 48, borderRadius: 14, background: "#fff7ed", display: "flex", alignItems: "center", justifyContent: "center", color: "#f97316" }}>
-                                 <span className="material-symbols-outlined" style={{ fontSize: 28 }}>warning</span>
-                             </div>
+                            <div>
+                                <p style={{ fontSize: 13, fontWeight: 700, color: "#94a3b8", margin: "0 0 4px" }}>SỰ CỐ TRÊN TRANG NÀY</p>
+                                <h2 style={{ fontSize: 32, fontWeight: 800, color: "#0f172a", margin: 0 }}>{stats.totalOnPage} <span style={{ fontSize: 14, color: "#94a3b8", fontWeight: 500 }}>Bản ghi</span></h2>
+                            </div>
+                            <div style={{ width: 48, height: 48, borderRadius: 14, background: "#fff7ed", display: "flex", alignItems: "center", justifyContent: "center", color: "#f97316" }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 28 }}>warning</span>
+                            </div>
                         </div>
                     </div>
                     <div className="card-premium">
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                             <div>
-                                 <p style={{ fontSize: 13, fontWeight: 700, color: "#94a3b8", margin: "0 0 4px" }}>TỔNG TIỀN ĐỀN BÙ</p>
-                                 <h2 style={{ fontSize: 32, fontWeight: 800, color: "#ef4444", margin: 0 }}>{fmtCurrency(stats.penaltyOnPage)}</h2>
-                             </div>
-                             <div style={{ width: 48, height: 48, borderRadius: 14, background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444" }}>
-                                 <span className="material-symbols-outlined" style={{ fontSize: 28 }}>monetization_on</span>
-                             </div>
+                            <div>
+                                <p style={{ fontSize: 13, fontWeight: 700, color: "#94a3b8", margin: "0 0 4px" }}>TỔNG TIỀN ĐỀN BÙ</p>
+                                <h2 style={{ fontSize: 32, fontWeight: 800, color: "#ef4444", margin: 0 }}>{fmtCurrency(stats.penaltyOnPage)}</h2>
+                            </div>
+                            <div style={{ width: 48, height: 48, borderRadius: 14, background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444" }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 28 }}>monetization_on</span>
+                            </div>
                         </div>
                     </div>
                     <div className="card-premium">
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                             <div>
-                                 <p style={{ fontSize: 13, fontWeight: 700, color: "#94a3b8", margin: "0 0 4px" }}>CẬP NHẬT GẦN NHẤT</p>
-                                 <h2 style={{ fontSize: 32, fontWeight: 800, color: "#0f172a", margin: 0 }}>{lastUpdated ? lastUpdated.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "--:--"}</h2>
-                             </div>
-                             <div style={{ width: 48, height: 48, borderRadius: 14, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
-                                 <span className="material-symbols-outlined" style={{ fontSize: 28 }}>update</span>
-                             </div>
+                            <div>
+                                <p style={{ fontSize: 13, fontWeight: 700, color: "#94a3b8", margin: "0 0 4px" }}>CẬP NHẬT GẦN NHẤT</p>
+                                <h2 style={{ fontSize: 32, fontWeight: 800, color: "#0f172a", margin: 0 }}>{lastUpdated ? lastUpdated.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "--:--"}</h2>
+                            </div>
+                            <div style={{ width: 48, height: 48, borderRadius: 14, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 28 }}>update</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -426,13 +426,13 @@ export default function LossAndDamagePage() {
                             <input type="date" value={filters.toDate} onChange={e => setFilters(f => ({ ...f, toDate: e.target.value }))} style={{ border: "none", background: "none", fontSize: 13, fontWeight: 600, outline: "none", color: "#1e293b" }} />
                         </div>
                         <select value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))} style={{ padding: "10px 16px", borderRadius: 12, border: "1px solid #f1f5f9", fontSize: 13, fontWeight: 600, background: "#f8fafc", cursor: "pointer", outline: "none" }}>
-                             <option value="">Tất cả trạng thái</option>
-                             <option value="Pending">Chờ xử lý</option>
-                             <option value="Confirmed">Đã xác nhận</option>
-                             <option value="Waived">Miễn trừ</option>
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="Pending">Chờ xử lý</option>
+                            <option value="Confirmed">Đã xác nhận</option>
+                            <option value="Waived">Miễn trừ</option>
                         </select>
                         <button onClick={() => fetchRecords()} style={{ padding: "10px 24px", background: "#0f172a", color: "white", borderRadius: 12, border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-                             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>manage_search</span> Lọc kết quả
+                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>manage_search</span> Lọc kết quả
                         </button>
                     </div>
                     <button onClick={() => { setFilters({ fromDate: "", toDate: "", status: "" }); fetchRecords(); }} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}>Làm mới bộ lọc</button>
@@ -463,13 +463,13 @@ export default function LossAndDamagePage() {
                                             <td style={{ padding: "20px 24px", fontSize: 13, fontWeight: 700, color: "#64748b" }}>#{rec.id}</td>
                                             <td style={{ padding: "20px 24px" }}>
                                                 {imgs.length > 0 ? (
-                                                     <div className="badge-p" style={{ background: "#ecfdf5", color: "#065f46" }}>
-                                                         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>image</span> Có hình ảnh ({imgs.length})
-                                                     </div>
+                                                    <div className="badge-p" style={{ background: "#ecfdf5", color: "#065f46" }}>
+                                                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>image</span> Có hình ảnh ({imgs.length})
+                                                    </div>
                                                 ) : (
-                                                     <div className="badge-p" style={{ background: "#f1f5f9", color: "#64748b" }}>
-                                                         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>hide_image</span> Không có ảnh
-                                                     </div>
+                                                    <div className="badge-p" style={{ background: "#f1f5f9", color: "#64748b" }}>
+                                                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>hide_image</span> Không có ảnh
+                                                    </div>
                                                 )}
                                             </td>
                                             <td style={{ padding: "20px 24px" }}>

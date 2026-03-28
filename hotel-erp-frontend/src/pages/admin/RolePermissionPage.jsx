@@ -386,71 +386,71 @@ function PermissionModal({ role, initialPerms, onClose, onSaved, showToast }) {
           style={{ padding: "20px 28px 0", maxHeight: 440, overflowY: "auto" }}
         >
           {Object.entries(grouped).map(([module, perms]) => (
-              <div key={module} style={{ marginBottom: 20 }}>
-                <p
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    letterSpacing: ".12em",
-                    textTransform: "uppercase",
-                    color: "#9ca3af",
-                    marginBottom: 10,
-                  }}
-                >
-                  {moduleLabels[module] || module}
-                </p>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 10,
-                  }}
-                >
-                  {perms.map((p) => (
-                    <label
-                      key={p.id}
+            <div key={module} style={{ marginBottom: 20 }}>
+              <p
+                style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  letterSpacing: ".12em",
+                  textTransform: "uppercase",
+                  color: "#9ca3af",
+                  marginBottom: 10,
+                }}
+              >
+                {moduleLabels[module] || module}
+              </p>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 10,
+                }}
+              >
+                {perms.map((p) => (
+                  <label
+                    key={p.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 14px",
+                      borderRadius: 12,
+                      background: checked[p.id]
+                        ? "rgba(79,100,91,.08)"
+                        : "#f9f8f3",
+                      border: `1.5px solid ${checked[p.id] ? "rgba(79,100,91,.3)" : "#e2e8e1"}`,
+                      cursor: "pointer",
+                      transition: "all .15s",
+                      userSelect: "none",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!!checked[p.id]}
+                      onChange={() => toggle(p.id)}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "10px 14px",
-                        borderRadius: 12,
-                        background: checked[p.id]
-                          ? "rgba(79,100,91,.08)"
-                          : "#f9f8f3",
-                        border: `1.5px solid ${checked[p.id] ? "rgba(79,100,91,.3)" : "#e2e8e1"}`,
+                        width: 17,
+                        height: 17,
+                        accentColor: "#4f645b",
                         cursor: "pointer",
-                        transition: "all .15s",
-                        userSelect: "none",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: checked[p.id] ? "#1a3826" : "#4b5563",
+                        lineHeight: 1.3,
                       }}
                     >
-                      <input
-                        type="checkbox"
-                        checked={!!checked[p.id]}
-                        onChange={() => toggle(p.id)}
-                        style={{
-                          width: 17,
-                          height: 17,
-                          accentColor: "#4f645b",
-                          cursor: "pointer",
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 600,
-                          color: checked[p.id] ? "#1a3826" : "#4b5563",
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        {p.name}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                      {p.name}
+                    </span>
+                  </label>
+                ))}
               </div>
-            ))}
+            </div>
+          ))}
 
         </div>
 
@@ -574,7 +574,7 @@ export default function RolePermissionPage() {
   const handleLogout = async () => {
     try {
       await logout();
-    } catch {}
+    } catch { }
     clearAuth();
     navigate("/login");
   };

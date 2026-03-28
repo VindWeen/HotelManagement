@@ -27,11 +27,11 @@ const fmtDateTime = (d) =>
 
 // ─── Status Config ─────────────────────────────────────────────────────────────
 const STATUS_CFG = {
-  Pending:    { label: "Chờ xử lý",  bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
-  Confirmed:  { label: "Đã xác nhận",bg: "#dbeafe", color: "#1e40af", dot: "#3b82f6" },
-  Checked_in: { label: "Đang ở",     bg: "#d1fae5", color: "#065f46", dot: "#10b981" },
-  Completed:  { label: "Hoàn thành", bg: "#f1f5f9", color: "#475569", dot: "#94a3b8" },
-  Cancelled:  { label: "Đã huỷ",     bg: "#fee2e2", color: "#991b1b", dot: "#ef4444" },
+  Pending: { label: "Chờ xử lý", bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
+  Confirmed: { label: "Đã xác nhận", bg: "#dbeafe", color: "#1e40af", dot: "#3b82f6" },
+  Checked_in: { label: "Đang ở", bg: "#d1fae5", color: "#065f46", dot: "#10b981" },
+  Completed: { label: "Hoàn thành", bg: "#f1f5f9", color: "#475569", dot: "#94a3b8" },
+  Cancelled: { label: "Đã huỷ", bg: "#fee2e2", color: "#991b1b", dot: "#ef4444" },
 };
 
 // ─── Room Business Status Config ──────────────────────────────────────────────
@@ -119,7 +119,7 @@ function MiniBar({ data, labels, color = "#4f645b" }) {
 function Stars({ rating }) {
   return (
     <span style={{ display: "inline-flex", gap: 1 }}>
-      {[1,2,3,4,5].map(s => (
+      {[1, 2, 3, 4, 5].map(s => (
         <span
           key={s}
           className="material-symbols-outlined"
@@ -201,7 +201,7 @@ export default function DashboardPage() {
       });
       const todayRevenue = todayBookings.reduce((s, b) => s + (b.totalEstimatedAmount || 0), 0);
 
-      const activeBookings = bkList.filter(b => ["Confirmed","Checked_in","Pending"].includes(b.status)).length;
+      const activeBookings = bkList.filter(b => ["Confirmed", "Checked_in", "Pending"].includes(b.status)).length;
       const pendingBookings = bkList.filter(b => b.status === "Pending").length;
 
       // Available = phòng trống (theo business_status trong SQL)
@@ -288,8 +288,8 @@ export default function DashboardPage() {
   // ─── Đếm phòng theo từng trạng thái ───────────────────────────────────────
   const roomCountByStatus = {
     Available: rooms.filter(r => r.businessStatus === "Available").length,
-    Occupied:  rooms.filter(r => r.businessStatus === "Occupied").length,
-    Disabled:  rooms.filter(r => r.businessStatus === "Disabled").length,
+    Occupied: rooms.filter(r => r.businessStatus === "Occupied").length,
+    Disabled: rooms.filter(r => r.businessStatus === "Disabled").length,
   };
 
   return (
@@ -535,7 +535,7 @@ export default function DashboardPage() {
                   </div>
                 )}
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {[5,4,3,2,1].map(star => {
+                  {[5, 4, 3, 2, 1].map(star => {
                     const cnt = reviews.filter(r => r.rating === star).length;
                     const pct = reviews.length > 0 ? Math.round((cnt / reviews.length) * 100) : 0;
                     return (
@@ -677,7 +677,7 @@ export default function DashboardPage() {
 
             {/* Legend badges — màu theo SQL: Available=xanh lá, Occupied=xanh dương, Disabled=xám */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {(["Available", "Occupied", "Disabled"] ).map(status => {
+              {(["Available", "Occupied", "Disabled"]).map(status => {
                 const cfg = ROOM_BS_CFG[status];
                 return (
                   <span
