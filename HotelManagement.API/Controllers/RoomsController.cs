@@ -66,6 +66,7 @@ public class RoomsController : ControllerBase
                 r.RoomNumber,
                 r.Floor,
                 r.ViewType,
+                r.Status,
                 r.BusinessStatus,
                 r.CleaningStatus,
                 r.RoomTypeId,
@@ -88,6 +89,7 @@ public class RoomsController : ControllerBase
             .AsNoTracking()
             .Include(r => r.RoomType)
             .Include(r => r.RoomInventories.Where(i => i.IsActive))
+                .ThenInclude(i => i.Equipment)
             .Where(r => r.Id == id)
             .Select(r => new
             {
@@ -95,6 +97,7 @@ public class RoomsController : ControllerBase
                 r.RoomNumber,
                 r.Floor,
                 r.ViewType,
+                r.Status,
                 r.BusinessStatus,
                 r.CleaningStatus,
                 r.Notes,
@@ -103,10 +106,12 @@ public class RoomsController : ControllerBase
                 inventory = r.RoomInventories.Select(i => new
                 {
                     i.Id,
-                    i.ItemName,
+                    i.EquipmentId,
+                    equipmentName = i.Equipment.Name,
                     i.ItemType,
                     i.Quantity,
-                    i.PriceIfLost
+                    i.PriceIfLost,
+                    i.Note
                 })
             })
             .FirstOrDefaultAsync();
@@ -144,7 +149,6 @@ public class RoomsController : ControllerBase
             RecordId  = id,
             OldValue  = null,
             NewValue  = $"{{\"floor\": {request.Floor?.ToString() ?? "null"}, \"viewType\": \"{request.ViewType}\"}}",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
             UserAgent = Request.Headers.UserAgent.ToString(),
             CreatedAt = DateTime.UtcNow
         });
@@ -224,7 +228,6 @@ public class RoomsController : ControllerBase
             RecordId  = room.Id,
             OldValue  = null,
             NewValue  = $"{{\"roomNumber\": \"{room.RoomNumber}\", \"floor\": {room.Floor}, \"roomTypeId\": {room.RoomTypeId}}}",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
             UserAgent = Request.Headers["User-Agent"].ToString(),
             CreatedAt = DateTime.UtcNow
         });
@@ -283,7 +286,6 @@ public class RoomsController : ControllerBase
             RecordId  = id,
             OldValue  = $"{{\"businessStatus\": \"{oldValue}\"}}",
             NewValue  = $"{{\"businessStatus\": \"{request.BusinessStatus}\"}}",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
             UserAgent = Request.Headers["User-Agent"].ToString(),
             CreatedAt = DateTime.UtcNow
         });
@@ -341,7 +343,6 @@ public class RoomsController : ControllerBase
             RecordId  = id,
             OldValue  = $"{{\"cleaningStatus\": \"{oldCleaningStatus}\"}}",
             NewValue  = $"{{\"cleaningStatus\": \"{request.CleaningStatus}\"}}",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
             UserAgent = Request.Headers["User-Agent"].ToString(),
             CreatedAt = DateTime.UtcNow
         });
@@ -435,7 +436,6 @@ public class RoomsController : ControllerBase
                 RecordId  = 0,
                 OldValue  = null,
                 NewValue  = $"{{\"count\": {created.Count}, \"rooms\": [{string.Join(",", created.Select(c => $"\"{c}\""))}]}}",
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers.UserAgent.ToString(),
                 CreatedAt = DateTime.UtcNow
             });

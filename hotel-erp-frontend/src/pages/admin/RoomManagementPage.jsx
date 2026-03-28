@@ -2,18 +2,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
+import { useAdminAuthStore } from "../../store/adminAuthStore";
 import {
     getRooms,
-    getRoomById,
     createRoom,
-    updateRoom,
     updateBusinessStatus,
     updateCleaningStatus,
-    bulkCreateRooms,
 } from "../../api/roomsApi";
-import { getRoomTypes } from "../../api/roomTypesApi";
+import { getAdminRoomTypes } from "../../api/roomTypesApi";
 import { getInventoryByRoom, cloneInventory } from "../../api/roomInventoriesApi";
-import { getAmenities } from "../../api/amenitiesApi";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const BUSINESS_STATUS_CONFIG = {
@@ -38,6 +35,13 @@ const BUSINESS_STATUS_CONFIG = {
         border: "#ddd6fe",
         dot: "#8b5cf6",
     },
+};
+
+const ROOM_STATUS_CONFIG = {
+    Available: { label: "Sẵn sàng", bg: "#ecfdf5", color: "#059669", border: "#a7f3d0", dot: "#10b981" },
+    Occupied: { label: "Đang dùng", bg: "#fffbeb", color: "#d97706", border: "#fde68a", dot: "#f59e0b" },
+    Cleaning: { label: "Đang dọn", bg: "#eff6ff", color: "#2563eb", border: "#bfdbfe", dot: "#3b82f6" },
+    Maintenance: { label: "Bảo trì", bg: "#f5f3ff", color: "#7c3aed", border: "#ddd6fe", dot: "#8b5cf6" },
 };
 
 const CLEANING_STATUS_CONFIG = {
@@ -103,7 +107,8 @@ function SkeletonRows() {
 
 // ─── Room Card (for grid view) ──────────────────────────────────────────────────
 function RoomCard({ room, onDetail }) {
-    const bsCfg = BUSINESS_STATUS_CONFIG[room.businessStatus] || BUSINESS_STATUS_CONFIG.Available;
+    const currentStatus = room.status || room.businessStatus || "Available";
+    const bsCfg = ROOM_STATUS_CONFIG[currentStatus] || ROOM_STATUS_CONFIG.Available;
     const clCfg = CLEANING_STATUS_CONFIG[room.cleaningStatus] || CLEANING_STATUS_CONFIG.Clean;
     return (
         <div
@@ -236,7 +241,7 @@ function StatusDropdown({ options, current, onSelect, configMap }) {
 
 // ─── Create Room Modal ─────────────────────────────────────────────────────────
 // ─── Create Room Wizard ─────────────────────────────────────────────────────────
-function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast }) {
+function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, canManageInventory }) {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -335,7 +340,7 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast }
                 <div style={{ height: 2, width: 100, background: step >= 2 ? activeColor : "#e5e7eb", margin: "0 16px" }} />
                 <StepItem active={step >= 2} current={step === 2} icon="local_cafe" label="Tiện ích" color={activeColor} />
                 <div style={{ height: 2, width: 100, background: step >= 3 ? activeColor : "#e5e7eb", margin: "0 16px" }} />
-                <StepItem active={step >= 3} current={step === 3} icon="key" label="Vật tư & Minibar" color={activeColor} />
+                <StepItem active={canManageInventory && step >= 3} current={step === 3} icon="key" label="Vật tư & Minibar" color={activeColor} />
             </div>
 
             {/* Content Container */}
@@ -379,6 +384,11 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast }
                                             </option>
                                         ))}
                                     </select>
+                                    {roomTypes.length === 0 && (
+                                        <p style={{ margin: "8px 0 0", fontSize: 12, color: "#dc2626", fontWeight: 600 }}>
+                                            Chưa tải được danh sách hạng phòng. Vui lòng kiểm tra API RoomTypes/admin.
+                                        </p>
+                                    )}
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>View phòng (Tùy chọn)</label>
@@ -445,17 +455,17 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast }
                         </div>
                         <div style={{ marginTop: 32 }}>
                             <button
-                                onClick={() => setStep(3)}
+                                onClick={() => canManageInventory ? setStep(3) : handleFinish()}
                                 style={{ background: "linear-gradient(135deg, #4f645b 0%, #43574f 100%)", color: "white", padding: "12px 24px", borderRadius: 8, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(79,100,91,.2)", fontFamily: "Manrope, sans-serif" }}
                             >
                                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_forward</span>
-                                Tiếp theo: Thiết lập vật tư
+                                {canManageInventory ? "Tiếp theo: Thiết lập vật tư" : "Hoàn tất"}
                             </button>
                         </div>
                     </div>
                 )}
 
-                {step === 3 && (
+                {canManageInventory && step === 3 && (
                     <div style={{ maxWidth: 900, margin: "0 auto" }}>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 24, marginBottom: 32 }}>
                             <div style={{ background: "white", padding: 20, borderRadius: 12, border: "1px solid #e2e8e1", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
@@ -510,7 +520,7 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast }
                                                 return (
                                                     <tr key={idx} style={{ borderBottom: "1px solid #f3f4f6" }}>
                                                         <td style={{ padding: "16px 20px", fontSize: 14, color: "#4f645b", fontWeight: 700 }}>{code}</td>
-                                                        <td style={{ padding: "16px 20px", fontSize: 15, color: "#374151", fontWeight: 600 }}>{inv.itemName || "N/A"}</td>
+                                                        <td style={{ padding: "16px 20px", fontSize: 15, color: "#374151", fontWeight: 600 }}>{inv.equipmentName || "N/A"}</td>
                                                         <td style={{ padding: "16px 20px", fontSize: 14, color: "#6b7280" }}>{inv.itemType === "Asset" ? "Tài sản" : (inv.itemType || "N/A")}</td>
                                                         <td style={{ padding: "16px 20px", fontSize: 15, color: "#1c1917", fontWeight: 800 }}>{inv.quantity || 0}</td>
                                                         <td style={{ padding: "16px 20px", fontSize: 14, color: "#6b7280", fontWeight: 600 }}>
@@ -553,6 +563,7 @@ function StepItem({ active, current, icon, label, color }) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function RoomManagementPage() {
+    const permissions = useAdminAuthStore((s) => s.permissions);
     const navigate = useNavigate();
     const [rooms, setRooms] = useState([]);
     const [roomTypes, setRoomTypes] = useState([]);
@@ -563,14 +574,22 @@ export default function RoomManagementPage() {
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [page, setPage] = useState(1);
     const [pageSize] = useState(12);
-    const debounceRef = useRef(null);
-
     const showToast = useCallback((msg, type = "success") => {
         const id = Date.now() + Math.random();
         setToasts(prev => [...prev, { id, msg, type }]);
     }, []);
 
     const dismissToast = useCallback(id => setToasts(prev => prev.filter(t => t.id !== id)), []);
+    const hasPermission = useCallback(
+        (code) =>
+            permissions.some(
+                (p) =>
+                    (typeof p === "string" && p === code) ||
+                    (typeof p === "object" && p.permissionCode === code),
+            ),
+        [permissions],
+    );
+    const canManageInventory = hasPermission("MANAGE_INVENTORY");
 
     const loadRooms = useCallback(async () => {
         setLoading(true);
@@ -583,7 +602,7 @@ export default function RoomManagementPage() {
             const res = await getRooms(params);
             setRooms(res.data?.data || []);
             setPage(1);
-        } catch (err) {
+        } catch {
             showToast("Không thể tải danh sách phòng.", "error");
         } finally {
             setLoading(false);
@@ -592,9 +611,12 @@ export default function RoomManagementPage() {
 
     const loadRoomTypes = useCallback(async () => {
         try {
-            const res = await getRoomTypes();
-            setRoomTypes(res.data || []);
-        } catch (_) { }
+            const res = await getAdminRoomTypes();
+            const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+            setRoomTypes(data);
+        } catch {
+            setRoomTypes([]);
+        }
     }, []);
 
     useEffect(() => { loadRooms(); }, [loadRooms]);
@@ -603,9 +625,9 @@ export default function RoomManagementPage() {
     // Stats
     const stats = {
         total: rooms.length,
-        available: rooms.filter(r => r.businessStatus === "Available").length,
-        occupied: rooms.filter(r => r.businessStatus === "Occupied").length,
-        disabled: rooms.filter(r => r.businessStatus === "Disabled").length,
+        available: rooms.filter(r => (r.status || r.businessStatus) === "Available").length,
+        occupied: rooms.filter(r => (r.status || r.businessStatus) === "Occupied").length,
+        disabled: rooms.filter(r => (r.status || r.businessStatus) === "Maintenance" || r.businessStatus === "Disabled").length,
         dirty: rooms.filter(r => r.cleaningStatus === "Dirty").length,
     };
 
@@ -650,6 +672,7 @@ export default function RoomManagementPage() {
                         onClose={() => setCreateModalOpen(false)}
                         onCreated={loadRooms}
                         showToast={showToast}
+                        canManageInventory={canManageInventory}
                     />
                 </div>
             ) : (
@@ -770,8 +793,6 @@ export default function RoomManagementPage() {
                                             <SkeletonRows />
                                         ) : paginatedRooms.length === 0 ? null : (
                                             paginatedRooms.map((room, i) => {
-                                                const bsCfg = BUSINESS_STATUS_CONFIG[room.businessStatus] || BUSINESS_STATUS_CONFIG.Available;
-                                                const clCfg = CLEANING_STATUS_CONFIG[room.cleaningStatus] || CLEANING_STATUS_CONFIG.Clean;
                                                 return (
                                                     <tr key={room.id} className="fade-row" style={{ borderBottom: "1px solid #fafaf8", animationDelay: `${i * 20}ms` }}>
                                                         <td style={{ padding: "16px 24px" }}>

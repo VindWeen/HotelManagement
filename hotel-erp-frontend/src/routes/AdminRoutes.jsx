@@ -12,6 +12,7 @@ import LossAndDamagePage from "../pages/admin/Lossanddamagepage";
 import RoomManagementPage from "../pages/admin/RoomManagementPage";
 import RoomTypesPage from "../pages/admin/RoomTypesPage";
 import RoomDetailPage from "../pages/admin/RoomDetailPage";
+import EquipmentPage from "../pages/admin/EquipmentPage";
 
 export default function AdminRoutes() {
   return (
@@ -80,7 +81,7 @@ export default function AdminRoutes() {
           path="items"
           element={
             <RequirePermission permission="MANAGE_INVENTORY">
-              <ComingSoonPage icon="inventory_2" title="Vật tư & Minibar" />
+              <EquipmentPage />
             </RequirePermission>
           }
         />
@@ -109,7 +110,7 @@ export default function AdminRoutes() {
         <Route
           path="roles"
           element={
-            <RequirePermission permission="MANAGE_ROLES">
+            <RequirePermission permission="VIEW_ROLES">
               <RolePermissionPage />
             </RequirePermission>
           }

@@ -31,6 +31,25 @@ public class LossAndDamagesController : ControllerBase
 
     // Đối tượng hỗ trợ lưu trữ JSON trong DB
     private class ImageItem { public string url { get; set; } = ""; public string publicId { get; set; } = ""; }
+    private static List<ImageItem> ParseImages(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return [];
+
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<List<ImageItem>>(raw);
+            if (parsed is not null)
+                return parsed;
+        }
+        catch
+        {
+        }
+
+        return raw.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+            ? [new ImageItem { url = raw, publicId = "" }]
+            : [];
+    }
 
     [HttpGet]
     [RequirePermission(PermissionCodes.ManageInventory)]
@@ -41,9 +60,6 @@ public class LossAndDamagesController : ControllerBase
     {
         var query = _db.LossAndDamages
             .AsNoTracking()
-            .Include(l => l.RoomInventory)
-                .ThenInclude(ri => ri!.Room)
-            .Include(l => l.Reporter)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(status))
@@ -68,15 +84,32 @@ public class LossAndDamagesController : ControllerBase
                 l.Status,
                 l.CreatedAt,
                 l.ReportedBy,
-                l.ImageUrl, // Lưu ý: cái này bây giờ là chuỗi JSON mảng ảnh
-                ItemName     = l.RoomInventory != null ? l.RoomInventory.ItemName : null,
+                l.ImgUrl, // Lưu ý: cái này bây giờ là chuỗi JSON mảng ảnh
+                ItemName     = l.RoomInventory != null && l.RoomInventory.Equipment != null ? l.RoomInventory.Equipment.Name : null,
                 RoomNumber   = l.RoomInventory != null && l.RoomInventory.Room != null
                                  ? l.RoomInventory.Room.RoomNumber : null,
                 ReporterName = l.Reporter != null ? l.Reporter.FullName : null,
             })
             .ToListAsync();
 
-        return Ok(records);
+        var data = records.Select(l => new
+        {
+            l.Id,
+            l.BookingDetailId,
+            l.RoomInventoryId,
+            l.Quantity,
+            l.PenaltyAmount,
+            l.Description,
+            l.Status,
+            l.CreatedAt,
+            l.ReportedBy,
+            l.ItemName,
+            l.RoomNumber,
+            l.ReporterName,
+            Images = ParseImages(l.ImgUrl)
+        }).ToList();
+
+        return Ok(new { data, total = data.Count });
     }
 
     [HttpGet("{id:int}")]
@@ -85,9 +118,6 @@ public class LossAndDamagesController : ControllerBase
     {
         var record = await _db.LossAndDamages
             .AsNoTracking()
-            .Include(l => l.RoomInventory)
-                .ThenInclude(ri => ri!.Room)
-            .Include(l => l.Reporter)
             .Where(l => l.Id == id)
             .Select(l => new
             {
@@ -100,8 +130,8 @@ public class LossAndDamagesController : ControllerBase
                 l.Status,
                 l.CreatedAt,
                 l.ReportedBy,
-                l.ImageUrl,
-                ItemName     = l.RoomInventory != null ? l.RoomInventory.ItemName : null,
+                l.ImgUrl,
+                ItemName     = l.RoomInventory != null && l.RoomInventory.Equipment != null ? l.RoomInventory.Equipment.Name : null,
                 RoomNumber   = l.RoomInventory != null && l.RoomInventory.Room != null
                                  ? l.RoomInventory.Room.RoomNumber : null,
                 ReporterName = l.Reporter != null ? l.Reporter.FullName : null,
@@ -109,7 +139,22 @@ public class LossAndDamagesController : ControllerBase
             .FirstOrDefaultAsync();
 
         if (record is null) return NotFound(new { message = $"Không tìm thấy biên bản #{id}." });
-        return Ok(record);
+        return Ok(new
+        {
+            record.Id,
+            record.BookingDetailId,
+            record.RoomInventoryId,
+            record.Quantity,
+            record.PenaltyAmount,
+            record.Description,
+            record.Status,
+            record.CreatedAt,
+            record.ReportedBy,
+            record.ItemName,
+            record.RoomNumber,
+            record.ReporterName,
+            Images = ParseImages(record.ImgUrl)
+        });
     }
 
     [HttpPost]
@@ -150,7 +195,7 @@ public class LossAndDamagesController : ControllerBase
             Description     = request.Description?.Trim(),
             Status          = request.Status ?? "Pending",
             CreatedAt       = DateTime.UtcNow,
-            ImageUrl        = imageList.Any() ? JsonSerializer.Serialize(imageList) : null
+            ImgUrl        = imageList.Any() ? JsonSerializer.Serialize(imageList) : null
         };
 
         _db.LossAndDamages.Add(record);
@@ -190,9 +235,9 @@ public class LossAndDamagesController : ControllerBase
 
         // 1. Phân tích ảnh cũ
         var currentImages = new List<ImageItem>();
-        if (!string.IsNullOrEmpty(record.ImageUrl))
+        if (!string.IsNullOrEmpty(record.ImgUrl))
         {
-            try { currentImages = JsonSerializer.Deserialize<List<ImageItem>>(record.ImageUrl) ?? new(); }
+            try { currentImages = JsonSerializer.Deserialize<List<ImageItem>>(record.ImgUrl) ?? new(); }
             catch { /* fallback nếu không phải json */ }
         }
 
@@ -235,7 +280,7 @@ public class LossAndDamagesController : ControllerBase
         record.PenaltyAmount = request.PenaltyAmount;
         record.Description   = request.Description?.Trim();
         record.Status        = request.Status;
-        record.ImageUrl      = finalImages.Any() ? JsonSerializer.Serialize(finalImages) : null;
+        record.ImgUrl      = finalImages.Any() ? JsonSerializer.Serialize(finalImages) : null;
 
         await _db.SaveChangesAsync();
 
@@ -247,7 +292,7 @@ public class LossAndDamagesController : ControllerBase
             Action  = NotificationAction.UpdateLossReport
         };
 
-        return Ok(new { message = "Cập nhật biên bản thành công.", imageUrl = record.ImageUrl, notification });
+        return Ok(new { message = "Cập nhật biên bản thành công.", imgUrl = record.ImgUrl, notification });
     }
 
     [HttpDelete("{id:int}")]
@@ -258,10 +303,10 @@ public class LossAndDamagesController : ControllerBase
         if (record is null) return NotFound(new { message = $"Không tìm thấy biên bản #{id}." });
 
         // Xóa tất cả ảnh trên Cloudinary
-        if (!string.IsNullOrEmpty(record.ImageUrl))
+        if (!string.IsNullOrEmpty(record.ImgUrl))
         {
             try {
-                var images = JsonSerializer.Deserialize<List<ImageItem>>(record.ImageUrl);
+                var images = JsonSerializer.Deserialize<List<ImageItem>>(record.ImgUrl);
                 if (images != null) {
                     foreach (var img in images) await _cloudinary.DestroyAsync(new DeletionParams(img.publicId));
                 }

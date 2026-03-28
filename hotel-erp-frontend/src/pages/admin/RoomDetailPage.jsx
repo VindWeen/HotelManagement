@@ -1,6 +1,7 @@
 // src/pages/admin/RoomDetailPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAdminAuthStore } from "../../store/adminAuthStore";
 import { getRoomById, updateBusinessStatus, updateCleaningStatus } from "../../api/roomsApi";
 import {
     getInventoryByRoom,
@@ -8,8 +9,8 @@ import {
     updateInventory,
     deleteInventory,
     cloneInventory,
-    toggleInventoryActive,
 } from "../../api/roomInventoriesApi";
+import { getEquipments } from "../../api/equipmentsApi";
 import { getRooms } from "../../api/roomsApi";
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -48,16 +49,22 @@ const Skel = ({ w = "100%", h = 16, r = 8 }) => (
 );
 
 // ─── Modal: Thêm/Sửa vật tư ──────────────────────────────────────────────────
-function InventoryModal({ open, onClose, onSave, editItem, roomId }) {
-    const [form, setForm] = useState({ itemName: "", itemType: "Asset", quantity: 1, priceIfLost: "" });
+function InventoryModal({ open, onClose, onSave, editItem, roomId, equipments }) {
+    const [form, setForm] = useState({ equipmentId: "", itemType: "Asset", quantity: 1, priceIfLost: "", note: "" });
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState("");
 
     useEffect(() => {
         if (editItem) {
-            setForm({ itemName: editItem.itemName || "", itemType: editItem.itemType || "Asset", quantity: editItem.quantity ?? 1, priceIfLost: editItem.priceIfLost ?? "" });
+            setForm({
+                equipmentId: editItem.equipmentId || "",
+                itemType: editItem.itemType || "Asset",
+                quantity: editItem.quantity ?? 1,
+                priceIfLost: editItem.priceIfLost ?? "",
+                note: editItem.note || "",
+            });
         } else {
-            setForm({ itemName: "", itemType: "Asset", quantity: 1, priceIfLost: "" });
+            setForm({ equipmentId: "", itemType: "Asset", quantity: 1, priceIfLost: "", note: "" });
         }
         setErr("");
     }, [editItem, open]);
@@ -66,13 +73,20 @@ function InventoryModal({ open, onClose, onSave, editItem, roomId }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.itemName.trim()) { setErr("Tên vật tư không được để trống."); return; }
+        if (!form.equipmentId) { setErr("Vui lòng chọn vật tư từ danh mục."); return; }
         setLoading(true); setErr("");
         try {
+            const payload = {
+                equipmentId: Number(form.equipmentId),
+                itemType: form.itemType,
+                quantity: Number(form.quantity),
+                priceIfLost: form.priceIfLost ? Number(form.priceIfLost) : null,
+                note: form.note?.trim() || null,
+            };
             if (editItem) {
-                await updateInventory(editItem.id, { itemName: form.itemName, itemType: form.itemType, quantity: Number(form.quantity), priceIfLost: form.priceIfLost ? Number(form.priceIfLost) : null });
+                await updateInventory(editItem.id, payload);
             } else {
-                await createInventory({ roomId, itemName: form.itemName, itemType: form.itemType, quantity: Number(form.quantity), priceIfLost: form.priceIfLost ? Number(form.priceIfLost) : null });
+                await createInventory({ roomId, ...payload });
             }
             onSave();
         } catch (e) {
@@ -92,10 +106,27 @@ function InventoryModal({ open, onClose, onSave, editItem, roomId }) {
                 </div>
                 <form onSubmit={handleSubmit} style={{ padding: "20px 28px 24px" }}>
                     <div style={{ marginBottom: 16 }}>
-                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#5e6059", marginBottom: 6 }}>Tên vật tư *</label>
-                        <input value={form.itemName} onChange={e => setForm(f => ({ ...f, itemName: e.target.value }))}
-                            placeholder="Tivi Samsung 43 inch..."
-                            style={{ width: "100%", border: "none", borderRadius: 12, padding: "12px 16px", fontSize: 14, background: "rgba(227,227,219,.5)", color: "#31332e", outline: "none", boxSizing: "border-box" }} />
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#5e6059", marginBottom: 6 }}>Chọn vật tư *</label>
+                        <select
+                            value={form.equipmentId}
+                            onChange={e => {
+                                const equipmentId = e.target.value;
+                                const selectedEquipment = equipments.find((x) => String(x.id) === equipmentId);
+                                setForm((f) => ({
+                                    ...f,
+                                    equipmentId,
+                                    priceIfLost: f.priceIfLost || selectedEquipment?.defaultPriceIfLost || "",
+                                }));
+                            }}
+                            style={{ width: "100%", border: "none", borderRadius: 12, padding: "12px 16px", fontSize: 14, background: "rgba(227,227,219,.5)", color: "#31332e", outline: "none", boxSizing: "border-box" }}
+                        >
+                            <option value="">Chọn từ danh mục thiết bị</option>
+                            {equipments.map((equipment) => (
+                                <option key={equipment.id} value={equipment.id}>
+                                    {equipment.name} {equipment.itemCode ? `(${equipment.itemCode})` : ""}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
                         <div>
@@ -117,6 +148,15 @@ function InventoryModal({ open, onClose, onSave, editItem, roomId }) {
                         <input type="number" min="0" value={form.priceIfLost} onChange={e => setForm(f => ({ ...f, priceIfLost: e.target.value }))}
                             placeholder="5000000"
                             style={{ width: "100%", border: "none", borderRadius: 12, padding: "12px 16px", fontSize: 14, background: "rgba(227,227,219,.5)", color: "#31332e", outline: "none", boxSizing: "border-box" }} />
+                    </div>
+                    <div style={{ marginBottom: 20 }}>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#5e6059", marginBottom: 6 }}>Ghi chú</label>
+                        <textarea
+                            value={form.note}
+                            onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
+                            rows={3}
+                            style={{ width: "100%", border: "none", borderRadius: 12, padding: "12px 16px", fontSize: 14, background: "rgba(227,227,219,.5)", color: "#31332e", outline: "none", boxSizing: "border-box", resize: "vertical" }}
+                        />
                     </div>
                     {err && (
                         <div style={{ marginBottom: 16, borderRadius: 12, padding: "10px 14px", background: "rgba(168,56,54,.1)", border: "1px solid rgba(168,56,54,.25)", color: "#a83836", fontSize: 13 }}>{err}</div>
@@ -215,10 +255,12 @@ function CloneModal({ open, onClose, onSave, currentRoomId }) {
 export default function RoomDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const permissions = useAdminAuthStore((s) => s.permissions);
 
     const [activeTab, setActiveTab] = useState("basic");
     const [room, setRoom] = useState(null);
     const [inventory, setInventory] = useState([]);
+    const [equipments, setEquipments] = useState([]);
     const [loadingRoom, setLoadingRoom] = useState(true);
     const [loadingInv, setLoadingInv] = useState(false);
     const [savingStatus, setSavingStatus] = useState(false);
@@ -242,6 +284,16 @@ export default function RoomDetailPage() {
     }, []);
 
     const dismissToast = useCallback(id => setToasts(prev => prev.filter(t => t.id !== id)), []);
+    const hasPermission = useCallback(
+        (code) =>
+            permissions.some(
+                (p) =>
+                    (typeof p === "string" && p === code) ||
+                    (typeof p === "object" && p.permissionCode === code),
+            ),
+        [permissions],
+    );
+    const canManageInventory = hasPermission("MANAGE_INVENTORY");
 
     // Load room info
     const loadRoom = useCallback(async () => {
@@ -259,6 +311,7 @@ export default function RoomDetailPage() {
 
     // Load inventory
     const loadInventory = useCallback(async () => {
+        if (!canManageInventory) return;
         setLoadingInv(true);
         try {
             const res = await getInventoryByRoom(id);
@@ -269,13 +322,28 @@ export default function RoomDetailPage() {
         } catch (e) {
             showToast(e?.response?.data?.message || "Không thể tải vật tư.", "error");
         } finally { setLoadingInv(false); }
-    }, [id]);
+    }, [canManageInventory, id]);
+
+    const loadEquipments = useCallback(async () => {
+        if (!canManageInventory) return;
+        try {
+            const res = await getEquipments();
+            setEquipments(res.data?.data || []);
+        } catch (e) {
+            showToast(e?.response?.data?.message || "Không thể tải danh mục vật tư.", "error");
+        }
+    }, [canManageInventory, showToast]);
 
     useEffect(() => { loadRoom(); }, [loadRoom]);
 
     useEffect(() => {
         if (activeTab === "inventory") loadInventory();
     }, [activeTab, loadInventory]);
+
+    useEffect(() => {
+        if (canManageInventory) loadEquipments();
+        else if (activeTab === "inventory") setActiveTab("basic");
+    }, [activeTab, canManageInventory, loadEquipments]);
 
     // Save status
     const handleSaveStatus = async () => {
@@ -296,12 +364,12 @@ export default function RoomDetailPage() {
     };
 
     // Delete inventory item
-    const handleDelete = async (itemId, itemName) => {
-        if (!window.confirm(`Bạn có chắc muốn xóa vật tư "${itemName}"?`)) return;
+    const handleDelete = async (itemId, equipmentName) => {
+        if (!window.confirm(`Bạn có chắc muốn xóa vật tư "${equipmentName}"?`)) return;
         setDeletingId(itemId);
         try {
             await deleteInventory(itemId);
-            showToast(`Đã xóa vật tư "${itemName}".`, "success");
+            showToast(`Đã xóa vật tư "${equipmentName}".`, "success");
             loadInventory();
         } catch (e) {
             showToast(e?.response?.data?.message || "Không thể xóa vật tư.", "error");
@@ -325,7 +393,13 @@ export default function RoomDetailPage() {
         Dirty: { label: "Phòng bẩn (Dirty)", dot: "#f59e0b", badge: "#fef3c7", badgeText: "#92400e" },
     };
 
-    const bsCfg = STATUS_BS[room?.businessStatus] || STATUS_BS.Available;
+    const statusKey = room?.status || room?.businessStatus;
+    const bsCfg =
+        (statusKey === "Cleaning"
+            ? { label: "Đang dọn phòng", dot: "#2563eb", badge: "#dbeafe", badgeText: "#1d4ed8" }
+            : statusKey === "Maintenance"
+                ? { label: "Đang bảo trì", dot: "#8b5cf6", badge: "#ede9fe", badgeText: "#6d28d9" }
+                : STATUS_BS[statusKey]) || STATUS_BS.Available;
     const csCfg = STATUS_CS[room?.cleaningStatus] || STATUS_CS.Clean;
 
     return (
@@ -359,6 +433,7 @@ export default function RoomDetailPage() {
                 onSave={() => { setInvModal(false); setEditItem(null); showToast(editItem ? "Cập nhật vật tư thành công." : "Thêm vật tư thành công."); loadInventory(); }}
                 editItem={editItem}
                 roomId={Number(id)}
+                equipments={equipments}
             />
             <CloneModal
                 open={cloneModal}
@@ -410,7 +485,7 @@ export default function RoomDetailPage() {
                 <div style={{ display: "flex", gap: 32, marginBottom: 28, borderBottom: "1px solid #f1f0ea" }}>
                     {[
                         { key: "basic", label: "Thông tin cơ bản", icon: "info" },
-                        { key: "inventory", label: "Quản lý vật tư", icon: "inventory_2", count: inventory.length },
+                        ...(canManageInventory ? [{ key: "inventory", label: "Quản lý vật tư", icon: "inventory_2", count: inventory.length }] : []),
                     ].map(tab => (
                         <button
                             key={tab.key}
@@ -603,7 +678,7 @@ export default function RoomDetailPage() {
                                                         <td style={{ padding: "16px 20px" }}>
                                                             <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 700, color: "#4f645b", letterSpacing: ".05em" }}>{code}</span>
                                                         </td>
-                                                        <td style={{ padding: "16px 20px", fontSize: 14, fontWeight: 500, color: "#1c1917" }}>{item.itemName}</td>
+                                                        <td style={{ padding: "16px 20px", fontSize: 14, fontWeight: 500, color: "#1c1917" }}>{item.equipmentName}</td>
                                                         <td style={{ padding: "16px 20px" }}>
                                                             <span style={{
                                                                 fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 9999,
@@ -632,7 +707,7 @@ export default function RoomDetailPage() {
                                                                 </button>
                                                                 <button
                                                                     className="action-btn"
-                                                                    onClick={() => handleDelete(item.id, item.itemName)}
+                                                                    onClick={() => handleDelete(item.id, item.equipmentName)}
                                                                     disabled={deletingId === item.id}
                                                                     title="Xóa"
                                                                     style={{ color: deletingId === item.id ? "#d1d5db" : "#ef4444" }}>

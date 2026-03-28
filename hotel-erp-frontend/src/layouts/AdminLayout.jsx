@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAdminAuthStore } from "../store/adminAuthStore";
 import { useLoadingStore } from "../store/loadingStore";
@@ -13,12 +13,10 @@ export default function AdminLayout() {
   const updateUser = useAdminAuthStore((s) => s.updateUser);
   const isLoading = useLoadingStore((s) => s.isLoading);
   const navigate = useNavigate();
-  
+
   useSignalR(); // Initialize WebSocket connection global
 
   const [topSearch, setTopSearch] = useState("");
-  const debounceRef = useRef(null);
-
   const handleLogout = async () => {
     try {
       await logout();
@@ -41,7 +39,7 @@ export default function AdminLayout() {
       }
     };
     if (user?.id || user?.fullName) {
-        fetchProfile();
+      fetchProfile();
     }
   }, []);
 
@@ -53,8 +51,11 @@ export default function AdminLayout() {
   const hasPermission = (code) =>
     permissions.some(
       (p) =>
-        (typeof p === "string" && p === code) ||
-        (typeof p === "object" && p.permissionCode === code),
+        (typeof p === "string" &&
+          (p === code || (code === "VIEW_ROLES" && p === "MANAGE_ROLES"))) ||
+        (typeof p === "object" &&
+          (p.permissionCode === code ||
+            (code === "VIEW_ROLES" && p.permissionCode === "MANAGE_ROLES"))),
     );
 
   const ch = (user?.fullName || "A")[0].toUpperCase();
@@ -159,7 +160,9 @@ export default function AdminLayout() {
                     <span
                       className="material-symbols-outlined"
                       style={{
-                        fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+                        fontVariationSettings: isActive
+                          ? "'FILL' 1"
+                          : "'FILL' 0",
                       }}
                     >
                       meeting_room
@@ -177,7 +180,9 @@ export default function AdminLayout() {
                     <span
                       className="material-symbols-outlined"
                       style={{
-                        fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+                        fontVariationSettings: isActive
+                          ? "'FILL' 1"
+                          : "'FILL' 0",
                       }}
                     >
                       category
@@ -195,7 +200,9 @@ export default function AdminLayout() {
                     <span
                       className="material-symbols-outlined"
                       style={{
-                        fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+                        fontVariationSettings: isActive
+                          ? "'FILL' 1"
+                          : "'FILL' 0",
                       }}
                     >
                       inventory_2
@@ -213,7 +220,9 @@ export default function AdminLayout() {
                     <span
                       className="material-symbols-outlined"
                       style={{
-                        fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+                        fontVariationSettings: isActive
+                          ? "'FILL' 1"
+                          : "'FILL' 0",
                       }}
                     >
                       report_problem
@@ -232,7 +241,9 @@ export default function AdminLayout() {
                     <span
                       className="material-symbols-outlined"
                       style={{
-                        fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+                        fontVariationSettings: isActive
+                          ? "'FILL' 1"
+                          : "'FILL' 0",
                       }}
                     >
                       confirmation_number
@@ -250,7 +261,9 @@ export default function AdminLayout() {
                     <span
                       className="material-symbols-outlined"
                       style={{
-                        fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+                        fontVariationSettings: isActive
+                          ? "'FILL' 1"
+                          : "'FILL' 0",
                       }}
                     >
                       group
@@ -261,14 +274,16 @@ export default function AdminLayout() {
               </NavLink>
             )}
 
-            {hasPermission("MANAGE_ROLES") && (
+            {hasPermission("VIEW_ROLES") && (
               <NavLink to="/admin/roles" style={navStyle}>
                 {({ isActive }) => (
                   <>
                     <span
                       className="material-symbols-outlined"
                       style={{
-                        fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+                        fontVariationSettings: isActive
+                          ? "'FILL' 1"
+                          : "'FILL' 0",
                       }}
                     >
                       shield_person
@@ -367,6 +382,24 @@ export default function AdminLayout() {
                 placeholder="Tìm kiếm tài nguyên..."
               />
             </div>
+            <nav style={{ display: "flex", gap: 24 }}>
+              {["Hotels", "Analytics", "Reports"].map((item, i) => (
+                <a
+                  key={item}
+                  href="#"
+                  style={{
+                    fontSize: 14,
+                    fontWeight: i === 1 ? 600 : 500,
+                    color: i === 1 ? "#1a3826" : "#6b7280",
+                    textDecoration: "none",
+                    borderBottom: i === 1 ? "2px solid #1a3826" : "none",
+                    paddingBottom: i === 1 ? 4 : 0,
+                  }}
+                >
+                  {item}
+                </a>
+              ))}
+            </nav>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{ display: "flex", gap: 4 }}>
