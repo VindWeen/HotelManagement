@@ -27,11 +27,11 @@ const fmtDateTime = (d) =>
 
 // ─── Status Config ─────────────────────────────────────────────────────────────
 const STATUS_CFG = {
-  Pending:    { label: "Chờ xử lý",  bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
-  Confirmed:  { label: "Đã xác nhận",bg: "#dbeafe", color: "#1e40af", dot: "#3b82f6" },
-  Checked_in: { label: "Đang ở",     bg: "#d1fae5", color: "#065f46", dot: "#10b981" },
-  Completed:  { label: "Hoàn thành", bg: "#f1f5f9", color: "#475569", dot: "#94a3b8" },
-  Cancelled:  { label: "Đã huỷ",     bg: "#fee2e2", color: "#991b1b", dot: "#ef4444" },
+  Pending: { label: "Chờ xử lý", bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
+  Confirmed: { label: "Đã xác nhận", bg: "#dbeafe", color: "#1e40af", dot: "#3b82f6" },
+  Checked_in: { label: "Đang ở", bg: "#d1fae5", color: "#065f46", dot: "#10b981" },
+  Completed: { label: "Hoàn thành", bg: "#f1f5f9", color: "#475569", dot: "#94a3b8" },
+  Cancelled: { label: "Đã huỷ", bg: "#fee2e2", color: "#991b1b", dot: "#ef4444" },
 };
 
 // ─── Room Business Status Config ───────────────────────────────────────────────
@@ -99,7 +99,7 @@ function MiniBar({ data, labels, color = "#4f645b" }) {
 function Stars({ rating }) {
   return (
     <span style={{ display: "inline-flex", gap: 1 }}>
-      {[1,2,3,4,5].map(s => (
+      {[1, 2, 3, 4, 5].map(s => (
         <span
           key={s}
           className="material-symbols-outlined"
@@ -181,7 +181,7 @@ export default function DashboardPage() {
       });
       const todayRevenue = todayBookings.reduce((s, b) => s + (b.totalEstimatedAmount || 0), 0);
 
-      const activeBookings = bkList.filter(b => ["Confirmed","Checked_in","Pending"].includes(b.status)).length;
+      const activeBookings = bkList.filter(b => ["Confirmed", "Checked_in", "Pending"].includes(b.status)).length;
       const pendingBookings = bkList.filter(b => b.status === "Pending").length;
 
       const available = rmList.filter(r => r.businessStatus === "Available").length;
@@ -244,10 +244,12 @@ export default function DashboardPage() {
   const statusEntries = Object.entries(stats.bookingsByStatus).sort((a, b) => b[1] - a[1]);
   const totalBk = bookings.length || 1;
 
+  const weekdays = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+
   const dayLabels = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
-    return d.toLocaleDateString("vi-VN", { weekday: "short" }).slice(0, 2);
+    return weekdays[d.getDay()];
   });
 
   return (
@@ -488,7 +490,7 @@ export default function DashboardPage() {
                   </div>
                 )}
                 <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 6 }}>
-                  {[5,4,3,2,1].map(star => {
+                  {[5, 4, 3, 2, 1].map(star => {
                     const cnt = reviews.filter(r => r.rating === star).length;
                     const pct = reviews.length > 0 ? Math.round((cnt / reviews.length) * 100) : 0;
                     return (
