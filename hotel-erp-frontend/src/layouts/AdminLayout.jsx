@@ -188,6 +188,24 @@ export default function AdminLayout() {
               </NavLink>
             )}
 
+            {hasPermission("MANAGE_INVENTORY") && (
+              <NavLink to="/admin/loss-damage" style={navStyle}>
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className="material-symbols-outlined"
+                      style={{
+                        fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+                      }}
+                    >
+                      report_problem
+                    </span>
+                    <span>Thất thoát & Đền bù</span>
+                  </>
+                )}
+              </NavLink>
+            )}
+
             {/* Thêm các mục khác tương tự */}
             {hasPermission("MANAGE_BOOKINGS") && (
               <NavLink to="/admin/bookings" style={navStyle}>

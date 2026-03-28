@@ -252,6 +252,13 @@ export default function DashboardPage() {
     return weekdays[d.getDay()];
   });
 
+  // ─── Đếm phòng theo từng trạng thái ───────────────────────────────────────
+  const roomCountByStatus = {
+    Available: rooms.filter(r => r.businessStatus === "Available").length,
+    Occupied: rooms.filter(r => r.businessStatus === "Occupied").length,
+    Disabled: rooms.filter(r => r.businessStatus === "Disabled").length,
+  };
+
   return (
     <>
       <style>{`
@@ -489,7 +496,7 @@ export default function DashboardPage() {
                     <span style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>{stats.pendingReviews} đánh giá chờ duyệt</span>
                   </div>
                 )}
-                <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {[5, 4, 3, 2, 1].map(star => {
                     const cnt = reviews.filter(r => r.rating === star).length;
                     const pct = reviews.length > 0 ? Math.round((cnt / reviews.length) * 100) : 0;
@@ -619,8 +626,8 @@ export default function DashboardPage() {
 
             {/* Legend badges */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {Object.entries(ROOM_BS_CFG).map(([key, cfg]) => {
-                const cnt = rooms.filter(r => r.businessStatus === key).length;
+              {(["Available", "Occupied", "Disabled"]).map(status => {
+                const cfg = ROOM_BS_CFG[status];
                 return (
                   <span
                     key={key}

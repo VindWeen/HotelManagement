@@ -8,6 +8,7 @@ import RequirePermission from "./RequirePermission";
 import PublicOnlyRoute from "./PublicOnlyRoute";
 import UserListPage from "../pages/admin/UserListPage";
 import RolePermissionPage from "../pages/admin/RolePermissionPage";
+import LossAndDamagePage from "../pages/admin/Lossanddamagepage";
 
 export default function AdminRoutes() {
   return (
@@ -54,6 +55,14 @@ export default function AdminRoutes() {
           element={
             <RequirePermission permission="MANAGE_ROLES">
               <RolePermissionPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="loss-damage"
+          element={
+            <RequirePermission permission="MANAGE_INVENTORY">
+              <LossAndDamagePage />
             </RequirePermission>
           }
         />
