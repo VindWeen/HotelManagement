@@ -34,6 +34,7 @@ const STATUS_CFG = {
   Cancelled:  { label: "Đã huỷ",     bg: "#fee2e2", color: "#991b1b", dot: "#ef4444" },
 };
 
+<<<<<<< HEAD
 // ─── Room Business Status Config ──────────────────────────────────────────────
 // Dựa theo seed data SQL: Available / Occupied / Disabled
 const ROOM_BS_CFG = {
@@ -70,6 +71,24 @@ const ROOM_CS_CFG = {
   Dirty: { color: "#b45309", icon: "warning", label: "Cần dọn" },
 };
 
+=======
+// ─── Room Business Status Config ───────────────────────────────────────────────
+const ROOM_BS_CFG = {
+  Available: {
+    bg: "#f0fdf4", border: "#bbf7d0", dot: "#16a34a", label: "Trống",
+    badge_bg: "#dcfce7", badge_color: "#14532d",
+  },
+  Occupied: {
+    bg: "#fff7ed", border: "#fed7aa", dot: "#ea580c", label: "Có khách",
+    badge_bg: "#ffedd5", badge_color: "#7c2d12",
+  },
+  Disabled: {
+    bg: "#fff1f2", border: "#fecdd3", dot: "#dc2626", label: "Đang kiểm tra",
+    badge_bg: "#fee2e2", badge_color: "#7f1d1d",
+  },
+};
+
+>>>>>>> VoNhacPhuoc
 // ─── Skeleton ──────────────────────────────────────────────────────────────────
 const Skel = ({ w = "100%", h = 16, r = 8, style = {} }) => (
   <div
@@ -204,7 +223,10 @@ export default function DashboardPage() {
       const activeBookings = bkList.filter(b => ["Confirmed","Checked_in","Pending"].includes(b.status)).length;
       const pendingBookings = bkList.filter(b => b.status === "Pending").length;
 
+<<<<<<< HEAD
       // Available = phòng trống (theo business_status trong SQL)
+=======
+>>>>>>> VoNhacPhuoc
       const available = rmList.filter(r => r.businessStatus === "Available").length;
       const total = rmList.length || 1;
       const occupancyRate = Math.round(((total - available) / total) * 100);
@@ -246,6 +268,7 @@ export default function DashboardPage() {
       });
 
       setStats({
+<<<<<<< HEAD
         totalRevenue,
         todayRevenue,
         activeBookings,
@@ -260,6 +283,13 @@ export default function DashboardPage() {
         revenueByDay,
         bookingsByStatus,
         roomTypeOccupancy,
+=======
+        totalRevenue, todayRevenue, activeBookings, pendingBookings,
+        occupancyRate, availableRooms: available,
+        totalUsers: usList.length, newUsersThisMonth,
+        avgRating, pendingReviews, activeVouchers,
+        revenueByDay, bookingsByStatus, roomTypeOccupancy,
+>>>>>>> VoNhacPhuoc
       });
     } catch (err) {
       console.error("Dashboard load error:", err);
@@ -270,6 +300,7 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+<<<<<<< HEAD
   const recentBookings = [...bookings]
     .sort((a, b) => b.id - a.id)
     .slice(0, 8);
@@ -277,11 +308,16 @@ export default function DashboardPage() {
   const statusEntries = Object.entries(stats.bookingsByStatus)
     .sort((a, b) => b[1] - a[1]);
 
+=======
+  const recentBookings = [...bookings].sort((a, b) => b.id - a.id).slice(0, 8);
+  const statusEntries = Object.entries(stats.bookingsByStatus).sort((a, b) => b[1] - a[1]);
+>>>>>>> VoNhacPhuoc
   const totalBk = bookings.length || 1;
 
   const dayLabels = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
+<<<<<<< HEAD
     return d.toLocaleDateString("vi-VN", { weekday: "short" });
   });
 
@@ -292,6 +328,11 @@ export default function DashboardPage() {
     Disabled:  rooms.filter(r => r.businessStatus === "Disabled").length,
   };
 
+=======
+    return d.toLocaleDateString("vi-VN", { weekday: "short" }).slice(0, 2);
+  });
+
+>>>>>>> VoNhacPhuoc
   return (
     <>
       <style>{`
@@ -306,6 +347,11 @@ export default function DashboardPage() {
         .refresh-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:10px; font-size:13px; font-weight:700; background:white; color:#1c1917; border:1.5px solid #e2e8e1; cursor:pointer; font-family:'Manrope',sans-serif; transition:background .15s; }
         .refresh-btn:hover { background:#f9f8f3; }
         .refresh-btn:active { transform:scale(.97); }
+<<<<<<< HEAD
+=======
+        @keyframes spin { to { transform:rotate(360deg) } }
+        .spin { animation:spin .7s linear infinite; }
+>>>>>>> VoNhacPhuoc
         .scroll-x { overflow-x:auto; }
         .scroll-x::-webkit-scrollbar { height: 4px; }
         .scroll-x::-webkit-scrollbar-track { background: transparent; }
@@ -313,13 +359,22 @@ export default function DashboardPage() {
         .progress-bar { height:6px; border-radius:9999px; background:#efeee7; overflow:hidden; }
         .progress-bar-inner { height:100%; border-radius:9999px; transition: width .6s ease; }
         tr.hover-row:hover td { background:rgba(249,248,243,.6); }
+<<<<<<< HEAD
         .room-card { transition: transform .15s, box-shadow .15s; cursor: default; }
         .room-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+=======
+        .room-card { transition: transform .15s, box-shadow .15s; }
+        .room-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+>>>>>>> VoNhacPhuoc
       `}</style>
 
       <div style={{ maxWidth: 1400, margin: "0 auto", fontFamily: "Manrope, sans-serif" }}>
 
+<<<<<<< HEAD
         {/* ── Header ──────────────────────────────────────────────────────── */}
+=======
+        {/* ── Header ── */}
+>>>>>>> VoNhacPhuoc
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
           <div>
             <h2 style={{ fontSize: 28, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.03em", margin: "0 0 5px" }}>
@@ -333,17 +388,25 @@ export default function DashboardPage() {
             </p>
           </div>
           <button className="refresh-btn" onClick={fetchAll} disabled={loading}>
+<<<<<<< HEAD
             <span
               className="material-symbols-outlined"
               style={{ fontSize: 18, ...(loading ? { animation: "spin .7s linear infinite" } : {}) }}
             >
+=======
+            <span className="material-symbols-outlined" style={{ fontSize: 18, ...(loading ? { animation: "spin .7s linear infinite" } : {}) }}>
+>>>>>>> VoNhacPhuoc
               refresh
             </span>
             Làm mới
           </button>
         </div>
 
+<<<<<<< HEAD
         {/* ── KPI Row ──────────────────────────────────────────────────────── */}
+=======
+        {/* ── KPI Row ── */}
+>>>>>>> VoNhacPhuoc
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 28 }}>
           {[
             {
@@ -362,7 +425,11 @@ export default function DashboardPage() {
               icon: "meeting_room", bg: "#ffdad9", iconBg: "rgba(109,72,73,.1)", iconColor: "#6d4849",
               label: "Tỷ lệ lấp đầy", value: loading ? null : `${stats.occupancyRate}%`,
               sub: loading ? null : `${stats.availableRooms} phòng còn trống`,
+<<<<<<< HEAD
               subColor: "#10b981", delay: 120,
+=======
+              subColor: "#16a34a", delay: 120,
+>>>>>>> VoNhacPhuoc
             },
             {
               icon: "group", bg: "#f7e8dd", iconBg: "rgba(95,85,77,.1)", iconColor: "#5f554d",
@@ -374,10 +441,14 @@ export default function DashboardPage() {
             <div
               key={idx}
               className="card-in"
+<<<<<<< HEAD
               style={{
                 background: kpi.bg, borderRadius: 18, padding: 22,
                 animationDelay: `${kpi.delay}ms`, animationFillMode: "both",
               }}
+=======
+              style={{ background: kpi.bg, borderRadius: 18, padding: 22, animationDelay: `${kpi.delay}ms`, animationFillMode: "both" }}
+>>>>>>> VoNhacPhuoc
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                 <div style={{ padding: 9, background: kpi.iconBg, borderRadius: 12 }}>
@@ -405,7 +476,11 @@ export default function DashboardPage() {
           ))}
         </div>
 
+<<<<<<< HEAD
         {/* ── Row 2: Revenue Chart + Room Type Occupancy ───────────────────── */}
+=======
+        {/* ── Row 2: Revenue + Room Type Occupancy ── */}
+>>>>>>> VoNhacPhuoc
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
           <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "200ms", animationFillMode: "both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
@@ -457,7 +532,14 @@ export default function DashboardPage() {
                       </span>
                     </div>
                     <div className="progress-bar">
+<<<<<<< HEAD
                       <div className="progress-bar-inner" style={{ width: `${rt.rate}%`, background: rt.rate > 70 ? "#4f645b" : rt.rate > 40 ? "#3b82f6" : "#cbd5e1" }} />
+=======
+                      <div
+                        className="progress-bar-inner"
+                        style={{ width: `${rt.rate}%`, background: rt.rate > 70 ? "#4f645b" : rt.rate > 40 ? "#3b82f6" : "#cbd5e1" }}
+                      />
+>>>>>>> VoNhacPhuoc
                     </div>
                   </div>
                 ))}
@@ -466,7 +548,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
+<<<<<<< HEAD
         {/* ── Row 3: Booking Status + Reviews + Quick Stats ────────────────── */}
+=======
+        {/* ── Row 3: Booking Status + Reviews + Quick Stats ── */}
+>>>>>>> VoNhacPhuoc
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 20 }}>
           <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "300ms", animationFillMode: "both" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: "0 0 18px" }}>Phân loại booking</h4>
@@ -513,9 +599,13 @@ export default function DashboardPage() {
               <>
                 <div style={{ background: "linear-gradient(135deg, #4f645b 0%, #2f433c 100%)", borderRadius: 14, padding: "16px 20px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
+<<<<<<< HEAD
                     <p style={{ fontSize: 11, color: "rgba(231,254,243,.6)", fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                       Điểm trung bình
                     </p>
+=======
+                    <p style={{ fontSize: 11, color: "rgba(231,254,243,.6)", fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Điểm trung bình</p>
+>>>>>>> VoNhacPhuoc
                     <p style={{ fontSize: 32, fontWeight: 800, color: "#e7fef3", margin: 0, lineHeight: 1 }}>
                       {stats.avgRating.toFixed(1)}
                       <span style={{ fontSize: 14, color: "rgba(231,254,243,.6)", fontWeight: 500 }}>/5</span>
@@ -527,6 +617,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 {stats.pendingReviews > 0 && (
+<<<<<<< HEAD
                   <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fef3c7", borderRadius: 10, padding: "8px 12px", marginBottom: 14 }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 16, color: "#f59e0b" }}>schedule</span>
                     <span style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>
@@ -535,6 +626,14 @@ export default function DashboardPage() {
                   </div>
                 )}
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+=======
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fef3c7", borderRadius: 10, padding: "8px 12px" }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 16, color: "#f59e0b" }}>schedule</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>{stats.pendingReviews} đánh giá chờ duyệt</span>
+                  </div>
+                )}
+                <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 6 }}>
+>>>>>>> VoNhacPhuoc
                   {[5,4,3,2,1].map(star => {
                     const cnt = reviews.filter(r => r.rating === star).length;
                     const pct = reviews.length > 0 ? Math.round((cnt / reviews.length) * 100) : 0;
@@ -570,9 +669,13 @@ export default function DashboardPage() {
                 ].map((item, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, background: "#fafaf8", borderRadius: 12, padding: "10px 14px" }}>
                     <div style={{ padding: 8, background: item.bg, borderRadius: 10, flexShrink: 0 }}>
+<<<<<<< HEAD
                       <span className="material-symbols-outlined" style={{ fontSize: 18, color: item.iconColor, fontVariationSettings: "'FILL' 1" }}>
                         {item.icon}
                       </span>
+=======
+                      <span className="material-symbols-outlined" style={{ fontSize: 18, color: item.iconColor, fontVariationSettings: "'FILL' 1" }}>{item.icon}</span>
+>>>>>>> VoNhacPhuoc
                     </div>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, margin: "0 0 1px" }}>{item.label}</p>
@@ -586,7 +689,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
+<<<<<<< HEAD
         {/* ── Recent Bookings Table ─────────────────────────────────────────── */}
+=======
+        {/* ── Recent Bookings Table ── */}
+>>>>>>> VoNhacPhuoc
         <div className="card-in" style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", overflow: "hidden", animationDelay: "460ms", animationFillMode: "both", marginBottom: 20 }}>
           <div style={{ padding: "20px 28px", borderBottom: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: 0 }}>Booking gần đây</h4>
@@ -618,9 +725,13 @@ export default function DashboardPage() {
                   ))
                 ) : recentBookings.length === 0 ? (
                   <tr>
+<<<<<<< HEAD
                     <td colSpan={6} style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
                       Chưa có booking nào
                     </td>
+=======
+                    <td colSpan={6} style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>Chưa có booking nào</td>
+>>>>>>> VoNhacPhuoc
                   </tr>
                 ) : (
                   recentBookings.map((b, i) => {
@@ -629,15 +740,20 @@ export default function DashboardPage() {
                     return (
                       <tr key={b.id} className="hover-row" style={{ borderBottom: "1px solid #fafaf8" }}>
                         <td style={{ padding: "14px 20px" }}>
+<<<<<<< HEAD
                           <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 700, color: "#4f645b", letterSpacing: "0.05em" }}>
                             {b.bookingCode}
                           </span>
+=======
+                          <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 700, color: "#4f645b", letterSpacing: "0.05em" }}>{b.bookingCode}</span>
+>>>>>>> VoNhacPhuoc
                         </td>
                         <td style={{ padding: "14px 20px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(79,100,91,.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f645b", fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
                               {initial}
                             </div>
+<<<<<<< HEAD
                             <span style={{ fontSize: 13, fontWeight: 600, color: "#1c1917" }}>
                               {b.guestName || "Khách vãng lai"}
                             </span>
@@ -646,13 +762,23 @@ export default function DashboardPage() {
                         <td style={{ padding: "14px 20px", fontSize: 12, color: "#6b7280" }}>
                           {b.guestPhone || b.guestEmail || "—"}
                         </td>
+=======
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "#1c1917" }}>{b.guestName || "Khách vãng lai"}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: "14px 20px", fontSize: 12, color: "#6b7280" }}>{b.guestPhone || b.guestEmail || "—"}</td>
+>>>>>>> VoNhacPhuoc
                         <td style={{ padding: "14px 20px", fontSize: 12, color: "#6b7280", whiteSpace: "nowrap" }}>
                           {b.checkInTime ? fmtDateTime(b.checkInTime) : fmtDate(b.bookingDetails?.[0]?.checkInDate)}
                         </td>
                         <td style={{ padding: "14px 20px", textAlign: "right" }}>
+<<<<<<< HEAD
                           <span style={{ fontSize: 13, fontWeight: 700, color: "#1c1917" }}>
                             {fmtCurrency(b.totalEstimatedAmount)}
                           </span>
+=======
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#1c1917" }}>{fmtCurrency(b.totalEstimatedAmount)}</span>
+>>>>>>> VoNhacPhuoc
                         </td>
                         <td style={{ padding: "14px 20px" }}>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 9999, fontSize: 11, fontWeight: 700, background: cfg.bg, color: cfg.color }}>
@@ -669,6 +795,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
+<<<<<<< HEAD
         {/* ── Trạng thái phòng ─────────────────────────────────────────────── */}
         <div className="card-in" style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", overflow: "hidden", animationDelay: "500ms", animationFillMode: "both" }}>
           {/* Header với legend 3 trạng thái */}
@@ -691,6 +818,29 @@ export default function DashboardPage() {
                   >
                     <span style={{ width: 7, height: 7, borderRadius: "50%", background: cfg.dot }} />
                     {loading ? "…" : `${roomCountByStatus[status]} ${cfg.label}`}
+=======
+        {/* ── Room Status Grid ── */}
+        <div className="card-in" style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", overflow: "hidden", animationDelay: "500ms", animationFillMode: "both" }}>
+          <div style={{ padding: "20px 28px", borderBottom: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: 0 }}>Trạng thái phòng</h4>
+
+            {/* Legend badges */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {Object.entries(ROOM_BS_CFG).map(([key, cfg]) => {
+                const cnt = rooms.filter(r => r.businessStatus === key).length;
+                return (
+                  <span
+                    key={key}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      fontSize: 11, fontWeight: 700,
+                      background: cfg.badge_bg, color: cfg.badge_color,
+                      padding: "4px 12px", borderRadius: 9999,
+                    }}
+                  >
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: cfg.dot, flexShrink: 0 }} />
+                    {loading ? "…" : cnt} {cfg.label}
+>>>>>>> VoNhacPhuoc
                   </span>
                 );
               })}
@@ -708,7 +858,11 @@ export default function DashboardPage() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))", gap: 12 }}>
                 {rooms.slice(0, 12).map((rm) => {
                   const bsCfg = ROOM_BS_CFG[rm.businessStatus] || ROOM_BS_CFG.Disabled;
+<<<<<<< HEAD
                   const csCfg = ROOM_CS_CFG[rm.cleaningStatus] || ROOM_CS_CFG.Dirty;
+=======
+                  const cleanOk = rm.cleaningStatus === "Clean";
+>>>>>>> VoNhacPhuoc
 
                   return (
                     <div
@@ -719,23 +873,39 @@ export default function DashboardPage() {
                         border: `1.5px solid ${bsCfg.border}`,
                         borderRadius: 14,
                         padding: "14px 16px",
+<<<<<<< HEAD
                       }}
                     >
                       {/* Số phòng + dot trạng thái kinh doanh */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
                         <span style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.01em" }}>
+=======
+                        cursor: "default",
+                      }}
+                    >
+                      {/* Room number + status dot */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <span style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.02em" }}>
+>>>>>>> VoNhacPhuoc
                           {rm.roomNumber}
                         </span>
                         <span
                           style={{
+<<<<<<< HEAD
                             width: 9, height: 9, borderRadius: "50%",
                             background: bsCfg.dot,
                             flexShrink: 0, marginTop: 3,
                             boxShadow: `0 0 0 2.5px ${bsCfg.dot}33`,
+=======
+                            width: 10, height: 10, borderRadius: "50%",
+                            background: bsCfg.dot, flexShrink: 0,
+                            boxShadow: `0 0 0 3px ${bsCfg.border}`,
+>>>>>>> VoNhacPhuoc
                           }}
                         />
                       </div>
 
+<<<<<<< HEAD
                       {/* Loại phòng */}
                       <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(0,0,0,.38)", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.08em", lineHeight: 1.3 }}>
                         {rm.roomTypeName || `Tầng ${rm.floor || "?"}`}
@@ -756,21 +926,53 @@ export default function DashboardPage() {
                         </span>
                         <span style={{ fontSize: 10, fontWeight: 600, color: csCfg.color }}>
                           {csCfg.label}
+=======
+                      {/* Room type / floor */}
+                      <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(0,0,0,.38)", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {rm.roomTypeName || (rm.floor ? `Tầng ${rm.floor}` : "—")}
+                      </p>
+
+                      {/* Business status badge */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: bsCfg.badge_color }}>
+                          {bsCfg.label}
+                        </span>
+
+                        {/* Cleaning status icon */}
+                        <span
+                          className="material-symbols-outlined"
+                          style={{
+                            fontSize: 15,
+                            color: cleanOk ? "#16a34a" : "#ea580c",
+                            fontVariationSettings: "'FILL' 1",
+                          }}
+                          title={cleanOk ? "Phòng sạch" : "Cần dọn phòng"}
+                        >
+                          {cleanOk ? "check_circle" : "warning"}
+>>>>>>> VoNhacPhuoc
                         </span>
                       </div>
                     </div>
                   );
                 })}
 
+<<<<<<< HEAD
                 {/* Hiển thị phần còn lại nếu có */}
                 {rooms.length > 12 && (
                   <div style={{ background: "#f9f8f3", border: "1.5px dashed #d1d5db", borderRadius: 14, padding: "14px 16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: 11, fontWeight: 600, gap: 4 }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 22 }}>more_horiz</span>
                     +{rooms.length - 12} phòng khác
+=======
+                {rooms.length > 12 && (
+                  <div style={{ background: "#f9f8f3", border: "1.5px dashed #d1d5db", borderRadius: 14, padding: "14px 16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: 12, fontWeight: 600, gap: 4 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 22 }}>more_horiz</span>
+                    +{rooms.length - 12} phòng
+>>>>>>> VoNhacPhuoc
                   </div>
                 )}
               </div>
             )}
+<<<<<<< HEAD
 
             {/* Ghi chú chú thích màu sắc */}
             {!loading && rooms.length > 0 && (
@@ -784,6 +986,8 @@ export default function DashboardPage() {
                 ))}
               </div>
             )}
+=======
+>>>>>>> VoNhacPhuoc
           </div>
         </div>
 
