@@ -186,7 +186,12 @@ function DetailModal({ open, item, onClose }) {
 
 // ─── Edit Modal ───────────────────────────────────────────────────────────────
 function EditModal({ open, item, onClose, onSaved, showToast }) {
-    const [form, setForm] = useState({});
+    const [form, setForm] = useState({
+        quantity: 0,
+        penaltyAmount: 0,
+        description: "",
+        status: "Pending"
+    });
     const [saving, setSaving] = useState(false);
     const [existingImages, setExistingImages] = useState([]);
     const [newImageFiles, setNewImageFiles] = useState([]);
@@ -215,7 +220,9 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
         formData.append("keepImagesJson", JSON.stringify(existingImages.map(img => img.url)));
         newImageFiles.forEach(f => formData.append("images", f));
         try {
-            await axiosClient.put(`/LossAndDamages/${item.id}`, formData);
+            await axiosClient.put(`/LossAndDamages/${item.id}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             showToast("Đã lưu thay đổi thành công.");
             onSaved(); onClose();
         } catch { showToast("Cập nhật thất bại.", "error"); }

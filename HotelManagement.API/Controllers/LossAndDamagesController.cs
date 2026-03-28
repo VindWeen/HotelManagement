@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using System.Text.Json;
+using HotelManagement.API.Services;
+using HotelManagement.Core.Models.Enums;
 
 namespace HotelManagement.API.Controllers;
 
@@ -18,11 +20,13 @@ public class LossAndDamagesController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly Cloudinary   _cloudinary;
+    private readonly INotificationService _notificationService;
 
-    public LossAndDamagesController(AppDbContext db, Cloudinary cloudinary)
+    public LossAndDamagesController(AppDbContext db, Cloudinary cloudinary, INotificationService notificationService)
     {
-        _db         = db;
-        _cloudinary = cloudinary;
+        _db                  = db;
+        _cloudinary          = cloudinary;
+        _notificationService = notificationService;
     }
 
     // Đối tượng hỗ trợ lưu trữ JSON trong DB
@@ -152,7 +156,28 @@ public class LossAndDamagesController : ControllerBase
         _db.LossAndDamages.Add(record);
         await _db.SaveChangesAsync();
 
-        return StatusCode(201, new { message = "Tạo biên bản thành công.", id = record.Id });
+        // Lấy thông tin số phòng để gửi thông báo chi tiết hơn
+        var roomNumber = "N/A";
+        if (record.RoomInventoryId.HasValue)
+        {
+            roomNumber = await _db.RoomInventories
+                .Where(ri => ri.Id == record.RoomInventoryId)
+                .Select(ri => ri.Room!.RoomNumber)
+                .FirstOrDefaultAsync() ?? "N/A";
+        }
+
+        var notification = new Notification
+        {
+            Title   = "Biên bản mới đã được lập",
+            Message = $"Một biên bản bồi thường mới đã được tạo cho phòng {roomNumber}.",
+            Type    = NotificationType.Success,
+            Action  = NotificationAction.CreateLossReport
+        };
+
+        // Bắn SignalR cho Admin và Manager
+        _ = _notificationService.SendToRolesAsync(new[] { "Admin", "Manager" }, notification.Title, notification.Message, notification.Action.ToString());
+
+        return StatusCode(201, new { message = "Tạo biên bản thành công.", id = record.Id, notification });
     }
 
     [HttpPut("{id:int}")]
@@ -213,7 +238,16 @@ public class LossAndDamagesController : ControllerBase
         record.ImageUrl      = finalImages.Any() ? JsonSerializer.Serialize(finalImages) : null;
 
         await _db.SaveChangesAsync();
-        return Ok(new { message = "Cập nhật biên bản thành công.", imageUrl = record.ImageUrl });
+
+        var notification = new Notification
+        {
+            Title   = "Cập nhật biên bản thành công",
+            Message = $"Thông tin biên bản #{id} đã được cập nhật.",
+            Type    = NotificationType.Success,
+            Action  = NotificationAction.UpdateLossReport
+        };
+
+        return Ok(new { message = "Cập nhật biên bản thành công.", imageUrl = record.ImageUrl, notification });
     }
 
     [HttpDelete("{id:int}")]
@@ -236,7 +270,16 @@ public class LossAndDamagesController : ControllerBase
 
         _db.LossAndDamages.Remove(record);
         await _db.SaveChangesAsync();
-        return Ok(new { message = $"Đã xóa biên bản #{id}." });
+
+        var notification = new Notification
+        {
+            Title   = "Đã xóa biên bản",
+            Message = $"Biên bản bồi thường #{id} đã được xóa thành công.",
+            Type    = NotificationType.Success,
+            Action  = NotificationAction.DeleteLossReport
+        };
+
+        return Ok(new { message = $"Đã xóa biên bản #{id}.", notification });
     }
 }
 
