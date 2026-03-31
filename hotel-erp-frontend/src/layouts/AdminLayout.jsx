@@ -174,6 +174,26 @@ export default function AdminLayout() {
             )}
 
             {hasPermission("MANAGE_ROOMS") && (
+              <NavLink to="/admin/housekeeping" style={navStyle}>
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className="material-symbols-outlined"
+                      style={{
+                        fontVariationSettings: isActive
+                          ? "'FILL' 1"
+                          : "'FILL' 0",
+                      }}
+                    >
+                      cleaning_services
+                    </span>
+                    <span>Dọn phòng</span>
+                  </>
+                )}
+              </NavLink>
+            )}
+
+            {hasPermission("MANAGE_ROOMS") && (
               <NavLink to="/admin/room-types" style={navStyle}>
                 {({ isActive }) => (
                   <>

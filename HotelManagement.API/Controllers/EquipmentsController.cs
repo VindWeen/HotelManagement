@@ -52,4 +52,42 @@ public class EquipmentsController : ControllerBase
 
         return Ok(new { data = items, total = items.Count });
     }
+
+    [HttpPatch("{id:int}/deduct")]
+    public async Task<IActionResult> Deduct(int id, [FromBody] DeductEquipmentRequest request)
+    {
+        var equipment = await _db.Equipments.FindAsync(id);
+        if (equipment is null) return NotFound(new { message = $"Không tìm thấy vật tư #{id}." });
+
+        if (equipment.InUseQuantity >= request.Quantity)
+        {
+            equipment.InUseQuantity -= request.Quantity;
+        }
+        else
+        {
+            equipment.InUseQuantity = 0;
+        }
+
+        equipment.DamagedQuantity += request.Quantity;
+
+        if (request.AuditLog) {
+            var userId = HotelManagement.Core.Helpers.JwtHelper.GetUserId(User);
+            _db.AuditLogs.Add(new HotelManagement.Core.Entities.AuditLog
+            {
+                UserId = userId,
+                Action = "DEDUCT_EQUIPMENT",
+                TableName = "Equipments",
+                RecordId = id,
+                OldValue = null,
+                NewValue = $"{{\"quantity\": {request.Quantity}, \"reason\": \"{request.Reason}\"}}",
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "Khấu trừ thành công" });
+    }
 }
+
+public record DeductEquipmentRequest(int Quantity, string Reason, bool AuditLog);

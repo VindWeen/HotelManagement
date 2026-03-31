@@ -21,7 +21,6 @@ public class RoomInventoriesController : ControllerBase
     }
 
     [HttpGet("room/{roomId:int}")]
-    [RequirePermission(PermissionCodes.ManageInventory)]
     public async Task<IActionResult> GetByRoom(int roomId)
     {
         var roomExists = await _db.Rooms.AnyAsync(r => r.Id == roomId);

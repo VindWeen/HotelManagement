@@ -12,6 +12,7 @@ import LossAndDamagePage from "../pages/admin/Lossanddamagepage";
 import RoomManagementPage from "../pages/admin/RoomManagementPage";
 import RoomTypesPage from "../pages/admin/RoomTypesPage";
 import RoomDetailPage from "../pages/admin/RoomDetailPage";
+import HousekeepingPage from "../pages/admin/HousekeepingPage";
 import EquipmentPage from "../pages/admin/EquipmentPage";
 
 export default function AdminRoutes() {
@@ -62,6 +63,16 @@ export default function AdminRoutes() {
           element={
             <RequirePermission permission="MANAGE_ROOMS">
               <RoomDetailPage />
+            </RequirePermission>
+          }
+        />
+
+        {/* Dọn phòng */}
+        <Route
+          path="housekeeping"
+          element={
+            <RequirePermission permission="MANAGE_ROOMS">
+              <HousekeepingPage />
             </RequirePermission>
           }
         />

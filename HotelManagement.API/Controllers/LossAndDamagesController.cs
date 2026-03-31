@@ -158,7 +158,6 @@ public class LossAndDamagesController : ControllerBase
     }
 
     [HttpPost]
-    [RequirePermission(PermissionCodes.ManageInventory)]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Create([FromForm] CreateLossAndDamageRequest request)
     {
@@ -199,6 +198,40 @@ public class LossAndDamagesController : ControllerBase
         };
 
         _db.LossAndDamages.Add(record);
+
+        // -- Tự động trừ số lượng Equipment (in_use -> damaged) --
+        if (request.RoomInventoryId.HasValue)
+        {
+            var roomInv = await _db.RoomInventories
+                .Include(ri => ri.Equipment)
+                .FirstOrDefaultAsync(ri => ri.Id == request.RoomInventoryId);
+                
+            if (roomInv != null && roomInv.Equipment != null)
+            {
+                var eq = roomInv.Equipment;
+                int deductQty = request.Quantity;
+                
+                if (eq.InUseQuantity >= deductQty)
+                    eq.InUseQuantity -= deductQty;
+                else
+                    eq.InUseQuantity = 0;
+                    
+                eq.DamagedQuantity += deductQty;
+                
+                _db.AuditLogs.Add(new AuditLog
+                {
+                    UserId = userId,
+                    Action = "DEDUCT_EQUIPMENT",
+                    TableName = "Equipments",
+                    RecordId = eq.Id,
+                    OldValue = null,
+                    NewValue = $"{{\"quantity\": {deductQty}, \"reason\": \"Ghi nhận từ phiếu Mất/Phát sinh #{record.Id}\"}}",
+                    UserAgent = Request.Headers["User-Agent"].ToString(),
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
         await _db.SaveChangesAsync();
 
         // Lấy thông tin số phòng để gửi thông báo chi tiết hơn
