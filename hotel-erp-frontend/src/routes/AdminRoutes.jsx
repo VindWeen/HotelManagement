@@ -8,9 +8,12 @@ import RequirePermission from "./RequirePermission";
 import PublicOnlyRoute from "./PublicOnlyRoute";
 import UserListPage from "../pages/admin/UserListPage";
 import RolePermissionPage from "../pages/admin/RolePermissionPage";
+import LossAndDamagePage from "../pages/admin/Lossanddamagepage";
 import RoomManagementPage from "../pages/admin/RoomManagementPage";
 import RoomTypesPage from "../pages/admin/RoomTypesPage";
 import RoomDetailPage from "../pages/admin/RoomDetailPage";
+import HousekeepingPage from "../pages/admin/HousekeepingPage";
+import EquipmentPage from "../pages/admin/EquipmentPage";
 
 export default function AdminRoutes() {
   return (
@@ -64,6 +67,16 @@ export default function AdminRoutes() {
           }
         />
 
+        {/* Dọn phòng */}
+        <Route
+          path="housekeeping"
+          element={
+            <RequirePermission permission="MANAGE_ROOMS">
+              <HousekeepingPage />
+            </RequirePermission>
+          }
+        />
+
         {/* Hạng phòng */}
         <Route
           path="room-types"
@@ -79,7 +92,7 @@ export default function AdminRoutes() {
           path="items"
           element={
             <RequirePermission permission="MANAGE_INVENTORY">
-              <ComingSoonPage icon="inventory_2" title="Vật tư & Minibar" />
+              <EquipmentPage />
             </RequirePermission>
           }
         />
@@ -108,8 +121,16 @@ export default function AdminRoutes() {
         <Route
           path="roles"
           element={
-            <RequirePermission permission="MANAGE_ROLES">
+            <RequirePermission permission="VIEW_ROLES">
               <RolePermissionPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="loss-damage"
+          element={
+            <RequirePermission permission="MANAGE_INVENTORY">
+              <LossAndDamagePage />
             </RequirePermission>
           }
         />

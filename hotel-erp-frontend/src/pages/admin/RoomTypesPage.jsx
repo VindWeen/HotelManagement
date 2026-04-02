@@ -1,8 +1,8 @@
 // src/pages/admin/RoomTypesPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import {
-    getRoomTypes,
-    getRoomTypeById,
+    getAdminRoomTypes,
+    getAdminRoomTypeById,
     deleteRoomType,
     toggleRoomTypeActive,
 } from "../../api/roomTypesApi";
@@ -49,7 +49,7 @@ function RoomTypeDetailModal({ roomTypeId, onClose, onUpdated, showToast }) {
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await getRoomTypeById(roomTypeId);
+            const res = await getAdminRoomTypeById(roomTypeId);
             setRt(res.data);
             setSelectedImg(res.data?.images?.find(i => i.isPrimary) || res.data?.images?.[0] || null);
         } catch {
@@ -271,14 +271,15 @@ export default function RoomTypesPage() {
     const loadRoomTypes = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await getRoomTypes();
-            setRoomTypes(res.data || []);
+            const res = await getAdminRoomTypes();
+            const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+            setRoomTypes(data);
         } catch {
             showToast("Không thể tải danh sách hạng phòng.", "error");
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [showToast]);
 
     useEffect(() => { loadRoomTypes(); }, [loadRoomTypes]);
 
