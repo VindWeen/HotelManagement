@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 // src/pages/admin/DashboardPage.jsx
 // Dashboard thực tế — tích hợp API: Bookings, Rooms, Users, Reviews, Vouchers, LossAndDamages, Equipments
-=======
-﻿// src/pages/admin/DashboardPage.jsx
-// Dashboard thực tế — tích hợp API: Bookings, Rooms, Users, Reviews, Vouchers
->>>>>>> main
 import { useState, useEffect, useCallback } from "react";
 import { getBookings } from "../../api/bookingsApi";
 import { getRooms } from "../../api/roomsApi";
@@ -346,7 +341,11 @@ export default function DashboardPage() {
 
   return (
     <>
-      <style>{`        @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+        .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align: middle; }
+        @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
         @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         @keyframes countUp { from{opacity:0;transform:scale(.85)} to{opacity:1;transform:scale(1)} }
         .card-in { animation: fadeUp .35s ease forwards; }
@@ -497,7 +496,7 @@ export default function DashboardPage() {
             )}
             {loading ? <Skel h={12} w={160} /> : (
               <p style={{ fontSize: 11, fontWeight: 600, color: "#0369a1", margin: 0 }}>
-                loại thiết bị · {fmt(rooms.length)} phòng quản lý
+                {fmt(equipments.length)} loại thiết bị · {fmt(rooms.length)} phòng quản lý
               </p>
             )}
           </div>

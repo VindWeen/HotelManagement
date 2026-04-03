@@ -1,4 +1,4 @@
-﻿--============================================== TẠO DATABASE ============================================
+﻿﻿--============================================== TẠO DATABASE ============================================
 use master
 if exists(select * from sys.databases where name = 'HotelManagementDB')
     drop database [HotelManagementDB]
@@ -846,9 +846,6 @@ SET IDENTITY_INSERT [dbo].[Room_Types] OFF
 GO
 
 -- 8. Rooms
-<<<<<<< HEAD
-SET IDENTITY_INSERT Rooms ON
-=======
 SET IDENTITY_INSERT [dbo].[Rooms] ON
 INSERT [dbo].[Rooms] ([id], [room_type_id], [room_number], [floor], [view_type], [status], [business_status], [cleaning_status], [notes]) VALUES (1, 1, N'101', 1, N'Thành phố', N'Cleaning', N'Available', N'Dirty', NULL)
 INSERT [dbo].[Rooms] ([id], [room_type_id], [room_number], [floor], [view_type], [status], [business_status], [cleaning_status], [notes]) VALUES (2, 1, N'102', 1, N'Biển', N'Cleaning', N'Available', N'Dirty', NULL)
@@ -866,42 +863,7 @@ INSERT [dbo].[Rooms] ([id], [room_type_id], [room_number], [floor], [view_type],
 INSERT [dbo].[Rooms] ([id], [room_type_id], [room_number], [floor], [view_type], [status], [business_status], [cleaning_status], [notes]) VALUES (14, 3, N'204', 2, N'Thành phố', N'Available', N'Available', N'Clean', NULL)
 SET IDENTITY_INSERT [dbo].[Rooms] OFF
 GO
->>>>>>> main
 
-INSERT INTO Rooms (id, room_type_id, room_number, floor, view_type, status, business_status, cleaning_status, notes)
-VALUES
--- Tầng 1
-(1, 1, '101', 1, N'Thành phố', 'Available',  'Available', 'Clean',  N'Sẵn sàng đón khách'),
-(2, 2, '102', 1, N'Thành phố', 'Occupied',   'Occupied',  'Dirty',  N'Khách đang ở'),
-(3, 1, '103', 1, N'Thành phố', 'Cleaning',   'Available', 'Dirty',  N'Đang dọn phòng'),
-(4, 2, '104', 1, N'Thành phố', 'Maintenance','Disabled',  'Clean',  N'Điều hòa hỏng'),
-
--- Tầng 2
-(5, 3, '201', 2, N'Thành phố', 'Available',  'Available', 'Clean',  N'Phòng VIP hướng phố'),
-(6, 3, '202', 2, N'Thành phố', 'Occupied',   'Occupied',  'Dirty',  N'Khách check-in hôm qua'),
-(7, 4, '203', 2, N'Biển',      'Available',  'Available', 'Clean',  N'Hướng biển đẹp'),
-(8, 4, '204', 2, N'Biển',      'Maintenance','Disabled',  'Clean',  N'Sửa cửa kính'),
-
--- Tầng 3
-(9, 5, '301', 3, N'Biển',      'Available',  'Available', 'Clean',  N'Phòng cao cấp'),
-(10,5, '302', 3, N'Biển',      'Occupied',   'Occupied',  'Dirty',  N'Gia đình đang ở'),
-(11,6, '303', 3, N'Vườn',      'Cleaning',   'Available', 'Dirty',  N'Chuẩn bị khách mới'),
-(12,6, '304', 3, N'Vườn',      'Available',  'Available', 'Clean',  N'View vườn yên tĩnh'),
-
--- Tầng 4
-(13,7, '401', 4, N'Biển',      'Available',  'Available', 'Clean',  N'Junior Suite'),
-(14,7, '402', 4, N'Biển',      'Occupied',   'Occupied',  'Dirty',  N'Khách VIP'),
-(15,8, '403', 4, N'Biển',      'Maintenance','Disabled',  'Clean',  N'Bảo trì nội thất'),
-(16,8, '404', 4, N'Biển',      'Available',  'Available', 'Clean',  N'Sẵn sàng'),
-
--- Tầng 5
-(17,9, '501', 5, N'Biển',      'Available',  'Available', 'Clean',  N'Presidential'),
-(18,9, '502', 5, N'Biển',      'Occupied',   'Occupied',  'Dirty',  N'Khách VIP cao cấp'),
-(19,10,'503', 5, N'Biển',      'Available',  'Available', 'Clean',  N'Villa mini'),
-(20,10,'504', 5, N'Biển',      'Maintenance','Disabled',  'Clean',  N'Sửa hồ bơi riêng');
-
-SET IDENTITY_INSERT Rooms OFF
-GO
 -- 9. RoomType_Amenities
 INSERT [dbo].[RoomType_Amenities] ([room_type_id], [amenity_id]) VALUES (1, 1)
 INSERT [dbo].[RoomType_Amenities] ([room_type_id], [amenity_id]) VALUES (1, 2)
