@@ -8,6 +8,8 @@ import { getReviews } from "../../api/reviewsApi";
 import { getVouchers } from "../../api/vouchersApi";
 import { getRoomTypes } from "../../api/roomTypesApi";
 
+const DASHBOARD_PAGE_SIZE = 200;
+
 // ─── Utility ─────────────────────────────────────────────────────────────────
 const fmt = (n) =>
   n == null
@@ -26,6 +28,47 @@ const fmtDateTime = (d) =>
   d ? new Date(d).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
 
 // ─── Status Config ─────────────────────────────────────────────────────────────
+const isSameDay = (date, target) =>
+  date &&
+  target &&
+  date.getFullYear() === target.getFullYear() &&
+  date.getMonth() === target.getMonth() &&
+  date.getDate() === target.getDate();
+
+const getBookingRevenueDate = (booking) => {
+  if (booking?.checkOutTime) return new Date(booking.checkOutTime);
+  const fallback = booking?.bookingDetails?.[0]?.checkOutDate;
+  return fallback ? new Date(fallback) : null;
+};
+
+const getPagedTotal = (payload, fallbackLength = 0) =>
+  payload?.pagination?.totalItems ??
+  payload?.pagination?.total ??
+  payload?.total ??
+  payload?.data?.length ??
+  fallbackLength;
+
+async function fetchAllPages(fetcher, params = {}) {
+  const items = [];
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages) {
+    const res = await fetcher({ ...params, page, pageSize: DASHBOARD_PAGE_SIZE });
+    const payload = res.data || {};
+    const pageItems = Array.isArray(payload) ? payload : (payload.data || []);
+    const total = getPagedTotal(payload, pageItems.length);
+
+    items.push(...pageItems);
+    totalPages = Math.max(1, Math.ceil(total / DASHBOARD_PAGE_SIZE));
+
+    if (pageItems.length === 0) break;
+    page += 1;
+  }
+
+  return items;
+}
+
 const STATUS_CFG = {
   Pending: { label: "Chờ xử lý", bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
   Confirmed: { label: "Đã xác nhận", bg: "#dbeafe", color: "#1e40af", dot: "#3b82f6" },
@@ -120,7 +163,6 @@ export default function DashboardPage() {
 
   const [bookings, setBookings] = useState([]);
   const [rooms, setRooms] = useState([]);
-  const [users, setUsers] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [vouchers, setVouchers] = useState([]);
   const [roomTypes, setRoomTypes] = useState([]);
@@ -137,6 +179,7 @@ export default function DashboardPage() {
     avgRating: 0,
     pendingReviews: 0,
     activeVouchers: 0,
+    activeRoomTypes: 0,
     revenueByDay: [],
     bookingsByStatus: {},
     roomTypeOccupancy: [],
@@ -145,40 +188,39 @@ export default function DashboardPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [bkRes, rmRes, usRes, rvRes, vcRes, rtRes] = await Promise.allSettled([
-        getBookings({ page: 1, pageSize: 200 }),
+      const [bkRes, rmRes, usRes, rvApprovedRes, rvPendingRes, vcRes, rtRes] = await Promise.allSettled([
+        fetchAllPages(getBookings),
         getRooms(),
-        getUsers({ page: 1, pageSize: 200 }),
-        getReviews({ page: 1, pageSize: 50 }),
-        getVouchers({ page: 1, pageSize: 100 }),
+        fetchAllPages(getUsers),
+        fetchAllPages(getReviews, { status: "approved" }),
+        fetchAllPages(getReviews, { status: "pending" }),
+        fetchAllPages(getVouchers),
         getRoomTypes(),
       ]);
 
-      const bkList = bkRes.status === "fulfilled" ? (bkRes.value.data?.data || []) : [];
+      const bkList = bkRes.status === "fulfilled" ? bkRes.value : [];
       const rmList = rmRes.status === "fulfilled" ? (rmRes.value.data?.data || []) : [];
-      const usList = usRes.status === "fulfilled" ? (usRes.value.data?.data || []) : [];
-      const rvList = rvRes.status === "fulfilled" ? (rvRes.value.data?.data || []) : [];
-      const vcList = vcRes.status === "fulfilled" ? (vcRes.value.data?.data || []) : [];
-      const rtList = rtRes.status === "fulfilled" ? (rtRes.value.data || []) : [];
+      const usList = usRes.status === "fulfilled" ? usRes.value : [];
+      const approvedReviews = rvApprovedRes.status === "fulfilled" ? rvApprovedRes.value : [];
+      const pendingReviewList = rvPendingRes.status === "fulfilled" ? rvPendingRes.value : [];
+      const vcList = vcRes.status === "fulfilled" ? vcRes.value : [];
+      const rtList = rtRes.status === "fulfilled"
+        ? (Array.isArray(rtRes.value.data) ? rtRes.value.data : (rtRes.value.data?.data || []))
+        : [];
 
       setBookings(bkList);
       setRooms(rmList);
-      setUsers(usList);
-      setReviews(rvList.filter(r => r.isApproved));
+      setReviews(approvedReviews);
       setVouchers(vcList);
       setRoomTypes(rtList);
 
       const now = new Date();
-      const todayStr = now.toDateString();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
       const completedBookings = bkList.filter(b => b.status === "Completed");
       const totalRevenue = completedBookings.reduce((s, b) => s + (b.totalEstimatedAmount || 0), 0);
 
-      const todayBookings = bkList.filter(b => {
-        const d = b.checkInTime ? new Date(b.checkInTime) : null;
-        return d && d.toDateString() === todayStr;
-      });
+      const todayBookings = completedBookings.filter((b) => isSameDay(getBookingRevenueDate(b), now));
       const todayRevenue = todayBookings.reduce((s, b) => s + (b.totalEstimatedAmount || 0), 0);
 
       const activeBookings = bkList.filter(b => ["Confirmed", "Checked_in", "Pending"].includes(b.status)).length;
@@ -193,43 +235,38 @@ export default function DashboardPage() {
         return d && d >= monthStart;
       }).length;
 
-      const avgRating = rvList.length > 0
-        ? rvList.reduce((s, r) => s + (r.rating || 0), 0) / rvList.length
+      const avgRating = approvedReviews.length > 0
+        ? approvedReviews.reduce((s, r) => s + (r.rating || 0), 0) / approvedReviews.length
         : 0;
 
-      const pendingReviews = rvRes.status === "fulfilled"
-        ? (rvRes.value.data?.total || 0) - rvList.length
-        : 0;
+      const pendingReviews = pendingReviewList.length;
 
       const activeVouchers = vcList.filter(v => v.isActive).length;
+      const activeRoomTypes = rtList.filter((rt) => rt.isActive !== false).length;
 
       const revenueByDay = Array.from({ length: 7 }, (_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - (6 - i));
-        const ds = d.toDateString();
-        return bkList
-          .filter(b => {
-            const cd = b.checkOutTime ? new Date(b.checkOutTime) : null;
-            return cd && cd.toDateString() === ds && b.status === "Completed";
-          })
+        return completedBookings
+          .filter((b) => isSameDay(getBookingRevenueDate(b), d))
           .reduce((s, b) => s + (b.totalEstimatedAmount || 0), 0);
       });
 
       const bookingsByStatus = {};
       bkList.forEach(b => { bookingsByStatus[b.status] = (bookingsByStatus[b.status] || 0) + 1; });
 
-      const roomTypeOccupancy = rtList.slice(0, 5).map(rt => {
+      const roomTypeOccupancy = rtList.map(rt => {
         const occupied = rmList.filter(r => r.roomTypeId === rt.id && r.businessStatus === "Occupied").length;
         const totalRt = rmList.filter(r => r.roomTypeId === rt.id).length;
-        return { name: rt.name, occupied, total: totalRt, rate: totalRt > 0 ? Math.round((occupied / totalRt) * 100) : 0 };
-      });
+        return { id: rt.id, name: rt.name, occupied, total: totalRt, rate: totalRt > 0 ? Math.round((occupied / totalRt) * 100) : 0 };
+      }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 
       setStats({
         totalRevenue, todayRevenue, activeBookings, pendingBookings,
         occupancyRate, availableRooms: available,
         totalUsers: usList.length, newUsersThisMonth,
         avgRating, pendingReviews, activeVouchers,
-        revenueByDay, bookingsByStatus, roomTypeOccupancy,
+        revenueByDay, bookingsByStatus, roomTypeOccupancy, activeRoomTypes,
       });
     } catch (err) {
       console.error("Dashboard load error:", err);
@@ -241,6 +278,7 @@ export default function DashboardPage() {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const recentBookings = [...bookings].sort((a, b) => b.id - a.id).slice(0, 8);
+  const roomPreview = rooms.slice(0, 12);
   const statusEntries = Object.entries(stats.bookingsByStatus).sort((a, b) => b[1] - a[1]);
   const totalBk = bookings.length || 1;
 
@@ -251,6 +289,13 @@ export default function DashboardPage() {
     d.setDate(d.getDate() - (6 - i));
     return weekdays[d.getDay()];
   });
+
+  // ─── Đếm phòng theo từng trạng thái ───────────────────────────────────────
+  const roomCountByStatus = {
+    Available: rooms.filter(r => r.businessStatus === "Available").length,
+    Occupied: rooms.filter(r => r.businessStatus === "Occupied").length,
+    Disabled: rooms.filter(r => r.businessStatus === "Disabled").length,
+  };
 
   return (
     <>
@@ -489,7 +534,7 @@ export default function DashboardPage() {
                     <span style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>{stats.pendingReviews} đánh giá chờ duyệt</span>
                   </div>
                 )}
-                <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {[5, 4, 3, 2, 1].map(star => {
                     const cnt = reviews.filter(r => r.rating === star).length;
                     const pct = reviews.length > 0 ? Math.round((cnt / reviews.length) * 100) : 0;
@@ -574,7 +619,7 @@ export default function DashboardPage() {
                     <td colSpan={6} style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>Chưa có booking nào</td>
                   </tr>
                 ) : (
-                  recentBookings.map((b, i) => {
+                  recentBookings.map((b) => {
                     const cfg = STATUS_CFG[b.status] || STATUS_CFG.Cancelled;
                     const initial = (b.guestName || "?")[0].toUpperCase();
                     return (
@@ -619,11 +664,12 @@ export default function DashboardPage() {
 
             {/* Legend badges */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {Object.entries(ROOM_BS_CFG).map(([key, cfg]) => {
-                const cnt = rooms.filter(r => r.businessStatus === key).length;
+              {(["Available", "Occupied", "Disabled"]).map(status => {
+                const cfg = ROOM_BS_CFG[status];
+                const cnt = roomCountByStatus[status] || 0;
                 return (
                   <span
-                    key={key}
+                    key={status}
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 6,
                       fontSize: 11, fontWeight: 700,
@@ -648,7 +694,7 @@ export default function DashboardPage() {
               <p style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Chưa có phòng nào</p>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))", gap: 12 }}>
-                {rooms.slice(0, 12).map((rm) => {
+                {roomPreview.map((rm) => {
                   const bsCfg = ROOM_BS_CFG[rm.businessStatus] || ROOM_BS_CFG.Disabled;
                   const cleanOk = rm.cleaningStatus === "Clean";
 
