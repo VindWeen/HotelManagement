@@ -78,17 +78,23 @@ const STATUS_CFG = {
 };
 
 // ─── Room Business Status Config ───────────────────────────────────────────────
+const getRoomStatusKey = (rm) => {
+  if (rm.businessStatus === "Occupied") return "Occupied";
+  if (rm.businessStatus === "Available" && rm.cleaningStatus === "Clean") return "Ready";
+  return "Cleaning";
+};
+
 const ROOM_BS_CFG = {
-  Available: {
-    bg: "#f0fdf4", border: "#bbf7d0", dot: "#16a34a", label: "Trống",
+  Ready: {
+    bg: "#f0fdf4", border: "#bbf7d0", dot: "#16a34a", label: "Sẵn sàng",
     badge_bg: "#dcfce7", badge_color: "#14532d",
   },
   Occupied: {
     bg: "#fff7ed", border: "#fed7aa", dot: "#ea580c", label: "Có khách",
     badge_bg: "#ffedd5", badge_color: "#7c2d12",
   },
-  Disabled: {
-    bg: "#fff1f2", border: "#fecdd3", dot: "#dc2626", label: "Đang kiểm tra",
+  Cleaning: {
+    bg: "#fff1f2", border: "#fecdd3", dot: "#dc2626", label: "Đang dọn",
     badge_bg: "#fee2e2", badge_color: "#7f1d1d",
   },
 };
@@ -227,6 +233,7 @@ export default function DashboardPage() {
       const pendingBookings = bkList.filter(b => b.status === "Pending").length;
 
       const available = rmList.filter(r => r.businessStatus === "Available").length;
+      const ready = rmList.filter(r => r.businessStatus === "Available" && r.cleaningStatus === "Clean").length;
       const total = rmList.length || 1;
       const occupancyRate = Math.round(((total - available) / total) * 100);
 
@@ -263,7 +270,7 @@ export default function DashboardPage() {
 
       setStats({
         totalRevenue, todayRevenue, activeBookings, pendingBookings,
-        occupancyRate, availableRooms: available,
+        occupancyRate, availableRooms: ready,
         totalUsers: usList.length, newUsersThisMonth,
         avgRating, pendingReviews, activeVouchers,
         revenueByDay, bookingsByStatus, roomTypeOccupancy, activeRoomTypes,
@@ -292,9 +299,9 @@ export default function DashboardPage() {
 
   // ─── Đếm phòng theo từng trạng thái ───────────────────────────────────────
   const roomCountByStatus = {
-    Available: rooms.filter(r => r.businessStatus === "Available").length,
+    Ready: rooms.filter(r => r.businessStatus === "Available" && r.cleaningStatus === "Clean").length,
     Occupied: rooms.filter(r => r.businessStatus === "Occupied").length,
-    Disabled: rooms.filter(r => r.businessStatus === "Disabled").length,
+    Cleaning: rooms.filter(r => r.businessStatus === "Disabled" || (r.businessStatus === "Available" && r.cleaningStatus !== "Clean")).length,
   };
 
   return (
@@ -365,7 +372,7 @@ export default function DashboardPage() {
             {
               icon: "meeting_room", bg: "#ffdad9", iconBg: "rgba(109,72,73,.1)", iconColor: "#6d4849",
               label: "Tỷ lệ lấp đầy", value: loading ? null : `${stats.occupancyRate}%`,
-              sub: loading ? null : `${stats.availableRooms} phòng còn trống`,
+              sub: loading ? null : `${stats.availableRooms} phòng sẵn sàng`,
               subColor: "#16a34a", delay: 120,
             },
             {
@@ -564,7 +571,7 @@ export default function DashboardPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
                   { icon: "local_offer", iconColor: "#1e40af", bg: "#dbeafe", label: "Voucher đang hoạt động", value: fmt(stats.activeVouchers), sub: `${fmt(vouchers.length)} tổng cộng` },
-                  { icon: "bed", iconColor: "#065f46", bg: "#d1fae5", label: "Phòng trống", value: fmt(stats.availableRooms), sub: `${fmt(rooms.length)} phòng tổng` },
+                  { icon: "bed", iconColor: "#065f46", bg: "#d1fae5", label: "Phòng sẵn sàng", value: fmt(stats.availableRooms), sub: `${fmt(rooms.length)} phòng tổng` },
                   { icon: "category", iconColor: "#9333ea", bg: "#f3e8ff", label: "Loại phòng", value: fmt(roomTypes.length), sub: "Loại phòng đang hoạt động" },
                   { icon: "people", iconColor: "#b45309", bg: "#fef3c7", label: "Nhân viên & Khách", value: fmt(stats.totalUsers), sub: `+${fmt(stats.newUsersThisMonth)} tháng này` },
                 ].map((item, i) => (
@@ -664,7 +671,7 @@ export default function DashboardPage() {
 
             {/* Legend badges */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {(["Available", "Occupied", "Disabled"]).map(status => {
+              {(["Ready", "Occupied", "Cleaning"]).map(status => {
                 const cfg = ROOM_BS_CFG[status];
                 const cnt = roomCountByStatus[status] || 0;
                 return (
@@ -695,7 +702,8 @@ export default function DashboardPage() {
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))", gap: 12 }}>
                 {roomPreview.map((rm) => {
-                  const bsCfg = ROOM_BS_CFG[rm.businessStatus] || ROOM_BS_CFG.Disabled;
+                  const statusKey = getRoomStatusKey(rm);
+                  const bsCfg = ROOM_BS_CFG[statusKey] || ROOM_BS_CFG.Cleaning;
                   const cleanOk = rm.cleaningStatus === "Clean";
 
                   return (
