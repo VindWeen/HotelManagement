@@ -1,17 +1,8 @@
-// src/pages/admin/HousekeepingPage.jsx
+﻿// src/pages/admin/HousekeepingPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import axiosClient from "../../api/axios";
 import { getRooms, updateCleaningStatus, updateBusinessStatus } from "../../api/roomsApi";
 import { getInventoryByRoom } from "../../api/roomInventoriesApi";
-
-// ─── Helpers & Configurations ───────────────────────────────────────────────
-const ROOM_STATUS_CONFIG = {
-  Available: { label: "Sẵn sàng", bg: "#ecfdf5", color: "#059669", dot: "#10b981" },
-  Occupied: { label: "Đang dùng", bg: "#fffbeb", color: "#d97706", dot: "#f59e0b" },
-  Cleaning: { label: "Đang dọn", bg: "#eff6ff", color: "#2563eb", dot: "#3b82f6" },
-  Maintenance: { label: "Bảo trì", bg: "#f5f3ff", color: "#7c3aed", dot: "#8b5cf6" },
-  Disabled: { label: "Bảo trì", bg: "#f5f3ff", color: "#7c3aed", dot: "#8b5cf6" },
-};
 
 // ─── Toast Component ──────────────────────────────────────────────────────────
 function Toast({ id, msg, type = "success", dur = 4000, onDismiss }) {
@@ -62,7 +53,7 @@ export default function HousekeepingPage() {
 
   const dismissToast = useCallback(id => setToasts(prev => prev.filter(t => t.id !== id)), []);
 
-  const loadDirtyRooms = async () => {
+  const loadDirtyRooms = useCallback(async () => {
     setLoading(true);
     try {
       // Gọi API lấy toàn bộ phòng ưu tiên lọc backend nếu có thể, hoặc nhận full và lọc thủ công
@@ -77,9 +68,9 @@ export default function HousekeepingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
-  useEffect(() => { loadDirtyRooms(); }, []);
+  useEffect(() => { loadDirtyRooms(); }, [loadDirtyRooms]);
 
   const loadInventoriesForRoom = async (roomId) => {
     setLoadingInv(true);
@@ -188,14 +179,14 @@ export default function HousekeepingPage() {
         targetRoleIds: [1, 2, 3],
         entityType: "Room",
         entityId: roomId
-      }).catch(e => console.log('Bỏ qua lỗi custom-notify nếu chưa có BE endpoint'));
+      }).catch(() => console.log('Bỏ qua lỗi custom-notify nếu chưa có BE endpoint'));
 
       showToast(`Đã hoàn tất dọn phòng ${roomNumber}!`, "success");
 
       setSelectedRoom(null);
       loadDirtyRooms();
 
-    } catch (err) {
+    } catch {
       showToast("Lỗi khi kết thúc dọn phòng.", "error");
     } finally {
       setIsFinishing(false);
@@ -207,10 +198,7 @@ export default function HousekeepingPage() {
       <style>{`
         @keyframes fadeRow { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
-        @keyframes modalScaleIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
-        
-        .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
-        .hk-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,.08) !important; z-index: 10; }
+        @keyframes modalScaleIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }        .hk-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,.08) !important; z-index: 10; }
         
         .check-container { display:flex; align-items:center; position:relative; padding-left:28px; cursor:pointer; font-size:14px; user-select:none; margin: 0;}
         .check-container input { position:absolute; opacity:0; cursor:pointer; height:0; width:0; }
@@ -257,8 +245,6 @@ export default function HousekeepingPage() {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
             {rooms.map((room) => {
-              const bCfg = ROOM_STATUS_CONFIG[room.businessStatus] || ROOM_STATUS_CONFIG.Occupied;
-
               return (
                 <div
                   key={room.id}
@@ -284,11 +270,6 @@ export default function HousekeepingPage() {
                   <p style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                     Tầng {room.floor} • {room.roomTypeName || "Hạng phòng chung"}
                   </p>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16, paddingTop: 16, borderTop: "1px dashed #e2e8f0" }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: bCfg.dot }} />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: bCfg.color }}>{bCfg.label}</span>
-                  </div>
                 </div>
               )
             })}
@@ -461,3 +442,6 @@ export default function HousekeepingPage() {
     </>
   );
 }
+
+
+

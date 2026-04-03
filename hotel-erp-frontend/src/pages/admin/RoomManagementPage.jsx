@@ -1,4 +1,4 @@
-// src/pages/admin/RoomManagementPage.jsx
+﻿// src/pages/admin/RoomManagementPage.jsx
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
@@ -6,12 +6,17 @@ import { useAdminAuthStore } from "../../store/adminAuthStore";
 import {
     getRooms,
     createRoom,
+    bulkCreateRooms,
     updateBusinessStatus,
     updateCleaningStatus,
 } from "../../api/roomsApi";
 import { getAdminRoomTypes } from "../../api/roomTypesApi";
-import { getInventoryByRoom, cloneInventory } from "../../api/roomInventoriesApi";
-
+import {
+    getInventoryByRoom,
+    cloneInventory,
+    previewSyncInventoryStock,
+    syncInventoryStock,
+} from "../../api/roomInventoriesApi";
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const BUSINESS_STATUS_CONFIG = {
     Available: {
@@ -62,6 +67,7 @@ const CLEANING_STATUS_CONFIG = {
 };
 
 const VIEW_TYPES = ["Biển", "Thành phố", "Núi", "Vườn", "Hồ bơi"];
+const ROOM_VIEW_MODE_STORAGE_KEY = "admin_room_management_view_mode";
 
 // ─── Toast ──────────────────────────────────────────────────────────────────────
 function Toast({ id, msg, type = "success", dur = 4000, onDismiss }) {
@@ -245,42 +251,141 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [isBulkMode, setIsBulkMode] = useState(false);
 
     // Step 1 states
     const [roomNumber, setRoomNumber] = useState("");
     const [floor, setFloor] = useState("");
     const [roomTypeId, setRoomTypeId] = useState("");
     const [viewType, setViewType] = useState("");
-    const [roomId, setRoomId] = useState(null);
 
-    // Step 3 states
+    // Inventory states
     const [cloneFromRoomId, setCloneFromRoomId] = useState("");
     const [inventories, setInventories] = useState([]);
     const [loadingInv, setLoadingInv] = useState(false);
+    const [bulkBlocks, setBulkBlocks] = useState([{ id: 1, floor: "", fromNumber: "", toNumber: "", step: "1" }]);
 
     const selectedType = roomTypes.find((rt) => rt.id === parseInt(roomTypeId));
+    const activeColor = "#4f645b";
+
+    const buildBulkPreview = () => {
+        const preview = [];
+        const seen = new Set();
+        const errors = [];
+
+        bulkBlocks.forEach((block, index) => {
+            const floorValue = block.floor?.toString().trim();
+            const fromValue = block.fromNumber?.toString().trim();
+            const toValue = block.toNumber?.toString().trim();
+            const stepValue = block.step?.toString().trim();
+
+            if (!floorValue && !fromValue && !toValue) return;
+
+            const parsedFloor = Number(floorValue);
+            const parsedFrom = Number(fromValue);
+            const parsedTo = Number(toValue);
+            const parsedStep = Number(stepValue || 1);
+
+            if (!floorValue || !fromValue || !toValue) {
+                errors.push(`Block ${index + 1}: Vui lòng nhập đủ tầng, từ số phòng và đến số phòng.`);
+                return;
+            }
+
+            if (!Number.isInteger(parsedFloor) || !Number.isInteger(parsedFrom) || !Number.isInteger(parsedTo)) {
+                errors.push(`Block ${index + 1}: Tầng và dải số phòng phải là số nguyên.`);
+                return;
+            }
+
+            if (!Number.isInteger(parsedStep) || parsedStep <= 0) {
+                errors.push(`Block ${index + 1}: Bước nhảy phải lớn hơn 0.`);
+                return;
+            }
+
+            if (parsedFrom > parsedTo) {
+                errors.push(`Block ${index + 1}: Số bắt đầu không được lớn hơn số kết thúc.`);
+                return;
+            }
+
+            for (let num = parsedFrom; num <= parsedTo; num += parsedStep) {
+                const roomNo = String(num);
+                if (seen.has(roomNo)) {
+                    errors.push(`Phòng ${roomNo} đang bị trùng giữa các block.`);
+                    continue;
+                }
+                seen.add(roomNo);
+                preview.push({
+                    roomNumber: roomNo,
+                    floor: parsedFloor,
+                    roomTypeId: parseInt(roomTypeId, 10),
+                    viewType: viewType || undefined,
+                });
+            }
+        });
+
+        return { preview, errors };
+    };
+
+    const syncCreatedRooms = async (createdRooms) => {
+        if (!canManageInventory || !cloneFromRoomId || !createdRooms.length) return [];
+
+        await cloneInventory(parseInt(cloneFromRoomId, 10), createdRooms.map((room) => room.id));
+
+        const syncFailedRooms = [];
+        for (const room of createdRooms) {
+            try {
+                const previewRes = await previewSyncInventoryStock(room.id);
+                const inventoryVersion = previewRes?.data?.inventoryVersion ?? 0;
+                await syncInventoryStock(room.id, inventoryVersion);
+            } catch (err) {
+                console.error("Sync inventory error", err);
+                syncFailedRooms.push(room.roomNumber);
+            }
+        }
+
+        return syncFailedRooms;
+    };
+
+    const handleModeToggle = (checked) => {
+        setIsBulkMode(checked);
+        setStep(1);
+        setError("");
+        setCloneFromRoomId("");
+        setInventories([]);
+        setLoadingInv(false);
+        setRoomNumber("");
+        setFloor("");
+        setBulkBlocks([{ id: 1, floor: "", fromNumber: "", toNumber: "", step: "1" }]);
+    };
 
     const handleCreateMainInfo = async () => {
         setError("");
+        if (isBulkMode) {
+            if (!roomTypeId) return setError("Vui lòng chọn hạng phòng.");
+            setStep(2);
+            return;
+        }
+
         if (!roomNumber.trim()) return setError("Số phòng không được để trống.");
         if (!roomTypeId) return setError("Vui lòng chọn hạng phòng.");
+        setStep(2);
+    };
 
-        setLoading(true);
-        try {
-            const res = await createRoom({
-                roomNumber: roomNumber.trim(),
-                floor: floor ? parseInt(floor) : null,
-                roomTypeId: parseInt(roomTypeId),
-                viewType: viewType || undefined,
-            });
-            setRoomId(res.data.id);
-            showToast(`Đã tạo phòng ${roomNumber} thành công!`, "success");
-            setStep(2);
-        } catch (err) {
-            setError(err?.response?.data?.message || "Tạo phòng thất bại.");
-        } finally {
-            setLoading(false);
+    const handleBulkContinue = () => {
+        setError("");
+        const { preview, errors } = buildBulkPreview();
+        if (!preview.length) {
+            setError("Vui lòng nhập ít nhất một block phòng hợp lệ.");
+            return;
         }
+        if (errors.length > 0) {
+            setError(errors[0]);
+            return;
+        }
+        if (canManageInventory) {
+            setStep(3);
+            return;
+        }
+        handleFinish();
     };
 
     const fetchInventory = async (rId) => {
@@ -303,42 +408,135 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
             setInventories([]);
             return;
         }
-        setLoadingInv(true);
         try {
-            await cloneInventory(parseInt(fromRoomId), [roomId]);
-            showToast("Đã clone vật tư thành công.", "success");
-            await fetchInventory(roomId);
+            await fetchInventory(parseInt(fromRoomId));
         } catch (err) {
-            showToast(err?.response?.data?.message || "Lỗi khi sao chép vật tư.", "error");
+            showToast(err?.response?.data?.message || "Lỗi khi tải vật tư từ phòng mẫu.", "error");
             setCloneFromRoomId("");
         } finally {
-            setLoadingInv(false);
         }
     };
 
-    const handleFinish = () => {
-        onCreated();
-        onClose();
+    const handleFinish = async () => {
+        setLoading(true);
+        try {
+            if (isBulkMode) {
+                const { preview, errors } = buildBulkPreview();
+                if (!preview.length) {
+                    setError("Vui lòng nhập ít nhất một block phòng hợp lệ.");
+                    return;
+                }
+                if (errors.length > 0) {
+                    setError(errors[0]);
+                    return;
+                }
+
+                const res = await bulkCreateRooms(preview);
+                const createdRooms = res?.data?.createdRooms || [];
+                const skipped = res?.data?.skipped || [];
+                const invalid = res?.data?.invalid || [];
+                const syncFailedRooms = await syncCreatedRooms(createdRooms);
+
+                const parts = [];
+                parts.push(`Đã tạo ${createdRooms.length} phòng`);
+                if (skipped.length) parts.push(`bỏ qua ${skipped.length} phòng trùng`);
+                if (invalid.length) parts.push(`${invalid.length} phòng không hợp lệ`);
+                showToast(`${parts.join(", ")}.`, createdRooms.length > 0 ? "success" : "warning");
+
+                if (syncFailedRooms.length > 0) {
+                    showToast(`Đã tạo phòng nhưng chưa sync vật tư cho: ${syncFailedRooms.join(", ")}.`, "warning");
+                }
+
+                onCreated();
+                onClose();
+                return;
+            }
+
+            const res = await createRoom({
+                roomNumber: roomNumber.trim(),
+                floor: floor ? parseInt(floor) : null,
+                roomTypeId: parseInt(roomTypeId),
+                viewType: viewType || undefined,
+            });
+            const createdRoomId = res?.data?.id;
+
+            if (canManageInventory && cloneFromRoomId && createdRoomId) {
+                const syncFailedRooms = await syncCreatedRooms([{ id: createdRoomId, roomNumber: roomNumber.trim() }]);
+                if (syncFailedRooms.length > 0) {
+                    showToast(`Phòng ${roomNumber} đã tạo nhưng sync vật tư chưa hoàn tất.`, "warning");
+                }
+            }
+
+            showToast(`Đã tạo phòng ${roomNumber} thành công!`, "success");
+            onCreated();
+            onClose();
+        } catch (err) {
+            setError(err?.response?.data?.message || "Không thể hoàn tất tạo phòng.");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // UI Styles
-    const activeColor = "#4f645b";
+    const bulkPreview = isBulkMode ? buildBulkPreview() : { preview: [], errors: [] };
 
     return (
         <div style={{ background: "#f9f8f3", display: "flex", flexDirection: "column", borderRadius: 20, border: "1px solid #e2e8e1", overflow: "hidden", minHeight: "calc(100vh - 120px)", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
             {/* Header */}
-            <div style={{ padding: "20px 40px", background: "white", borderBottom: "1px solid #e2e8e1", display: "flex", alignItems: "center" }}>
-                <button onClick={onClose} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", color: "#4b5563", fontSize: 16, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>
+            <div style={{ padding: "20px 40px", background: "white", borderBottom: "1px solid #e2e8e1", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                <button
+                    onClick={() => {
+                        if (step > 1) {
+                            setStep((prev) => Math.max(1, prev - 1));
+                            return;
+                        }
+                        onClose();
+                    }}
+                    style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", color: "#4b5563", fontSize: 16, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}
+                >
                     <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_back</span>
                     Quy trình thiết lập phòng trọn gói
                 </button>
+
+                <label style={{ display: "inline-flex", alignItems: "center", gap: 12, background: isBulkMode ? "linear-gradient(135deg, #dff3e7 0%, #cce8d8 100%)" : "linear-gradient(135deg, #eef7f1 0%, #ddeee4 100%)", border: isBulkMode ? "1.5px solid #4f645b" : "1.5px solid #a7c4b2", borderRadius: 9999, padding: "10px 16px", boxShadow: isBulkMode ? "0 6px 16px rgba(79,100,91,0.22)" : "0 6px 16px rgba(79,100,91,0.10)", cursor: "pointer", flexShrink: 0, transition: "all .2s ease" }}>
+                    <input
+                        type="checkbox"
+                        checked={isBulkMode}
+                        onChange={(e) => handleModeToggle(e.target.checked)}
+                        style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                    />
+                    <span
+                        style={{
+                            width: 18,
+                            height: 18,
+                            borderRadius: 4,
+                            border: isBulkMode ? "1.5px solid #4f645b" : "1.5px solid #7b9a88",
+                            background: isBulkMode ? "#4f645b" : "#ffffff",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "#ffffff",
+                            boxShadow: isBulkMode ? "inset 0 0 0 1px rgba(255,255,255,0.08)" : "none",
+                            transition: "all .2s ease",
+                            flexShrink: 0,
+                        }}
+                    >
+                        {isBulkMode && (
+                            <span className="material-symbols-outlined" style={{ fontSize: 14, fontVariationSettings: "'FILL' 1" }}>
+                                check
+                            </span>
+                        )}
+                    </span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: isBulkMode ? "#2f4a3d" : "#4f645b" }}>
+                        Tạo phòng hàng loạt
+                    </span>
+                </label>
             </div>
 
             {/* Stepper */}
             <div style={{ padding: "40px 20px", display: "flex", justifyContent: "center", alignItems: "center" }}>
-                <StepItem active={step >= 1} current={step === 1} icon="home" label="Thông tin chính" color={activeColor} />
+                <StepItem active={step >= 1} current={step === 1} icon="home" label={isBulkMode ? "Thông tin chung" : "Thông tin chính"} color={activeColor} />
                 <div style={{ height: 2, width: 100, background: step >= 2 ? activeColor : "#e5e7eb", margin: "0 16px" }} />
-                <StepItem active={step >= 2} current={step === 2} icon="local_cafe" label="Tiện ích" color={activeColor} />
+                <StepItem active={step >= 2} current={step === 2} icon={isBulkMode ? "format_list_numbered" : "local_cafe"} label={isBulkMode ? "Danh sách phòng" : "Tiện ích"} color={activeColor} />
                 <div style={{ height: 2, width: 100, background: step >= 3 ? activeColor : "#e5e7eb", margin: "0 16px" }} />
                 <StepItem active={canManageInventory && step >= 3} current={step === 3} icon="key" label="Vật tư & Minibar" color={activeColor} />
             </div>
@@ -349,25 +547,27 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
                     <div style={{ display: "flex", gap: 60 }}>
                         {/* Form area */}
                         <div style={{ flex: 1 }}>
-                            <div style={{ display: "flex", gap: 20, marginBottom: 24 }}>
-                                <div style={{ flex: 3 }}>
-                                    <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>* Số phòng</label>
-                                    <input
-                                        value={roomNumber}
-                                        onChange={e => setRoomNumber(e.target.value)}
-                                        style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 15, outline: "none", background: "white", boxSizing: "border-box", fontFamily: "Manrope, sans-serif" }}
-                                    />
+                            {!isBulkMode && (
+                                <div style={{ display: "flex", gap: 20, marginBottom: 24 }}>
+                                    <div style={{ flex: 3 }}>
+                                        <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>* Số phòng</label>
+                                        <input
+                                            value={roomNumber}
+                                            onChange={e => setRoomNumber(e.target.value)}
+                                            style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 15, outline: "none", background: "white", boxSizing: "border-box", fontFamily: "Manrope, sans-serif" }}
+                                        />
+                                    </div>
+                                    <div style={{ flex: 2 }}>
+                                        <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>* Tầng</label>
+                                        <input
+                                            type="number"
+                                            value={floor}
+                                            onChange={e => setFloor(e.target.value)}
+                                            style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 15, outline: "none", background: "white", boxSizing: "border-box", fontFamily: "Manrope, sans-serif" }}
+                                        />
+                                    </div>
                                 </div>
-                                <div style={{ flex: 2 }}>
-                                    <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>* Tầng</label>
-                                    <input
-                                        type="number"
-                                        value={floor}
-                                        onChange={e => setFloor(e.target.value)}
-                                        style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 15, outline: "none", background: "white", boxSizing: "border-box", fontFamily: "Manrope, sans-serif" }}
-                                    />
-                                </div>
-                            </div>
+                            )}
 
                             <div style={{ display: "flex", gap: 20, marginBottom: 32 }}>
                                 <div style={{ flex: 1 }}>
@@ -411,21 +611,25 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
                                 style={{ background: "linear-gradient(135deg, #4f645b 0%, #43574f 100%)", color: "white", padding: "12px 24px", borderRadius: 8, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(79,100,91,.2)", fontFamily: "Manrope, sans-serif", opacity: loading ? 0.7 : 1 }}
                             >
                                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_forward</span>
-                                {loading ? "Đang xử lý..." : "Tạo phòng & Tiếp tục"}
+                                {loading ? "Đang xử lý..." : "Tiếp tục"}
                             </button>
                             {error && <p style={{ color: "#ef4444", marginTop: 12, fontSize: 13, fontWeight: 600 }}>{error}</p>}
                         </div>
 
                         {/* Image preview area */}
                         <div style={{ flex: 1 }}>
-                            <p style={{ fontSize: 13, fontWeight: 700, color: "#4b5563", marginBottom: 8 }}>Hình ảnh hạng phòng</p>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: "#4b5563", marginBottom: 8 }}>
+                                {isBulkMode ? "Xem nhanh cấu hình batch" : "Hình ảnh hạng phòng"}
+                            </p>
                             <div style={{ background: "#e2e8e0", borderRadius: 16, height: 260, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#6b7280", overflow: "hidden", position: "relative" }}>
                                 {selectedType && selectedType.primaryImage ? (
                                     <img src={selectedType.primaryImage.imageUrl} alt={selectedType.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 ) : (
                                     <>
                                         <span className="material-symbols-outlined" style={{ fontSize: 64, opacity: 0.5, marginBottom: 16 }}>image</span>
-                                        <span style={{ fontSize: 14, fontWeight: 600 }}>Chọn hạng phòng để xem ảnh</span>
+                                        <span style={{ fontSize: 14, fontWeight: 600 }}>
+                                            {isBulkMode ? "Chọn hạng phòng để áp dụng cho cả batch" : "Chọn hạng phòng để xem ảnh"}
+                                        </span>
                                     </>
                                 )}
                             </div>
@@ -433,7 +637,7 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
                     </div>
                 )}
 
-                {step === 2 && (
+                {!isBulkMode && step === 2 && (
                     <div style={{ maxWidth: 800, margin: "0 auto" }}>
                         <p style={{ fontSize: 14, fontWeight: 700, color: "#4b5563", marginBottom: 12 }}>Các tiện ích cố định theo hạng phòng {selectedType?.name}:</p>
                         <div style={{ background: "#e8edea", borderRadius: 16, minHeight: 180, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -465,6 +669,92 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
                     </div>
                 )}
 
+                {isBulkMode && step === 2 && (
+                    <div style={{ maxWidth: 980, margin: "0 auto" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                            <div>
+                                <p style={{ fontSize: 16, fontWeight: 800, color: "#334155", margin: "0 0 4px" }}>Thiết lập dải phòng theo tầng</p>
+                                <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>Mỗi block tương ứng một tầng và một dải số phòng sẽ được tạo.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setBulkBlocks((prev) => [...prev, { id: Date.now(), floor: "", fromNumber: "", toNumber: "", step: "1" }])}
+                                style={{ background: "white", color: activeColor, border: `1px solid ${activeColor}`, borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "Manrope, sans-serif" }}
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add</span>
+                                Thêm block tầng
+                            </button>
+                        </div>
+
+                        <div style={{ display: "grid", gap: 14, marginBottom: 24 }}>
+                            {bulkBlocks.map((block, index) => (
+                                <div key={block.id} style={{ background: "white", border: "1px solid #e2e8e1", borderRadius: 14, padding: 18, boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                                        <span style={{ fontSize: 13, fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: ".05em" }}>Block {index + 1}</span>
+                                        {bulkBlocks.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setBulkBlocks((prev) => prev.filter((item) => item.id !== block.id))}
+                                                style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 13, fontWeight: 700 }}
+                                            >
+                                                Xóa block
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 14 }}>
+                                        {[
+                                            { key: "floor", label: "Tầng", type: "number" },
+                                            { key: "fromNumber", label: "Từ số phòng", type: "number" },
+                                            { key: "toNumber", label: "Đến số phòng", type: "number" },
+                                            { key: "step", label: "Bước nhảy", type: "number" },
+                                        ].map((field) => (
+                                            <div key={field.key}>
+                                                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>{field.label}</label>
+                                                <input
+                                                    type={field.type}
+                                                    value={block[field.key]}
+                                                    min={field.key === "step" ? 1 : undefined}
+                                                    onChange={(e) => setBulkBlocks((prev) => prev.map((item) => item.id === block.id ? { ...item, [field.key]: e.target.value } : item))}
+                                                    style={{ width: "100%", padding: "11px 14px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, outline: "none", background: "white", boxSizing: "border-box", fontFamily: "Manrope, sans-serif" }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div style={{ background: "white", borderRadius: 14, border: "1px solid #e2e8e1", padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                <p style={{ fontSize: 15, fontWeight: 800, color: "#334155", margin: 0 }}>Preview danh sách phòng sẽ tạo</p>
+                                <span style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>{bulkPreview.preview.length} phòng</span>
+                            </div>
+                            {bulkPreview.preview.length === 0 ? (
+                                <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>Nhập dải phòng để xem preview.</p>
+                            ) : (
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                                    {bulkPreview.preview.map((room) => (
+                                        <span key={`${room.floor}-${room.roomNumber}`} style={{ background: "#f8fafc", color: "#334155", border: "1px solid #e2e8f0", borderRadius: 9999, padding: "8px 12px", fontSize: 12, fontWeight: 700 }}>
+                                            Phòng {room.roomNumber} • Tầng {room.floor}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ marginTop: 32 }}>
+                            <button
+                                onClick={handleBulkContinue}
+                                disabled={loading}
+                                style={{ background: "linear-gradient(135deg, #4f645b 0%, #43574f 100%)", color: "white", padding: "12px 24px", borderRadius: 8, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(79,100,91,.2)", fontFamily: "Manrope, sans-serif", opacity: loading ? 0.7 : 1 }}
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_forward</span>
+                                {canManageInventory ? "Tiếp theo: Thiết lập vật tư" : "Hoàn tất tạo phòng"}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {canManageInventory && step === 3 && (
                     <div style={{ maxWidth: 900, margin: "0 auto" }}>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 24, marginBottom: 32 }}>
@@ -484,13 +774,17 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
                                             </option>
                                         ))}
                                     </select>
-                                    <span style={{ fontSize: 13, color: "#9ca3af", fontStyle: "italic" }}>(Tự động thêm Tivi, Tủ lạnh, đồ Minibar...)</span>
+                                    <span style={{ fontSize: 13, color: "#9ca3af", fontStyle: "italic" }}>
+                                        {isBulkMode ? "(Áp dụng cùng một phòng mẫu cho toàn bộ batch)" : "(Tự động thêm Tivi, Tủ lạnh, đồ Minibar...)"}
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
                         <div style={{ marginBottom: 32 }}>
-                            <p style={{ fontSize: 15, fontWeight: 800, color: "#4b5563", marginBottom: 16 }}>Danh sách vật tư hiện tại của phòng</p>
+                            <p style={{ fontSize: 15, fontWeight: 800, color: "#4b5563", marginBottom: 16 }}>
+                                {isBulkMode ? "Danh sách vật tư sẽ được clone cho tất cả phòng mới" : "Danh sách vật tư sẽ được clone từ phòng mẫu"}
+                            </p>
                             <div style={{ background: "white", borderRadius: 12, border: "1px solid #e2e8e1", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
                                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                                     <thead>
@@ -511,7 +805,7 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
                                             <tr>
                                                 <td colSpan={5} style={{ padding: "60px 0", textAlign: "center", color: "#9ca3af" }}>
                                                     <span className="material-symbols-outlined" style={{ fontSize: 40, opacity: 0.5, marginBottom: 8, display: "block" }}>inventory_2</span>
-                                                    Chưa có vật tư. Hãy chọn phòng mẫu để sao chép nhanh.
+                                                    Chưa chọn phòng mẫu. Hãy chọn một phòng để xem trước vật tư sẽ được clone.
                                                 </td>
                                             </tr>
                                         ) : (
@@ -538,13 +832,20 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
                         <div style={{ paddingBottom: 40 }}>
                             <button
                                 onClick={handleFinish}
-                                style={{ background: "linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)", color: "white", padding: "14px 28px", borderRadius: 8, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 10, boxShadow: "0 4px 12px rgba(29,78,216,.25)", fontFamily: "Manrope, sans-serif" }}
+                                disabled={loading}
+                                style={{ background: "linear-gradient(135deg, #4f645b 0%, #43574f 100%)", color: "white", padding: "14px 28px", borderRadius: 8, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 10, boxShadow: "0 4px 12px rgba(79,100,91,.2)", fontFamily: "Manrope, sans-serif" }}
                             >
                                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>check_circle</span>
-                                Hoàn tất và Quay về danh sách
+                                {loading ? "Đang tạo phòng..." : isBulkMode ? "Hoàn tất tạo hàng loạt" : "Hoàn tất tạo phòng"}
                             </button>
                         </div>
                     </div>
+                )}
+
+                {error && (
+                    <p style={{ color: "#ef4444", marginTop: 16, fontSize: 13, fontWeight: 600, textAlign: "center" }}>
+                        {error}
+                    </p>
                 )}
             </div>
         </div>
@@ -561,6 +862,571 @@ function StepItem({ active, current, icon, label, color }) {
 }
 
 
+
+function RoomManagementHeader({
+  stats,
+  hasFilters,
+  viewMode,
+  onViewModeChange,
+  onCreateRoom,
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        marginBottom: 28,
+      }}
+    >
+      <div>
+        <h2
+          style={{
+            fontSize: 26,
+            fontWeight: 800,
+            color: "#1c1917",
+            letterSpacing: "-0.025em",
+            margin: "0 0 4px",
+            fontFamily: "Manrope, sans-serif",
+          }}
+        >
+          Quản lý Phòng
+        </h2>
+        <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+          Tổng <span style={{ fontWeight: 700, color: "#1c1917" }}>{stats.total}</span> phòng
+          {hasFilters && (
+            <span style={{ color: "#4f645b", fontWeight: 600, marginLeft: 4 }}>(đang lọc)</span>
+          )}
+        </p>
+      </div>
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 2, background: "#f1f0ea", padding: 4, borderRadius: 12 }}>
+          {["table", "grid"].map((mode) => (
+            <button
+              key={mode}
+              onClick={() => onViewModeChange(mode)}
+              style={{
+                padding: "7px 14px",
+                borderRadius: 9,
+                background: viewMode === mode ? "white" : "transparent",
+                border: "none",
+                cursor: "pointer",
+                color: viewMode === mode ? "#1c1917" : "#9ca3af",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 12,
+                fontWeight: 700,
+                boxShadow: viewMode === mode ? "0 1px 4px rgba(0,0,0,.1)" : "none",
+                transition: "all .15s",
+                fontFamily: "Manrope, sans-serif",
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                {mode === "table" ? "table_rows" : "grid_view"}
+              </span>
+              {mode === "table" ? "Bảng" : "Lưới"}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={onCreateRoom}
+          style={{
+            padding: "9px 20px",
+            borderRadius: 12,
+            fontSize: 13,
+            fontWeight: 700,
+            background: "#4f645b",
+            color: "#e7fef3",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 7,
+            boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+            fontFamily: "Manrope, sans-serif",
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+            add_circle
+          </span>
+          Thêm phòng
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function RoomManagementSummary({ stats }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 24 }}>
+      {[
+        { label: "TỔNG PHÒNG", value: stats.total, bg: "#f8f9fa", color: "#6b7280", border: "#f1f0ea" },
+        { label: "SẴN SÀNG", value: stats.available, bg: "#ecfdf5", color: "#059669", border: "#a7f3d0" },
+        { label: "ĐANG DÙNG", value: stats.occupied, bg: "#fffbeb", color: "#d97706", border: "#fde68a" },
+        { label: "BẢO TRÌ", value: stats.disabled, bg: "#f5f3ff", color: "#7c3aed", border: "#ddd6fe" },
+        { label: "CẦN DỌN", value: stats.dirty, bg: "#fff7ed", color: "#ea580c", border: "#fed7aa" },
+      ].map((item) => (
+        <div
+          key={item.label}
+          style={{
+            background: item.bg,
+            border: `1.5px solid ${item.border}`,
+            borderRadius: 16,
+            padding: "16px 18px",
+            textAlign: "center",
+          }}
+        >
+          <p
+            style={{
+              fontSize: 24,
+              fontWeight: 800,
+              color: item.color,
+              margin: "0 0 4px",
+              fontFamily: "Manrope, sans-serif",
+            }}
+          >
+            {item.value}
+          </p>
+          <p
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: ".12em",
+              color: item.color,
+              margin: 0,
+              opacity: 0.7,
+            }}
+          >
+            {item.label}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RoomManagementFilters({
+  filters,
+  roomTypes,
+  floors,
+  hasFilters,
+  onFiltersChange,
+  onClearFilters,
+}) {
+  const filterConfigs = [
+    {
+      label: "Trạng thái KD",
+      key: "businessStatus",
+      options: [
+        { value: "", label: "Tất cả" },
+        { value: "Available", label: "Sẵn sàng" },
+        { value: "Occupied", label: "Đang dùng" },
+        { value: "Disabled", label: "Bảo trì" },
+      ],
+    },
+    {
+      label: "Tình trạng vệ sinh",
+      key: "cleaningStatus",
+      options: [
+        { value: "", label: "Tất cả" },
+        { value: "Clean", label: "Sạch sẽ" },
+        { value: "Dirty", label: "Cần dọn" },
+      ],
+    },
+    {
+      label: "Hạng phòng",
+      key: "roomTypeId",
+      options: [{ value: "", label: "Tất cả" }, ...roomTypes.map((rt) => ({ value: rt.id.toString(), label: rt.name }))],
+    },
+    {
+      label: "Tầng",
+      key: "floor",
+      options: [{ value: "", label: "Tất cả" }, ...floors.map((f) => ({ value: f.toString(), label: `Tầng ${f}` }))],
+    },
+  ];
+
+  return (
+    <div
+      style={{
+        background: "white",
+        borderRadius: 18,
+        padding: "18px 22px",
+        marginBottom: 20,
+        boxShadow: "0 1px 4px rgba(0,0,0,.06)",
+        border: "1px solid #f1f0ea",
+        display: "flex",
+        gap: 14,
+        alignItems: "flex-end",
+        flexWrap: "wrap",
+      }}
+    >
+      {filterConfigs.map((filter) => (
+        <div key={filter.key} style={{ flex: 1, minWidth: 160 }}>
+          <label
+            style={{
+              display: "block",
+              fontSize: 10,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: ".12em",
+              color: "#9ca3af",
+              marginBottom: 6,
+            }}
+          >
+            {filter.label}
+          </label>
+          <select
+            value={filters[filter.key]}
+            onChange={(e) => onFiltersChange(filter.key, e.target.value)}
+            style={{
+              width: "100%",
+              background: "#f9f8f3",
+              border: "1.5px solid #e2e8e1",
+              borderRadius: 12,
+              padding: "9px 12px",
+              fontSize: 13,
+              fontWeight: 500,
+              outline: "none",
+              fontFamily: "Manrope, sans-serif",
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = "#4f645b";
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = "#e2e8e1";
+            }}
+          >
+            {filter.options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ))}
+      {hasFilters && (
+        <button
+          onClick={onClearFilters}
+          style={{
+            padding: "9px 14px",
+            borderRadius: 12,
+            background: "#fee2e2",
+            border: "1.5px solid #fecaca",
+            color: "#dc2626",
+            cursor: "pointer",
+            fontWeight: 700,
+            fontSize: 13,
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+            flexShrink: 0,
+            fontFamily: "Manrope, sans-serif",
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+            filter_alt_off
+          </span>
+          Xóa lọc
+        </button>
+      )}
+    </div>
+  );
+}
+
+function RoomManagementTable({
+  loading,
+  paginatedRooms,
+  rooms,
+  page,
+  pageSize,
+  totalPages,
+  hasFilters,
+  onClearFilters,
+  onPageChange,
+  onDetail,
+  onBusinessStatusChange,
+  onCleaningStatusChange,
+  SkeletonRows,
+  StatusDropdown,
+  businessStatusConfig,
+  cleaningStatusConfig,
+}) {
+  return (
+    <div
+      style={{
+        background: "white",
+        borderRadius: 18,
+        boxShadow: "0 1px 4px rgba(0,0,0,.06)",
+        border: "1px solid #f1f0ea",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: "rgba(249,248,243,.6)", borderBottom: "1px solid #f1f0ea" }}>
+              {["Số phòng", "Tầng", "Hạng phòng", "Trạng thái KD", "Vệ sinh", "Thao tác"].map((heading, index) => (
+                <th
+                  key={heading}
+                  style={{
+                    padding: "15px 24px",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: ".1em",
+                    color: "#9ca3af",
+                    textAlign: index === 5 ? "right" : "left",
+                  }}
+                >
+                  {heading}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <SkeletonRows />
+            ) : paginatedRooms.length === 0 ? null : (
+              paginatedRooms.map((room, index) => (
+                <tr
+                  key={room.id}
+                  className="fade-row"
+                  style={{ borderBottom: "1px solid #fafaf8", animationDelay: `${index * 20}ms` }}
+                >
+                  <td style={{ padding: "16px 24px" }}>
+                    <span
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 800,
+                        color: "#1c1917",
+                        fontFamily: "Manrope, sans-serif",
+                      }}
+                    >
+                      {room.roomNumber}
+                    </span>
+                    <span style={{ marginLeft: 8, fontSize: 11, color: "#9ca3af" }}>#{room.id}</span>
+                  </td>
+                  <td style={{ padding: "16px 24px", fontSize: 14, color: "#4b5563", fontWeight: 500 }}>
+                    {room.floor || "—"}
+                  </td>
+                  <td style={{ padding: "16px 24px", fontSize: 13, color: "#374151", fontWeight: 500 }}>
+                    {room.roomTypeName || "—"}
+                  </td>
+                  <td style={{ padding: "16px 24px" }}>
+                    <StatusDropdown
+                      options={["Available", "Occupied", "Disabled"]}
+                      current={room.businessStatus}
+                      onSelect={(value) => onBusinessStatusChange(room, value)}
+                      configMap={businessStatusConfig}
+                    />
+                  </td>
+                  <td style={{ padding: "16px 24px" }}>
+                    <StatusDropdown
+                      options={["Clean", "Dirty"]}
+                      current={room.cleaningStatus}
+                      onSelect={(value) => onCleaningStatusChange(room, value)}
+                      configMap={cleaningStatusConfig}
+                    />
+                  </td>
+                  <td style={{ padding: "16px 24px", textAlign: "right" }}>
+                    <button
+                      onClick={() => onDetail(room.id)}
+                      style={{
+                        padding: "7px 14px",
+                        borderRadius: 10,
+                        background: "#f0faf5",
+                        border: "1.5px solid #a7f3d0",
+                        color: "#059669",
+                        fontWeight: 700,
+                        fontSize: 12,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                        marginLeft: "auto",
+                        fontFamily: "Manrope, sans-serif",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#4f645b";
+                        e.currentTarget.style.color = "#e7fef3";
+                        e.currentTarget.style.borderColor = "#4f645b";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "#f0faf5";
+                        e.currentTarget.style.color = "#059669";
+                        e.currentTarget.style.borderColor = "#a7f3d0";
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 15 }}>
+                        visibility
+                      </span>
+                      Chi tiết
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {!loading && paginatedRooms.length === 0 && (
+        <div style={{ padding: "64px 0", textAlign: "center" }}>
+          <span
+            className="material-symbols-outlined"
+            style={{ fontSize: 52, color: "#d1d5db", display: "block", marginBottom: 12 }}
+          >
+            meeting_room
+          </span>
+          <p style={{ color: "#9ca3af", fontWeight: 600, fontSize: 14 }}>Không tìm thấy phòng nào</p>
+          {hasFilters && (
+            <button
+              onClick={onClearFilters}
+              style={{
+                marginTop: 12,
+                padding: "7px 18px",
+                borderRadius: 10,
+                background: "#4f645b",
+                color: "#e7fef3",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Xóa bộ lọc
+            </button>
+          )}
+        </div>
+      )}
+
+      {!loading && rooms.length > 0 && (
+        <div
+          style={{
+            padding: "14px 24px",
+            borderTop: "1px solid #f1f0ea",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 500 }}>
+            {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, rooms.length)} / {rooms.length} phòng
+          </span>
+          <div style={{ display: "flex", gap: 4 }}>
+            <button className="pg-btn" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                chevron_left
+              </span>
+            </button>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+              const pageNumber = totalPages <= 5 ? index + 1 : Math.max(1, page - 2) + index;
+              if (pageNumber > totalPages) return null;
+              return (
+                <button
+                  key={pageNumber}
+                  className={`pg-btn${pageNumber === page ? " active" : ""}`}
+                  onClick={() => onPageChange(pageNumber)}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+            <button className="pg-btn" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                chevron_right
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RoomManagementGrid({
+  loading,
+  paginatedRooms,
+  rooms,
+  page,
+  pageSize,
+  totalPages,
+  onPageChange,
+  RoomCard,
+  onDetail,
+}) {
+  if (loading) {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14 }}>
+        {Array.from({ length: 12 }).map((_, index) => (
+          <div key={index} className="skeleton" style={{ height: 130, borderRadius: 16 }} />
+        ))}
+      </div>
+    );
+  }
+
+  if (paginatedRooms.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "64px 0" }}>
+        <span
+          className="material-symbols-outlined"
+          style={{ fontSize: 52, color: "#d1d5db", display: "block", marginBottom: 12 }}
+        >
+          meeting_room
+        </span>
+        <p style={{ color: "#9ca3af", fontWeight: 600 }}>Không tìm thấy phòng nào</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14 }}>
+        {paginatedRooms.map((room) => (
+          <RoomCard key={room.id} room={room} onDetail={onDetail} />
+        ))}
+      </div>
+      {rooms.length > pageSize && (
+        <div style={{ marginTop: 20, display: "flex", justifyContent: "center", gap: 4 }}>
+          <button className="pg-btn" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+              chevron_left
+            </span>
+          </button>
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+            const pageNumber = Math.max(1, page - 2) + index;
+            if (pageNumber > totalPages) return null;
+            return (
+              <button
+                key={pageNumber}
+                className={`pg-btn${pageNumber === page ? " active" : ""}`}
+                onClick={() => onPageChange(pageNumber)}
+              >
+                {pageNumber}
+              </button>
+            );
+          })}
+          <button className="pg-btn" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+              chevron_right
+            </span>
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+export {
+  RoomManagementFilters,
+  RoomManagementGrid,
+  RoomManagementHeader,
+  RoomManagementSummary,
+  RoomManagementTable,
+};
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function RoomManagementPage() {
     const permissions = useAdminAuthStore((s) => s.permissions);
@@ -568,12 +1434,15 @@ export default function RoomManagementPage() {
     const [rooms, setRooms] = useState([]);
     const [roomTypes, setRoomTypes] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [viewMode, setViewMode] = useState("table"); // table | grid
+    const [viewMode, setViewMode] = useState(() => {
+        const saved = sessionStorage.getItem(ROOM_VIEW_MODE_STORAGE_KEY);
+        return saved === "grid" ? "grid" : "table";
+    }); // table | grid
     const [toasts, setToasts] = useState([]);
     const [filters, setFilters] = useState({ businessStatus: "", cleaningStatus: "", roomTypeId: "", floor: "" });
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [page, setPage] = useState(1);
-    const [pageSize] = useState(12);
+    const [pageSize] = useState(14);
     const showToast = useCallback((msg, type = "success") => {
         const id = Date.now() + Math.random();
         setToasts(prev => [...prev, { id, msg, type }]);
@@ -621,6 +1490,7 @@ export default function RoomManagementPage() {
 
     useEffect(() => { loadRooms(); }, [loadRooms]);
     useEffect(() => { loadRoomTypes(); }, [loadRoomTypes]);
+    useEffect(() => { sessionStorage.setItem(ROOM_VIEW_MODE_STORAGE_KEY, viewMode); }, [viewMode]);
 
     // Stats
     const stats = {
@@ -643,9 +1513,7 @@ export default function RoomManagementPage() {
 
     return (
         <>
-            <style>{`
-        .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
-        @keyframes spin { to{transform:rotate(360deg)} }
+            <style>{`        @keyframes spin { to{transform:rotate(360deg)} }
         @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
         @keyframes fadeRow { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
@@ -658,7 +1526,7 @@ export default function RoomManagementPage() {
         .pg-btn:disabled { opacity:.35; cursor:not-allowed; }
       `}</style>
 
-            {/* Toast Container */}
+            {/* Khu v?c thông báo */}
             <div style={{ position: "fixed", top: 24, right: 24, zIndex: 300, pointerEvents: "none", minWidth: 280 }}>
                 {toasts.map(t => <Toast key={t.id} {...t} onDismiss={dismissToast} />)}
             </div>
@@ -677,263 +1545,84 @@ export default function RoomManagementPage() {
                 </div>
             ) : (
                 <div style={{ maxWidth: 1400, margin: "0 auto", animation: "fadeRow .3s ease" }}>
-                    {/* Page Header */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
-                        <div>
-                            <h2 style={{ fontSize: 26, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.025em", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>
-                                Quản lý Phòng
-                            </h2>
-                            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-                                Tổng <span style={{ fontWeight: 700, color: "#1c1917" }}>{stats.total}</span> phòng
-                                {hasFilters && <span style={{ color: "#4f645b", fontWeight: 600, marginLeft: 4 }}>(đang lọc)</span>}
-                            </p>
-                        </div>
-                        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                            {/* View toggle */}
-                            <div style={{ display: "flex", gap: 2, background: "#f1f0ea", padding: 4, borderRadius: 12 }}>
-                                {["table", "grid"].map(m => (
-                                    <button
-                                        key={m}
-                                        onClick={() => setViewMode(m)}
-                                        style={{ padding: "7px 14px", borderRadius: 9, background: viewMode === m ? "white" : "transparent", border: "none", cursor: "pointer", color: viewMode === m ? "#1c1917" : "#9ca3af", display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, boxShadow: viewMode === m ? "0 1px 4px rgba(0,0,0,.1)" : "none", transition: "all .15s", fontFamily: "Manrope, sans-serif" }}
-                                    >
-                                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{m === "table" ? "table_rows" : "grid_view"}</span>
-                                        {m === "table" ? "Bảng" : "Lưới"}
-                                    </button>
-                                ))}
-                            </div>
-                            <button
-                                onClick={() => setCreateModalOpen(true)}
-                                style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "#4f645b", color: "#e7fef3", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 4px 12px rgba(79,100,91,.2)", fontFamily: "Manrope, sans-serif" }}
-                            >
-                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_circle</span>
-                                Thêm phòng
-                            </button>
-                        </div>
-                    </div>
+                    <RoomManagementHeader
+                        stats={stats}
+                        hasFilters={hasFilters}
+                        viewMode={viewMode}
+                        onViewModeChange={setViewMode}
+                        onCreateRoom={() => setCreateModalOpen(true)}
+                    />
 
-                    {/* Summary Cards */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 24 }}>
-                        {[
-                            { label: "TỔNG PHÒNG", value: stats.total, bg: "#f8f9fa", color: "#6b7280", border: "#f1f0ea" },
-                            { label: "SẴN SÀNG", value: stats.available, bg: "#ecfdf5", color: "#059669", border: "#a7f3d0" },
-                            { label: "ĐANG DÙNG", value: stats.occupied, bg: "#fffbeb", color: "#d97706", border: "#fde68a" },
-                            { label: "BẢO TRÌ", value: stats.disabled, bg: "#f5f3ff", color: "#7c3aed", border: "#ddd6fe" },
-                            { label: "CẦN DỌN", value: stats.dirty, bg: "#fff7ed", color: "#ea580c", border: "#fed7aa" },
-                        ].map(s => (
-                            <div key={s.label} style={{ background: s.bg, border: `1.5px solid ${s.border}`, borderRadius: 16, padding: "16px 18px", textAlign: "center" }}>
-                                <p style={{ fontSize: 24, fontWeight: 800, color: s.color, margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>{s.value}</p>
-                                <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em", color: s.color, margin: 0, opacity: 0.7 }}>{s.label}</p>
-                            </div>
-                        ))}
-                    </div>
+                    <RoomManagementSummary stats={stats} />
 
-                    {/* Filter Bar */}
-                    <div style={{ background: "white", borderRadius: 18, padding: "18px 22px", marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,.06)", border: "1px solid #f1f0ea", display: "flex", gap: 14, alignItems: "flex-end", flexWrap: "wrap" }}>
-                        {[
-                            {
-                                label: "Trạng thái KD",
-                                key: "businessStatus",
-                                options: [{ value: "", label: "Tất cả" }, { value: "Available", label: "Sẵn sàng" }, { value: "Occupied", label: "Đang dùng" }, { value: "Disabled", label: "Bảo trì" }],
-                            },
-                            {
-                                label: "Tình trạng vệ sinh",
-                                key: "cleaningStatus",
-                                options: [{ value: "", label: "Tất cả" }, { value: "Clean", label: "Sạch sẽ" }, { value: "Dirty", label: "Cần dọn" }],
-                            },
-                            {
-                                label: "Hạng phòng",
-                                key: "roomTypeId",
-                                options: [{ value: "", label: "Tất cả" }, ...roomTypes.map(rt => ({ value: rt.id.toString(), label: rt.name }))],
-                            },
-                            {
-                                label: "Tầng",
-                                key: "floor",
-                                options: [{ value: "", label: "Tất cả" }, ...floors.map(f => ({ value: f.toString(), label: `Tầng ${f}` }))],
-                            },
-                        ].map(f => (
-                            <div key={f.key} style={{ flex: 1, minWidth: 160 }}>
-                                <label style={{ display: "block", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em", color: "#9ca3af", marginBottom: 6 }}>{f.label}</label>
-                                <select
-                                    value={filters[f.key]}
-                                    onChange={e => setFilters(prev => ({ ...prev, [f.key]: e.target.value }))}
-                                    style={{ width: "100%", background: "#f9f8f3", border: "1.5px solid #e2e8e1", borderRadius: 12, padding: "9px 12px", fontSize: 13, fontWeight: 500, outline: "none", fontFamily: "Manrope, sans-serif" }}
-                                    onFocus={e => e.target.style.borderColor = "#4f645b"}
-                                    onBlur={e => e.target.style.borderColor = "#e2e8e1"}
-                                >
-                                    {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                </select>
-                            </div>
-                        ))}
-                        {hasFilters && (
-                            <button
-                                onClick={clearFilters}
-                                style={{ padding: "9px 14px", borderRadius: 12, background: "#fee2e2", border: "1.5px solid #fecaca", color: "#dc2626", cursor: "pointer", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 5, flexShrink: 0, fontFamily: "Manrope, sans-serif" }}
-                            >
-                                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>filter_alt_off</span>
-                                Xóa lọc
-                            </button>
-                        )}
-                    </div>
+                    <RoomManagementFilters
+                        filters={filters}
+                        roomTypes={roomTypes}
+                        floors={floors}
+                        hasFilters={hasFilters}
+                        onFiltersChange={(key, value) => setFilters((prev) => ({ ...prev, [key]: value }))}
+                        onClearFilters={clearFilters}
+                    />
 
                     {/* Table View */}
                     {viewMode === "table" && (
-                        <div style={{ background: "white", borderRadius: 18, boxShadow: "0 1px 4px rgba(0,0,0,.06)", border: "1px solid #f1f0ea", overflow: "hidden" }}>
-                            <div style={{ overflowX: "auto" }}>
-                                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                                    <thead>
-                                        <tr style={{ background: "rgba(249,248,243,.6)", borderBottom: "1px solid #f1f0ea" }}>
-                                            {["Số phòng", "Tầng", "Hạng phòng", "Trạng thái KD", "Vệ sinh", "Thao tác"].map((h, i) => (
-                                                <th key={h} style={{ padding: "15px 24px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#9ca3af", textAlign: i === 5 ? "right" : "left" }}>{h}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {loading ? (
-                                            <SkeletonRows />
-                                        ) : paginatedRooms.length === 0 ? null : (
-                                            paginatedRooms.map((room, i) => {
-                                                return (
-                                                    <tr key={room.id} className="fade-row" style={{ borderBottom: "1px solid #fafaf8", animationDelay: `${i * 20}ms` }}>
-                                                        <td style={{ padding: "16px 24px" }}>
-                                                            <span style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", fontFamily: "Manrope, sans-serif" }}>{room.roomNumber}</span>
-                                                            <span style={{ marginLeft: 8, fontSize: 11, color: "#9ca3af" }}>#{room.id}</span>
-                                                        </td>
-                                                        <td style={{ padding: "16px 24px", fontSize: 14, color: "#4b5563", fontWeight: 500 }}>{room.floor || "—"}</td>
-                                                        <td style={{ padding: "16px 24px", fontSize: 13, color: "#374151", fontWeight: 500 }}>{room.roomTypeName || "—"}</td>
-                                                        <td style={{ padding: "16px 24px" }}>
-                                                            <StatusDropdown
-                                                                options={["Available", "Occupied", "Disabled"]}
-                                                                current={room.businessStatus}
-                                                                onSelect={async (val) => {
-                                                                    try {
-                                                                        await updateBusinessStatus(room.id, val);
-                                                                        showToast(`Phòng ${room.roomNumber}: ${BUSINESS_STATUS_CONFIG[val]?.label}`, "success");
-                                                                        loadRooms();
-                                                                    } catch (err) {
-                                                                        showToast(err?.response?.data?.message || "Lỗi cập nhật trạng thái.", "error");
-                                                                    }
-                                                                }}
-                                                                configMap={BUSINESS_STATUS_CONFIG}
-                                                            />
-                                                        </td>
-                                                        <td style={{ padding: "16px 24px" }}>
-                                                            <StatusDropdown
-                                                                options={["Clean", "Dirty"]}
-                                                                current={room.cleaningStatus}
-                                                                onSelect={async (val) => {
-                                                                    try {
-                                                                        await updateCleaningStatus(room.id, val);
-                                                                        showToast(`Phòng ${room.roomNumber}: ${CLEANING_STATUS_CONFIG[val]?.label}`, "success");
-                                                                        loadRooms();
-                                                                    } catch (err) {
-                                                                        showToast(err?.response?.data?.message || "Lỗi cập nhật vệ sinh.", "error");
-                                                                    }
-                                                                }}
-                                                                configMap={CLEANING_STATUS_CONFIG}
-                                                            />
-                                                        </td>
-                                                        <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                                                            <button
-                                                                onClick={() => navigate(`/admin/rooms/${room.id}`)}
-                                                                style={{ padding: "7px 14px", borderRadius: 10, background: "#f0faf5", border: "1.5px solid #a7f3d0", color: "#059669", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, marginLeft: "auto", fontFamily: "Manrope, sans-serif" }}
-                                                                onMouseEnter={e => { e.currentTarget.style.background = "#4f645b"; e.currentTarget.style.color = "#e7fef3"; e.currentTarget.style.borderColor = "#4f645b"; }}
-                                                                onMouseLeave={e => { e.currentTarget.style.background = "#f0faf5"; e.currentTarget.style.color = "#059669"; e.currentTarget.style.borderColor = "#a7f3d0"; }}
-                                                            >
-                                                                <span className="material-symbols-outlined" style={{ fontSize: 15 }}>visibility</span>
-                                                                Chi tiết
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Empty State */}
-                            {!loading && paginatedRooms.length === 0 && (
-                                <div style={{ padding: "64px 0", textAlign: "center" }}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 52, color: "#d1d5db", display: "block", marginBottom: 12 }}>meeting_room</span>
-                                    <p style={{ color: "#9ca3af", fontWeight: 600, fontSize: 14 }}>Không tìm thấy phòng nào</p>
-                                    {hasFilters && (
-                                        <button onClick={clearFilters} style={{ marginTop: 12, padding: "7px 18px", borderRadius: 10, background: "#4f645b", color: "#e7fef3", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-                                            Xóa bộ lọc
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Pagination */}
-                            {!loading && rooms.length > 0 && (
-                                <div style={{ padding: "14px 24px", borderTop: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                    <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 500 }}>
-                                        {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, rooms.length)} / {rooms.length} phòng
-                                    </span>
-                                    <div style={{ display: "flex", gap: 4 }}>
-                                        <button className="pg-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-                                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
-                                        </button>
-                                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                                            const n = totalPages <= 5 ? i + 1 : Math.max(1, page - 2) + i;
-                                            if (n > totalPages) return null;
-                                            return (
-                                                <button key={n} className={`pg-btn${n === page ? " active" : ""}`} onClick={() => setPage(n)}>{n}</button>
-                                            );
-                                        })}
-                                        <button className="pg-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-                                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        <RoomManagementTable
+                            loading={loading}
+                            paginatedRooms={paginatedRooms}
+                            rooms={rooms}
+                            page={page}
+                            pageSize={pageSize}
+                            totalPages={totalPages}
+                            hasFilters={hasFilters}
+                            onClearFilters={clearFilters}
+                            onPageChange={setPage}
+                            onDetail={(id) => navigate(`/admin/rooms/${id}`)}
+                            onBusinessStatusChange={async (room, val) => {
+                                try {
+                                    await updateBusinessStatus(room.id, val);
+                                    showToast(`Phòng ${room.roomNumber}: ${BUSINESS_STATUS_CONFIG[val]?.label}`, "success");
+                                    loadRooms();
+                                } catch (err) {
+                                    showToast(err?.response?.data?.message || "Lỗi cập nhật trạng thái.", "error");
+                                }
+                            }}
+                            onCleaningStatusChange={async (room, val) => {
+                                try {
+                                    await updateCleaningStatus(room.id, val);
+                                    showToast(`Phòng ${room.roomNumber}: ${CLEANING_STATUS_CONFIG[val]?.label}`, "success");
+                                    loadRooms();
+                                } catch (err) {
+                                    showToast(err?.response?.data?.message || "Lỗi cập nhật vệ sinh.", "error");
+                                }
+                            }}
+                            SkeletonRows={SkeletonRows}
+                            StatusDropdown={StatusDropdown}
+                            businessStatusConfig={BUSINESS_STATUS_CONFIG}
+                            cleaningStatusConfig={CLEANING_STATUS_CONFIG}
+                        />
                     )}
 
                     {/* Grid View */}
                     {viewMode === "grid" && (
-                        <>
-                            {loading ? (
-                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14 }}>
-                                    {Array.from({ length: 12 }).map((_, i) => (
-                                        <div key={i} className="skeleton" style={{ height: 130, borderRadius: 16 }} />
-                                    ))}
-                                </div>
-                            ) : paginatedRooms.length === 0 ? (
-                                <div style={{ textAlign: "center", padding: "64px 0" }}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 52, color: "#d1d5db", display: "block", marginBottom: 12 }}>meeting_room</span>
-                                    <p style={{ color: "#9ca3af", fontWeight: 600 }}>Không tìm thấy phòng nào</p>
-                                </div>
-                            ) : (
-                                <>
-                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14 }}>
-                                        {paginatedRooms.map(room => (
-                                            <RoomCard key={room.id} room={room} onDetail={(id) => navigate(`/admin/rooms/${id}`)} />
-                                        ))}
-                                    </div>
-                                    {/* Grid pagination */}
-                                    {rooms.length > pageSize && (
-                                        <div style={{ marginTop: 20, display: "flex", justifyContent: "center", gap: 4 }}>
-                                            <button className="pg-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-                                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
-                                            </button>
-                                            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                                                const n = Math.max(1, page - 2) + i;
-                                                if (n > totalPages) return null;
-                                                return <button key={n} className={`pg-btn${n === page ? " active" : ""}`} onClick={() => setPage(n)}>{n}</button>;
-                                            })}
-                                            <button className="pg-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-                                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
-                                            </button>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-                        </>
+                        <RoomManagementGrid
+                            loading={loading}
+                            paginatedRooms={paginatedRooms}
+                            rooms={rooms}
+                            page={page}
+                            pageSize={pageSize}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                            RoomCard={RoomCard}
+                            onDetail={(id) => navigate(`/admin/rooms/${id}`)}
+                        />
                     )}
                 </div>
             )}
         </>
     );
 }
+
+
+
+
+

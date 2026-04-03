@@ -41,12 +41,32 @@ export const deleteInventory = (id) =>
 
 /**
  * POST /api/RoomInventories/clone  [MANAGE_INVENTORY]
- * Copies all active items from sourceRoomId to all targetRoomIds
- * Body: { sourceRoomId, targetRoomIds: [] }
- * Response: { message, sourceRoomId, itemsPerRoom, clonedToRooms, invalidRoomIds }
+ * Copies only missing active items from sourceRoomId to targetRoomIds
+ * Body: { sourceRoomId, targetRoomIds: [], syncSnapshotAfterClone?: boolean }
+ * Response: { message, sourceRoomId, itemsPerRoom, clonedItems, skippedExistingItems, clonedToRooms, invalidRoomIds }
  */
-export const cloneInventory = (sourceRoomId, targetRoomIds) =>
-    axiosClient.post('/RoomInventories/clone', { sourceRoomId, targetRoomIds });
+export const cloneInventory = (sourceRoomId, targetRoomIds, syncSnapshotAfterClone = false) =>
+    axiosClient.post('/RoomInventories/clone', { sourceRoomId, targetRoomIds, syncSnapshotAfterClone });
+
+/**
+ * GET /api/RoomInventories/preview-sync-stock  [MANAGE_INVENTORY]
+ * Response: { roomId, inventoryVersion, lastSyncedAt, data: [{ equipmentId, itemCode, equipmentName, oldRoomQuantity, newRoomQuantity, delta }], total }
+ */
+export const previewSyncInventoryStock = (roomId) =>
+    axiosClient.get('/RoomInventories/preview-sync-stock', {
+        params: roomId ? { roomId } : undefined,
+    });
+
+/**
+ * POST /api/RoomInventories/sync-stock  [MANAGE_INVENTORY]
+ * Body: { roomId, inventoryVersion }
+ * Response: { message, roomId, updatedEquipments, changes, syncedAt }
+ */
+export const syncInventoryStock = (roomId, inventoryVersion) =>
+    axiosClient.post('/RoomInventories/sync-stock', { roomId, inventoryVersion });
+
+export const saveRoomInventorySnapshot = (roomId) =>
+    axiosClient.post('/RoomInventories/save-room-snapshot', { roomId });
 
 /**
  * PATCH /api/RoomInventories/{id}/toggle-active  [MANAGE_INVENTORY]
