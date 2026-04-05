@@ -1,7 +1,7 @@
 ﻿// src/pages/admin/HousekeepingPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import axiosClient from "../../api/axios";
-import { getRooms, updateCleaningStatus, updateBusinessStatus } from "../../api/roomsApi";
+import { getRooms, updateCleaningStatus } from "../../api/roomsApi";
 import { getInventoryByRoom } from "../../api/roomInventoriesApi";
 
 // ─── Toast Component ──────────────────────────────────────────────────────────
@@ -35,11 +35,13 @@ function Toast({ id, msg, type = "success", dur = 4000, onDismiss }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function HousekeepingPage() {
   const [rooms, setRooms] = useState([]);
+  const [allFloors, setAllFloors] = useState([]);
+  const [floorFilter, setFloorFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
 
-  // States cho modal chia đôi (phải qua bước 1 mới sang bước 2 - vật tư)
+  // States cho modal chia doi (phai qua buoc 1 moi sang buoc 2 - vat tu)
   const [wizardStep, setWizardStep] = useState(1);
   const [isFinishing, setIsFinishing] = useState(false);
   const [inventories, setInventories] = useState([]);
@@ -48,40 +50,48 @@ export default function HousekeepingPage() {
 
   const showToast = useCallback((msg, type = "success") => {
     const id = Date.now() + Math.random();
-    setToasts(prev => [...prev, { id, msg, type }]);
+    setToasts((prev) => [...prev, { id, msg, type }]);
   }, []);
 
-  const dismissToast = useCallback(id => setToasts(prev => prev.filter(t => t.id !== id)), []);
+  const dismissToast = useCallback((id) => setToasts((prev) => prev.filter((t) => t.id !== id)), []);
 
   const loadDirtyRooms = useCallback(async () => {
     setLoading(true);
     try {
-      // Gọi API lấy toàn bộ phòng ưu tiên lọc backend nếu có thể, hoặc nhận full và lọc thủ công
-      // Phòng đang bảo trì hoặc đang cần dọn
-      const res = await getRooms({ cleaningStatus: "Dirty" });
+      const res = await getRooms(floorFilter ? { floor: Number(floorFilter) } : {});
       let data = res.data?.data || [];
-      // Bộ phận dọn phòng sẽ xử lý phòng rác (Dirty) hoặc phòng trạng thái nghỉ (Disabled/Maintenance)
-      data = data.filter(r => r.cleaningStatus === "Dirty" || r.businessStatus === "Disabled");
+      data = data.filter((r) => r.cleaningStatus === "Dirty" || r.businessStatus === "Disabled");
       setRooms(data);
     } catch {
-      showToast("Không thể tải danh sách phòng cẩn dọn.", "error");
+      showToast("Không thể tải danh sách phòng cần dọn.", "error");
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [floorFilter, showToast]);
+
+  const loadAvailableFloors = useCallback(async () => {
+    try {
+      const res = await getRooms();
+      let data = res.data?.data || [];
+      data = data.filter((r) => r.cleaningStatus === "Dirty" || r.businessStatus === "Disabled");
+      setAllFloors([...new Set(data.map((room) => room.floor).filter((floor) => floor != null))].sort((a, b) => a - b));
+    } catch {
+    }
+  }, []);
 
   useEffect(() => { loadDirtyRooms(); }, [loadDirtyRooms]);
+  useEffect(() => { loadAvailableFloors(); }, [loadAvailableFloors]);
 
   const loadInventoriesForRoom = async (roomId) => {
     setLoadingInv(true);
     try {
       const res = await getInventoryByRoom(roomId);
       const grouped = res.data?.data || [];
-      const items = grouped.flatMap(g => g.items || []);
+      const items = grouped.flatMap((g) => g.items || []);
       setInventories(items);
 
       const initialMissing = {};
-      items.forEach(inv => {
+      items.forEach((inv) => {
         initialMissing[inv.id] = { isMissing: false, quantity: 1, note: "", files: [] };
       });
       setMissingItems(initialMissing);
@@ -104,30 +114,30 @@ export default function HousekeepingPage() {
   };
 
   const toggleMissingItem = (invId) => {
-    setMissingItems(prev => ({
+    setMissingItems((prev) => ({
       ...prev,
       [invId]: { ...prev[invId], isMissing: !prev[invId].isMissing }
     }));
   };
 
   const updateMissingQuantity = (invId, qty) => {
-    setMissingItems(prev => ({
+    setMissingItems((prev) => ({
       ...prev,
       [invId]: { ...prev[invId], quantity: qty }
     }));
   };
 
   const updateMissingNote = (invId, note) => {
-    setMissingItems(prev => ({
+    setMissingItems((prev) => ({
       ...prev,
       [invId]: { ...prev[invId], note }
     }));
   };
 
   const updateMissingFiles = (invId, fileList) => {
-    setMissingItems(prev => ({
+    setMissingItems((prev) => ({
       ...prev,
-      [invId]: { ...prev[invId], files: Array.from(fileList) }
+      [invId]: { ...prev[invId], files: Array.from(fileList || []) }
     }));
   };
 
@@ -136,11 +146,11 @@ export default function HousekeepingPage() {
     try {
       const { id: roomId, roomNumber } = selectedRoom;
 
-      // 1. Kiểm kê mất/sử dụng vật tư -> Cập nhật db Loss_And_Damages
-      const usedOrLost = inventories.filter(inv => missingItems[inv.id]?.isMissing);
+      // 1. Kiểm kê mất/sử dụng vật tư -> cập nhật Loss_And_Damages ở trạng thái Pending
+      const usedOrLost = inventories.filter((inv) => missingItems[inv.id]?.isMissing);
 
       for (const inv of usedOrLost) {
-        const qtyMissing = parseInt(missingItems[inv.id].quantity, 10);
+        const qtyMissing = parseInt(missingItems[inv.id].quantity, 10) || 1;
         const note = missingItems[inv.id].note || "Vật tư khách sử dụng / hao hụt lúc dọn phòng";
 
         try {
@@ -152,40 +162,47 @@ export default function HousekeepingPage() {
           formData.append("Status", "Pending");
 
           if (missingItems[inv.id].files && missingItems[inv.id].files.length > 0) {
-            missingItems[inv.id].files.forEach(f => {
+            missingItems[inv.id].files.forEach((f) => {
               formData.append("Images", f);
             });
           }
 
-          await axiosClient.post('/LossAndDamages', formData, {
+          await axiosClient.post("/LossAndDamages", formData, {
             headers: { "Content-Type": "multipart/form-data" }
           });
-
         } catch (err) {
-          console.error('Lỗi khi ghi nhận mất vật tư:', err);
+          console.error("Lỗi khi ghi nhận mất vật tư:", err);
         }
       }
 
-      // 2. Chuyển đổi Cleaning Status -> Clean (sẽ sinh AuditLog phía backend)
-      await updateCleaningStatus(roomId, "Clean");
+      // 2. Nếu có thất thoát chờ xử lý thì chuyển sang PendingLoss.
+      // Nếu không có thất thoát thì trả phòng về Clean ngay.
+      const nextCleaningStatus = usedOrLost.length > 0 ? "PendingLoss" : "Clean";
+      await updateCleaningStatus(roomId, nextCleaningStatus);
 
-      // 3. Chuyển đổi Business Status -> Available (sẽ sinh AuditLog phía backend)
-      await updateBusinessStatus(roomId, "Available");
-
-      // 4. Custom API tạo Notification cho role id 1, 2, 3 (Admin, Manager, Lễ tân) và người dọn (nếu có)
-      await axiosClient.post('/ActivityLogs/custom-notify', {
-        actionCode: "HOUSEKEEPING_DONE",
-        message: `Nhân viên Buồng phòng đã dọn xong phòng ${roomNumber}. Đã ghi nhận ${usedOrLost.length} vật tư hao hụt/đã sử dụng.`,
+      // 3. Tạo notification cho Admin, Manager, Lễ tân
+      await axiosClient.post("/ActivityLogs/custom-notify", {
+        actionCode: "HOUSEKEEPING_DONE_PENDING_LOSS",
+        message: usedOrLost.length > 0
+          ? `Nhân viên Buồng phòng đã dọn xong phòng ${roomNumber}. Đã ghi nhận ${usedOrLost.length} vật tư hao hụt/đã sử dụng. Phòng chuyển sang PendingLoss để chờ xử lý thất thoát.`
+          : `Nhân viên Buồng phòng đã dọn xong phòng ${roomNumber}. Không có thất thoát nào, phòng đã sẵn sàng.`,
         targetRoleIds: [1, 2, 3],
         entityType: "Room",
         entityId: roomId
-      }).catch(() => console.log('Bỏ qua lỗi custom-notify nếu chưa có BE endpoint'));
+      }).catch(() => console.log("Bỏ qua lỗi custom-notify nếu chưa có BE endpoint"));
 
-      showToast(`Đã hoàn tất dọn phòng ${roomNumber}!`, "success");
+      showToast(
+        usedOrLost.length > 0
+          ? `Đã hoàn tất bước dọn phòng ${roomNumber}. Phòng chuyển sang PendingLoss để chờ xử lý thất thoát.`
+          : `Đã hoàn tất dọn phòng ${roomNumber}. Phòng đã về trạng thái Clean.`,
+        "success"
+      );
 
       setSelectedRoom(null);
+      setInventories([]);
+      setMissingItems({});
+      setWizardStep(1);
       loadDirtyRooms();
-
     } catch {
       showToast("Lỗi khi kết thúc dọn phòng.", "error");
     } finally {
@@ -198,9 +215,9 @@ export default function HousekeepingPage() {
       <style>{`
         @keyframes fadeRow { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
-        @keyframes modalScaleIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }        .hk-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,.08) !important; z-index: 10; }
-        
-        .check-container { display:flex; align-items:center; position:relative; padding-left:28px; cursor:pointer; font-size:14px; user-select:none; margin: 0;}
+        @keyframes modalScaleIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+        .hk-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,.08) !important; z-index: 10; }
+        .check-container { display:flex; align-items:center; position:relative; padding-left:28px; cursor:pointer; font-size:14px; user-select:none; margin: 0; }
         .check-container input { position:absolute; opacity:0; cursor:pointer; height:0; width:0; }
         .checkmark { position:absolute; top:2px; left:0; height:20px; width:20px; background-color:#f1f0ea; border:1px solid #d1d5db; border-radius:4px; transition:all .2s; }
         .check-container:hover input ~ .checkmark { background-color:#e5e7eb; }
@@ -211,27 +228,38 @@ export default function HousekeepingPage() {
       `}</style>
 
       <div style={{ position: "fixed", top: 24, right: 24, zIndex: 9999, pointerEvents: "none", minWidth: 280 }}>
-        {toasts.map(t => <Toast key={t.id} {...t} onDismiss={dismissToast} />)}
+        {toasts.map((t) => <Toast key={t.id} {...t} onDismiss={dismissToast} />)}
       </div>
 
       <div style={{ maxWidth: 1400, margin: "0 auto", animation: "fadeRow .3s ease" }}>
-
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, gap: 12, flexWrap: "wrap" }}>
           <div>
             <h2 style={{ fontSize: 26, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.025em", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>
               Nghiệp vụ Dọn Phòng
             </h2>
             <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-              Danh sách các phòng đang trong trạng thái cẩn dọn dẹp (Mainternance / Dirty).
+              Danh sách các phòng đang trong trạng thái cần dọn dẹp (Maintenance / Dirty).
             </p>
           </div>
-          <button
-            onClick={loadDirtyRooms}
-            style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "white", color: "#4f645b", border: "1.5px solid #4f645b", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "Manrope, sans-serif" }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>refresh</span>
-            Làm mới
-          </button>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <select
+              value={floorFilter}
+              onChange={(e) => setFloorFilter(e.target.value)}
+              style={{ padding: "9px 14px", borderRadius: 12, fontSize: 13, border: "1.5px solid #d6d3d1", background: "white", minWidth: 150 }}
+            >
+              <option value="">Tất cả tầng</option>
+              {allFloors.map((floor) => (
+                <option key={floor} value={floor}>Tầng {floor}</option>
+              ))}
+            </select>
+            <button
+              onClick={loadDirtyRooms}
+              style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "white", color: "#4f645b", border: "1.5px solid #4f645b", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "Manrope, sans-serif" }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>refresh</span>
+              Làm mới
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -244,40 +272,38 @@ export default function HousekeepingPage() {
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
-            {rooms.map((room) => {
-              return (
-                <div
-                  key={room.id}
-                  className="hk-card"
-                  onClick={() => handleOpenRoom(room)}
-                  style={{
-                    background: "white",
-                    border: "1px solid #f1f0ea",
-                    borderRadius: 16,
-                    padding: "20px 24px",
-                    cursor: "pointer",
-                    transition: "all .2s ease",
-                    boxShadow: "0 4px 12px rgba(0,0,0,.03)"
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                    <span style={{ fontSize: 24, fontWeight: 800, color: "#b91c1c", fontFamily: "Manrope, sans-serif" }}>{room.roomNumber}</span>
-                    <span style={{ background: "#fee2e2", color: "#b91c1c", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center", gap: 4 }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 14 }}>cleaning_services</span> CẦN DỌN
-                    </span>
-                  </div>
-
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    Tầng {room.floor} • {room.roomTypeName || "Hạng phòng chung"}
-                  </p>
+            {rooms.map((room) => (
+              <div
+                key={room.id}
+                className="hk-card"
+                onClick={() => handleOpenRoom(room)}
+                style={{
+                  background: "white",
+                  border: "1px solid #f1f0ea",
+                  borderRadius: 16,
+                  padding: "20px 24px",
+                  cursor: "pointer",
+                  transition: "all .2s ease",
+                  boxShadow: "0 4px 12px rgba(0,0,0,.03)"
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                  <span style={{ fontSize: 24, fontWeight: 800, color: "#b91c1c", fontFamily: "Manrope, sans-serif" }}>{room.roomNumber}</span>
+                  <span style={{ background: "#fee2e2", color: "#b91c1c", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center", gap: 4 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 14 }}>cleaning_services</span> CẦN DỌN
+                  </span>
                 </div>
-              )
-            })}
+
+                <p style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Tầng {room.floor} • {room.roomTypeName || "Hạng phòng chung"}
+                </p>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* POPUP DỌN PHÒNG (BẢNG 2 BÊN, HOẶC WIZARD) */}
+      {/* POPUP DỌN PHÒNG (wizard như cũ) */}
       {selectedRoom && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.55)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
           <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: wizardStep === 1 ? 520 : 900, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", animation: "modalScaleIn .2s ease-out", display: "flex", flexDirection: "column", overflow: "hidden", transition: "max-width .3s cubic-bezier(0.4, 0, 0.2, 1)" }}>
@@ -303,14 +329,13 @@ export default function HousekeepingPage() {
 
             <div style={{ padding: 32, maxHeight: "75vh", overflowY: "auto" }}>
               {wizardStep === 1 ? (
-                // --- TRANG 1: XÁC NHẬN BẮT ĐẦU ---
                 <div style={{ textAlign: "center", animation: "fadeRow .3s ease" }}>
                   <div style={{ background: "#f9f8f3", width: 100, height: 100, borderRadius: "50%", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 48, color: "#4f645b" }}>door_open</span>
                   </div>
                   <h4 style={{ fontSize: 20, color: "#1c1917", margin: "0 0 12px", fontWeight: 800 }}>Bạn đã tiến hành dọn dẹp phòng này?</h4>
                   <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6, marginBottom: 32, padding: "0 20px" }}>
-                    Bấm xác nhận khi bạn đã dọn dẹp sạch sẽ phòng. Sau khi xác nhận, hệ thống sẽ chuyển sang bảng kiểm kê vật tư phòng để ghi nhận xem khách có dùng/làm mất vật tư nào không trước khi hoàn tất vòng đời dọn phòng.
+                    Bấm xác nhận khi bạn đã dọn dẹp sạch sẽ phòng. Sau khi xác nhận, hệ thống sẽ chuyển sang bảng kiểm kê vật tư phòng để ghi nhận xem khách có dùng/làm mất vật tư nào không trước khi hoàn tất bước housekeeping.
                   </p>
                   <button
                     onClick={handleNextStep}
@@ -321,12 +346,11 @@ export default function HousekeepingPage() {
                   </button>
                 </div>
               ) : (
-                // --- TRANG 2: VẬT TƯ HAO HỤT (BẢNG POPUP) ---
                 <div style={{ animation: "fadeRow .3s ease" }}>
-                  <div style={{ background: "#fef2f2", padding: "16px 20px", borderRadius: 12, marginBottom: 24, borderLeft: "4px solid #ef4444" }}>
-                    <p style={{ margin: 0, fontSize: 14, color: "#b91c1c", fontWeight: 600, lineHeight: 1.5 }}>
+                  <div style={{ background: "#eff6ff", padding: "16px 20px", borderRadius: 12, marginBottom: 24, borderLeft: "4px solid #2563eb" }}>
+                    <p style={{ margin: 0, fontSize: 14, color: "#1d4ed8", fontWeight: 600, lineHeight: 1.5 }}>
                       <span className="material-symbols-outlined" style={{ fontSize: 18, marginRight: 8, verticalAlign: "bottom" }}>info</span>
-                      Nếu khách đã sử dụng dịch vụ (ngay cả ăn bánh, minibar...) hoặc báo mất vật tư, <strong>hãy tick chọn vật tư đó ở cột Mất/Sử dụng</strong> để hệ thống tự động lưu vào Biên bản và trừ kho (bảng Equipment & Audit Log). Nếu không có thất thoát, nhấn Hoàn tất ở bên dưới.
+                      Nếu khách đã sử dụng dịch vụ hoặc làm mất vật tư, <strong>hãy tick chọn vật tư đó ở cột Mất/Sử dụng</strong> để hệ thống lưu biên bản thất thoát ở trạng thái chờ xử lý. Sau khi hoàn tất bước này, phòng sẽ chuyển sang <strong>cleaning_status = PendingLoss</strong> để chờ xử lý thất thoát. Nếu không có thất thoát, phòng sẽ về <strong>Clean</strong>.
                     </p>
                   </div>
 
@@ -359,7 +383,7 @@ export default function HousekeepingPage() {
                                 <td style={{ padding: "16px 20px", fontSize: 14, fontWeight: 800, color: "#94a3b8" }}>{idx + 1}</td>
                                 <td style={{ padding: "16px 20px", fontSize: 15, fontWeight: 700, color: isMissing ? "#b91c1c" : "#1e293b", fontFamily: "Manrope, sans-serif" }}>{inv.equipmentName}</td>
                                 <td style={{ padding: "16px 20px", fontSize: 14, color: "#64748b" }}>
-                                  <span style={{ padding: "4px 8px", borderRadius: 6, background: inv.itemType === 'Minibar' ? '#e0f2fe' : '#f1f5f9', color: inv.itemType === 'Minibar' ? '#0284c7' : '#475569', fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
+                                  <span style={{ padding: "4px 8px", borderRadius: 6, background: inv.itemType === "Minibar" ? "#e0f2fe" : "#f1f5f9", color: inv.itemType === "Minibar" ? "#0284c7" : "#475569", fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
                                     {inv.itemType || "Asset"}
                                   </span>
                                 </td>
@@ -385,7 +409,7 @@ export default function HousekeepingPage() {
                                         />
                                         <input
                                           type="text"
-                                          value={missingItems[inv.id]?.note || ''}
+                                          value={missingItems[inv.id]?.note || ""}
                                           onChange={(e) => updateMissingNote(inv.id, e.target.value)}
                                           placeholder="Nhập ghi chú chi tiết..."
                                           style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1.5px solid #fca5a5", outline: "none", fontSize: 13, background: "white" }}
@@ -423,11 +447,11 @@ export default function HousekeepingPage() {
                       style={{ background: "linear-gradient(135deg, #059669 0%, #047857 100%)", color: "white", padding: "14px 28px", borderRadius: 12, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 10, boxShadow: "0 8px 20px rgba(5,150,105,.3)", opacity: isFinishing ? 0.7 : 1, fontFamily: "Manrope, sans-serif" }}
                     >
                       {isFinishing ? (
-                        <>Đang lưu dữ liệu Audit Log & Kho...</>
+                        <>Đang hoàn tất nghiệp vụ buồng phòng...</>
                       ) : (
                         <>
                           <span className="material-symbols-outlined" style={{ fontSize: 22 }}>task_alt</span>
-                          Lưu & Hoàn tất dọn phòng
+                          Hoàn tất bước dọn phòng
                         </>
                       )}
                     </button>
@@ -435,13 +459,9 @@ export default function HousekeepingPage() {
                 </div>
               )}
             </div>
-
           </div>
         </div>
       )}
     </>
   );
 }
-
-
-

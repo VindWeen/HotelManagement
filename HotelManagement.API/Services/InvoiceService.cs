@@ -13,6 +13,8 @@ public interface IInvoiceService
     Task<object> CreateFromBookingAsync(int bookingId, CancellationToken cancellationToken = default);
     Task<object?> FinalizeAsync(int id, CancellationToken cancellationToken = default);
     Task<object?> GetByBookingIdAsync(int bookingId, CancellationToken cancellationToken = default);
+    Task<object?> AddAdjustmentAsync(int id, AddInvoiceAdjustmentRequest request, CancellationToken cancellationToken = default);
+    Task<object?> RemoveAdjustmentAsync(int id, int adjustmentId, CancellationToken cancellationToken = default);
 }
 
 public class InvoiceService : IInvoiceService
@@ -24,6 +26,29 @@ public class InvoiceService : IInvoiceService
         _db = db;
     }
 
+    private async Task RecalculateInvoiceTotalsAsync(Invoice invoice, CancellationToken cancellationToken = default)
+    {
+        await _db.Entry(invoice).Collection(i => i.Adjustments).LoadAsync(cancellationToken);
+        await _db.Entry(invoice).Collection(i => i.Payments).LoadAsync(cancellationToken);
+
+        var surchargeTotal = invoice.Adjustments
+            .Where(a => string.Equals(a.AdjustmentType, "Surcharge", StringComparison.OrdinalIgnoreCase))
+            .Sum(a => a.Amount);
+
+        var manualDiscountTotal = invoice.Adjustments
+            .Where(a => string.Equals(a.AdjustmentType, "Discount", StringComparison.OrdinalIgnoreCase))
+            .Sum(a => a.Amount);
+
+        var subtotal = (invoice.TotalRoomAmount ?? 0m)
+            + (invoice.TotalServiceAmount ?? 0m)
+            + (invoice.TotalDamageAmount ?? 0m)
+            + surchargeTotal
+            - (invoice.DiscountAmount ?? 0m)
+            - manualDiscountTotal;
+
+        invoice.FinalTotal = Math.Max(0m, subtotal + (invoice.TaxAmount ?? 0m));
+    }
+
     public async Task<ApiListResponse<object>> GetListAsync(ListQueryRequest queryRequest, string? status, CancellationToken cancellationToken = default)
     {
         var page = Math.Max(1, queryRequest.Page);
@@ -33,6 +58,7 @@ public class InvoiceService : IInvoiceService
             .AsNoTracking()
             .Include(i => i.Booking)
             .Include(i => i.Payments)
+            .Include(i => i.Adjustments)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(status))
@@ -78,6 +104,12 @@ public class InvoiceService : IInvoiceService
                 i.DiscountAmount,
                 i.TaxAmount,
                 i.FinalTotal,
+                AdjustmentAmount = i.Adjustments
+                    .Where(a => a.AdjustmentType == "Surcharge")
+                    .Sum(a => (decimal?)a.Amount) ?? 0m,
+                ManualDiscountAmount = i.Adjustments
+                    .Where(a => a.AdjustmentType == "Discount")
+                    .Sum(a => (decimal?)a.Amount) ?? 0m,
                 i.Status,
                 i.CreatedAt,
                 PaidAmount = i.Payments.Where(p => p.Status == PaymentStatuses.Success).Sum(p => p.AmountPaid)
@@ -95,6 +127,8 @@ public class InvoiceService : IInvoiceService
             i.DiscountAmount,
             i.TaxAmount,
             i.FinalTotal,
+            i.AdjustmentAmount,
+            i.ManualDiscountAmount,
             i.Status,
             i.CreatedAt,
             i.PaidAmount,
@@ -114,9 +148,12 @@ public class InvoiceService : IInvoiceService
             Summary = new
             {
                 totalItems,
-                unpaidItems = responseData.Count(i => string.Equals(i.Status, InvoiceStatuses.Unpaid, StringComparison.OrdinalIgnoreCase))
+                unpaidItems = responseData.Count(i =>
+                    string.Equals(i.Status, InvoiceStatuses.Draft, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(i.Status, InvoiceStatuses.ReadyToCollect, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(i.Status, InvoiceStatuses.Unpaid, StringComparison.OrdinalIgnoreCase))
             },
-            Message = "Láº¥y danh sĂ¡ch hĂ³a Ä‘Æ¡n thĂ nh cĂ´ng."
+            Message = "Lấy danh sách hóa đơn thành công."
         };
     }
 
@@ -131,6 +168,7 @@ public class InvoiceService : IInvoiceService
                 .ThenInclude(b => b!.BookingDetails)
                     .ThenInclude(d => d.Room)
             .Include(i => i.Payments)
+            .Include(i => i.Adjustments)
             .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
 
         if (invoice == null) return null;
@@ -152,6 +190,13 @@ public class InvoiceService : IInvoiceService
             invoice.FinalTotal,
             invoice.Status,
             invoice.CreatedAt,
+            DepositAmount = invoice.Booking?.DepositAmount ?? 0m,
+            AdjustmentAmount = invoice.Adjustments
+                .Where(a => string.Equals(a.AdjustmentType, "Surcharge", StringComparison.OrdinalIgnoreCase))
+                .Sum(a => a.Amount),
+            ManualDiscountAmount = invoice.Adjustments
+                .Where(a => string.Equals(a.AdjustmentType, "Discount", StringComparison.OrdinalIgnoreCase))
+                .Sum(a => a.Amount),
             PaidAmount = paidAmount,
             OutstandingAmount = (invoice.FinalTotal ?? 0m) - paidAmount,
             Booking = invoice.Booking == null ? null : new
@@ -185,6 +230,17 @@ public class InvoiceService : IInvoiceService
                     p.Status,
                     p.PaymentDate,
                     p.Note
+                }),
+            Adjustments = invoice.Adjustments
+                .OrderByDescending(a => a.CreatedAt)
+                .Select(a => new
+                {
+                    a.Id,
+                    a.AdjustmentType,
+                    a.Amount,
+                    a.Reason,
+                    a.Note,
+                    a.CreatedAt
                 })
         };
     }
@@ -196,7 +252,7 @@ public class InvoiceService : IInvoiceService
             .FirstOrDefaultAsync(i => i.BookingId == bookingId, cancellationToken);
 
         if (existing != null)
-            return new { created = false, invoiceId = existing.Id, message = "HĂ³a Ä‘Æ¡n cho booking nĂ y Ä‘Ă£ tá»“n táº¡i." };
+            return new { created = false, invoiceId = existing.Id, message = "Hóa đơn cho booking này đã tồn tại." };
 
         var booking = await _db.Bookings
             .Include(b => b.BookingDetails)
@@ -207,7 +263,7 @@ public class InvoiceService : IInvoiceService
             .FirstOrDefaultAsync(b => b.Id == bookingId, cancellationToken);
 
         if (booking == null)
-            throw new KeyNotFoundException($"KhĂ´ng tĂ¬m tháº¥y booking #{bookingId}.");
+            throw new KeyNotFoundException($"Không tìm thấy booking #{bookingId}.");
 
         var totalRoomAmount = booking.BookingDetails.Sum(d =>
         {
@@ -239,7 +295,7 @@ public class InvoiceService : IInvoiceService
             DiscountAmount = discountAmount,
             TaxAmount = taxAmount,
             FinalTotal = finalTotal,
-            Status = InvoiceStatuses.Unpaid,
+            Status = InvoiceStatuses.Draft,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -250,7 +306,7 @@ public class InvoiceService : IInvoiceService
         {
             created = true,
             invoiceId = invoice.Id,
-            message = "Táº¡o hĂ³a Ä‘Æ¡n tá»« booking thĂ nh cĂ´ng.",
+            message = "Tạo hóa đơn nháp từ booking thành công.",
             summary = new
             {
                 totalRoomAmount,
@@ -267,6 +323,7 @@ public class InvoiceService : IInvoiceService
     {
         var invoice = await _db.Invoices
             .Include(i => i.Payments)
+            .Include(i => i.Adjustments)
             .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
 
         if (invoice == null) return null;
@@ -278,10 +335,26 @@ public class InvoiceService : IInvoiceService
         var total = invoice.FinalTotal ?? 0m;
         invoice.Status = paidAmount switch
         {
-            <= 0m => InvoiceStatuses.Unpaid,
+            <= 0m => InvoiceStatuses.ReadyToCollect,
             var v when v >= total => InvoiceStatuses.Paid,
             _ => InvoiceStatuses.PartiallyPaid
         };
+
+        if (invoice.BookingId.HasValue)
+        {
+            var booking = await _db.Bookings.FirstOrDefaultAsync(b => b.Id == invoice.BookingId.Value, cancellationToken);
+            if (booking != null)
+            {
+                if (string.Equals(invoice.Status, InvoiceStatuses.Paid, StringComparison.OrdinalIgnoreCase))
+                {
+                    booking.Status = BookingStatuses.Completed;
+                }
+                else if (string.Equals(booking.Status, BookingStatuses.Completed, StringComparison.OrdinalIgnoreCase))
+                {
+                    booking.Status = BookingStatuses.CheckedOutPendingSettlement;
+                }
+            }
+        }
 
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -292,6 +365,58 @@ public class InvoiceService : IInvoiceService
             PaidAmount = paidAmount,
             OutstandingAmount = total - paidAmount
         };
+    }
+
+    public async Task<object?> AddAdjustmentAsync(int id, AddInvoiceAdjustmentRequest request, CancellationToken cancellationToken = default)
+    {
+        var invoice = await _db.Invoices
+            .Include(i => i.Adjustments)
+            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+
+        if (invoice == null) return null;
+
+        var adjustmentType = string.Equals(request.AdjustmentType, "Discount", StringComparison.OrdinalIgnoreCase)
+            ? "Discount"
+            : "Surcharge";
+
+        if (request.Amount <= 0)
+            throw new InvalidOperationException("Số tiền điều chỉnh phải lớn hơn 0.");
+
+        if (string.IsNullOrWhiteSpace(request.Reason))
+            throw new InvalidOperationException("Lý do điều chỉnh không được để trống.");
+
+        invoice.Adjustments.Add(new InvoiceAdjustment
+        {
+            AdjustmentType = adjustmentType,
+            Amount = request.Amount,
+            Reason = request.Reason.Trim(),
+            Note = request.Note,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await RecalculateInvoiceTotalsAsync(invoice, cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return await GetDetailAsync(id, cancellationToken);
+    }
+
+    public async Task<object?> RemoveAdjustmentAsync(int id, int adjustmentId, CancellationToken cancellationToken = default)
+    {
+        var invoice = await _db.Invoices
+            .Include(i => i.Adjustments)
+            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+
+        if (invoice == null) return null;
+
+        var adjustment = invoice.Adjustments.FirstOrDefault(a => a.Id == adjustmentId);
+        if (adjustment == null)
+            throw new KeyNotFoundException($"Không tìm thấy điều chỉnh hóa đơn #{adjustmentId}.");
+
+        _db.InvoiceAdjustments.Remove(adjustment);
+        await RecalculateInvoiceTotalsAsync(invoice, cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return await GetDetailAsync(id, cancellationToken);
     }
 
     public async Task<object?> GetByBookingIdAsync(int bookingId, CancellationToken cancellationToken = default)
@@ -318,4 +443,3 @@ public class InvoiceService : IInvoiceService
         };
     }
 }
-

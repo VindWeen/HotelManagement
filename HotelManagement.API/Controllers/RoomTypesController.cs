@@ -49,7 +49,6 @@ public class RoomTypesController : ControllerBase
                 rt.CapacityChildren,
                 rt.AreaSqm,
                 rt.BedType,
-                rt.ViewType,
                 rt.Description,
                 PrimaryImage = rt.RoomImages
                     .Where(img => img.IsActive && img.IsPrimary == true)
@@ -93,7 +92,6 @@ public class RoomTypesController : ControllerBase
                 rt.CapacityChildren,
                 rt.AreaSqm,
                 rt.BedType,
-                rt.ViewType,
                 rt.Description,
                 rt.IsActive,
                 PrimaryImage = rt.RoomImages
@@ -142,7 +140,6 @@ public class RoomTypesController : ControllerBase
                 rt.CapacityChildren,
                 rt.AreaSqm,
                 rt.BedType,
-                rt.ViewType,
                 rt.Description,
                 Images = rt.RoomImages
                     .Where(img => img.IsActive)
@@ -190,7 +187,6 @@ public class RoomTypesController : ControllerBase
                 rt.CapacityChildren,
                 rt.AreaSqm,
                 rt.BedType,
-                rt.ViewType,
                 rt.Description,
                 rt.IsActive,
                 Images = rt.RoomImages
@@ -241,7 +237,6 @@ public class RoomTypesController : ControllerBase
             CapacityChildren = request.CapacityChildren,
             AreaSqm = request.AreaSqm,
             BedType = request.BedType?.Trim(),
-            ViewType = request.ViewType?.Trim(),
             Description = request.Description?.Trim(),
             IsActive = true
         };
@@ -273,7 +268,6 @@ public class RoomTypesController : ControllerBase
         roomType.CapacityChildren = request.CapacityChildren;
         roomType.AreaSqm = request.AreaSqm;
         roomType.BedType = request.BedType?.Trim();
-        roomType.ViewType = request.ViewType?.Trim();
         roomType.Description = request.Description?.Trim();
 
         await _context.SaveChangesAsync();
@@ -284,7 +278,7 @@ public class RoomTypesController : ControllerBase
     // ──────────────────────────────────────────────────────────────
     // DELETE /api/RoomTypes/{id}  [MANAGE_ROOMS]
     // Soft Delete: is_active = 0.
-    // Không xóa khi đang có Booking active (Pending / Confirmed / Checked_in).
+    // Không xóa khi đang có Booking active (Pending / Confirmed / Checked_in / Checked_out_pending_settlement).
     // ──────────────────────────────────────────────────────────────
     [HttpDelete("{id:int}")]
     [RequirePermission(PermissionCodes.ManageRooms)]
@@ -298,7 +292,7 @@ public class RoomTypesController : ControllerBase
 
         // Kiểm tra có booking active không:
         // BookingDetail.RoomTypeId = id, Booking.Status thuộc nhóm chưa kết thúc
-        var activeStatuses = new[] { BookingStatuses.Pending, BookingStatuses.Confirmed, BookingStatuses.CheckedIn };
+        var activeStatuses = new[] { BookingStatuses.Pending, BookingStatuses.Confirmed, BookingStatuses.CheckedIn, BookingStatuses.CheckedOutPendingSettlement };
 
         var hasActiveBooking = await _context.BookingDetails // Changed _db.BookingDetails to _context.BookingDetails
             .AnyAsync(bd =>
@@ -540,7 +534,7 @@ public class RoomTypesController : ControllerBase
         // Không cho tắt khi đang có booking active
         if (roomType.IsActive)
         {
-            var activeStatuses = new[] { BookingStatuses.Pending, BookingStatuses.Confirmed, BookingStatuses.CheckedIn };
+            var activeStatuses = new[] { BookingStatuses.Pending, BookingStatuses.Confirmed, BookingStatuses.CheckedIn, BookingStatuses.CheckedOutPendingSettlement };
 
             var hasActiveBooking = await _context.BookingDetails // Changed _db.BookingDetails to _context.BookingDetails
                 .AnyAsync(bd =>
@@ -592,7 +586,6 @@ public record SaveRoomTypeRequest(
     int CapacityChildren,
     decimal? AreaSqm,
     string? BedType,
-    string? ViewType,
     string? Description
 );
 
