@@ -1,4 +1,4 @@
-﻿--============================================== TẠO DATABASE ============================================
+﻿﻿--============================================== TẠO DATABASE ============================================
 use master
 if exists(select * from sys.databases where name = 'HotelManagementDB')
     drop database [HotelManagementDB]
@@ -122,7 +122,6 @@ CREATE TABLE [dbo].[Room_Types](
     [capacity_children] [int]            NOT NULL,
     [area_sqm]          [decimal](8, 2)  NULL,           -- diện tích phòng m²
     [bed_type]          [nvarchar](50)   NULL,           -- King / Queen / Twin
-    [view_type]         [nvarchar](50)   NULL,           -- Biển / Núi / Thành phố / Vườn
     [description]       [nvarchar](max)  NULL,
     [is_active]         [bit]            NOT NULL DEFAULT 1,  -- Soft Delete
 PRIMARY KEY CLUSTERED ([id] ASC)
@@ -138,7 +137,7 @@ CREATE TABLE [dbo].[Rooms](
     -- Tách 2 trục trạng thái (Buoi4 slide 30)
     [status]                       [nvarchar](50)   NULL,            -- Available / Occupied / Maintenance (trạng thái kinh doanh cũ — giữ cho tương thích)
     [business_status]              [nvarchar](20)   NOT NULL DEFAULT 'Available', -- Available / Occupied / Disabled
-    [cleaning_status]              [nvarchar](20)   NOT NULL DEFAULT 'Clean',     -- Clean / Dirty
+    [cleaning_status]              [nvarchar](20)   NOT NULL DEFAULT 'Clean',     -- Clean / Dirty / PendingLoss
     [notes]                        [nvarchar](500)  NULL,            -- ghi chú bảo trì, đặc điểm phòng
     [inventory_sync_snapshot_json] [nvarchar](max)  NULL,            -- snapshot vật tư đã sync gần nhất của phòng
     [inventory_last_synced_at]     [datetime2](0)   NULL,            -- thời điểm sync gần nhất
@@ -244,7 +243,7 @@ CREATE TABLE [dbo].[Bookings](
     [check_in_time]          [datetime]       NULL,          -- thời điểm check-in thực tế
     [check_out_time]         [datetime]       NULL,          -- thời điểm check-out thực tế
     -- Trạng thái & nguồn
-    [status]                 [nvarchar](50)   NULL,          -- Pending / Confirmed / Checked_in / Completed / Cancelled
+    [status]                 [nvarchar](50)   NULL,          -- Pending / Confirmed / Checked_in / Checked_out_pending_settlement / Completed / Cancelled
     [source]                 [nvarchar](20)   NOT NULL DEFAULT 'online',  -- online / walk_in / phone
     -- Ghi chú & hủy
     [note]                   [nvarchar](500)  NULL,
@@ -325,6 +324,7 @@ CREATE TABLE [dbo].[Loss_And_Damages](
     [description]       [nvarchar](max)  NULL,
     [img_url]           [nvarchar](max)  NULL,          -- ảnh minh chứng thiệt hại lưu Cloudinary
     [status]            [nvarchar](20)   NOT NULL DEFAULT 'Pending',  -- Pending / Confirmed / Waived
+    [is_stock_synced]   [bit]            NOT NULL DEFAULT 0,
     [created_at]        [datetime]       NULL,
 PRIMARY KEY CLUSTERED ([id] ASC)
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
@@ -343,8 +343,20 @@ CREATE TABLE [dbo].[Invoices](
     [discount_amount]      [decimal](18, 2) NULL,
     [tax_amount]           [decimal](18, 2) NULL,
     [final_total]          [decimal](18, 2) NULL,
-    [status]               [nvarchar](50)   NULL,       -- Unpaid / Partially_Paid / Paid / Refunded
+    [status]               [nvarchar](50)   NULL,       -- Draft / Unpaid / Partially_Paid / Paid / Refunded
     [created_at]           [datetime]       NOT NULL DEFAULT GETDATE(),
+PRIMARY KEY CLUSTERED ([id] ASC)
+) ON [PRIMARY]
+GO
+
+CREATE TABLE [dbo].[Invoice_Adjustments](
+    [id]                [int]            IDENTITY(1,1) NOT NULL,
+    [invoice_id]        [int]            NOT NULL,
+    [adjustment_type]   [nvarchar](30)   NOT NULL DEFAULT 'Surcharge', -- Surcharge / Discount
+    [amount]            [decimal](18, 2) NOT NULL,
+    [reason]            [nvarchar](255)  NOT NULL,
+    [note]              [nvarchar](500)  NULL,
+    [created_at]        [datetime]       NOT NULL DEFAULT GETDATE(),
 PRIMARY KEY CLUSTERED ([id] ASC)
 ) ON [PRIMARY]
 GO
@@ -394,6 +406,7 @@ CREATE TABLE [dbo].[Articles](
     [id]                    [int]            IDENTITY(1,1) NOT NULL,
     [category_id]           [int]            NULL,
     [author_id]             [int]            NULL,
+    [attraction_id]         [int]            NULL,
     -- Nội dung
     [title]                 [nvarchar](max)  NOT NULL,
     [slug]                  [nvarchar](255)  NULL,
@@ -491,6 +504,8 @@ CREATE UNIQUE NONCLUSTERED INDEX [UQ_Article_Categories_Slug] ON [dbo].[Article_
 GO
 ALTER TABLE [dbo].[Articles]           ADD UNIQUE NONCLUSTERED ([slug] ASC)
 GO
+CREATE NONCLUSTERED INDEX [IX_Articles_AttractionId] ON [dbo].[Articles] ([attraction_id] ASC)
+GO
 ALTER TABLE [dbo].[Bookings]           ADD UNIQUE NONCLUSTERED ([booking_code] ASC)
 GO
 ALTER TABLE [dbo].[Equipments]         ADD UNIQUE NONCLUSTERED ([item_code] ASC)
@@ -522,7 +537,7 @@ ALTER TABLE [dbo].[Invoices]           ADD DEFAULT ((0))          FOR [total_dam
 ALTER TABLE [dbo].[Invoices]           ADD DEFAULT ((0))          FOR [discount_amount]
 ALTER TABLE [dbo].[Invoices]           ADD DEFAULT ((0))          FOR [tax_amount]
 ALTER TABLE [dbo].[Invoices]           ADD DEFAULT ((0))          FOR [final_total]
-ALTER TABLE [dbo].[Invoices]           ADD DEFAULT ('Unpaid')     FOR [status]
+ALTER TABLE [dbo].[Invoices]           ADD DEFAULT ('Draft')      FOR [status]
 ALTER TABLE [dbo].[Loss_And_Damages]   ADD DEFAULT (getdate())    FOR [created_at]
 ALTER TABLE [dbo].[Memberships]        ADD DEFAULT ((0))          FOR [min_points]
 ALTER TABLE [dbo].[Memberships]        ADD DEFAULT ((0.00))       FOR [discount_percent]
@@ -577,6 +592,8 @@ ALTER TABLE [dbo].[Services]            WITH CHECK ADD FOREIGN KEY([category_id]
 -- Cluster 5
 ALTER TABLE [dbo].[Articles]            WITH CHECK ADD FOREIGN KEY([author_id])             REFERENCES [dbo].[Users]             ([id])
 ALTER TABLE [dbo].[Articles]            WITH CHECK ADD FOREIGN KEY([category_id])           REFERENCES [dbo].[Article_Categories]([id])
+ALTER TABLE [dbo].[Articles]            WITH CHECK ADD FOREIGN KEY([attraction_id])         REFERENCES [dbo].[Attractions]       ([id])
+ALTER TABLE [dbo].[Invoice_Adjustments] WITH CHECK ADD FOREIGN KEY([invoice_id])            REFERENCES [dbo].[Invoices]          ([id])
 ALTER TABLE [dbo].[Payments]            WITH CHECK ADD FOREIGN KEY([invoice_id])            REFERENCES [dbo].[Invoices]          ([id])
 ALTER TABLE [dbo].[Reviews]             WITH CHECK ADD FOREIGN KEY([booking_id])            REFERENCES [dbo].[Bookings]          ([id])
 ALTER TABLE [dbo].[Reviews]             WITH CHECK ADD FOREIGN KEY([room_type_id])          REFERENCES [dbo].[Room_Types]        ([id])
@@ -822,26 +839,26 @@ GO
 
 -- 7. Room_Types
 SET IDENTITY_INSERT [dbo].[Room_Types] ON
-INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[view_type],[description],[is_active])
-VALUES (1,  N'Standard Single',    N'standard-single',    CAST(400000.00  AS Decimal(18,2)), 1, 0, CAST(20.0 AS Decimal(8,2)), N'Single',  N'Thành phố', N'Phòng tiêu chuẩn 1 giường đơn',        1)
-INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[view_type],[description],[is_active])
-VALUES (2,  N'Standard Double',    N'standard-double',    CAST(500000.00  AS Decimal(18,2)), 2, 1, CAST(25.0 AS Decimal(8,2)), N'Double',  N'Thành phố', N'Phòng tiêu chuẩn 1 giường đôi',        1)
-INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[view_type],[description],[is_active])
-VALUES (3,  N'Superior City View', N'superior-city-view', CAST(700000.00  AS Decimal(18,2)), 2, 1, CAST(30.0 AS Decimal(8,2)), N'Queen',   N'Thành phố', N'Phòng cao cấp hướng phố',               1)
-INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[view_type],[description],[is_active])
-VALUES (4,  N'Deluxe Ocean View',  N'deluxe-ocean-view',  CAST(900000.00  AS Decimal(18,2)), 2, 2, CAST(35.0 AS Decimal(8,2)), N'King',    N'Biển',      N'Phòng Deluxe hướng biển',               1)
-INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[view_type],[description],[is_active])
-VALUES (5,  N'Premium Deluxe',     N'premium-deluxe',     CAST(1200000.00 AS Decimal(18,2)), 2, 2, CAST(38.0 AS Decimal(8,2)), N'King',    N'Biển',      N'Phòng Premium tiện nghi cao cấp',       1)
-INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[view_type],[description],[is_active])
-VALUES (6,  N'Family Suite',       N'family-suite',       CAST(1500000.00 AS Decimal(18,2)), 4, 2, CAST(55.0 AS Decimal(8,2)), N'Twin',    N'Vườn',      N'Phòng Suite cho gia đình',              1)
-INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[view_type],[description],[is_active])
-VALUES (7,  N'Junior Suite',       N'junior-suite',       CAST(1800000.00 AS Decimal(18,2)), 2, 2, CAST(60.0 AS Decimal(8,2)), N'King',    N'Biển',      N'Phòng Suite nhỏ nhắn sang trọng',      1)
-INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[view_type],[description],[is_active])
-VALUES (8,  N'Executive Suite',    N'executive-suite',    CAST(2500000.00 AS Decimal(18,2)), 2, 2, CAST(75.0 AS Decimal(8,2)), N'King',    N'Biển',      N'Phòng Suite cho doanh nhân',            1)
-INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[view_type],[description],[is_active])
-VALUES (9,  N'Presidential Suite', N'presidential-suite', CAST(5000000.00 AS Decimal(18,2)), 4, 2, CAST(120.0 AS Decimal(8,2)),N'King',   N'Biển',      N'Phòng Tổng thống',                      1)
-INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[view_type],[description],[is_active])
-VALUES (10, N'Royal Villa',        N'royal-villa',        CAST(8000000.00 AS Decimal(18,2)), 6, 4, CAST(250.0 AS Decimal(8,2)),N'King',   N'Biển',      N'Biệt thự hoàng gia nguyên căn',         1)
+INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[description],[is_active])
+VALUES (1,  N'Standard Single',    N'standard-single',    CAST(400000.00  AS Decimal(18,2)), 1, 0, CAST(20.0 AS Decimal(8,2)), N'Single',  N'Phòng tiêu chuẩn 1 giường đơn',        1)
+INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[description],[is_active])
+VALUES (2,  N'Standard Double',    N'standard-double',    CAST(500000.00  AS Decimal(18,2)), 2, 1, CAST(25.0 AS Decimal(8,2)), N'Double',  N'Phòng tiêu chuẩn 1 giường đôi',        1)
+INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[description],[is_active])
+VALUES (3,  N'Superior City View', N'superior-city-view', CAST(700000.00  AS Decimal(18,2)), 2, 1, CAST(30.0 AS Decimal(8,2)), N'Queen',   N'Phòng cao cấp hướng phố',               1)
+INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[description],[is_active])
+VALUES (4,  N'Deluxe Ocean View',  N'deluxe-ocean-view',  CAST(900000.00  AS Decimal(18,2)), 2, 2, CAST(35.0 AS Decimal(8,2)), N'King',    N'Phòng Deluxe hướng biển',               1)
+INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[description],[is_active])
+VALUES (5,  N'Premium Deluxe',     N'premium-deluxe',     CAST(1200000.00 AS Decimal(18,2)), 2, 2, CAST(38.0 AS Decimal(8,2)), N'King',    N'Phòng Premium tiện nghi cao cấp',       1)
+INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[description],[is_active])
+VALUES (6,  N'Family Suite',       N'family-suite',       CAST(1500000.00 AS Decimal(18,2)), 4, 2, CAST(55.0 AS Decimal(8,2)), N'Twin',    N'Phòng Suite cho gia đình',              1)
+INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[description],[is_active])
+VALUES (7,  N'Junior Suite',       N'junior-suite',       CAST(1800000.00 AS Decimal(18,2)), 2, 2, CAST(60.0 AS Decimal(8,2)), N'King',    N'Phòng Suite nhỏ nhắn sang trọng',      1)
+INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[description],[is_active])
+VALUES (8,  N'Executive Suite',    N'executive-suite',    CAST(2500000.00 AS Decimal(18,2)), 2, 2, CAST(75.0 AS Decimal(8,2)), N'King',    N'Phòng Suite cho doanh nhân',            1)
+INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[description],[is_active])
+VALUES (9,  N'Presidential Suite', N'presidential-suite', CAST(5000000.00 AS Decimal(18,2)), 4, 2, CAST(120.0 AS Decimal(8,2)),N'King',   N'Phòng Tổng thống',                      1)
+INSERT [dbo].[Room_Types] ([id],[name],[slug],[base_price],[capacity_adults],[capacity_children],[area_sqm],[bed_type],[description],[is_active])
+VALUES (10, N'Royal Villa',        N'royal-villa',        CAST(8000000.00 AS Decimal(18,2)), 6, 4, CAST(250.0 AS Decimal(8,2)),N'King',   N'Biệt thự hoàng gia nguyên căn',         1)
 SET IDENTITY_INSERT [dbo].[Room_Types] OFF
 GO
 
