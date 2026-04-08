@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import {
@@ -237,6 +237,8 @@ export default function ArticleAdminPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiFeedback, setAiFeedback] = useState("");
   const [activeTab, setActiveTab] = useState("articles");
   const [visibilityFilter, setVisibilityFilter] = useState("all");
   const [articleSearch, setArticleSearch] = useState("");
@@ -533,13 +535,13 @@ export default function ArticleAdminPage() {
         prev.map((article) =>
           article.category?.id === categoryId
             ? {
-                ...article,
-                category: {
-                  ...article.category,
-                  name: nextName,
-                  ...(nextSlug ? { slug: nextSlug } : {}),
-                },
-              }
+              ...article,
+              category: {
+                ...article.category,
+                name: nextName,
+                ...(nextSlug ? { slug: nextSlug } : {}),
+              },
+            }
             : article,
         ),
       );
@@ -581,6 +583,137 @@ export default function ArticleAdminPage() {
     }
   };
 
+  const handleAiSuggest = async () => {
+    const title = form.title?.trim();
+    const currentContent = form.content || "";
+    if (!title) {
+      setAiFeedback({ type: "warn", text: "⚠️ Vui lòng nhập tiêu đề trước khi dùng AI gợi ý." });
+      return;
+    }
+
+    const categoriesText = activeCategories.map(c => `${c.id}: ${c.name}`).join("\\n");
+    const attractionsText = attractions.filter(a => a.isActive !== false).map(a => `${a.id}: ${a.name}`).join("\\n");
+
+    const prompt = `Bạn là chuyên gia viết bài chuẩn SEO thu hút khách hàng.
+Hãy phân tích tiêu đề và nội dung hiện tại để viết một bài viết SEO dài, chi tiết và hấp dẫn.
+
+Yêu cầu cụ thể:
+1. Tự chọn Danh mục phù hợp nhất với tiêu đề từ danh sách sau, trả về ID (nếu không có thì để trống):
+${categoriesText}
+
+2. Tự chọn Địa điểm liên kết phù hợp nhất với tiêu đề từ danh sách sau (TUYỆT ĐỐI ĐỂ TRỐNG nếu không có địa điểm nào THỰC SỰ trùng khớp hoặc liên quan chặt chẽ đến nội dung bài), trả về ID:
+${attractionsText}
+
+3. Nội dung bài viết: Phải dài, chi tiết, RÕ RÀNG, có tên địa điểm cụ thể có thật và liên qua đến tiêu đề, trình bày siêu hấp dẫn (có mở đầu đầy lôi cuốn, phần thân chia nhiều mục rõ ràng). Sử dụng từ ngữ phong phú, LIÊN QUAN TỚI TIÊU ĐỀ MỘT CÁCH CHÍNH XÁC.
+5. Hình ảnh minh họa: Xuyên suốt bài viết LIÊN QUAN TỚI CÁC DANH MỤC, ĐỊA ĐIỂM TRONG BÀI. TUYỆT ĐỐI KHÔNG ĐƯỢC điền văn bản vào src. BẮT BUỘC sử dụng cấu trúc URL sau để tự động lấy ảnh thật: <img src="https://loremflickr.com/800/450/[keyword_tieng_anh_1],[keyword_tieng_anh_2]" alt="..." style="border-radius: 12px; width: 100%; object-fit: cover; margin: 16px 0;" />
+(Ví dụ viết về bánh canh cua: <img src="https://loremflickr.com/800/450/crab,noodle" alt="Bánh Canh" ... />)
+
+Hãy trả lời chính xác theo định dạng sau (không thêm bất kỳ ký tự nào bên ngoài định dạng):
+
+[DANH MỤC ID]
+<id_danh_mục_hoặc_để_trống>
+
+[ĐỊA ĐIỂM ID]
+<id_địa_điểm_hoặc_để_trống>
+
+[ẢNH BÌA]
+<1_đường_dẫn_ảnh_từ_loremflickr_phù_hợp_làm_ảnh_bìa_ví_dụ_https://loremflickr.com/1200/630/delicious,food,vietnam>
+
+[MÔ TẢ SEO]
+<một đoạn mô tả SEO cực kỳ hấp dẫn, thu hút click, khoảng 150-160 ký tự>
+
+[NỘI DUNG]
+<bài viết chuẩn SEO HTML đầy đủ>
+
+Dữ liệu bài viết:
+Tiêu đề: ${title}
+Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}`;
+
+    setAiLoading(true);
+    setAiFeedback(null);
+    try {
+      const response = await fetch("https://ai-review-paper.vonhacphuoc.workers.dev", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: prompt }),
+      });
+      const data = await response.json();
+      if (data.result) {
+        const raw = data.result;
+
+        // Parse IDs
+        const catMatch = raw.match(/\[DANH MỤC ID\]\s*(\d+)/i);
+        const parsedCat = catMatch ? catMatch[1].trim() : "";
+
+        const attrMatch = raw.match(/\[ĐỊA ĐIỂM ID\]\s*(\d+)/i);
+        const parsedAttr = attrMatch ? attrMatch[1].trim() : "";
+
+        // Parse ẢNH BÌA
+        const coverMatch = raw.match(/\[ẢNH BÌA\]\s*(https?:\/\/[^\s]+)/i);
+        const parsedCover = coverMatch ? coverMatch[1].trim() : "";
+
+        // Parse Texte
+        const descMatch = raw.match(/\[MÔ TẢ SEO\]\s*([\s\S]*?)(?=\[NỘI DUNG\]|$)/i);
+        const parsedDesc = descMatch ? descMatch[1].trim() : "";
+
+        const contentMatch = raw.match(/\[NỘI DUNG\]\s*([\s\S]*?)$/i);
+        const parsedContent = contentMatch ? contentMatch[1].trim() : "";
+
+        // Auto-fill form fields
+        setForm((prev) => ({
+          ...prev,
+          ...(parsedCat ? { categoryId: parsedCat } : {}),
+          ...(parsedAttr ? { attractionId: parsedAttr } : {}),
+          ...(parsedDesc ? { metaDescription: parsedDesc } : {}),
+          ...(parsedContent ? { content: parsedContent } : {}),
+        }));
+
+        // Sync Quill editor with new content
+        if (parsedContent && articleEditorRef.current) {
+          articleEditorRef.current.root.innerHTML = parsedContent;
+        }
+
+        let coverSuccess = false;
+        if (parsedCover) {
+          try {
+            const resImg = await fetch(parsedCover);
+            if (resImg.ok) {
+              const blob = await resImg.blob();
+              const file = new File([blob], "ai_thumbnail.jpg", { type: blob.type || "image/jpeg" });
+              setThumbnailFile(file);
+              setThumbnailPreviewUrl(URL.createObjectURL(blob));
+              coverSuccess = true;
+            }
+          } catch (e) {
+            console.warn("Lỗi khi tải ảnh bìa AI sinh ra:", e);
+          }
+        }
+
+        const successMsg = [
+          "✅ AI đã viết xong bài!",
+          parsedCat ? "Danh mục ✓" : "",
+          parsedAttr ? "Địa điểm ✓" : "",
+          coverSuccess ? "Ảnh bìa ✓" : "",
+          parsedDesc ? "Mô tả SEO ✓" : "",
+          parsedContent ? "Nội dung ✓" : ""
+        ].filter(Boolean).join(" | ");
+
+        setAiFeedback({
+          type: "success",
+          text: successMsg,
+          raw,
+        });
+      } else {
+        setAiFeedback({ type: "error", text: "❌ AI không trả về kết quả hợp lệ.", raw: JSON.stringify(data, null, 2) });
+      }
+    } catch (err) {
+      console.error(err);
+      setAiFeedback({ type: "error", text: "❌ Lỗi gọi AI. Kiểm tra Worker URL hoặc cấu hình API key!" });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const openPreviewPage = () => {
     const payload = {
       title: form.title || "Bài viết chưa có tiêu đề",
@@ -590,16 +723,16 @@ export default function ArticleAdminPage() {
       content: form.content || "<p>Chưa có nội dung.</p>",
       attraction: selectedAttraction
         ? {
-            id: selectedAttraction.id,
-            name: selectedAttraction.name,
-            category: selectedAttraction.category || "",
-            address: selectedAttraction.address || "",
-            latitude: selectedAttraction.latitude,
-            longitude: selectedAttraction.longitude,
-            imageUrl: selectedAttraction.imageUrl || "",
-            mapEmbedLink: selectedAttraction.mapEmbedLink || "",
-            isActive: selectedAttraction.isActive,
-          }
+          id: selectedAttraction.id,
+          name: selectedAttraction.name,
+          category: selectedAttraction.category || "",
+          address: selectedAttraction.address || "",
+          latitude: selectedAttraction.latitude,
+          longitude: selectedAttraction.longitude,
+          imageUrl: selectedAttraction.imageUrl || "",
+          mapEmbedLink: selectedAttraction.mapEmbedLink || "",
+          isActive: selectedAttraction.isActive,
+        }
         : null,
       previewedAt: new Date().toISOString(),
     };
@@ -809,253 +942,253 @@ export default function ArticleAdminPage() {
         )}
 
         {activeTab === "articles" ? (
-        <section style={{ ...cardStyle, overflow: "hidden" }}>
-          <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "end", gap: 16 }}>
-            <div>
-              <strong style={{ color: "#1c1917" }}>Danh sách bài viết</strong>
-              <p style={{ margin: "4px 0 0", color: "#78716c", fontSize: 13 }}>
-                Tổng cộng {filteredArticles.length} / {articles.length} bài viết. Trang {page}/{totalPages}.
-              </p>
-            </div>
-          </div>
-          {viewMode === "table" ? (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ background: "#faf8f3", borderBottom: "1px solid #f1f0ea" }}>
-                    {["Bài viết", "Danh mục", "Trạng thái", "Hiển thị", "Ngày xuất bản", "Thao tác"].map((heading, idx) => (
-                      <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 5 ? "right" : "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>
-                        {heading}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Đang tải dữ liệu...</td></tr>
-                  ) : paginatedArticles.length === 0 ? (
-                    <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Chưa có bài viết phù hợp bộ lọc.</td></tr>
-                  ) : (
-                    paginatedArticles.map((article) => (
-                      <tr key={article.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
-                        <td style={{ padding: "16px 18px" }}>
-                          <div style={{ fontWeight: 700, color: "#1c1917" }}>{article.title}</div>
-                          <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>{article.slug}</div>
-                        </td>
-                        <td style={{ padding: "16px 18px", color: "#57534e" }}>{article.category?.name || "-"}</td>
-                        <td style={{ padding: "16px 18px" }}>
-                          <span style={{ padding: "5px 10px", borderRadius: 999, background: article.status === "Published" ? "#ecfdf5" : article.status === "Pending_Review" ? "#fff7ed" : "#f5f5f4", color: article.status === "Published" ? "#047857" : article.status === "Pending_Review" ? "#c2410c" : "#57534e", fontSize: 11, fontWeight: 700 }}>
-                            {article.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: "16px 18px" }}>
-                          <VisibilitySwitch checked={article.isActive !== false} onChange={() => handleToggleVisibility(article.id)} />
-                        </td>
-                        <td style={{ padding: "16px 18px", color: "#57534e" }}>{formatDate(article.publishedAt)}</td>
-                        <td style={{ padding: "16px 18px", textAlign: "right" }}>
-                          <div style={{ display: "inline-flex", gap: 8 }}>
-                            {article.status !== "Published" ? (
-                              <button type="button" onClick={() => handlePublishArticle(article.id)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", cursor: "pointer", fontWeight: 600 }}>Publish</button>
-                            ) : null}
-                            <button type="button" onClick={() => viewArticle(article)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #dbe7df", background: "#f8fcf9", color: "#2f5d4d", cursor: "pointer" }}>Xem</button>
-                            <button type="button" onClick={() => openEdit(article)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer" }}>Sửa</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div style={{ padding: 20 }}>
-              {loading ? (
-                <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Đang tải dữ liệu...</div>
-              ) : paginatedArticles.length === 0 ? (
-                <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Chưa có bài viết phù hợp bộ lọc.</div>
-              ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
-                  {paginatedArticles.map((article) => (
-                    <article key={article.id} style={{ background: "#fffdfa", border: "1px solid #f1f0ea", borderRadius: 18, overflow: "hidden", boxShadow: "0 4px 14px rgba(0,0,0,.04)" }}>
-                      <div style={{ position: "relative", height: 180, background: "linear-gradient(135deg, #ece7df, #f8f5ef)" }}>
-                        {article.thumbnailUrl ? (
-                          <img src={article.thumbnailUrl} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                        ) : (
-                          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#a8a29e" }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: 44 }}>article</span>
-                          </div>
-                        )}
-                        <div style={{ position: "absolute", top: 12, left: 12 }}>
-                          <span style={{ padding: "6px 10px", borderRadius: 999, background: article.status === "Published" ? "rgba(236,253,245,.95)" : article.status === "Pending_Review" ? "rgba(255,247,237,.95)" : "rgba(245,245,244,.95)", color: article.status === "Published" ? "#047857" : article.status === "Pending_Review" ? "#c2410c" : "#57534e", fontSize: 11, fontWeight: 700 }}>
-                            {article.status}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div style={{ padding: 16, display: "grid", gap: 12 }}>
-                        <div>
-                          <div style={{ fontSize: 17, fontWeight: 700, color: "#1c1917", lineHeight: 1.4 }}>{article.title}</div>
-                          <div style={{ marginTop: 6, fontSize: 12, color: "#78716c" }}>{article.slug}</div>
-                        </div>
-
-                        <div style={{ display: "grid", gap: 8, fontSize: 13, color: "#57534e" }}>
-                          <div><strong style={{ color: "#1c1917" }}>Danh mục:</strong> {article.category?.name || "-"}</div>
-                          <div><strong style={{ color: "#1c1917" }}>Ngày xuất bản:</strong> {formatDate(article.publishedAt)}</div>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                            <span style={{ color: "#1c1917", fontWeight: 600 }}>Hiển thị</span>
-                            <VisibilitySwitch checked={article.isActive !== false} onChange={() => handleToggleVisibility(article.id)} />
-                          </div>
-                        </div>
-
-                        <div style={{ display: "grid", gridTemplateColumns: article.status !== "Published" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 8 }}>
-                          {article.status !== "Published" ? (
-                            <button type="button" onClick={() => handlePublishArticle(article.id)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", cursor: "pointer", fontWeight: 600 }}>Publish</button>
-                          ) : null}
-                          <button type="button" onClick={() => viewArticle(article)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #dbe7df", background: "#f8fcf9", color: "#2f5d4d", cursor: "pointer", fontWeight: 600 }}>Xem</button>
-                          <button type="button" onClick={() => openEdit(article)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer", fontWeight: 600 }}>Sửa</button>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          {!loading && filteredArticles.length > 0 ? (
-            <div style={{ marginTop: 14, padding: "18px 20px 20px", borderTop: "1px solid #f3efe7", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 500 }}>
-                {(page - 1) * ARTICLES_PER_PAGE + 1}–{Math.min(page * ARTICLES_PER_PAGE, filteredArticles.length)} / {filteredArticles.length} bài viết
-              </span>
-              {filteredArticles.length > ARTICLES_PER_PAGE ? (
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button
-                    type="button"
-                    disabled={page <= 1}
-                    onClick={() => setPage(page - 1)}
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 10,
-                      border: "1px solid #e7e5e4",
-                      background: page <= 1 ? "#f5f5f4" : "white",
-                      color: page <= 1 ? "#c4bfb7" : "#57534e",
-                      cursor: page <= 1 ? "not-allowed" : "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
-                  </button>
-                  {paginationPages.map((pageNumber) => (
-                    <button
-                      key={pageNumber}
-                      type="button"
-                      onClick={() => setPage(pageNumber)}
-                      style={{
-                        minWidth: 36,
-                        height: 36,
-                        padding: "0 10px",
-                        borderRadius: 10,
-                        border: pageNumber === page ? "1px solid #4f645b" : "1px solid #e7e5e4",
-                        background: pageNumber === page ? "#4f645b" : "white",
-                        color: pageNumber === page ? "#ecfdf5" : "#57534e",
-                        cursor: "pointer",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {pageNumber}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage(page + 1)}
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 10,
-                      border: "1px solid #e7e5e4",
-                      background: page >= totalPages ? "#f5f5f4" : "white",
-                      color: page >= totalPages ? "#c4bfb7" : "#57534e",
-                      cursor: page >= totalPages ? "not-allowed" : "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </section>
-        ) : (
-        <section style={{ ...cardStyle, padding: 20, display: "grid", gap: 20 }}>
-          <div style={{ display: "grid", gap: 12 }}>
-            {filteredCategories.length === 0 ? (
-              <div style={{ padding: 28, textAlign: "center", color: "#9ca3af", border: "1px dashed #e7e5e4", borderRadius: 16 }}>
-                Chưa có danh mục nào.
+          <section style={{ ...cardStyle, overflow: "hidden" }}>
+            <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "end", gap: 16 }}>
+              <div>
+                <strong style={{ color: "#1c1917" }}>Danh sách bài viết</strong>
+                <p style={{ margin: "4px 0 0", color: "#78716c", fontSize: 13 }}>
+                  Tổng cộng {filteredArticles.length} / {articles.length} bài viết. Trang {page}/{totalPages}.
+                </p>
               </div>
-            ) : (
-              <div style={{ overflowX: "auto", border: "1px solid #f1f0ea", borderRadius: 16 }}>
+            </div>
+            {viewMode === "table" ? (
+              <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ background: "#faf8f3", borderBottom: "1px solid #f1f0ea" }}>
-                      {["Danh mục", "Số bài viết", "Trạng thái", "Thao tác"].map((heading, idx) => (
-                        <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 3 ? "right" : "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>
+                      {["Bài viết", "Danh mục", "Trạng thái", "Hiển thị", "Ngày xuất bản", "Thao tác"].map((heading, idx) => (
+                        <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 5 ? "right" : "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>
                           {heading}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredCategories.map((category) => (
-                      <tr key={category.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
-                        <td style={{ padding: "16px 18px" }}>
-                          {editingCategoryId === category.id ? (
-                            <input
-                              value={editingCategoryName}
-                              onChange={(e) => setEditingCategoryName(e.target.value)}
-                              style={{ ...inputStyle, minWidth: 260, padding: "8px 12px", fontSize: 13 }}
-                            />
-                          ) : (
-                            <>
-                              <div style={{ fontWeight: 700, color: "#1c1917" }}>{category.name}</div>
-                              <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>{category.slug || "-"}</div>
-                            </>
-                          )}
-                        </td>
-                        <td style={{ padding: "16px 18px", color: "#57534e", fontWeight: 600 }}>{category.articleCount || 0}</td>
-                        <td style={{ padding: "16px 18px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <span style={{ padding: "6px 10px", borderRadius: 999, background: category.isActive !== false ? "#ecfdf5" : "#f5f5f4", color: category.isActive !== false ? "#047857" : "#57534e", fontSize: 11, fontWeight: 700 }}>
-                              {category.isActive !== false ? "Đang bật" : "Đang ẩn"}
+                    {loading ? (
+                      <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Đang tải dữ liệu...</td></tr>
+                    ) : paginatedArticles.length === 0 ? (
+                      <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Chưa có bài viết phù hợp bộ lọc.</td></tr>
+                    ) : (
+                      paginatedArticles.map((article) => (
+                        <tr key={article.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
+                          <td style={{ padding: "16px 18px" }}>
+                            <div style={{ fontWeight: 700, color: "#1c1917" }}>{article.title}</div>
+                            <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>{article.slug}</div>
+                          </td>
+                          <td style={{ padding: "16px 18px", color: "#57534e" }}>{article.category?.name || "-"}</td>
+                          <td style={{ padding: "16px 18px" }}>
+                            <span style={{ padding: "5px 10px", borderRadius: 999, background: article.status === "Published" ? "#ecfdf5" : article.status === "Pending_Review" ? "#fff7ed" : "#f5f5f4", color: article.status === "Published" ? "#047857" : article.status === "Pending_Review" ? "#c2410c" : "#57534e", fontSize: 11, fontWeight: 700 }}>
+                              {article.status}
                             </span>
-                            <VisibilitySwitch checked={category.isActive !== false} onChange={() => handleToggleCategory(category.id)} />
-                          </div>
-                        </td>
-                        <td style={{ padding: "16px 18px", textAlign: "right" }}>
-                          <div style={{ display: "inline-flex", gap: 8 }}>
-                            {editingCategoryId === category.id ? (
-                              <>
-                                <button type="button" onClick={cancelEditCategory} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer", fontWeight: 600 }}>Hủy</button>
-                                <button type="button" onClick={() => saveCategoryEdit(category.id)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #dbe7df", background: "#f8fcf9", color: "#2f5d4d", cursor: "pointer", fontWeight: 600 }}>Lưu</button>
-                              </>
-                            ) : (
-                              <button type="button" onClick={() => startEditCategory(category)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer", fontWeight: 600 }}>Sửa</button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td style={{ padding: "16px 18px" }}>
+                            <VisibilitySwitch checked={article.isActive !== false} onChange={() => handleToggleVisibility(article.id)} />
+                          </td>
+                          <td style={{ padding: "16px 18px", color: "#57534e" }}>{formatDate(article.publishedAt)}</td>
+                          <td style={{ padding: "16px 18px", textAlign: "right" }}>
+                            <div style={{ display: "inline-flex", gap: 8 }}>
+                              {article.status !== "Published" ? (
+                                <button type="button" onClick={() => handlePublishArticle(article.id)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", cursor: "pointer", fontWeight: 600 }}>Publish</button>
+                              ) : null}
+                              <button type="button" onClick={() => viewArticle(article)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #dbe7df", background: "#f8fcf9", color: "#2f5d4d", cursor: "pointer" }}>Xem</button>
+                              <button type="button" onClick={() => openEdit(article)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer" }}>Sửa</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
+            ) : (
+              <div style={{ padding: 20 }}>
+                {loading ? (
+                  <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Đang tải dữ liệu...</div>
+                ) : paginatedArticles.length === 0 ? (
+                  <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Chưa có bài viết phù hợp bộ lọc.</div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
+                    {paginatedArticles.map((article) => (
+                      <article key={article.id} style={{ background: "#fffdfa", border: "1px solid #f1f0ea", borderRadius: 18, overflow: "hidden", boxShadow: "0 4px 14px rgba(0,0,0,.04)" }}>
+                        <div style={{ position: "relative", height: 180, background: "linear-gradient(135deg, #ece7df, #f8f5ef)" }}>
+                          {article.thumbnailUrl ? (
+                            <img src={article.thumbnailUrl} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          ) : (
+                            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#a8a29e" }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: 44 }}>article</span>
+                            </div>
+                          )}
+                          <div style={{ position: "absolute", top: 12, left: 12 }}>
+                            <span style={{ padding: "6px 10px", borderRadius: 999, background: article.status === "Published" ? "rgba(236,253,245,.95)" : article.status === "Pending_Review" ? "rgba(255,247,237,.95)" : "rgba(245,245,244,.95)", color: article.status === "Published" ? "#047857" : article.status === "Pending_Review" ? "#c2410c" : "#57534e", fontSize: 11, fontWeight: 700 }}>
+                              {article.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div style={{ padding: 16, display: "grid", gap: 12 }}>
+                          <div>
+                            <div style={{ fontSize: 17, fontWeight: 700, color: "#1c1917", lineHeight: 1.4 }}>{article.title}</div>
+                            <div style={{ marginTop: 6, fontSize: 12, color: "#78716c" }}>{article.slug}</div>
+                          </div>
+
+                          <div style={{ display: "grid", gap: 8, fontSize: 13, color: "#57534e" }}>
+                            <div><strong style={{ color: "#1c1917" }}>Danh mục:</strong> {article.category?.name || "-"}</div>
+                            <div><strong style={{ color: "#1c1917" }}>Ngày xuất bản:</strong> {formatDate(article.publishedAt)}</div>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                              <span style={{ color: "#1c1917", fontWeight: 600 }}>Hiển thị</span>
+                              <VisibilitySwitch checked={article.isActive !== false} onChange={() => handleToggleVisibility(article.id)} />
+                            </div>
+                          </div>
+
+                          <div style={{ display: "grid", gridTemplateColumns: article.status !== "Published" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 8 }}>
+                            {article.status !== "Published" ? (
+                              <button type="button" onClick={() => handlePublishArticle(article.id)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", cursor: "pointer", fontWeight: 600 }}>Publish</button>
+                            ) : null}
+                            <button type="button" onClick={() => viewArticle(article)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #dbe7df", background: "#f8fcf9", color: "#2f5d4d", cursor: "pointer", fontWeight: 600 }}>Xem</button>
+                            <button type="button" onClick={() => openEdit(article)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer", fontWeight: 600 }}>Sửa</button>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
-          </div>
-        </section>
+            {!loading && filteredArticles.length > 0 ? (
+              <div style={{ marginTop: 14, padding: "18px 20px 20px", borderTop: "1px solid #f3efe7", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 500 }}>
+                  {(page - 1) * ARTICLES_PER_PAGE + 1}–{Math.min(page * ARTICLES_PER_PAGE, filteredArticles.length)} / {filteredArticles.length} bài viết
+                </span>
+                {filteredArticles.length > ARTICLES_PER_PAGE ? (
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button
+                      type="button"
+                      disabled={page <= 1}
+                      onClick={() => setPage(page - 1)}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        border: "1px solid #e7e5e4",
+                        background: page <= 1 ? "#f5f5f4" : "white",
+                        color: page <= 1 ? "#c4bfb7" : "#57534e",
+                        cursor: page <= 1 ? "not-allowed" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
+                    </button>
+                    {paginationPages.map((pageNumber) => (
+                      <button
+                        key={pageNumber}
+                        type="button"
+                        onClick={() => setPage(pageNumber)}
+                        style={{
+                          minWidth: 36,
+                          height: 36,
+                          padding: "0 10px",
+                          borderRadius: 10,
+                          border: pageNumber === page ? "1px solid #4f645b" : "1px solid #e7e5e4",
+                          background: pageNumber === page ? "#4f645b" : "white",
+                          color: pageNumber === page ? "#ecfdf5" : "#57534e",
+                          cursor: "pointer",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {pageNumber}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage(page + 1)}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        border: "1px solid #e7e5e4",
+                        background: page >= totalPages ? "#f5f5f4" : "white",
+                        color: page >= totalPages ? "#c4bfb7" : "#57534e",
+                        cursor: page >= totalPages ? "not-allowed" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </section>
+        ) : (
+          <section style={{ ...cardStyle, padding: 20, display: "grid", gap: 20 }}>
+            <div style={{ display: "grid", gap: 12 }}>
+              {filteredCategories.length === 0 ? (
+                <div style={{ padding: 28, textAlign: "center", color: "#9ca3af", border: "1px dashed #e7e5e4", borderRadius: 16 }}>
+                  Chưa có danh mục nào.
+                </div>
+              ) : (
+                <div style={{ overflowX: "auto", border: "1px solid #f1f0ea", borderRadius: 16 }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ background: "#faf8f3", borderBottom: "1px solid #f1f0ea" }}>
+                        {["Danh mục", "Số bài viết", "Trạng thái", "Thao tác"].map((heading, idx) => (
+                          <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 3 ? "right" : "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>
+                            {heading}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredCategories.map((category) => (
+                        <tr key={category.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
+                          <td style={{ padding: "16px 18px" }}>
+                            {editingCategoryId === category.id ? (
+                              <input
+                                value={editingCategoryName}
+                                onChange={(e) => setEditingCategoryName(e.target.value)}
+                                style={{ ...inputStyle, minWidth: 260, padding: "8px 12px", fontSize: 13 }}
+                              />
+                            ) : (
+                              <>
+                                <div style={{ fontWeight: 700, color: "#1c1917" }}>{category.name}</div>
+                                <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>{category.slug || "-"}</div>
+                              </>
+                            )}
+                          </td>
+                          <td style={{ padding: "16px 18px", color: "#57534e", fontWeight: 600 }}>{category.articleCount || 0}</td>
+                          <td style={{ padding: "16px 18px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <span style={{ padding: "6px 10px", borderRadius: 999, background: category.isActive !== false ? "#ecfdf5" : "#f5f5f4", color: category.isActive !== false ? "#047857" : "#57534e", fontSize: 11, fontWeight: 700 }}>
+                                {category.isActive !== false ? "Đang bật" : "Đang ẩn"}
+                              </span>
+                              <VisibilitySwitch checked={category.isActive !== false} onChange={() => handleToggleCategory(category.id)} />
+                            </div>
+                          </td>
+                          <td style={{ padding: "16px 18px", textAlign: "right" }}>
+                            <div style={{ display: "inline-flex", gap: 8 }}>
+                              {editingCategoryId === category.id ? (
+                                <>
+                                  <button type="button" onClick={cancelEditCategory} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer", fontWeight: 600 }}>Hủy</button>
+                                  <button type="button" onClick={() => saveCategoryEdit(category.id)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #dbe7df", background: "#f8fcf9", color: "#2f5d4d", cursor: "pointer", fontWeight: 600 }}>Lưu</button>
+                                </>
+                              ) : (
+                                <button type="button" onClick={() => startEditCategory(category)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer", fontWeight: 600 }}>Sửa</button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </section>
         )}
       </div>
 
@@ -1163,6 +1296,85 @@ export default function ArticleAdminPage() {
                     {thumbnailPreviewUrl ? "Đổi ảnh bìa" : "Chọn ảnh bìa"}
                   </button>
                   <input ref={thumbnailInputRef} type="file" accept="image/*" onChange={handleThumbnailUpload} style={{ display: "none" }} />
+                </div>
+
+                {/* AI Gợi ý bài viết — 1 nút, tự động điền */}
+                <div style={{ ...cardStyle, padding: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: "#4f645b" }}>auto_awesome</span>
+                    <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c", fontWeight: 700 }}>
+                      AI Viết bài tự động
+                    </div>
+                  </div>
+                  <p style={{ margin: "0 0 12px", fontSize: 12, color: "#78716c", lineHeight: 1.6 }}>
+                    Nhập tiêu đề rồi nhấn nút — AI sẽ tự viết <strong>Mô tả SEO</strong> và <strong>Nội dung</strong> và điền thẳng vào form.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={aiLoading}
+                    onClick={handleAiSuggest}
+                    style={{
+                      width: "100%",
+                      padding: "11px 14px",
+                      borderRadius: 12,
+                      border: "none",
+                      background: aiLoading ? "#a3b3ae" : "linear-gradient(135deg, #4f645b, #2f5d4d)",
+                      color: "white",
+                      fontWeight: 700,
+                      cursor: aiLoading ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      fontSize: 13,
+                      boxShadow: aiLoading ? "none" : "0 4px 12px rgba(79,100,91,.25)",
+                      transition: "all .2s ease",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ fontSize: 16, display: "inline-block", animation: aiLoading ? "ai-spin 1s linear infinite" : "none" }}
+                    >
+                      {aiLoading ? "progress_activity" : "auto_awesome"}
+                    </span>
+                    {aiLoading ? "Đang viết bài..." : "Viết bài bằng AI"}
+                  </button>
+
+                  {aiFeedback ? (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: "10px 12px",
+                        borderRadius: 10,
+                        background:
+                          aiFeedback.type === "success" ? "#f0fdf4" :
+                            aiFeedback.type === "warn" ? "#fffbeb" : "#fff7f7",
+                        border:
+                          aiFeedback.type === "success" ? "1px solid #bbf7d0" :
+                            aiFeedback.type === "warn" ? "1px solid #fde68a" : "1px solid #fecaca",
+                        fontSize: 12,
+                        color:
+                          aiFeedback.type === "success" ? "#15803d" :
+                            aiFeedback.type === "warn" ? "#92400e" : "#b91c1c",
+                        fontWeight: 600,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {aiFeedback.text}
+                    </div>
+                  ) : null}
+
+                  {aiFeedback?.type === "success" ? (
+                    <button
+                      type="button"
+                      onClick={() => setAiFeedback(null)}
+                      style={{ marginTop: 8, padding: "6px 12px", borderRadius: 9, border: "1px solid #e7e5e4", background: "white", color: "#78716c", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                    >
+                      Đóng thông báo
+                    </button>
+                  ) : null}
+
+                  <style>{`@keyframes ai-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
                 </div>
               </div>
             </div>
