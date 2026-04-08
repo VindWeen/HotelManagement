@@ -982,7 +982,7 @@ INSERT [dbo].[Equipments] ([id], [item_code], [name], [category], [unit], [total
 SET IDENTITY_INSERT [dbo].[Equipments] OFF
 GO
 
--- 12. Room_Inventory - Bỏ trống tự thêm lại
+-- 12. Room_Inventory
 
 SET IDENTITY_INSERT [dbo].[Room_Inventory] ON
 INSERT [dbo].[Room_Inventory] ([id], [room_id], [quantity], [price_if_lost], [note], [is_active], [item_type], [equipment_id]) VALUES (1, 1, 1, CAST(350000.00 AS Decimal(18, 2)), NULL, 1, N'Asset', 5)
@@ -1197,101 +1197,24 @@ GO
 
 -- 14. Bookings
 SET IDENTITY_INSERT [dbo].[Bookings] ON
-INSERT [dbo].[Bookings] ([id],[user_id],[guest_name],[guest_phone],[guest_email],[num_adults],[num_children],[booking_code],[voucher_id],[total_estimated_amount],[deposit_amount],[status],[source])
-VALUES (1,  6,    N'Khách Hàng A',    N'0900000006', NULL, 1, 0, N'BK-0001', NULL, CAST(800000.00   AS Decimal(18,2)), CAST(400000.00  AS Decimal(18,2)), N'Completed',  N'online')
-INSERT [dbo].[Bookings] ([id],[user_id],[guest_name],[guest_phone],[guest_email],[num_adults],[num_children],[booking_code],[voucher_id],[total_estimated_amount],[deposit_amount],[status],[source])
-VALUES (2,  7,    N'Khách Hàng B',    N'0900000007', NULL, 2, 1, N'BK-0002', 1,    CAST(2500000.00  AS Decimal(18,2)), CAST(500000.00  AS Decimal(18,2)), N'Checked_in', N'online')
-INSERT [dbo].[Bookings] ([id],[user_id],[guest_name],[guest_phone],[guest_email],[num_adults],[num_children],[booking_code],[voucher_id],[total_estimated_amount],[deposit_amount],[status],[source])
-VALUES (3,  8,    N'Khách Hàng C',    N'0900000008', NULL, 2, 0, N'BK-0003', NULL, CAST(1400000.00  AS Decimal(18,2)), CAST(300000.00  AS Decimal(18,2)), N'Confirmed',  N'online')
-INSERT [dbo].[Bookings] ([id],[user_id],[guest_name],[guest_phone],[guest_email],[num_adults],[num_children],[booking_code],[voucher_id],[total_estimated_amount],[deposit_amount],[status],[source])
-VALUES (4,  9,    N'Khách Hàng D',    N'0900000009', NULL, 2, 2, N'BK-0004', 2,    CAST(3600000.00  AS Decimal(18,2)), CAST(0.00       AS Decimal(18,2)), N'Pending',    N'online')
-INSERT [dbo].[Bookings] ([id],[user_id],[guest_name],[guest_phone],[guest_email],[num_adults],[num_children],[booking_code],[voucher_id],[total_estimated_amount],[deposit_amount],[status],[source])
-VALUES (5,  10,   N'Khách Hàng E',    N'0900000010', NULL, 2, 0, N'BK-0005', NULL, CAST(1200000.00  AS Decimal(18,2)), CAST(0.00       AS Decimal(18,2)), N'Cancelled',  N'online')
-INSERT [dbo].[Bookings] ([id],[user_id],[guest_name],[guest_phone],[guest_email],[num_adults],[num_children],[booking_code],[voucher_id],[total_estimated_amount],[deposit_amount],[status],[source])
-VALUES (6,  NULL, N'Khách Vãng Lai 1',N'0911111111', NULL, 2, 0, N'BK-0006', NULL, CAST(3000000.00  AS Decimal(18,2)), CAST(500000.00  AS Decimal(18,2)), N'Completed',  N'walk_in')
-INSERT [dbo].[Bookings] ([id],[user_id],[guest_name],[guest_phone],[guest_email],[num_adults],[num_children],[booking_code],[voucher_id],[total_estimated_amount],[deposit_amount],[status],[source])
-VALUES (7,  NULL, N'Khách Vãng Lai 2',N'0922222222', NULL, 2, 1, N'BK-0007', 3,    CAST(3600000.00  AS Decimal(18,2)), CAST(1000000.00 AS Decimal(18,2)), N'Checked_in', N'walk_in')
-INSERT [dbo].[Bookings] ([id],[user_id],[guest_name],[guest_phone],[guest_email],[num_adults],[num_children],[booking_code],[voucher_id],[total_estimated_amount],[deposit_amount],[status],[source])
-VALUES (8,  6,    N'Khách Hàng A',    N'0900000006', NULL, 2, 2, N'BK-0008', NULL, CAST(10000000.00 AS Decimal(18,2)), CAST(2000000.00 AS Decimal(18,2)), N'Confirmed',  N'online')
-INSERT [dbo].[Bookings] ([id],[user_id],[guest_name],[guest_phone],[guest_email],[num_adults],[num_children],[booking_code],[voucher_id],[total_estimated_amount],[deposit_amount],[status],[source])
-VALUES (9,  7,    N'Khách Hàng B',    N'0900000007', NULL, 4, 0, N'BK-0009', NULL, CAST(25000000.00 AS Decimal(18,2)), CAST(5000000.00 AS Decimal(18,2)), N'Completed',  N'online')
-INSERT [dbo].[Bookings] ([id],[user_id],[guest_name],[guest_phone],[guest_email],[num_adults],[num_children],[booking_code],[voucher_id],[total_estimated_amount],[deposit_amount],[status],[source])
-VALUES (10, 8,    N'Khách Hàng C',    N'0900000008', NULL, 2, 0, N'BK-0010', 4,    CAST(16000000.00 AS Decimal(18,2)), CAST(3000000.00 AS Decimal(18,2)), N'Checked_in', N'online')
+--TỰ TẠO LẠI SAU
 SET IDENTITY_INSERT [dbo].[Bookings] OFF
 GO
 
 -- 15. Booking_Details
 SET IDENTITY_INSERT [dbo].[Booking_Details] ON
-INSERT [dbo].[Booking_Details] ([id],[booking_id],[room_id],[room_type_id],[check_in_date],[check_out_date],[price_per_night])
-VALUES (1,  1,  1,    1,  CAST(N'2026-03-01' AS DateTime), CAST(N'2026-03-03' AS DateTime), CAST(400000.00  AS Decimal(18,2)))
-INSERT [dbo].[Booking_Details] ([id],[booking_id],[room_id],[room_type_id],[check_in_date],[check_out_date],[price_per_night])
-VALUES (2,  2,  2,    2,  CAST(N'2026-03-05' AS DateTime), CAST(N'2026-03-10' AS DateTime), CAST(500000.00  AS Decimal(18,2)))
-INSERT [dbo].[Booking_Details] ([id],[booking_id],[room_id],[room_type_id],[check_in_date],[check_out_date],[price_per_night])
-VALUES (3,  3,  NULL, 3,  CAST(N'2026-04-10' AS DateTime), CAST(N'2026-04-12' AS DateTime), CAST(700000.00  AS Decimal(18,2)))
-INSERT [dbo].[Booking_Details] ([id],[booking_id],[room_id],[room_type_id],[check_in_date],[check_out_date],[price_per_night])
-VALUES (4,  4,  NULL, 4,  CAST(N'2026-05-01' AS DateTime), CAST(N'2026-05-05' AS DateTime), CAST(900000.00  AS Decimal(18,2)))
-INSERT [dbo].[Booking_Details] ([id],[booking_id],[room_id],[room_type_id],[check_in_date],[check_out_date],[price_per_night])
-VALUES (5,  5,  NULL, 5,  CAST(N'2026-03-15' AS DateTime), CAST(N'2026-03-16' AS DateTime), CAST(1200000.00 AS Decimal(18,2)))
-INSERT [dbo].[Booking_Details] ([id],[booking_id],[room_id],[room_type_id],[check_in_date],[check_out_date],[price_per_night])
-VALUES (6,  6,  6,    6,  CAST(N'2026-02-10' AS DateTime), CAST(N'2026-02-12' AS DateTime), CAST(1500000.00 AS Decimal(18,2)))
-INSERT [dbo].[Booking_Details] ([id],[booking_id],[room_id],[room_type_id],[check_in_date],[check_out_date],[price_per_night])
-VALUES (7,  7,  7,    7,  CAST(N'2026-03-07' AS DateTime), CAST(N'2026-03-09' AS DateTime), CAST(1800000.00 AS Decimal(18,2)))
-INSERT [dbo].[Booking_Details] ([id],[booking_id],[room_id],[room_type_id],[check_in_date],[check_out_date],[price_per_night])
-VALUES (8,  8,  NULL, 8,  CAST(N'2026-06-01' AS DateTime), CAST(N'2026-06-05' AS DateTime), CAST(2500000.00 AS Decimal(18,2)))
-INSERT [dbo].[Booking_Details] ([id],[booking_id],[room_id],[room_type_id],[check_in_date],[check_out_date],[price_per_night])
-VALUES (9,  9,  9,    9,  CAST(N'2026-01-20' AS DateTime), CAST(N'2026-01-25' AS DateTime), CAST(5000000.00 AS Decimal(18,2)))
-INSERT [dbo].[Booking_Details] ([id],[booking_id],[room_id],[room_type_id],[check_in_date],[check_out_date],[price_per_night])
-VALUES (10, 10, 10,   10, CAST(N'2026-03-06' AS DateTime), CAST(N'2026-03-08' AS DateTime), CAST(8000000.00 AS Decimal(18,2)))
+--Tự tạo lại sau
 SET IDENTITY_INSERT [dbo].[Booking_Details] OFF
 GO
 
 -- 16. Invoices
-SET IDENTITY_INSERT [dbo].[Invoices] ON
-INSERT [dbo].[Invoices] ([id],[booking_id],[total_room_amount],[total_service_amount],[total_damage_amount],[discount_amount],[tax_amount],[final_total],[status])
-VALUES (1,  1,  CAST(800000.00   AS Decimal(18,2)), CAST(0.00       AS Decimal(18,2)), CAST(400000.00 AS Decimal(18,2)), CAST(0.00      AS Decimal(18,2)), CAST(80000.00    AS Decimal(18,2)), CAST(1180000.00  AS Decimal(18,2)), N'Paid')
-INSERT [dbo].[Invoices] ([id],[booking_id],[total_room_amount],[total_service_amount],[total_damage_amount],[discount_amount],[tax_amount],[final_total],[status])
-VALUES (2,  2,  CAST(2500000.00  AS Decimal(18,2)), CAST(200000.00  AS Decimal(18,2)), CAST(300000.00 AS Decimal(18,2)), CAST(250000.00 AS Decimal(18,2)), CAST(245000.00   AS Decimal(18,2)), CAST(2995000.00  AS Decimal(18,2)), N'Unpaid')
-INSERT [dbo].[Invoices] ([id],[booking_id],[total_room_amount],[total_service_amount],[total_damage_amount],[discount_amount],[tax_amount],[final_total],[status])
-VALUES (3,  3,  CAST(1400000.00  AS Decimal(18,2)), CAST(0.00       AS Decimal(18,2)), CAST(0.00      AS Decimal(18,2)), CAST(0.00      AS Decimal(18,2)), CAST(140000.00   AS Decimal(18,2)), CAST(1540000.00  AS Decimal(18,2)), N'Unpaid')
-INSERT [dbo].[Invoices] ([id],[booking_id],[total_room_amount],[total_service_amount],[total_damage_amount],[discount_amount],[tax_amount],[final_total],[status])
-VALUES (4,  4,  CAST(3600000.00  AS Decimal(18,2)), CAST(0.00       AS Decimal(18,2)), CAST(0.00      AS Decimal(18,2)), CAST(100000.00 AS Decimal(18,2)), CAST(350000.00   AS Decimal(18,2)), CAST(3850000.00  AS Decimal(18,2)), N'Unpaid')
-INSERT [dbo].[Invoices] ([id],[booking_id],[total_room_amount],[total_service_amount],[total_damage_amount],[discount_amount],[tax_amount],[final_total],[status])
-VALUES (5,  5,  CAST(1200000.00  AS Decimal(18,2)), CAST(0.00       AS Decimal(18,2)), CAST(0.00      AS Decimal(18,2)), CAST(0.00      AS Decimal(18,2)), CAST(120000.00   AS Decimal(18,2)), CAST(1320000.00  AS Decimal(18,2)), N'Refunded')
-INSERT [dbo].[Invoices] ([id],[booking_id],[total_room_amount],[total_service_amount],[total_damage_amount],[discount_amount],[tax_amount],[final_total],[status])
-VALUES (6,  6,  CAST(3000000.00  AS Decimal(18,2)), CAST(500000.00  AS Decimal(18,2)), CAST(850000.00 AS Decimal(18,2)), CAST(0.00      AS Decimal(18,2)), CAST(395000.00   AS Decimal(18,2)), CAST(4745000.00  AS Decimal(18,2)), N'Paid')
-INSERT [dbo].[Invoices] ([id],[booking_id],[total_room_amount],[total_service_amount],[total_damage_amount],[discount_amount],[tax_amount],[final_total],[status])
-VALUES (7,  7,  CAST(3600000.00  AS Decimal(18,2)), CAST(0.00       AS Decimal(18,2)), CAST(0.00      AS Decimal(18,2)), CAST(540000.00 AS Decimal(18,2)), CAST(306000.00   AS Decimal(18,2)), CAST(3366000.00  AS Decimal(18,2)), N'Unpaid')
-INSERT [dbo].[Invoices] ([id],[booking_id],[total_room_amount],[total_service_amount],[total_damage_amount],[discount_amount],[tax_amount],[final_total],[status])
-VALUES (8,  8,  CAST(10000000.00 AS Decimal(18,2)), CAST(0.00       AS Decimal(18,2)), CAST(0.00      AS Decimal(18,2)), CAST(0.00      AS Decimal(18,2)), CAST(1000000.00  AS Decimal(18,2)), CAST(11000000.00 AS Decimal(18,2)), N'Unpaid')
-INSERT [dbo].[Invoices] ([id],[booking_id],[total_room_amount],[total_service_amount],[total_damage_amount],[discount_amount],[tax_amount],[final_total],[status])
-VALUES (9,  9,  CAST(25000000.00 AS Decimal(18,2)), CAST(1000000.00 AS Decimal(18,2)), CAST(450000.00 AS Decimal(18,2)), CAST(0.00      AS Decimal(18,2)), CAST(2645000.00  AS Decimal(18,2)), CAST(29045000.00 AS Decimal(18,2)), N'Paid')
-INSERT [dbo].[Invoices] ([id],[booking_id],[total_room_amount],[total_service_amount],[total_damage_amount],[discount_amount],[tax_amount],[final_total],[status])
-VALUES (10, 10, CAST(16000000.00 AS Decimal(18,2)), CAST(0.00       AS Decimal(18,2)), CAST(300000.00 AS Decimal(18,2)), CAST(200000.00 AS Decimal(18,2)), CAST(1658000.00  AS Decimal(18,2)), CAST(17758000.00 AS Decimal(18,2)), N'Unpaid')
+--Tự tạo
 SET IDENTITY_INSERT [dbo].[Invoices] OFF
 GO
 
 -- 17. Payments
 SET IDENTITY_INSERT [dbo].[Payments] ON
-INSERT [dbo].[Payments] ([id],[invoice_id],[payment_type],[payment_method],[amount_paid],[transaction_code],[status],[payment_date])
-VALUES (1,  1,  N'Final_Settlement', N'Cash',          CAST(880000.00   AS Decimal(18,2)), N'CASH001',  N'Success', CAST(N'2026-03-06T22:07:35.027' AS DateTime))
-INSERT [dbo].[Payments] ([id],[invoice_id],[payment_type],[payment_method],[amount_paid],[transaction_code],[status],[payment_date])
-VALUES (2,  2,  N'Deposit',          N'VNPay',          CAST(1000000.00  AS Decimal(18,2)), N'VNPAY123', N'Success', CAST(N'2026-03-06T22:07:35.027' AS DateTime))
-INSERT [dbo].[Payments] ([id],[invoice_id],[payment_type],[payment_method],[amount_paid],[transaction_code],[status],[payment_date])
-VALUES (3,  3,  N'Deposit',          N'Credit Card',    CAST(500000.00   AS Decimal(18,2)), N'CC456',    N'Success', CAST(N'2026-03-06T22:07:35.027' AS DateTime))
-INSERT [dbo].[Payments] ([id],[invoice_id],[payment_type],[payment_method],[amount_paid],[transaction_code],[status],[payment_date])
-VALUES (4,  4,  N'Final_Settlement', N'Momo',           CAST(3850000.00  AS Decimal(18,2)), N'MOMO789',  N'Success', CAST(N'2026-03-06T22:07:35.027' AS DateTime))
-INSERT [dbo].[Payments] ([id],[invoice_id],[payment_type],[payment_method],[amount_paid],[transaction_code],[status],[payment_date])
-VALUES (5,  5,  N'Refund',           N'Bank Transfer',  CAST(1320000.00  AS Decimal(18,2)), N'BANK001',  N'Success', CAST(N'2026-03-06T22:07:35.027' AS DateTime))
-INSERT [dbo].[Payments] ([id],[invoice_id],[payment_type],[payment_method],[amount_paid],[transaction_code],[status],[payment_date])
-VALUES (6,  6,  N'Final_Settlement', N'Cash',           CAST(3850000.00  AS Decimal(18,2)), N'CASH002',  N'Success', CAST(N'2026-03-06T22:07:35.027' AS DateTime))
-INSERT [dbo].[Payments] ([id],[invoice_id],[payment_type],[payment_method],[amount_paid],[transaction_code],[status],[payment_date])
-VALUES (7,  7,  N'Deposit',          N'VNPay',          CAST(3366000.00  AS Decimal(18,2)), N'VNPAY999', N'Success', CAST(N'2026-03-06T22:07:35.027' AS DateTime))
-INSERT [dbo].[Payments] ([id],[invoice_id],[payment_type],[payment_method],[amount_paid],[transaction_code],[status],[payment_date])
-VALUES (8,  8,  N'Deposit',          N'Credit Card',    CAST(11000000.00 AS Decimal(18,2)), N'CC888',    N'Success', CAST(N'2026-03-06T22:07:35.027' AS DateTime))
-INSERT [dbo].[Payments] ([id],[invoice_id],[payment_type],[payment_method],[amount_paid],[transaction_code],[status],[payment_date])
-VALUES (9,  9,  N'Final_Settlement', N'Bank Transfer',  CAST(28600000.00 AS Decimal(18,2)), N'BANK002',  N'Success', CAST(N'2026-03-06T22:07:35.027' AS DateTime))
-INSERT [dbo].[Payments] ([id],[invoice_id],[payment_type],[payment_method],[amount_paid],[transaction_code],[status],[payment_date])
-VALUES (10, 10, N'Deposit',          N'Momo',           CAST(5000000.00  AS Decimal(18,2)), N'MOMO111',  N'Success', CAST(N'2026-03-06T22:07:35.027' AS DateTime))
+--Tự
 SET IDENTITY_INSERT [dbo].[Payments] OFF
 GO
 
@@ -1337,41 +1260,13 @@ GO
 
 -- 20. Order_Services
 SET IDENTITY_INSERT [dbo].[Order_Services] ON
-INSERT [dbo].[Order_Services] ([id],[booking_detail_id],[order_date],[total_amount],[status],[is_active])
-VALUES (1,  1,  CAST(N'2026-03-06T22:07:35.027' AS DateTime), CAST(0.00       AS Decimal(18,2)), N'Cancelled', 1)
-INSERT [dbo].[Order_Services] ([id],[booking_detail_id],[order_date],[total_amount],[status],[is_active])
-VALUES (2,  2,  CAST(N'2026-03-06T22:07:35.027' AS DateTime), CAST(200000.00  AS Decimal(18,2)), N'Delivered', 1)
-INSERT [dbo].[Order_Services] ([id],[booking_detail_id],[order_date],[total_amount],[status],[is_active])
-VALUES (3,  3,  CAST(N'2026-03-06T22:07:35.027' AS DateTime), CAST(0.00       AS Decimal(18,2)), N'Pending', 1)
-INSERT [dbo].[Order_Services] ([id],[booking_detail_id],[order_date],[total_amount],[status],[is_active])
-VALUES (4,  4,  CAST(N'2026-03-06T22:07:35.027' AS DateTime), CAST(500000.00  AS Decimal(18,2)), N'Delivered', 1)
-INSERT [dbo].[Order_Services] ([id],[booking_detail_id],[order_date],[total_amount],[status],[is_active])
-VALUES (5,  5,  CAST(N'2026-03-06T22:07:35.027' AS DateTime), CAST(0.00       AS Decimal(18,2)), N'Pending', 1)
-INSERT [dbo].[Order_Services] ([id],[booking_detail_id],[order_date],[total_amount],[status],[is_active])
-VALUES (6,  6,  CAST(N'2026-03-06T22:07:35.027' AS DateTime), CAST(350000.00  AS Decimal(18,2)), N'Delivered', 1)
-INSERT [dbo].[Order_Services] ([id],[booking_detail_id],[order_date],[total_amount],[status],[is_active])
-VALUES (7,  7,  CAST(N'2026-03-06T22:07:35.027' AS DateTime), CAST(800000.00  AS Decimal(18,2)), N'Delivered', 1)
-INSERT [dbo].[Order_Services] ([id],[booking_detail_id],[order_date],[total_amount],[status],[is_active])
-VALUES (8,  8,  CAST(N'2026-03-06T22:07:35.027' AS DateTime), CAST(0.00       AS Decimal(18,2)), N'Pending', 1)
-INSERT [dbo].[Order_Services] ([id],[booking_detail_id],[order_date],[total_amount],[status],[is_active])
-VALUES (9,  9,  CAST(N'2026-03-06T22:07:35.027' AS DateTime), CAST(1000000.00 AS Decimal(18,2)), N'Delivered', 1)
-INSERT [dbo].[Order_Services] ([id],[booking_detail_id],[order_date],[total_amount],[status],[is_active])
-VALUES (10, 10, CAST(N'2026-03-06T22:07:35.027' AS DateTime), CAST(150000.00  AS Decimal(18,2)), N'Delivered', 1)
+--Tự
 SET IDENTITY_INSERT [dbo].[Order_Services] OFF
 GO
 
 -- 21. Order_Service_Details
 SET IDENTITY_INSERT [dbo].[Order_Service_Details] ON
-INSERT [dbo].[Order_Service_Details] ([id],[order_service_id],[service_id],[quantity],[unit_price]) VALUES (1,  2,  2,  1, CAST(150000.00 AS Decimal(18,2)))
-INSERT [dbo].[Order_Service_Details] ([id],[order_service_id],[service_id],[quantity],[unit_price]) VALUES (2,  2,  10, 1, CAST(50000.00  AS Decimal(18,2)))
-INSERT [dbo].[Order_Service_Details] ([id],[order_service_id],[service_id],[quantity],[unit_price]) VALUES (3,  4,  3,  1, CAST(500000.00 AS Decimal(18,2)))
-INSERT [dbo].[Order_Service_Details] ([id],[order_service_id],[service_id],[quantity],[unit_price]) VALUES (4,  6,  5,  1, CAST(350000.00 AS Decimal(18,2)))
-INSERT [dbo].[Order_Service_Details] ([id],[order_service_id],[service_id],[quantity],[unit_price]) VALUES (5,  7,  9,  1, CAST(800000.00 AS Decimal(18,2)))
-INSERT [dbo].[Order_Service_Details] ([id],[order_service_id],[service_id],[quantity],[unit_price]) VALUES (6,  9,  1,  5, CAST(200000.00 AS Decimal(18,2)))
-INSERT [dbo].[Order_Service_Details] ([id],[order_service_id],[service_id],[quantity],[unit_price]) VALUES (7,  10, 2,  1, CAST(150000.00 AS Decimal(18,2)))
-INSERT [dbo].[Order_Service_Details] ([id],[order_service_id],[service_id],[quantity],[unit_price]) VALUES (8,  4,  8,  2, CAST(40000.00  AS Decimal(18,2)))
-INSERT [dbo].[Order_Service_Details] ([id],[order_service_id],[service_id],[quantity],[unit_price]) VALUES (9,  6,  10, 2, CAST(50000.00  AS Decimal(18,2)))
-INSERT [dbo].[Order_Service_Details] ([id],[order_service_id],[service_id],[quantity],[unit_price]) VALUES (10, 7,  6,  2, CAST(100000.00 AS Decimal(18,2)))
+--Tự
 SET IDENTITY_INSERT [dbo].[Order_Service_Details] OFF
 GO
 
@@ -1383,26 +1278,7 @@ GO
 
 -- 23. Reviews
 SET IDENTITY_INSERT [dbo].[Reviews] ON
-INSERT [dbo].[Reviews] ([id],[user_id],[room_type_id],[rating],[comment],[created_at],[booking_id],[is_approved])
-VALUES (1,  6,  1,  5, N'Phòng tuyệt vời!',                       CAST(N'2026-03-06T22:07:35.023' AS DateTime), 1,    1)
-INSERT [dbo].[Reviews] ([id],[user_id],[room_type_id],[rating],[comment],[created_at],[booking_id],[is_approved])
-VALUES (2,  7,  2,  4, N'Khá tốt, nhân viên thân thiện.',          CAST(N'2026-03-06T22:07:35.023' AS DateTime), 2,    1)
-INSERT [dbo].[Reviews] ([id],[user_id],[room_type_id],[rating],[comment],[created_at],[booking_id],[is_approved])
-VALUES (3,  8,  3,  3, N'Bình thường, điều hòa hơi ồn.',           CAST(N'2026-03-06T22:07:35.023' AS DateTime), 3,    1)
-INSERT [dbo].[Reviews] ([id],[user_id],[room_type_id],[rating],[comment],[created_at],[booking_id],[is_approved])
-VALUES (4,  9,  4,  5, N'View biển rất đẹp.',                      CAST(N'2026-03-06T22:07:35.023' AS DateTime), 4,    1)
-INSERT [dbo].[Reviews] ([id],[user_id],[room_type_id],[rating],[comment],[created_at],[booking_id],[is_approved])
-VALUES (5,  10, 5,  4, N'Bữa sáng ngon miệng.',                    CAST(N'2026-03-06T22:07:35.023' AS DateTime), 5,    0)
-INSERT [dbo].[Reviews] ([id],[user_id],[room_type_id],[rating],[comment],[created_at],[booking_id],[is_approved])
-VALUES (6,  6,  6,  5, N'Rất thích hợp cho gia đình.',             CAST(N'2026-03-06T22:07:35.023' AS DateTime), 8,    1)
-INSERT [dbo].[Reviews] ([id],[user_id],[room_type_id],[rating],[comment],[created_at],[booking_id],[is_approved])
-VALUES (7,  7,  7,  5, N'Sang trọng, đẳng cấp.',                   CAST(N'2026-03-06T22:07:35.023' AS DateTime), 9,    1)
-INSERT [dbo].[Reviews] ([id],[user_id],[room_type_id],[rating],[comment],[created_at],[booking_id],[is_approved])
-VALUES (8,  8,  8,  2, N'Chưa hài lòng với dịch vụ dọn phòng.',   CAST(N'2026-03-06T22:07:35.023' AS DateTime), 10,   0)
-INSERT [dbo].[Reviews] ([id],[user_id],[room_type_id],[rating],[comment],[created_at],[booking_id],[is_approved])
-VALUES (9,  9,  9,  5, N'Hoàn hảo mọi mặt.',                      CAST(N'2026-03-06T22:07:35.023' AS DateTime), NULL, 0)
-INSERT [dbo].[Reviews] ([id],[user_id],[room_type_id],[rating],[comment],[created_at],[booking_id],[is_approved])
-VALUES (10, 10, 10, 5, N'Trải nghiệm tuyệt vời nhất.',             CAST(N'2026-03-06T22:07:35.023' AS DateTime), NULL, 0)
+
 SET IDENTITY_INSERT [dbo].[Reviews] OFF
 GO
 
