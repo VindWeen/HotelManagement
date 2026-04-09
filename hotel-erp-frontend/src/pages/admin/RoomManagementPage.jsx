@@ -1,4 +1,4 @@
-﻿// src/pages/admin/RoomManagementPage.jsx
+// src/pages/admin/RoomManagementPage.jsx
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
@@ -126,6 +126,7 @@ function RoomCard({ room, onDetail }) {
     return (
         <div
             onClick={() => onDetail(room.id)}
+            className="room-card dark:!bg-[#141514] dark:!border-[#ffffff0f]"
             style={{
                 background: "white",
                 border: `1.5px solid ${bsCfg.border}`,
@@ -141,17 +142,17 @@ function RoomCard({ room, onDetail }) {
         >
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: bsCfg.dot, borderRadius: "16px 16px 0 0" }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10, paddingTop: 4 }}>
-                <span style={{ fontSize: 20, fontWeight: 800, color: "#1c1917", fontFamily: "Manrope, sans-serif" }}>{room.roomNumber}</span>
+                <span className="dark:!text-gray-100" style={{ fontSize: 20, fontWeight: 800, color: "#1c1917", fontFamily: "Manrope, sans-serif" }}>{room.roomNumber}</span>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: bsCfg.dot, flexShrink: 0, marginTop: 6 }} />
             </div>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(0,0,0,.4)", margin: "0 0 6px", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+            <p className="dark:!text-gray-400" style={{ fontSize: 11, fontWeight: 700, color: "rgba(0,0,0,.4)", margin: "0 0 6px", textTransform: "uppercase", letterSpacing: "0.07em" }}>
                 {room.roomTypeName || "—"}
             </p>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: bsCfg.color, background: bsCfg.bg, padding: "2px 8px", borderRadius: 9999 }}>
+                <span className="status-badge" style={{ fontSize: 11, fontWeight: 600, color: bsCfg.color, background: bsCfg.bg, padding: "2px 8px", borderRadius: 9999 }}>
                     {bsCfg.label}
                 </span>
-                <span style={{ fontSize: 10, color: "#9ca3af" }}>T.{room.floor || "?"}</span>
+                <span className="dark:!text-gray-400" style={{ fontSize: 10, color: "#9ca3af" }}>T.{room.floor || "?"}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <span className="material-symbols-outlined" style={{ fontSize: 13, color: clCfg.color, fontVariationSettings: "'FILL' 1" }}>{clCfg.icon}</span>
@@ -708,7 +709,7 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
                                             </button>
                                         )}
                                     </div>
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 14 }}>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                         {[
                                             { key: "floor", label: "Tầng", type: "number" },
                                             { key: "fromNumber", label: "Từ số phòng", type: "number" },
@@ -879,12 +880,7 @@ function RoomManagementHeader({
 }) {
   return (
     <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        marginBottom: 28,
-      }}
+      className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-7"
     >
       <div>
         <h2
@@ -966,7 +962,7 @@ function RoomManagementHeader({
 
 function RoomManagementSummary({ stats }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 24 }}>
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
       {[
         { label: "TỔNG PHÒNG", value: stats.total, bg: "#f8f9fa", color: "#6b7280", border: "#f1f0ea" },
         { label: "SẴN SÀNG", value: stats.available, bg: "#ecfdf5", color: "#059669", border: "#a7f3d0" },
@@ -976,6 +972,7 @@ function RoomManagementSummary({ stats }) {
       ].map((item) => (
         <div
           key={item.label}
+          className="room-card dark:!bg-[#141514] dark:!border-[#ffffff0f]"
           style={{
             background: item.bg,
             border: `1.5px solid ${item.border}`,
@@ -1057,6 +1054,7 @@ function RoomManagementFilters({
 
   return (
     <div
+      className="dark:!bg-[#141514] dark:!border-[#ffffff0f]"
       style={{
         background: "white",
         borderRadius: 18,
@@ -1163,18 +1161,12 @@ function RoomManagementTable({
 }) {
   return (
     <div
-      style={{
-        background: "white",
-        borderRadius: 18,
-        boxShadow: "0 1px 4px rgba(0,0,0,.06)",
-        border: "1px solid #f1f0ea",
-        overflow: "hidden",
-      }}
+      className="bg-white rounded-2xl shadow-sm border border-[#f1f0ea] mb-6 dark:!bg-[#141514] dark:!border-[#ffffff0f]"
     >
-      <div style={{ overflowX: "auto" }}>
+      <div className="overflow-x-auto">
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "rgba(249,248,243,.6)", borderBottom: "1px solid #f1f0ea" }}>
+            <tr className="dark:!bg-transparent dark:!border-[#ffffff0f]" style={{ background: "rgba(249,248,243,.6)", borderBottom: "1px solid #f1f0ea" }}>
               {["Số phòng", "Tầng", "Hạng phòng", "Trạng thái KD", "Vệ sinh", "Thao tác"].map((heading, index) => (
                 <th
                   key={heading}
@@ -1367,7 +1359,7 @@ function RoomManagementGrid({
 }) {
   if (loading) {
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14 }}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         {Array.from({ length: 12 }).map((_, index) => (
           <div key={index} className="skeleton" style={{ height: 130, borderRadius: 16 }} />
         ))}
@@ -1391,7 +1383,7 @@ function RoomManagementGrid({
 
   return (
     <>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14 }}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         {paginatedRooms.map((room) => (
           <RoomCard key={room.id} room={room} onDetail={onDetail} />
         ))}

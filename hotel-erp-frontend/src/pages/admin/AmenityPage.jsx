@@ -583,7 +583,7 @@ export default function AmenityPage() {
         .toggle-switch input { opacity:0; width:0; height:0; }
         .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#cbd5e1; transition:.4s; border-radius:24px; }
         .slider:before { position:absolute; content:""; height:18px; width:18px; left:3px; bottom:3px; background:white; transition:.4s; border-radius:50%; }
-        input:checked + .slider { background:#4f645b; }
+        input:checked + .slider { background:#10b981; }
         input:checked + .slider:before { transform:translateX(20px); }
         input:disabled + .slider { opacity:0.5; cursor:not-allowed; }
 
@@ -600,7 +600,7 @@ export default function AmenityPage() {
 
         .pg-btn { width:2rem; height:2rem; border-radius:.5rem; display:flex; align-items:center; justify-content:center; font-size:.875rem; font-weight:500; color:#6b7280; background:transparent; border:none; cursor:pointer; transition:background .15s,color .15s; font-family:inherit; }
         .pg-btn:hover:not(:disabled) { background:#f3f4f6; }
-        .pg-btn.active { background:#4f645b; color:#e7fef3; font-weight:700; cursor:default; }
+        .pg-btn.active { background:#333333; color:#ffffff; font-weight:700; cursor:default; }
         .pg-btn:disabled { opacity:.35; cursor:not-allowed; }
         .pg-btn.icon { color:#9ca3af; }
 

@@ -133,7 +133,7 @@ export default function ShiftManagementPage() {
 
       {errorMessage ? <div style={{ ...pageCard, marginBottom: 20, padding: 14, color: "#b91c1c", background: "#fff7f7", borderColor: "#fecaca" }}>{errorMessage}</div> : null}
 
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
         <article style={{ ...pageCard, padding: 22 }}>
           <h3 style={{ margin: "0 0 18px", fontSize: 18, color: "#1c1917", fontWeight: 800 }}>Tạo ca mới</h3>
           <form onSubmit={handleCreate} style={{ display: "grid", gap: 12 }}>
@@ -143,7 +143,7 @@ export default function ShiftManagementPage() {
                 <option key={user.id} value={user.id}>{user.fullName} - {user.roleName || user.role?.name || "Staff"}</option>
               ))}
             </select>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <select value={form.shiftType} onChange={(e) => setForm((prev) => ({ ...prev, shiftType: e.target.value }))} style={inputStyle}>
                 <option value="Morning">Ca sáng</option>
                 <option value="Afternoon">Ca chiều</option>
@@ -155,7 +155,7 @@ export default function ShiftManagementPage() {
                 <option value="Manager">Quản lý</option>
               </select>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input type="datetime-local" value={form.plannedStart} onChange={(e) => setForm((prev) => ({ ...prev, plannedStart: e.target.value }))} style={inputStyle} required />
               <input type="datetime-local" value={form.plannedEnd} onChange={(e) => setForm((prev) => ({ ...prev, plannedEnd: e.target.value }))} style={inputStyle} required />
             </div>

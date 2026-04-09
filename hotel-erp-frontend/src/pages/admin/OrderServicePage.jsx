@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createOrderService,
   getOrderServiceById,
@@ -238,7 +238,7 @@ export default function OrderServicePage() {
           </button>
         }
         filterContent={
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 0.9fr", gap: 16, alignItems: "end" }}>
+          <div className="grid grid-cols-1 md:grid-cols-[1.4fr_0.9fr] gap-4 items-end">
             <div>
               <label style={labelStyle}>Tìm booking / khách / phòng</label>
               <input value={keyword} onChange={(e) => setKeyword(e.target.value)} style={inputStyle} placeholder="Booking code, khách, số phòng..." />
@@ -323,7 +323,7 @@ export default function OrderServicePage() {
       {modalOpen ? (
         <SharedModal open={modalOpen} onClose={() => setModalOpen(false)} title={editingItem ? "Cập nhật đơn dịch vụ" : "Tạo đơn dịch vụ"}>
           <form onSubmit={submitForm}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label style={labelStyle}>Booking / Phòng / Khách</label>
                 <select
@@ -347,7 +347,7 @@ export default function OrderServicePage() {
             </div>
 
             {selectedBookingDetail ? (
-              <div style={{ marginTop: 14, padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0", display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-3" style={{ padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                 <InfoChip label="Booking" value={selectedBookingDetail.bookingCode || `#${selectedBookingDetail.bookingId || "—"}`} />
                 <InfoChip label="Khách" value={selectedBookingDetail.guestName || "—"} />
                 <InfoChip label="Phòng" value={selectedBookingDetail.roomNumber || "—"} />
@@ -362,7 +362,7 @@ export default function OrderServicePage() {
               </div>
               <div style={{ display: "grid", gap: 12 }}>
                 {form.items.map((item, index) => (
-                  <div key={`${index}-${item.serviceId}`} style={{ padding: 14, borderRadius: 14, border: "1px solid #f1ede7", background: "#fffdfa", display: "grid", gridTemplateColumns: "1.6fr 0.7fr 0.9fr auto", gap: 12, alignItems: "end" }}>
+                  <div key={`${index}-${item.serviceId}`} className="grid grid-cols-1 md:grid-cols-[1.6fr_0.7fr_0.9fr_auto] gap-3 items-end" style={{ padding: 14, borderRadius: 14, border: "1px solid #f1ede7", background: "#fffdfa" }}>
                     <div>
                       <label style={labelStyle}>Dịch vụ</label>
                       <select value={item.serviceId} onChange={(e) => updateItemField(index, "serviceId", e.target.value)} style={inputStyle}>

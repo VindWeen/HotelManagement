@@ -1,4 +1,4 @@
-﻿// src/pages/admin/RolePermissionPage.jsx
+// src/pages/admin/RolePermissionPage.jsx
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { getRoles, getRoleById, assignPermission } from "../../api/rolesApi";
 import { getPermissions } from "../../api/permissionsApi";
@@ -192,14 +192,15 @@ function PermissionCheckbox({
           margin: 0,
           cursor: disabled ? "not-allowed" : "pointer",
         }}
+        className="checkbox-p"
       />
       <span
         style={{
           width: size,
           height: size,
           borderRadius: 4,
-          border: `1.5px solid ${isActive ? "#4f645b" : "#7b9a88"}`,
-          background: isActive ? "#4f645b" : "#ffffff",
+          border: `1.5px solid ${isActive ? "#10b981" : "rgba(255,255,255,0.2)"}`,
+          background: isActive ? "#10b981" : "transparent",
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
@@ -462,13 +463,17 @@ function PermissionModal({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
+        className="primary-card-p"
         style={{
           background: "white",
           borderRadius: 20,
           width: "100%",
           maxWidth: 540,
-          boxShadow: "0 24px 64px rgba(0,0,0,.2)",
+          boxShadow: "0 24px 64px rgba(0,0,0,.4)",
           animation: "modalIn .25s cubic-bezier(.22,1,.36,1)",
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column"
         }}
       >
         {/* Header */}
@@ -486,7 +491,7 @@ function PermissionModal({
               style={{
                 fontSize: 18,
                 fontWeight: 800,
-                color: "#1c1917",
+                color: "inherit",
                 margin: 0,
                 letterSpacing: "-0.02em",
               }}
@@ -496,12 +501,13 @@ function PermissionModal({
             <p
               style={{
                 fontSize: 12,
-                color: "#6b7280",
+                color: "inherit",
+                opacity: 0.6,
                 margin: "4px 0 0",
                 fontWeight: 500,
               }}
             >
-              Vai tro:{" "}
+              Vai trò:{" "}
               <span style={{ color: getRoleColor(role.name), fontWeight: 700 }}>
                 {role.name}
               </span>
@@ -533,6 +539,7 @@ function PermissionModal({
           style={{ padding: "20px 28px 0", maxHeight: 440, overflowY: "auto" }}
         >
           <label
+            className="sub-card-p"
             style={{
               display: "flex",
               alignItems: "center",
@@ -553,8 +560,8 @@ function PermissionModal({
               onChange={toggleAll}
               size={17}
             />
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#2f3d36" }}>
-              Tat ca quyen
+            <span style={{ fontSize: 13, fontWeight: 700, color: "inherit" }}>
+              Tất cả quyền
             </span>
           </label>
 
@@ -618,16 +625,11 @@ function PermissionModal({
                   {moduleLabels[module] || module}
                 </p>
               </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 10,
-                }}
-              >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {perms.map((p) => (
                   <label
                     key={p.id}
+                    className="sub-card-p"
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -635,9 +637,9 @@ function PermissionModal({
                       padding: "10px 14px",
                       borderRadius: 12,
                       background: checked[p.id]
-                        ? "rgba(79,100,91,.08)"
+                        ? "rgba(16,185,129,.1)"
                         : "#f9f8f3",
-                      border: `1.5px solid ${checked[p.id] ? "rgba(79,100,91,.3)" : "#e2e8e1"}`,
+                      border: `1.5px solid ${checked[p.id] ? "rgba(16,185,129,.3)" : "#e2e8e1"}`,
                       cursor: canEditRole ? "pointer" : "not-allowed",
                       transition: "all .15s",
                       userSelect: "none",
@@ -653,7 +655,7 @@ function PermissionModal({
                       style={{
                         fontSize: 13,
                         fontWeight: 600,
-                        color: checked[p.id] ? "#1a3826" : "#4b5563",
+                        color: checked[p.id] ? "#10b981" : "inherit",
                         lineHeight: 1.3,
                       }}
                     >
@@ -677,6 +679,7 @@ function PermissionModal({
         >
           <button
             onClick={onClose}
+            className="sub-card-p"
             style={{
               padding: "10px 22px",
               borderRadius: 10,
@@ -811,7 +814,7 @@ export default function RolePermissionPage() {
   return (
     <>
       <style>{`
-                .skel { background:linear-gradient(90deg,#e8e8e0 25%,#f2f2ea 50%,#e8e8e0 75%); background-size:600px; animation:shimmer 1.4s infinite; border-radius:6px; height:13px; }
+                .skel { background:linear-gradient(90deg,rgba(255,255,255,0.05) 25%,rgba(255,255,255,0.1) 50%,rgba(255,255,255,0.05) 75%); background-size:600px; animation:shimmer 1.4s infinite; border-radius:6px; height:13px; }
                 .fade-row { animation:fadeRow .2s ease forwards; }
 
                 @keyframes fadeRow { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
@@ -820,26 +823,25 @@ export default function RolePermissionPage() {
                 .perm-btn {
                     display:inline-flex; align-items:center; gap:6px;
                     padding:8px 16px; border-radius:9px; font-size:13px; font-weight:700;
-                    background:#f0faf5; color:#1a3826; border:1.5px solid rgba(79,100,91,.2);
+                    background:rgba(16,185,129,0.1); color:#10b981; border:1.5px solid rgba(16,185,129,.2);
                     cursor:pointer; transition:all .15s; font-family:'Manrope',sans-serif;
                 }
-                .perm-btn:hover { background:#4f645b; color:#e7fef3; border-color:#4f645b; }
+                .perm-btn:hover { background:#10b981; color:#fff; border-color:#10b981; }
 
                 .refresh-btn {
                     display:inline-flex; align-items:center; gap:8px;
                     padding:10px 22px; border-radius:12px; font-size:14px; font-weight:700;
-                    background:white; color:#1c1917; border:1.5px solid #e2e8e1;
+                    background:transparent; color:inherit; border:1.5px solid rgba(255,255,255,0.1);
                     cursor:pointer; transition:all .15s; font-family:'Manrope',sans-serif;
-                    box-shadow:0 1px 4px rgba(0,0,0,.06);
                 }
-                .refresh-btn:hover { background:#f9f8f3; border-color:#c8c8c0; }
+                .refresh-btn:hover { background:rgba(255,255,255,0.05); border-color:rgba(255,255,255,0.2); }
 
-                .pg-btn { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:#6b7280; background:transparent; border:none; cursor:pointer; transition:background .15s,color .15s; font-family:'Manrope',sans-serif; }
-                .pg-btn:hover:not(:disabled) { background:#f3f4f6; }
-                .pg-btn.active { background:#4f645b; color:#e7fef3; font-weight:700; cursor:default; }
-                .pg-btn:disabled { opacity:.35; cursor:not-allowed; }
+                .pg-btn { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:inherit; opacity:0.6; background:transparent; border:none; cursor:pointer; transition:background .15s,color .15s; font-family:'Manrope',sans-serif; }
+                .pg-btn:hover:not(:disabled) { background:rgba(255,255,255,0.05); opacity:1; }
+                .pg-btn.active { background:#10b981; color:#fff; font-weight:700; cursor:default; opacity:1; }
+                .pg-btn:disabled { opacity:.2; cursor:not-allowed; }
 
-                tr:hover td { background:rgba(249,248,243,.6) !important; }
+                tr:hover td { background:rgba(255,255,255,.02) !important; }
             `}</style>
 
       {/* Khu v?c thĂ´ng bĂ¡o */}
@@ -889,7 +891,7 @@ export default function RolePermissionPage() {
               style={{
                 fontSize: 28,
                 fontWeight: 800,
-                color: "#1c1917",
+                color: "inherit",
                 letterSpacing: "-0.03em",
                 margin: "0 0 6px",
               }}
@@ -899,7 +901,8 @@ export default function RolePermissionPage() {
             <p
               style={{
                 fontSize: 14,
-                color: "#6b7280",
+                color: "inherit",
+                opacity: 0.6,
                 margin: 0,
                 maxWidth: 520,
               }}
@@ -910,7 +913,7 @@ export default function RolePermissionPage() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="refresh-btn"
+            className="refresh-btn sub-card-p"
           >
             <span
               className="material-symbols-outlined"
@@ -927,6 +930,7 @@ export default function RolePermissionPage() {
 
         {/* Table card */}
         <div
+          className="primary-card-p"
           style={{
             background: "white",
             borderRadius: 20,
@@ -949,14 +953,14 @@ export default function RolePermissionPage() {
               style={{
                 fontSize: 16,
                 fontWeight: 700,
-                color: "#1c1917",
+                color: "inherit",
                 margin: 0,
               }}
             >
               Danh sách vai trò
             </h3>
             {!loading && (
-              <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 500 }}>
+              <span style={{ fontSize: 12, color: "inherit", opacity: 0.5, fontWeight: 500 }}>
                 HIỂN THỊ {Math.min(paginatedRoles.length, pageSize)}/
                 {roles.length}
               </span>
@@ -967,7 +971,7 @@ export default function RolePermissionPage() {
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "rgba(249,248,243,.5)" }}>
+                <tr style={{ background: "rgba(255,255,255,0.02)" }}>
                   {["ID", "TÊN VAI TRÒ", "MÔ TẢ", "THAO TÁC"].map((h, i) => (
                     <th
                       key={h}
@@ -1027,7 +1031,7 @@ export default function RolePermissionPage() {
                         key={role.id}
                         className="fade-row"
                         style={{
-                          borderBottom: "1px solid #fafaf8",
+                          borderBottom: "1px solid rgba(255,255,255,0.05)",
                           animationDelay: `${Math.min(i * 30, 150)}ms`,
                         }}
                       >
@@ -1065,7 +1069,7 @@ export default function RolePermissionPage() {
                               style={{
                                 fontSize: 14,
                                 fontWeight: 700,
-                                color: "#1c1917",
+                                color: "inherit",
                               }}
                             >
                               {role.name}
@@ -1076,7 +1080,8 @@ export default function RolePermissionPage() {
                           style={{
                             padding: "20px 28px",
                             fontSize: 14,
-                            color: "#6b7280",
+                            color: "inherit",
+                            opacity: 0.7
                           }}
                         >
                           {role.description || (
@@ -1186,6 +1191,7 @@ export default function RolePermissionPage() {
 
         {/* Info note */}
         <div
+          className="sub-card-p"
           style={{
             marginTop: 20,
             padding: "14px 20px",
@@ -1211,7 +1217,8 @@ export default function RolePermissionPage() {
           <p
             style={{
               fontSize: 12,
-              color: "#4b5563",
+              color: "inherit",
+              opacity: 0.7,
               margin: 0,
               lineHeight: 1.6,
             }}

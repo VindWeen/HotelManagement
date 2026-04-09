@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { addRoomToBooking, cancelBooking, checkIn, checkInRoom, checkOut, earlyCheckOut, extendStay, getBookingDetail } from "../../api/bookingsApi";
 import { createInvoiceFromBooking, getInvoiceByBookingId } from "../../api/invoicesApi";
@@ -107,7 +107,7 @@ function CheckInModal({ open, booking, loading, onConfirm, onCancel }) {
         <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px" }}>
           Booking này chưa gắn hồ sơ khách. Nhập thông tin lưu trú để hệ thống kiểm tra tài khoản theo email trước khi check-in.
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
           <input value={form.guestName} onChange={(e) => setForm((prev) => ({ ...prev, guestName: e.target.value }))} placeholder="Họ tên khách" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
           <input value={form.guestPhone} onChange={(e) => setForm((prev) => ({ ...prev, guestPhone: e.target.value }))} placeholder="Số điện thoại" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
           <input value={form.guestEmail} onChange={(e) => setForm((prev) => ({ ...prev, guestEmail: e.target.value }))} placeholder="Email" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917", gridColumn: "span 2" }} />
@@ -604,7 +604,7 @@ export default function BookingDetailPage() {
       </div>
 
       {!loading && booking && (
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24 }}>
+        <div className="flex flex-col xl:flex-row gap-6">
           {/* Main Info Column */}
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             {/* Summary Card */}
@@ -615,7 +615,7 @@ export default function BookingDetailPage() {
                   Khách đã check-out. Booking này đang chờ quyết toán hóa đơn trước khi chuyển sang Completed.
                 </div>
               )}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px 24px" }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
                 <div>
                   <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Tên khách hàng</div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#1c1917" }}>{booking.guestName || "-"}</div>
@@ -672,6 +672,7 @@ export default function BookingDetailPage() {
               <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Danh sách hạng phòng booking</h3>
               </div>
+              <div className="overflow-x-auto">
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "white" }}>
@@ -754,11 +755,12 @@ export default function BookingDetailPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
 
           {/* Right Column: Actions & Timeline */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div className="w-full xl:w-[320px] shrink-0 flex flex-col gap-6">
             {/* Actions Card */}
             <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
               <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: "0 0 16px" }}>Hành động</h3>

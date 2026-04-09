@@ -51,6 +51,10 @@ export const useSignalR = () => {
                     console.log('Connected to NotificationHub');
                 }
             } catch (err) {
+                if (err.name === 'AbortError' || (err.message && err.message.includes('stopped during negotiation'))) {
+                    console.log('SignalR connection aborted (expected during unmount or React StrictMode re-render).');
+                    return;
+                }
                 console.error('SignalR Connection Error: ', err);
                 setTimeout(startConnection, 5000);
             }

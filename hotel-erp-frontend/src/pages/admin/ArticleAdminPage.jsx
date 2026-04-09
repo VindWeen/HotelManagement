@@ -75,11 +75,12 @@ function Overlay({ title, onClose, children }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        className="primary-card-p"
         style={{
           width: "min(1100px, 100%)",
           maxHeight: "92vh",
           overflowY: "auto",
-          background: "#fffdf9",
+          background: "white",
           borderRadius: 24,
           border: "1px solid #ede7dd",
           boxShadow: "0 24px 60px rgba(28,25,23,.18)",
@@ -205,11 +206,12 @@ function QuillEditor({ value, onChange, onUploadImage, onOpenPreviewPage, editor
   };
 
   return (
-    <div style={{ border: "1px solid #e2e8e1", borderRadius: 18, overflow: "hidden", background: "white" }}>
-      <div style={{ display: "flex", justifyContent: "flex-end", padding: "10px 12px 0", background: "#fcfbf7", borderBottom: "1px solid #ece8df" }}>
+    <div className="primary-card-p" style={{ border: "1px solid #e2e8e1", borderRadius: 18, overflow: "hidden", background: "white" }}>
+      <div className="sub-card-p" style={{ display: "flex", justifyContent: "flex-end", padding: "10px 12px 0", background: "#fcfbf7", borderBottom: "1px solid #ece8df" }}>
         <button
           type="button"
           onClick={onOpenPreviewPage}
+          className="sub-card-p"
           style={{
             marginBottom: 10,
             padding: "8px 14px",
@@ -1040,12 +1042,12 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                             </div>
                           </div>
 
-                          <div style={{ display: "grid", gridTemplateColumns: article.status !== "Published" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 8 }}>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {article.status !== "Published" ? (
-                              <button type="button" onClick={() => handlePublishArticle(article.id)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", cursor: "pointer", fontWeight: 600 }}>Publish</button>
+                              <button type="button" onClick={() => handlePublishArticle(article.id)} style={{ padding: "10px 4px", borderRadius: 10, border: "1px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", cursor: "pointer", fontWeight: 600, fontSize: 13, width: "100%" }}>Publish</button>
                             ) : null}
-                            <button type="button" onClick={() => viewArticle(article)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #dbe7df", background: "#f8fcf9", color: "#2f5d4d", cursor: "pointer", fontWeight: 600 }}>Xem</button>
-                            <button type="button" onClick={() => openEdit(article)} style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer", fontWeight: 600 }}>Sửa</button>
+                            <button type="button" onClick={() => viewArticle(article)} style={{ padding: "10px 4px", borderRadius: 10, border: "1px solid #dbe7df", background: "#f8fcf9", color: "#2f5d4d", cursor: "pointer", fontWeight: 600, fontSize: 13, width: "100%", gridColumn: article.status === "Published" ? "span 1" : "auto" }}>Xem</button>
+                            <button type="button" onClick={() => openEdit(article)} style={{ padding: "10px 4px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer", fontWeight: 600, fontSize: 13, width: "100%" }}>Sửa</button>
                           </div>
                         </div>
                       </article>
@@ -1195,13 +1197,13 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
       {modalOpen ? (
         <Overlay title={editingArticle ? "Chỉnh sửa bài viết" : "Tạo bài viết"} onClose={() => setModalOpen(false)}>
           <form onSubmit={submitArticle}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 0.8fr", gap: 24 }}>
+            <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_0.8fr] gap-6">
               <div style={{ display: "grid", gap: 16 }}>
                 <div>
                   <label style={labelStyle}>Tiêu đề</label>
                   <input value={form.title} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} style={inputStyle} />
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label style={labelStyle}>Danh mục</label>
                     <select value={form.categoryId} onChange={(e) => setForm((prev) => ({ ...prev, categoryId: e.target.value }))} style={inputStyle}>
@@ -1244,7 +1246,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
               </div>
 
               <div style={{ display: "grid", gap: 16, alignContent: "start" }}>
-                <div style={{ ...cardStyle, padding: 16 }}>
+                <div className="sub-card-p" style={{ padding: 16, borderRadius: 18, border: "1px solid #f1f0ea" }}>
                   <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c", fontWeight: 700 }}>
                     Tóm tắt nhanh
                   </div>
@@ -1254,13 +1256,13 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                     <div><strong>Trạng thái hiện tại:</strong> {editingArticle?.status || "Draft"}</div>
                   </div>
                 </div>
-                <div style={{ ...cardStyle, padding: 16 }}>
+                <div className="sub-card-p" style={{ padding: 16, borderRadius: 18, border: "1px solid #f1f0ea" }}>
                   <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c", fontWeight: 700 }}>
                     Địa điểm sẽ hiển thị bên phải
                   </div>
                   <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
                     {selectedAttraction ? (
-                      <div style={{ padding: 12, borderRadius: 14, background: "#f9f8f3", border: "1px solid #ece7dc", display: "grid", gap: 6 }}>
+                      <div className="sub-card-p" style={{ padding: 12, borderRadius: 14, background: "#f9f8f3", border: "1px solid #ece7dc", display: "grid", gap: 6 }}>
                         <div style={{ fontWeight: 700, color: "#1c1917" }}>{selectedAttraction.name}</div>
                         {selectedAttraction.category ? (
                           <div style={{ fontSize: 13, color: "#57534e" }}>Loại: {selectedAttraction.category}</div>
@@ -1279,7 +1281,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                     )}
                   </div>
                 </div>
-                <div style={{ ...cardStyle, padding: 16 }}>
+                <div className="sub-card-p" style={{ padding: 16, borderRadius: 18, border: "1px solid #f1f0ea" }}>
                   <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c", fontWeight: 700 }}>
                     Ảnh bìa
                   </div>
@@ -1299,7 +1301,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                 </div>
 
                 {/* AI Gợi ý bài viết — 1 nút, tự động điền */}
-                <div style={{ ...cardStyle, padding: 16 }}>
+                <div className="sub-card-p" style={{ ...cardStyle, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 18, color: "#4f645b" }}>auto_awesome</span>
                     <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c", fontWeight: 700 }}>

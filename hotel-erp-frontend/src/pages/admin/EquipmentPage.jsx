@@ -123,7 +123,7 @@ function EquipmentModal({ open, mode, form, setForm, loading, error, onClose, on
         </div>
 
         <form onSubmit={onSubmit} style={{ padding: 22 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6 }}>Mã VT *</label>
               <input value={form.itemCode} onChange={(e) => setForm((p) => ({ ...p, itemCode: e.target.value }))} style={INPUT_STYLE} />
@@ -161,7 +161,7 @@ function EquipmentModal({ open, mode, form, setForm, loading, error, onClose, on
           <div style={{ marginTop: 12 }}>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6 }}>Ảnh từ máy (optional)</label>
             {mode === "edit" && form.currentImageUrl ? (
-              <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 14, alignItems: "center", marginBottom: 8 }}>
+              <div className="flex flex-col sm:flex-row gap-3 items-center mb-2">
                 <div style={{
                   width: 80, height: 80, borderRadius: 12, overflow: "hidden",
                   border: "1.5px solid #e2e8e1", flexShrink: 0,
@@ -601,7 +601,7 @@ export default function EquipmentPage() {
         onConfirm={handleSyncInUse}
       />
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, gap: 16 }}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center sm:mb-7 mb-4 gap-4">
         <div>
           <h2 style={{ fontSize: 28, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>
             Vật tư & Minibar
@@ -660,7 +660,7 @@ export default function EquipmentPage() {
         </div>
       </div>
 
-      <div style={{ background: "white", borderRadius: 18, padding: 20, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.06)", marginBottom: 20, display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 14 }}>
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#f1f0ea] shadow-sm mb-5 grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-3">
         <input
           value={filters.search}
           onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
@@ -764,7 +764,7 @@ export default function EquipmentPage() {
                             borderRadius: 9999,
                             padding: 3,
                             cursor: togglingId === item.id ? "not-allowed" : "pointer",
-                            background: item.isActive ? "#4f645b" : "#d1d5db",
+                            background: item.isActive ? "#10b981" : "#4b5563",
                             opacity: togglingId === item.id ? 0.65 : 1,
                             transition: "background .18s ease",
                             position: "relative",
@@ -783,7 +783,7 @@ export default function EquipmentPage() {
                             }}
                           />
                         </button>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: item.isActive ? "#4f645b" : "#6b7280" }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: item.isActive ? "#10b981" : "#9ca3af" }}>
                           {togglingId === item.id ? "Đang đổi..." : item.isActive ? "Bật" : "Tắt"}
                         </span>
                       </div>

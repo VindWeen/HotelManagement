@@ -7,7 +7,12 @@ export default function ForbiddenPage() {
   const token = useAdminAuthStore((s) => s.token);
   const role = useAdminAuthStore((s) => s.user?.role);
   const permissions = useAdminAuthStore((s) => s.permissions);
-  const homePath = token ? getDefaultAdminPath(role, permissions) : "/login";
+  const clearAuth = useAdminAuthStore((s) => s.clearAuth);
+  
+  const handleGoToLogin = () => {
+    clearAuth();
+    navigate("/login");
+  };
 
   return (
     <div
@@ -92,7 +97,7 @@ export default function ForbiddenPage() {
           <div style={{ marginTop: 22, display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               type="button"
-              onClick={() => navigate(homePath)}
+              onClick={handleGoToLogin}
               style={{
                 padding: "11px 16px",
                 borderRadius: 12,
@@ -104,7 +109,7 @@ export default function ForbiddenPage() {
                 cursor: "pointer",
               }}
             >
-              Về trang chính
+              Về trang đăng nhập
             </button>
             <button
               type="button"

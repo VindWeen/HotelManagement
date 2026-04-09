@@ -59,11 +59,11 @@ const labelStyle = {
 
 function Overlay({ title, onClose, children }) {
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(28,25,23,.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, zIndex: 120 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: "min(860px,100%)", maxHeight: "90vh", overflowY: "auto", background: "#fffdf9", borderRadius: 24, border: "1px solid #ede7dd", boxShadow: "0 24px 60px rgba(28,25,23,.18)" }}>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(28,25,23,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, zIndex: 120 }}>
+      <div onClick={(e) => e.stopPropagation()} className="primary-card-p" style={{ width: "min(860px,100%)", maxHeight: "90vh", overflowY: "auto", background: "#fffdf9", borderRadius: 24, border: "1px solid #ede7dd", boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
         <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0, fontSize: 22 }}>{title}</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}>
+          <h3 className="primary-card-p" style={{ margin: 0, fontSize: 22, border: "none" }}>{title}</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -221,13 +221,14 @@ export default function AttractionAdminPage() {
           </button>
         </div>
 
-        {error ? <div style={{ ...cardStyle, padding: 14, marginBottom: 20, color: "#b91c1c", background: "#fff7f7" }}>{error}</div> : null}
+        {error ? <div className="sub-card-p" style={{ ...cardStyle, padding: 14, marginBottom: 20, color: "#b91c1c", background: "#fff7f7", borderColor: "#fecaca" }}>{error}</div> : null}
 
-        <section style={{ ...cardStyle, overflow: "hidden" }}>
+        <section className="primary-card-p" style={{ ...cardStyle, overflow: "hidden" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f0ea", display: "flex", gap: 10 }}>
             <button
               type="button"
               onClick={() => setActiveTab("list")}
+              className={activeTab === "list" ? "" : "sub-card-p"}
               style={{
                 padding: "10px 14px",
                 borderRadius: 12,
@@ -243,6 +244,7 @@ export default function AttractionAdminPage() {
             <button
               type="button"
               onClick={() => setActiveTab("map")}
+              className={activeTab === "map" ? "" : "sub-card-p"}
               style={{
                 padding: "10px 14px",
                 borderRadius: 12,
@@ -301,10 +303,10 @@ export default function AttractionAdminPage() {
               </div>
             </>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "360px minmax(0, 1fr)", gap: 24, padding: 20 }}>
-              <div style={{ border: "1px solid #f1f0ea", borderRadius: 16, overflow: "hidden" }}>
+            <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] gap-6 p-5">
+              <div className="sub-card-p" style={{ border: "1px solid #f1f0ea", borderRadius: 16, overflow: "hidden" }}>
                 <div style={{ padding: 16, borderBottom: "1px solid #f1f0ea" }}>
-                  <strong>Danh sách điểm đến</strong>
+                  <strong style={{ color: "inherit" }}>Danh sách điểm đến</strong>
                   <input
                     value={mapKeyword}
                     onChange={(e) => setMapKeyword(e.target.value)}
@@ -321,6 +323,7 @@ export default function AttractionAdminPage() {
                         key={item.id}
                         type="button"
                         onClick={() => setSelectedId(item.id)}
+                        className={selectedId === item.id ? "" : "sub-card-p"}
                         style={{
                           width: "100%",
                           textAlign: "left",
@@ -331,35 +334,35 @@ export default function AttractionAdminPage() {
                           cursor: "pointer",
                         }}
                       >
-                        <div style={{ fontWeight: 700, color: "#1c1917" }}>{item.name}</div>
-                        <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>{item.category || "-"} • {item.distanceKm ?? "-"} km</div>
-                        <div style={{ marginTop: 4, fontSize: 12, color: "#57534e" }}>{item.address || "-"}</div>
+                        <div style={{ fontWeight: 700, color: "inherit" }}>{item.name}</div>
+                        <div style={{ marginTop: 4, fontSize: 12, color: "inherit", opacity: 0.8 }}>{item.category || "-"} • {item.distanceKm ?? "-"} km</div>
+                        <div style={{ marginTop: 4, fontSize: 12, color: "inherit", opacity: 0.6 }}>{item.address || "-"}</div>
                       </button>
                     ))
                   )}
                 </div>
               </div>
 
-              <div style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 18 }}>
+              <div className="sub-card-p" style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 18 }}>
                 {loadingDetail ? (
                   <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Đang tải chi tiết địa điểm...</div>
                 ) : selectedDetail ? (
                   <>
                     <div style={{ marginBottom: 18 }}>
-                      <h3 style={{ margin: 0, fontSize: 22, color: "#1c1917" }}>{selectedDetail.name}</h3>
-                      <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: 14 }}>{selectedDetail.address || "Chưa có địa chỉ."}</p>
+                      <h3 style={{ margin: 0, fontSize: 22, color: "inherit" }}>{selectedDetail.name}</h3>
+                      <p style={{ margin: "8px 0 0", color: "inherit", opacity: 0.7, fontSize: 14 }}>{selectedDetail.address || "Chưa có địa chỉ."}</p>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 18 }}>
-                      <div style={{ padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#64748b", fontWeight: 700 }}>Latitude</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                      <div className="sub-card-p" style={{ padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "inherit", opacity: 0.6, fontWeight: 700 }}>Latitude</div>
                         <div style={{ marginTop: 6, fontWeight: 700 }}>{selectedDetail.latitude ?? "-"}</div>
                       </div>
-                      <div style={{ padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#64748b", fontWeight: 700 }}>Longitude</div>
+                      <div className="sub-card-p" style={{ padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "inherit", opacity: 0.6, fontWeight: 700 }}>Longitude</div>
                         <div style={{ marginTop: 6, fontWeight: 700 }}>{selectedDetail.longitude ?? "-"}</div>
                       </div>
-                      <div style={{ padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#64748b", fontWeight: 700 }}>Khoảng cách</div>
+                      <div className="sub-card-p" style={{ padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "inherit", opacity: 0.6, fontWeight: 700 }}>Khoảng cách</div>
                         <div style={{ marginTop: 6, fontWeight: 700 }}>{selectedDetail.distanceKm ?? "-"} km</div>
                       </div>
                     </div>
@@ -367,11 +370,11 @@ export default function AttractionAdminPage() {
                       <iframe
                         title={`map-${selectedDetail.id}`}
                         src={mapEmbedUrl}
-                        style={{ width: "100%", height: 420, border: "1px solid #e5e7eb", borderRadius: 18 }}
+                        style={{ width: "100%", height: 420, border: "1px solid #e5e7eb", borderRadius: 18, background: "#fff" }}
                         loading="lazy"
                       />
                     ) : (
-                      <div style={{ padding: 32, textAlign: "center", border: "1px dashed #cbd5e1", borderRadius: 18, color: "#94a3b8" }}>
+                      <div className="sub-card-p" style={{ padding: 32, textAlign: "center", border: "1px dashed #cbd5e1", borderRadius: 18, color: "#94a3b8" }}>
                         Địa điểm này chưa có `mapEmbedLink` hoặc tọa độ đầy đủ để hiển thị bản đồ.
                       </div>
                     )}
@@ -388,7 +391,7 @@ export default function AttractionAdminPage() {
       {modalOpen ? (
         <Overlay title={editingItem ? "Chỉnh sửa địa điểm" : "Tạo địa điểm"} onClose={() => setModalOpen(false)}>
           <form onSubmit={submit}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label style={labelStyle}>Tên địa điểm</label>
                 <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} style={inputStyle} />
@@ -399,7 +402,7 @@ export default function AttractionAdminPage() {
                   {CATEGORY_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
                 </select>
               </div>
-              <div style={{ gridColumn: "1 / span 2" }}>
+              <div className="col-span-1 sm:col-span-2">
                 <label style={labelStyle}>Địa chỉ</label>
                 <input value={form.address} onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))} style={inputStyle} />
               </div>
@@ -419,17 +422,17 @@ export default function AttractionAdminPage() {
                 <label style={labelStyle}>Ảnh URL</label>
                 <input value={form.imageUrl} onChange={(e) => setForm((prev) => ({ ...prev, imageUrl: e.target.value }))} style={inputStyle} />
               </div>
-              <div style={{ gridColumn: "1 / span 2" }}>
+              <div className="col-span-1 sm:col-span-2">
                 <label style={labelStyle}>Map embed link</label>
                 <input value={form.mapEmbedLink} onChange={(e) => setForm((prev) => ({ ...prev, mapEmbedLink: e.target.value }))} style={inputStyle} />
               </div>
-              <div style={{ gridColumn: "1 / span 2" }}>
+              <div className="col-span-1 sm:col-span-2">
                 <label style={labelStyle}>Mô tả</label>
                 <textarea value={form.description} onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))} style={{ ...inputStyle, minHeight: 120, resize: "vertical" }} />
               </div>
             </div>
             <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end", gap: 12 }}>
-              <button type="button" onClick={() => setModalOpen(false)} style={{ padding: "10px 16px", borderRadius: 12, border: "1px solid #e7e5e4", background: "white", color: "#57534e", fontWeight: 600, cursor: "pointer" }}>Đóng</button>
+              <button type="button" className="sub-card-p" onClick={() => setModalOpen(false)} style={{ padding: "10px 16px", borderRadius: 12, border: "1px solid #e7e5e4", background: "white", color: "#57534e", fontWeight: 600, cursor: "pointer" }}>Đóng</button>
               <button type="submit" style={{ padding: "10px 18px", borderRadius: 12, border: "none", background: "#4f645b", color: "#ecfdf5", fontWeight: 700, cursor: "pointer" }}>Lưu địa điểm</button>
             </div>
           </form>

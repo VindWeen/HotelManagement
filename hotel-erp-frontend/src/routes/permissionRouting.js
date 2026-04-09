@@ -16,6 +16,9 @@ const hasPermission = (permissionSet, code) => {
 };
 
 export function getDefaultAdminPath(role, permissions = []) {
+  if (role === "Customer" || role === "Guest") return "/";
+
+
   const permissionSet = getPermissionSet(permissions);
 
   if (hasPermission(permissionSet, "VIEW_DASHBOARD")) return "/admin/dashboard";

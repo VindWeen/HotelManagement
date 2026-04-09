@@ -18,6 +18,7 @@ export const inputStyle = {
   fontSize: 14,
   outline: "none",
   boxSizing: "border-box",
+  color: "inherit",
 };
 
 export const labelStyle = {
@@ -164,14 +165,7 @@ export function ServiceAdminShell({
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          gap: 16,
-          marginBottom: 20,
-        }}
-      >
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
         {stats.map((stat) => (
           <div key={stat.label} style={{ ...panelStyle, padding: 18 }}>
             <div
@@ -338,12 +332,13 @@ export function StatusChip({ active, label }) {
       style={{
         padding: "5px 10px",
         borderRadius: 999,
-        background: active ? "#ecfdf5" : "#f5f5f4",
-        color: active ? "#047857" : "#78716c",
+        background: active ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.05)",
+        color: active ? "#10b981" : "#94a3b8",
         fontSize: 11,
         fontWeight: 700,
         textTransform: "uppercase",
         letterSpacing: ".06em",
+        border: "none",
       }}
     >
       {label || (active ? "Hoạt động" : "Đã ẩn")}
@@ -368,6 +363,7 @@ export function IconButton({ icon, title, onClick, danger = false }) {
       type="button"
       title={title}
       onClick={onClick}
+      className="sub-card-p"
       style={{
         width: 36,
         height: 36,
@@ -439,49 +435,51 @@ export function VisibilitySwitch({ checked, disabled, onChange }) {
       type="button"
       onClick={onChange}
       disabled={disabled}
+      className="btn-reset-p"
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 10,
+        gap: 12,
         border: "none",
         background: "transparent",
         padding: 0,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.6 : 1,
+        borderRadius: 999,
+        outline: "none",
       }}
     >
-      <span
+      <div
+        className="toggle-track-p"
         style={{
           position: "relative",
-          width: 46,
-          height: 26,
+          width: 44,
+          height: 24,
           borderRadius: 999,
-          background: checked ? "#4f645b" : "#d6d3d1",
-          transition: "all .18s",
-          boxShadow: checked
-            ? "inset 0 0 0 1px rgba(79,100,91,.15)"
-            : "inset 0 0 0 1px rgba(120,113,108,.12)",
+          background: checked ? "#4f645b" : "#d1d5db",
+          transition: "all .2s ease",
         }}
       >
-        <span
+        <div
           style={{
             position: "absolute",
             top: 3,
             left: checked ? 23 : 3,
-            width: 20,
-            height: 20,
+            width: 18,
+            height: 18,
             borderRadius: "50%",
             background: "white",
-            boxShadow: "0 2px 6px rgba(0,0,0,.18)",
-            transition: "all .18s",
+            transition: "all .2s ease",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
           }}
         />
-      </span>
+      </div>
       <span
+        className="pure-text-p"
         style={{
           fontSize: 12,
           fontWeight: 700,
-          color: checked ? "#166534" : "#78716c",
+          color: checked ? "#10b981" : "#94a3b8",
           textTransform: "uppercase",
           letterSpacing: ".05em",
         }}
@@ -699,6 +697,7 @@ function PaginationButton({ label, onClick, disabled = false, active = false, ic
       type="button"
       disabled={disabled}
       onClick={onClick}
+      className={active ? "" : "sub-card-p"}
       style={{
         minWidth: 32,
         height: 32,

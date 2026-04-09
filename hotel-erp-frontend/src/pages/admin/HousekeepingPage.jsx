@@ -1,4 +1,4 @@
-﻿// src/pages/admin/HousekeepingPage.jsx
+// src/pages/admin/HousekeepingPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import axiosClient from "../../api/axios";
 import { getRooms, updateCleaningStatus } from "../../api/roomsApi";
@@ -288,42 +288,41 @@ export default function HousekeepingPage() {
       </div>
 
       <div style={{ maxWidth: 1400, margin: "0 auto", animation: "fadeRow .3s ease" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, gap: 12, flexWrap: "wrap" }}>
-          <div>
-            <h2 style={{ fontSize: 26, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.025em", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>
-              Nghiệp vụ Dọn Phòng
-            </h2>
-            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-              Danh sách các phòng đang trong trạng thái cần dọn dẹp. Có thể dọn nhanh hàng loạt với các phòng bẩn, còn phòng bảo trì xử lý riêng theo từng phòng.
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <select
-              value={floorFilter}
-              onChange={(e) => setFloorFilter(e.target.value)}
-              style={{ padding: "9px 14px", borderRadius: 12, fontSize: 13, border: "1.5px solid #d6d3d1", background: "white", minWidth: 150 }}
-            >
-              <option value="">Tất cả tầng</option>
-              {allFloors.map((floor) => (
-                <option key={floor} value={floor}>Tầng {floor}</option>
-              ))}
-            </select>
-            <button
-              onClick={loadDirtyRooms}
-              style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "white", color: "#4f645b", border: "1.5px solid #4f645b", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "Manrope, sans-serif" }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>refresh</span>
-              Làm mới
-            </button>
-            <button
-              onClick={handleBulkClean}
-              disabled={selectedCount === 0 || bulkCleaning}
-              style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: selectedCount === 0 || bulkCleaning ? "#e7e5e4" : "#166534", color: "white", border: "1.5px solid transparent", cursor: selectedCount === 0 || bulkCleaning ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "Manrope, sans-serif", opacity: selectedCount === 0 || bulkCleaning ? 0.75 : 1 }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>done_all</span>
-              {bulkCleaning ? "Đang dọn..." : `Dọn nhanh hàng loạt${selectedCount > 0 ? ` (${selectedCount})` : ""}`}
-            </button>
-          </div>
+        <div style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.025em", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>
+            Nghiệp vụ Dọn Phòng
+          </h2>
+          <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+            Danh sách các phòng đang trong trạng thái cần dọn dẹp. Có thể dọn nhanh hàng loạt với các phòng bẩn, còn phòng bảo trì xử lý riêng theo từng phòng.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 28 }}>
+          <select
+            value={floorFilter}
+            onChange={(e) => setFloorFilter(e.target.value)}
+            style={{ padding: "9px 14px", borderRadius: 12, fontSize: 13, border: "1.5px solid #d6d3d1", background: "white", minWidth: 150 }}
+          >
+            <option value="">Tất cả tầng</option>
+            {allFloors.map((floor) => (
+              <option key={floor} value={floor}>Tầng {floor}</option>
+            ))}
+          </select>
+          <button
+            onClick={loadDirtyRooms}
+            style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "white", color: "#4f645b", border: "1.5px solid #4f645b", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "Manrope, sans-serif" }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>refresh</span>
+            Làm mới
+          </button>
+          <button
+            onClick={handleBulkClean}
+            disabled={selectedCount === 0 || bulkCleaning}
+            style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: selectedCount === 0 || bulkCleaning ? "#e7e5e4" : "#166534", color: "white", border: "1.5px solid transparent", cursor: selectedCount === 0 || bulkCleaning ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "Manrope, sans-serif", opacity: selectedCount === 0 || bulkCleaning ? 0.75 : 1 }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>done_all</span>
+            {bulkCleaning ? "Đang dọn..." : `Dọn nhanh hàng loạt${selectedCount > 0 ? ` (${selectedCount})` : ""}`}
+          </button>
         </div>
 
         {selectableRooms.length > 0 && (

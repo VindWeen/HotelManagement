@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getMemberships } from "../../api/membershipsApi";
 import {
   getLoyaltyMemberById,
@@ -284,6 +284,7 @@ function TierBadge({ name, colorHex }) {
   const theme = getTierTheme(name, colorHex);
   return (
     <span
+      className="tier-badge-text-p"
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -476,7 +477,7 @@ export default function MembershipPage() {
           </div>
         ) : null}
 
-        <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 24 }}>
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Stat title="Member Loyalty" value={fmt(summary.totalMembers)} helper="User có hạng thành viên hoặc có điểm loyalty." theme="members" />
           <Stat title="Tổng Điểm Tích Lũy" value={fmt(summary.totalPoints)} helper="Tổng điểm đang ghi nhận trên toàn bộ member." theme="points" />
           <Stat title="Điểm Khả Dụng" value={fmt(summary.totalUsablePoints)} helper="Phần điểm khách có thể sử dụng hiện tại." theme="usable" />
@@ -484,7 +485,7 @@ export default function MembershipPage() {
         </section>
 
         <section style={{ ...card, padding: 24, marginBottom: 24 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, alignItems: "end" }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
             <div>
               <label style={label}>Tìm khách hàng</label>
               <input value={filters.keyword} onChange={(e) => setFilters((p) => ({ ...p, keyword: e.target.value }))} style={input} placeholder="Tên, email, điện thoại hoặc hạng..." />
@@ -529,7 +530,7 @@ export default function MembershipPage() {
           </div>
         </section>
 
-        <section style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 250px", gap: 16, alignItems: "start" }}>
+        <section className="flex flex-col xl:flex-row gap-4 items-start">
           <div style={{ ...card, overflow: "hidden" }}>
             <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1f0ea" }}>
               <strong style={{ color: "#1c1917", fontSize: 16 }}>Danh sách loyalty member</strong>
@@ -635,7 +636,7 @@ export default function MembershipPage() {
             </div>
           </div>
 
-          <aside style={{ ...card, padding: 20 }}>
+          <aside className="w-full xl:w-[250px] shrink-0" style={{ ...card, padding: 20 }}>
             <div style={{ color: "#1c1917", fontSize: 16, fontWeight: 800 }}>Phân bố theo hạng</div>
             <p style={{ margin: "6px 0 18px", color: "#78716c", fontSize: 13, lineHeight: 1.6 }}>Snapshot nhanh để xem member đang tập trung ở hạng nào và tổng điểm đi kèm.</p>
             <div style={{ display: "grid", gap: 12 }}>
@@ -648,11 +649,11 @@ export default function MembershipPage() {
                   <div key={item.tierName} style={{ border: `1px solid ${theme.border}`, borderRadius: 16, padding: 14, background: theme.background }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ width: 10, height: 10, borderRadius: 999, background: theme.dot, border: "1px solid rgba(0,0,0,.08)" }} />
-                      <div style={{ color: theme.text, fontWeight: 800, fontSize: 14 }}>{item.tierName}</div>
+                      <div className="tier-badge-text-p" style={{ color: theme.text, fontWeight: 800, fontSize: 14 }}>{item.tierName}</div>
                     </div>
-                    <div style={{ marginTop: 8, color: theme.subtle, fontSize: 13 }}>{fmt(item.memberCount)} member</div>
-                    <div style={{ marginTop: 4, color: theme.subtle, fontSize: 13 }}>{fmt(item.totalPoints)} điểm tích lũy</div>
-                    <div style={{ marginTop: 4, color: theme.text, fontSize: 13, fontWeight: 700 }}>{fmt(item.totalUsablePoints)} điểm khả dụng</div>
+                    <div className="tier-badge-text-p" style={{ marginTop: 8, color: theme.subtle, fontSize: 13 }}>{fmt(item.memberCount)} member</div>
+                    <div className="tier-badge-text-p" style={{ marginTop: 4, color: theme.subtle, fontSize: 13 }}>{fmt(item.totalPoints)} điểm tích lũy</div>
+                    <div className="tier-badge-text-p" style={{ marginTop: 4, color: theme.text, fontSize: 13, fontWeight: 700 }}>{fmt(item.totalUsablePoints)} điểm khả dụng</div>
                   </div>
                 );
               })}
@@ -662,8 +663,8 @@ export default function MembershipPage() {
       </div>
 
       {detailOpen ? (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(28,25,23,.42)", backdropFilter: "blur(3px)", display: "flex", justifyContent: "flex-end", zIndex: 120 }} onClick={() => setDetailOpen(false)}>
-          <div style={{ width: "min(720px,100%)", height: "100vh", background: "#fffdf9", borderLeft: "1px solid #efe7dc", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(3px)", display: "flex", justifyContent: "flex-end", zIndex: 120 }} onClick={() => setDetailOpen(false)}>
+          <div className="primary-card-p" style={{ width: "min(720px,100%)", height: "100vh", background: "white", borderLeft: "1px solid #efe7dc", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ padding: "24px 24px 18px", borderBottom: "1px solid #f1ece2", display: "flex", justifyContent: "space-between", gap: 12 }}>
               <div>
                 <div style={{ color: "#78716c", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".12em" }}>Loyalty Member Detail</div>
@@ -688,7 +689,7 @@ export default function MembershipPage() {
                       <span style={{ padding: "6px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, background: statusMeta(member.status).bg, color: statusMeta(member.status).color, textTransform: "uppercase" }}>{statusMeta(member.status).label}</span>
                     </div>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginTop: 18 }}>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mt-4">
                     {[
                       ["Điểm tích lũy", fmt(member.loyaltyPoints)],
                       ["Điểm khả dụng", fmt(member.loyaltyPointsUsable)],
@@ -705,7 +706,7 @@ export default function MembershipPage() {
                       ["CCCD / Hộ chiếu", member.nationalId || "—"],
                       ["Địa chỉ", member.address || "—"],
                     ].map(([k, v]) => (
-                      <div key={k} style={{ background: "#f8f6f1", borderRadius: 14, padding: 12 }}>
+                      <div key={k} className="sub-card-p" style={{ background: "#f8f6f1", borderRadius: 14, padding: 12 }}>
                         <div style={{ color: "#a8a29e", fontSize: 10, textTransform: "uppercase", letterSpacing: ".12em", fontWeight: 800 }}>{k}</div>
                         <div style={{ marginTop: 6, color: "#292524", fontSize: 14, fontWeight: 700 }}>{v}</div>
                       </div>
@@ -720,7 +721,7 @@ export default function MembershipPage() {
                     {transactions.length === 0 ? <div style={{ color: "#9ca3af" }}>Khách hàng này chưa có giao dịch loyalty nào.</div> : transactions.map((item) => {
                       const meta = txMeta(item.transactionType, item.points);
                       return (
-                        <div key={item.id} style={{ border: "1px solid #efe9de", borderRadius: 16, padding: 16, background: "#fff" }}>
+                        <div key={item.id} className="sub-card-p" style={{ border: "1px solid #efe9de", borderRadius: 16, padding: 16, background: "#fff" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
                             <div>
                               <span style={{ display: "inline-flex", padding: "5px 10px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>{meta.label}</span>
@@ -749,7 +750,7 @@ export default function MembershipPage() {
                       ) : (
                         <div style={{ display: "grid", gap: 10 }}>
                           {member.recentBookings.map((item) => (
-                            <div key={`${item.bookingCode}-${item.id}`} style={{ border: "1px solid #efe9de", borderRadius: 14, padding: 12, background: "#fff" }}>
+                            <div key={`${item.bookingCode}-${item.id}`} className="sub-card-p" style={{ border: "1px solid #efe9de", borderRadius: 14, padding: 12, background: "#fff" }}>
                               <div style={{ color: "#1c1917", fontWeight: 800 }}>{item.bookingCode}</div>
                               <div style={{ marginTop: 4, color: "#6b7280", fontSize: 13 }}>{item.status} • {fmtDateTime(item.checkInDate || item.createdAt)}</div>
                             </div>

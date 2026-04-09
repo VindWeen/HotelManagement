@@ -1,4 +1,4 @@
-﻿// src/pages/LoginPage.jsx
+// src/pages/LoginPage.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { login, register, forgotPassword } from "../api/authApi";
@@ -71,7 +71,12 @@ export default function LoginPage() {
       if (remember)
         localStorage.setItem("hm_remember_email", loginEmail.trim());
       else localStorage.removeItem("hm_remember_email");
-      navigate(getDefaultAdminPath(data.role, data.permissions || []));
+
+      if (data.role === "Customer" || data.role === "Guest") {
+        navigate("");
+      } else {
+        navigate("/admin/dashboard");
+      }
     } catch (err) {
       setLoginError(
         err?.response?.data?.message || "Email hoặc mật khẩu không đúng.",
@@ -114,7 +119,11 @@ export default function LoginPage() {
         },
         permissions: data.permissions || [],
       });
-      navigate(getDefaultAdminPath(data.role, data.permissions || []));
+      if (data.role === "Customer" || data.role === "Guest") {
+        navigate("/");
+      } else {
+        navigate("/admin/dashboard");
+      }
     } catch (err) {
       setRegError(
         err?.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại.",
@@ -144,7 +153,7 @@ export default function LoginPage() {
     } catch (err) {
       setForgotError(
         err?.response?.data?.message ||
-          "Không thể gửi yêu cầu. Vui lòng thử lại.",
+        "Không thể gửi yêu cầu. Vui lòng thử lại.",
       );
     } finally {
       setForgotLoading(false);
@@ -490,7 +499,12 @@ export default function LoginPage() {
           <section className="w-full md:w-1/2 lg:w-2/5 flex items-center justify-center p-8 md:p-12 lg:p-24 bg-surface">
             <div className="w-full max-w-md space-y-10">
               <header className="text-center md:text-left">
-                <h1 className="text-3xl font-extrabold tracking-tight text-on-surface mb-2">
+                <div className="md:hidden flex justify-center md:justify-start mb-6">
+                  <span className="text-lg font-bold tracking-tighter text-on-surface bg-surface-container-highest/30 px-4 py-1.5 rounded-full">
+                    The Ethereal Concierge
+                  </span>
+                </div>
+                <h1 className="text-3xl font-extrabold tracking-tight text-on-surface mb-2 mt-2 md:mt-0">
                   Welcome Back
                 </h1>
                 <p className="text-on-surface-variant font-light tracking-wide">
@@ -769,11 +783,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="fixed top-8 left-8 md:top-12 md:left-12 pointer-events-none md:hidden">
-          <span className="text-lg font-bold tracking-tighter text-on-surface">
-            The Ethereal Concierge
-          </span>
-        </div>
       </div>
     </>
   );

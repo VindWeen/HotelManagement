@@ -398,7 +398,8 @@ public class AttractionsController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(category)) return true;
 
-        var allowed = new[] { "Di tĂ­ch", "áº¨m thá»±c", "Giáº£i trĂ­", "ThiĂªn nhiĂªn" };
+        // Su dung ky tu thuc de dam bao dung
+        var allowed = new[] { "Di tích", "Ẩm thực", "Giải trí", "Thiên nhiên" };
         return allowed.Contains(category.Trim());
     }
 }

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { cancelBooking, checkIn, checkOut, createBooking, getBookings, getReceptionAvailability, getReceptionDashboard, getReceptionMemberSuggestions } from "../../api/bookingsApi";
 import { createInvoiceFromBooking, getInvoiceByBookingId } from "../../api/invoicesApi";
@@ -175,7 +175,7 @@ function ReceptionDateRangePicker({ value, onChange }) {
             {monthDate.toLocaleDateString("vi-VN", { month: "long", year: "numeric" })}
           </strong>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
+        <div className="grid grid-cols-7 gap-1">
           {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((label) => (
             <div key={label} style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: "#6b7280", paddingBottom: 4 }}>{label}</div>
           ))}
@@ -282,7 +282,7 @@ function CheckInModal({ open, booking, loading, onConfirm, onCancel }) {
         <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px" }}>
           Booking này chưa gắn hồ sơ khách. Nhập thông tin lưu trú để hệ thống kiểm tra tài khoản theo email trước khi check-in.
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
           <input value={form.guestName} onChange={(e) => setForm((prev) => ({ ...prev, guestName: e.target.value }))} placeholder="Họ tên khách" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
           <input value={form.guestPhone} onChange={(e) => setForm((prev) => ({ ...prev, guestPhone: e.target.value }))} placeholder="Số điện thoại" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
           <input value={form.guestEmail} onChange={(e) => setForm((prev) => ({ ...prev, guestEmail: e.target.value }))} placeholder="Email" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917", gridColumn: "span 2" }} />
@@ -900,7 +900,7 @@ export default function BookingListPage() {
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14, marginBottom: 18 }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -924,7 +924,7 @@ export default function BookingListPage() {
       </div>
 
       {activeTab === "manage" && (
-        <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.06)", padding: 22, marginBottom: 24 }}>
+        <div className="primary-card-p" style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.06)", padding: 22, marginBottom: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 18 }}>
             <div>
               <h3 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 800, color: "#1c1917" }}>Tạo booking cho lễ tân</h3>
@@ -942,11 +942,11 @@ export default function BookingListPage() {
           </div>
 
           <div style={{ display: "grid", gap: 16, marginBottom: 16 }}>
-            <div style={{ padding: 16, borderRadius: 16, background: "#fcfbf8", border: "1px solid #f1f0ea" }}>
+            <div className="sub-card-p" style={{ padding: 16, borderRadius: 16, background: "#fcfbf8", border: "1px solid #f1f0ea" }}>
               <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 12 }}>
                 Thông tin khách
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <select
                   value={bookingForm.customerType}
                   onChange={(e) => {
@@ -1017,11 +1017,11 @@ export default function BookingListPage() {
               </div>
             </div>
 
-            <div style={{ padding: 16, borderRadius: 16, background: "#fcfbf8", border: "1px solid #f1f0ea" }}>
+            <div className="sub-card-p" style={{ padding: 16, borderRadius: 16, background: "#fcfbf8", border: "1px solid #f1f0ea" }}>
               <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 12 }}>
                 Thông tin lưu trú
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1.1fr 2fr 1fr 1fr", gap: 12 }}>
+              <div className="grid grid-cols-1 md:grid-cols-[1.1fr_2fr_1fr_1fr] gap-3">
                 <select value={bookingForm.source} onChange={(e) => setBookingForm((prev) => ({ ...prev, source: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
                   <option value="walk_in">Tại quầy</option>
                   <option value="phone">Điện thoại</option>
@@ -1037,7 +1037,7 @@ export default function BookingListPage() {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12, alignItems: "start", marginBottom: 16 }}>
+          <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-3 items-start mb-4">
             <textarea
               placeholder="Ghi chú booking"
               value={bookingForm.note}
@@ -1059,8 +1059,8 @@ export default function BookingListPage() {
             )}
           </div>
 
-          <div style={{ border: "1px solid #e5e7eb", borderRadius: 16, overflow: "hidden", marginBottom: 16 }}>
-            <div style={{ padding: "14px 16px", background: "#fafaf8", borderBottom: "1px solid #f1f0ea", fontSize: 13, fontWeight: 800, color: "#1c1917" }}>
+          <div className="primary-card-p" style={{ border: "1px solid #e5e7eb", borderRadius: 16, overflow: "hidden", marginBottom: 16 }}>
+            <div className="sub-card-p" style={{ padding: "14px 16px", background: "#fafaf8", borderBottom: "1px solid #f1f0ea", fontSize: 13, fontWeight: 800, color: "#1c1917" }}>
               Hạng phòng phù hợp
             </div>
             {availabilityLoading ? (
@@ -1155,7 +1155,7 @@ export default function BookingListPage() {
         </div>
       )}
 
-      <div style={{ background: "white", borderRadius: 18, padding: "18px 22px", border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "grid", gridTemplateColumns: "repeat(5, 1fr) auto", alignItems: "center", gap: 12, marginBottom: 24 }}>
+      <div className="bg-white rounded-2xl p-5 border border-[#f1f0ea] shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(5,1fr)_auto] items-center gap-3 mb-6">
         <input placeholder="Mã booking" value={filters.bookingCode} onChange={(e) => setFilters((f) => ({ ...f, bookingCode: e.target.value }))} style={inputStyle} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"} />
         <input placeholder="Tên / SĐT Khách" value={filters.guest} onChange={(e) => setFilters((f) => ({ ...f, guest: e.target.value }))} style={inputStyle} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"} />
         <select value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"}>
@@ -1193,8 +1193,9 @@ export default function BookingListPage() {
         </div>
       )}
 
-      <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <div className="bg-white rounded-2xl border border-[#f1f0ea] shadow-sm mb-6">
+        <div className="overflow-x-auto">
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "rgba(249,248,243,.6)" }}>
               <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 13, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea" }}>Mã Code</th>
@@ -1209,7 +1210,7 @@ export default function BookingListPage() {
             {!loading && filteredRows.length === 0 && (
               <tr>
                 <td style={{ padding: "40px 24px", textAlign: "center", color: "#9ca3af", fontSize: 14 }} colSpan={6}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 48, marginBottom: 12, opacity: 0.5, display: "block" }}>search_off</span>
+                  <span className="material-symbols-outlined mx-auto text-center" style={{ fontSize: 48, marginBottom: 12, opacity: 0.5, display: "block" }}>search_off</span>
                   Không tìm thấy bookings nào
                 </td>
               </tr>
@@ -1277,6 +1278,7 @@ export default function BookingListPage() {
             ))}
           </tbody>
         </table>
+        </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18, padding: "0 18px 18px", gap: 16, flexWrap: "wrap" }}>
           <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
             Trang <strong style={{ color: "#1c1917" }}>{page}</strong> / {totalPages}
