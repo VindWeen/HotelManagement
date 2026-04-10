@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary": "#7b5556",
+                        "primary-container": "#d1e8dd",
+                        "on-tertiary-fixed-variant": "#695f56",
+                        "on-secondary-container": "#6d4849",
+                        "secondary-fixed": "#ffdad9",
+                        "secondary-dim": "#6e494a",
+                        "on-tertiary-fixed": "#4c433b",
+                        "on-surface-variant": "#444641",
+                        "surface-bright": "#ffffff",
+                        "tertiary-dim": "#5b5149",
+                        "tertiary": "#675d55",
+                        "primary-dim": "#43574f",
+                        "on-secondary": "#fff7f6",
+                        "secondary-container": "#ffdad9",
+                        "primary-fixed": "#d1e8dd",
+                        "on-secondary-fixed": "#583637",
+                        "on-primary": "#e7fef3",
+                        "on-background": "#1c1d1a",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-high": "#f5f4f0",
+                        "background": "#ffffff",
+                        "surface-container-highest": "#ebebe4",
+                        "on-primary-fixed": "#2f433c",
+                        "tertiary-fixed": "#f7e8dd",
+                        "on-error": "#fff7f6",
+                        "primary-fixed-dim": "#c3dacf",
+                        "on-tertiary": "#fff7f3",
+                        "inverse-surface": "#0e0e0c",
+                        "outline-variant": "#c9c9c2",
+                        "error-dim": "#67040d",
+                        "error": "#a83836",
+                        "surface-tint": "#4f645b",
+                        "tertiary-container": "#f7e8dd",
+                        "on-primary-container": "#42564e",
+                        "surface-container-low": "#faf9f6",
+                        "surface-dim": "#e0e0d9",
+                        "on-secondary-fixed-variant": "#775252",
+                        "inverse-on-surface": "#9e9d99",
+                        "secondary-fixed-dim": "#fac8c8",
+                        "outline": "#7a7b75",
+                        "on-error-container": "#6e0a12",
+                        "tertiary-fixed-dim": "#e8dacf",
+                        "on-primary-fixed-variant": "#4b6057",
+                        "error-container": "#fa746f",
+                        "on-tertiary-container": "#5f554d",
+                        "surface": "#ffffff",
+                        "inverse-primary": "#e7fff3",
+                        "surface-container": "#fcfbf9",
+                        "primary": "#3a4d45",
+                        "surface-variant": "#f0f0eb",
+                        "on-surface": "#1c1d1a",
+                        "sage-green": "#5D736A"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+
+        @keyframes pulse-gentle {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.85;
+                transform: scale(0.99);
+            }
+        }
+
+        @keyframes rotate-slow {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fade-up {
+
+            0%,
+            100% {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            10%,
+            90% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-pulse-gentle {
+            animation: pulse-gentle 4s ease-in-out infinite;
+        }
+
+        .animate-rotate-slow {
+            animation: rotate-slow 12s linear infinite;
+        }
+
+        .animate-status-cycle {
+            animation: fade-up 6s infinite;
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+
+<body class="bg-white text-on-surface font-body selection:bg-primary-container">
+    <main class="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-6 bg-white">
+        <!-- Bright Abstract Background Elements -->
+        <div
+            class="absolute top-[-5%] right-[-5%] w-[45rem] h-[45rem] rounded-full bg-primary-container/30 blur-[120px]">
+        </div>
+        <div class="absolute bottom-[-5%] left-[-5%] w-[40rem] h-[40rem] rounded-full bg-sage-green/5 blur-[120px]">
+        </div>
+        <!-- Central Bright Loading Hub -->
+        <div
+            class="relative z-10 flex flex-col items-center glass-panel px-16 py-20 rounded-[3.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.05)] border-white/60">
+            <!-- Enhanced Logo Animation Area -->
+            <div class="relative mb-14">
+                <!-- Rotating Outer Ring -->
+                <div class="absolute -inset-10 border border-sage-green/20 rounded-full animate-rotate-slow">
+                    <div
+                        class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-sage-green/60">
+                    </div>
+                </div>
+                <!-- Middle Static Rings -->
+                <div class="absolute -inset-6 border border-sage-green/10 rounded-full"></div>
+                <!-- Main Logo Container -->
+                <div
+                    class="w-36 h-36 rounded-full bg-white flex items-center justify-center shadow-xl shadow-sage-green/10 animate-pulse-gentle relative z-20 border border-surface-container-high">
+                    <div
+                        class="w-28 h-28 rounded-full border border-sage-green/15 flex items-center justify-center bg-white">
+                        <span class="material-symbols-outlined text-5xl text-sage-green font-light"
+                            style="font-variation-settings: 'wght' 300;">spa</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Status Text Area -->
+            <div class="text-center space-y-6">
+                <div class="space-y-1">
+                    <h1 class="text-2xl font-headline font-semibold tracking-[0.4em] text-on-surface uppercase">
+                        Ethereal Sands
+                    </h1>
+                    <p class="text-[10px] font-label font-bold uppercase tracking-[0.3em] text-sage-green/80">Guest
+                        Portal — Welcome Home</p>
+                </div>
+                <!-- Dynamic Status Messenger -->
+                <div class="h-6 relative">
+                    <p class="text-sage-green font-medium italic tracking-wide text-lg animate-status-cycle"
+                        id="status-text">
+                        Arriving at your sanctuary...
+                    </p>
+                </div>
+            </div>
+            <!-- Refined Loading Bar -->
+            <div class="mt-14 w-72 h-[2px] bg-sage-green/10 rounded-full overflow-hidden relative">
+                <div class="shimmer h-full w-full bg-sage-green/60"></div>
+            </div>
+            <!-- Elegant Guest Indicators -->
+            <div class="mt-12 flex items-center gap-4 opacity-50">
+                <div class="flex items-center gap-2">
+                    <div class="w-1 h-1 rounded-full bg-sage-green"></div>
+                    <span class="text-[9px] font-label font-bold uppercase tracking-widest text-on-surface">Curating
+                        Ambience</span>
+                </div>
+                <div class="w-4 h-[1px] bg-outline-variant"></div>
+                <div class="flex items-center gap-2">
+                    <div class="w-1 h-1 rounded-full bg-sage-green animate-pulse"></div>
+                    <span class="text-[9px] font-label font-bold uppercase tracking-widest text-on-surface">Bespoke
+                        Setup</span>
+                </div>
+            </div>
+        </div>
+        <!-- Subtle Footer Text -->
+        <div class="absolute bottom-10 z-10">
+            <p class="text-[11px] font-label uppercase tracking-[0.2em] text-on-surface/40">The Digital Concierge at
+                your service</p>
+        </div>
+    </main>
+    <!-- Subtle Texture Overlay -->
+    <div
+        class="fixed inset-0 pointer-events-none opacity-[0.02] bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]">
+    </div>
+    <script>
+        const statusElement = document.getElementById('status-text');
+        const messages = [
+            "Arriving at your sanctuary...",
+            "Preparing your bespoke experience...",
+            "Setting the scene for your stay...",
+            "Aligning your personal preferences...",
+            "Curating your digital concierge..."
+        ];
+        let index = 0;
+
+        setInterval(() => {
+            index = (index + 1) % messages.length;
+            statusElement.textContent = messages[index];
+        }, 6000);
+    </script>
+</body>
+
+</html>
