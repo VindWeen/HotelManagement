@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
-import { Route } from "react-router-dom";
+import { Navigate, Route } from "react-router-dom";
 import GuestLayout from "../layouts/GuestLayout";
+import GuestProtectedRoute from "./GuestProtectedRoute";
 
 const HomePage = lazy(() => import("../pages/guest/HomePage"));
 const ArticlesPage = lazy(() => import("../pages/guest/ArticlesPage"));
@@ -8,6 +9,8 @@ const ArticleDetailPage = lazy(() => import("../pages/guest/ArticleDetailPage"))
 const AttractionsPage = lazy(() => import("../pages/guest/AttractionsPage"));
 const AttractionDetailPage = lazy(() => import("../pages/guest/AttractionDetailPage"));
 const ReviewsPage = lazy(() => import("../pages/guest/ReviewsPage"));
+const GuestDashboardPage = lazy(() => import("../pages/guest/dashboard/DashboardPage"));
+const GuestProfilePage = lazy(() => import("../pages/guest/profile/ProfilePage"));
 
 function RouteFallback() {
   return (
@@ -40,6 +43,30 @@ export default function GuestRoutes() {
       <Route path="/attractions" element={withSuspense(<AttractionsPage />)} />
       <Route path="/attractions/:id" element={withSuspense(<AttractionDetailPage />)} />
       <Route path="/reviews" element={withSuspense(<ReviewsPage />)} />
+      <Route
+        path="/guest"
+        element={
+          <GuestProtectedRoute>
+            <Navigate to="/guest/dashboard" replace />
+          </GuestProtectedRoute>
+        }
+      />
+      <Route
+        path="/guest/dashboard"
+        element={
+          <GuestProtectedRoute>
+            {withSuspense(<GuestDashboardPage />)}
+          </GuestProtectedRoute>
+        }
+      />
+      <Route
+        path="/guest/profile"
+        element={
+          <GuestProtectedRoute>
+            {withSuspense(<GuestProfilePage />)}
+          </GuestProtectedRoute>
+        }
+      />
     </Route>
   );
 }

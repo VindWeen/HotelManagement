@@ -15,10 +15,11 @@ const hasPermission = (permissionSet, code) => {
   return permissionSet.has(code);
 };
 
+export function isGuestRole(role) {
+  return role === "Customer" || role === "Guest";
+}
+
 export function getDefaultAdminPath(role, permissions = []) {
-  if (role === "Customer" || role === "Guest") return "/";
-
-
   const permissionSet = getPermissionSet(permissions);
 
   if (hasPermission(permissionSet, "VIEW_DASHBOARD")) return "/admin/dashboard";
@@ -38,4 +39,9 @@ export function getDefaultAdminPath(role, permissions = []) {
   if (hasPermission(permissionSet, "VIEW_ROLES")) return "/admin/roles";
 
   return "/403";
+}
+
+export function getDefaultAuthenticatedPath(role, permissions = []) {
+  if (isGuestRole(role)) return "/guest/dashboard";
+  return getDefaultAdminPath(role, permissions);
 }

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAdminAuthStore } from "../store/adminAuthStore";
-import { getDefaultAdminPath } from "../routes/permissionRouting";
+import { getDefaultAuthenticatedPath } from "../routes/permissionRouting";
 
 export default function ForbiddenPage() {
   const navigate = useNavigate();
@@ -12,6 +12,15 @@ export default function ForbiddenPage() {
   const handleGoToLogin = () => {
     clearAuth();
     navigate("/login");
+  };
+
+  const handleGoToMyArea = () => {
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    navigate(getDefaultAuthenticatedPath(role, permissions));
   };
 
   return (
@@ -127,6 +136,24 @@ export default function ForbiddenPage() {
             >
               Quay lại trang trước
             </button>
+            {token ? (
+              <button
+                type="button"
+                onClick={handleGoToMyArea}
+                style={{
+                  padding: "11px 16px",
+                  borderRadius: 12,
+                  border: "1px solid #d1d5db",
+                  background: "#f8fafc",
+                  color: "#1f2937",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Về khu vực của tôi
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
