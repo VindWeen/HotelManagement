@@ -46,6 +46,13 @@ export const uploadReviewImage = (file) => {
 };
 
 /**
+ * GET /api/Reviews/my-status [Authorize]
+ * Response: { pendingReviewBookings, submittedReviews }
+ */
+export const getMyReviewStatus = () =>
+    axiosClient.get('/Reviews/my-status');
+
+/**
  * PATCH /api/Reviews/{id}/approve  [MANAGE_CONTENT]
  * Body: { isApproved: true|false, rejectionReason (required if false) }
  * Response: { message, id, isApproved, rejectionReason }

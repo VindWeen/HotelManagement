@@ -87,7 +87,7 @@ public class ReviewsController : ControllerBase
         });
     }
 
-    [AllowAnonymous]
+[AllowAnonymous]
 [HttpGet]
 public async Task<IActionResult> GetAll(
     int? roomTypeId,
@@ -150,6 +150,88 @@ public async Task<IActionResult> GetAll(
         data
     });
 }
+
+    [Authorize]
+    [HttpGet("my-status")]
+    public async Task<IActionResult> GetMyReviewStatus()
+    {
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var submittedReviews = await _context.Reviews
+            .AsNoTracking()
+            .Where(r => r.UserId == userId)
+            .Include(r => r.Booking)
+                .ThenInclude(b => b!.BookingDetails)
+                    .ThenInclude(d => d.RoomType)
+            .Include(r => r.RoomType)
+            .OrderByDescending(r => r.CreatedAt ?? DateTime.MinValue)
+            .ThenByDescending(r => r.Id)
+            .Select(r => new
+            {
+                r.Id,
+                r.BookingId,
+                BookingCode = r.Booking != null ? r.Booking.BookingCode : null,
+                RoomTypeId = r.RoomTypeId,
+                RoomTypeName = r.RoomType != null ? r.RoomType.Name : null,
+                r.Rating,
+                r.Comment,
+                r.ImageUrl,
+                r.CreatedAt,
+                r.IsApproved,
+                r.RejectionReason,
+                Status = r.IsApproved == true
+                    ? "approved"
+                    : !string.IsNullOrWhiteSpace(r.RejectionReason)
+                        ? "rejected"
+                        : "pending"
+            })
+            .ToListAsync();
+
+        var reviewedBookingIds = submittedReviews
+            .Where(r => r.BookingId.HasValue)
+            .Select(r => r.BookingId!.Value)
+            .ToHashSet();
+
+        var pendingReviewBookings = await _context.Bookings
+            .AsNoTracking()
+            .Where(b => b.UserId == userId && b.Status == "Completed" && !reviewedBookingIds.Contains(b.Id))
+            .Include(b => b.BookingDetails)
+                .ThenInclude(d => d.RoomType)
+            .OrderByDescending(b => b.CheckOutTime ?? DateTime.MinValue)
+            .ThenByDescending(b => b.Id)
+            .Select(b => new
+            {
+                b.Id,
+                b.BookingCode,
+                b.Status,
+                b.CheckInTime,
+                b.CheckOutTime,
+                b.TotalEstimatedAmount,
+                RoomTypeId = b.BookingDetails
+                    .OrderBy(d => d.Id)
+                    .Select(d => d.RoomTypeId)
+                    .FirstOrDefault(),
+                RoomTypeName = b.BookingDetails
+                    .OrderBy(d => d.Id)
+                    .Select(d => d.RoomType != null ? d.RoomType.Name : null)
+                    .FirstOrDefault(),
+                CheckInDate = b.BookingDetails
+                    .OrderBy(d => d.CheckInDate)
+                    .Select(d => (DateTime?)d.CheckInDate)
+                    .FirstOrDefault(),
+                CheckOutDate = b.BookingDetails
+                    .OrderByDescending(d => d.CheckOutDate)
+                    .Select(d => (DateTime?)d.CheckOutDate)
+                    .FirstOrDefault()
+            })
+            .ToListAsync();
+
+        return Ok(new
+        {
+            pendingReviewBookings,
+            submittedReviews
+        });
+    }
 
     // ================= POST REVIEW (Authenticated) =================
 [Authorize]

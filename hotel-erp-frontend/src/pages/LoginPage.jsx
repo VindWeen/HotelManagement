@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { login, register, forgotPassword } from "../api/authApi";
 import { useAdminAuthStore } from "../store/adminAuthStore";
-import { getDefaultAdminPath } from "../routes/permissionRouting";
+import { getDefaultAuthenticatedPath } from "../routes/permissionRouting";
 
 export default function LoginPage() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
@@ -72,11 +72,7 @@ export default function LoginPage() {
         localStorage.setItem("hm_remember_email", loginEmail.trim());
       else localStorage.removeItem("hm_remember_email");
 
-      if (data.role === "Customer" || data.role === "Guest") {
-        navigate("");
-      } else {
-        navigate("/admin/dashboard");
-      }
+      navigate(getDefaultAuthenticatedPath(data.role, data.permissions || []));
     } catch (err) {
       setLoginError(
         err?.response?.data?.message || "Email hoặc mật khẩu không đúng.",
@@ -119,11 +115,7 @@ export default function LoginPage() {
         },
         permissions: data.permissions || [],
       });
-      if (data.role === "Customer" || data.role === "Guest") {
-        navigate("/");
-      } else {
-        navigate("/admin/dashboard");
-      }
+      navigate(getDefaultAuthenticatedPath(data.role, data.permissions || []));
     } catch (err) {
       setRegError(
         err?.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại.",
