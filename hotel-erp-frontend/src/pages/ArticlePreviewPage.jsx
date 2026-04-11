@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getArticleBySlug } from "../api/articlesApi";
 
@@ -229,14 +229,13 @@ export default function ArticlePreviewPage() {
 
       <main style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px 72px" }}>
         <div
+          className={`flex flex-col ${parsedArticle.attractions.length ? 'lg:flex-row' : ''} items-start`}
           style={{
-            display: "grid",
-            gridTemplateColumns: parsedArticle.attractions.length ? "minmax(0, 1fr) 360px" : "minmax(0, 1fr)",
             gap: 24,
-            alignItems: "start",
           }}
         >
         <article
+          className="w-full"
           style={{
             background: "white",
             borderRadius: 28,
@@ -269,7 +268,7 @@ export default function ArticlePreviewPage() {
           </div>
         </article>
           {parsedArticle.attractions.length ? (
-            <aside style={{ display: "grid", gap: 16 }}>
+            <aside className="w-full lg:w-[360px] shrink-0" style={{ display: "grid", gap: 16 }}>
               {parsedArticle.attractions.map((attraction) => (
                 (() => {
                   const latitude = attraction.latitude != null ? Number(attraction.latitude) : null;

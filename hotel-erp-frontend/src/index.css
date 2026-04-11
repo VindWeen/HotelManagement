@@ -41,3 +41,36 @@ body {
         transform: rotate(360deg);
     }
 }
+
+/* Loading Animations for Initial Splash Screen */
+@keyframes pulse-gentle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(0.99); }
+}
+@keyframes rotate-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+@keyframes fade-up {
+    0%, 100% { opacity: 0; transform: translateY(10px); }
+    10%, 90% { opacity: 1; transform: translateY(0); }
+}
+@keyframes loader-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.animate-pulse-gentle { animation: pulse-gentle 4s ease-in-out infinite; }
+.animate-rotate-slow { animation: rotate-slow 12s linear infinite; }
+.animate-status-cycle { animation: fade-up 6s infinite; }
+.shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    background-size: 200% 100%;
+    animation: loader-shimmer 2s infinite;
+}
+.glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}

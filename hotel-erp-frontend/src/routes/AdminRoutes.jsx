@@ -4,6 +4,7 @@ import AdminLayout from "../layouts/AdminLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import RequirePermission from "./RequirePermission";
 import PublicOnlyRoute from "./PublicOnlyRoute";
+import GuestRoutes from "./GuestRoutes";
 import { useAdminAuthStore } from "../store/adminAuthStore";
 import { getDefaultAdminPath } from "./permissionRouting";
 import { SERVICE_VIEW_STORAGE_KEY } from "../pages/admin/ServiceAdminShared";
@@ -11,11 +12,6 @@ import { SERVICE_VIEW_STORAGE_KEY } from "../pages/admin/ServiceAdminShared";
 const LoginPage = lazy(() => import("../pages/LoginPage"));
 const ForbiddenPage = lazy(() => import("../pages/ForbiddenPage"));
 const ArticlePreviewPage = lazy(() => import("../pages/ArticlePreviewPage"));
-const PublicArticlesPage = lazy(() => import("../pages/PublicArticlesPage"));
-const PublicArticlePage = lazy(() => import("../pages/PublicArticlePage"));
-const PublicAttractionsPage = lazy(() => import("../pages/PublicAttractionsPage"));
-const PublicAttractionDetailPage = lazy(() => import("../pages/PublicAttractionDetailPage"));
-const PublicReviewsPage = lazy(() => import("../pages/PublicReviewsPage"));
 const DashboardPage = lazy(() => import("../pages/admin/DashboardPage"));
 const ShiftManagementPage = lazy(() => import("../pages/admin/ShiftManagementPage"));
 const MaintenancePage = lazy(() => import("../pages/admin/MaintenancePage"));
@@ -29,6 +25,7 @@ const HousekeepingPage = lazy(() => import("../pages/admin/HousekeepingPage"));
 const EquipmentPage = lazy(() => import("../pages/admin/EquipmentPage"));
 const BookingListPage = lazy(() => import("../pages/admin/BookingListPage"));
 const BookingDetailPage = lazy(() => import("../pages/admin/BookingDetailPage"));
+const VoucherAdminPage = lazy(() => import("../pages/admin/VoucherAdminPage"));
 const InvoiceListPage = lazy(() => import("../pages/admin/InvoiceListPage"));
 const InvoiceDetailPage = lazy(() => import("../pages/admin/InvoiceDetailPage"));
 const ServiceItemsPage = lazy(() => import("../pages/admin/ServiceItemsPage"));
@@ -86,12 +83,7 @@ function ServiceIndexRedirect() {
 export default function AdminRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/articles" replace />} />
-      <Route path="/articles" element={withSuspense(<PublicArticlesPage />)} />
-      <Route path="/articles/:slug" element={withSuspense(<PublicArticlePage />)} />
-      <Route path="/attractions" element={withSuspense(<PublicAttractionsPage />)} />
-      <Route path="/attractions/:id" element={withSuspense(<PublicAttractionDetailPage />)} />
-      <Route path="/reviews" element={withSuspense(<PublicReviewsPage />)} />
+      {GuestRoutes()}
 
       {/* Route công khai - đã đăng nhập sẽ bị redirect theo role */}
       <Route
@@ -192,6 +184,14 @@ export default function AdminRoutes() {
           element={
             <RequirePermission permission="MANAGE_BOOKINGS">
               {withSuspense(<BookingDetailPage />)}
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="vouchers"
+          element={
+            <RequirePermission permission="MANAGE_BOOKINGS">
+              {withSuspense(<VoucherAdminPage />)}
             </RequirePermission>
           }
         />

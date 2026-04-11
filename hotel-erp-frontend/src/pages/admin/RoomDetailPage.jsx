@@ -1,4 +1,4 @@
-﻿// src/pages/admin/RoomDetailPage.jsx
+// src/pages/admin/RoomDetailPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAdminAuthStore } from "../../store/adminAuthStore";
@@ -273,11 +273,11 @@ export function RoomBasicTab({
           Tổng quan phòng
         </h3>
         {loadingRoom ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
             {Array.from({ length: 4 }).map((_, i) => <Skel key={i} h={70} r={12} />)}
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
             {[
               { label: "Số phòng", value: room?.roomNumber, icon: "door_front" },
               { label: "Tầng", value: room?.floor ? `Tầng ${room.floor}` : "-", icon: "apartment" },
@@ -316,12 +316,12 @@ export function RoomBasicTab({
         )}
 
         {loadingRoom ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <Skel h={52} r={12} />
             <Skel h={52} r={12} />
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#5e6059", marginBottom: 8 }}>
                 Trạng thái kinh doanh
@@ -732,7 +732,7 @@ export function InventoryModal({ open, onClose, onSave, editItem, roomId, equipm
               ))}
             </select>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <div>
               <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#5e6059", marginBottom: 6 }}>Loại</label>
               <select value={form.itemType} onChange={(e) => setForm((f) => ({ ...f, itemType: e.target.value }))} style={{ width: "100%", border: "none", borderRadius: 12, padding: "12px 16px", fontSize: 14, background: "rgba(227,227,219,.5)", color: "#31332e", outline: "none" }}>

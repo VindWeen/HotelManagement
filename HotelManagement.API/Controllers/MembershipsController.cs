@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using HotelManagement.API.Services;
 using HotelManagement.Core.Authorization;
 using HotelManagement.Core.DTOs;

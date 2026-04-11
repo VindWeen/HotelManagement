@@ -64,7 +64,8 @@ export default {
         "surface-dim": "#dadad2",
         "on-primary-fixed-variant": "#4b6057",
         "on-surface": "#31332e",
-        "error": "#a83836"
+        "error": "#a83836",
+        "sage-green": "#5d736a"
       },
       fontFamily: {
         "headline": ["Manrope", "sans-serif"],

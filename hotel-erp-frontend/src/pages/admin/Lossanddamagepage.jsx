@@ -1,4 +1,4 @@
-﻿// src/pages/admin/LossAndDamagePage.jsx
+// src/pages/admin/LossAndDamagePage.jsx
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import axiosClient from "../../api/axios";
 const fmtCurrency = (n) =>
@@ -46,6 +46,10 @@ const normalizeLossRecord = (item) => ({
   ...item,
   images: parseImages(item.images || item.imgUrl),
   replenishedQuantity: Number(item.replenishedQuantity || 0),
+  equipmentIsActive:
+    item.equipmentIsActive ?? item.EquipmentIsActive ?? true,
+  isPenaltySettled:
+    item.isPenaltySettled ?? item.IsPenaltySettled ?? false,
   remainingToReplenish: Math.max(
     0,
     Number(
@@ -58,7 +62,8 @@ const normalizeLossRecord = (item) => ({
 const canReplenishRecord = (item) =>
   item?.status === "Confirmed" &&
   Number(item?.remainingToReplenish || 0) > 0 &&
-  Number(item?.availableStock || 0) > 0;
+  Number(item?.availableStock || 0) > 0 &&
+  item?.equipmentIsActive !== false;
 
 const getReplenishGroupKey = (item) => {
   if (item?.bookingDetailId) return `booking-detail-${item.bookingDetailId}`;
@@ -71,7 +76,11 @@ const getBulkReplenishCandidates = (records, seedItem) => {
   const groupKey = getReplenishGroupKey(seedItem);
   return records
     .filter((item) => getReplenishGroupKey(item) === groupKey)
-    .filter((item) => item.status === "Confirmed" && Number(item.remainingToReplenish || 0) > 0)
+    .filter(
+      (item) =>
+        item.status === "Confirmed" &&
+        Number(item.remainingToReplenish || 0) > 0,
+    )
     .sort((a, b) => {
       if ((a.roomNumber || "") !== (b.roomNumber || "")) {
         return String(a.roomNumber || "").localeCompare(String(b.roomNumber || ""));
@@ -433,15 +442,7 @@ function DetailModal({ open, item, onClose }) {
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
-        <div
-          style={{
-            padding: 32,
-            overflowY: "auto",
-            display: "grid",
-            gridTemplateColumns: "1.1fr 1fr",
-            gap: 32,
-          }}
-        >
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8" style={{ padding: 32, overflowY: "auto" }}>
           <div>
             <h4
               style={{
@@ -455,13 +456,7 @@ function DetailModal({ open, item, onClose }) {
               Minh chứng hiện trường
             </h4>
             {imgs.length > 0 ? (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 12,
-                }}
-              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {imgs.map((img, i) => (
                   <div
                     key={i}
@@ -765,6 +760,10 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
   };
 
   const handleSave = async () => {
+    if (item?.isPenaltySettled && form.status === "Waived") {
+      showToast("Biên bản đã thanh toán, không thể chuyển sang miễn trừ.", "error");
+      return;
+    }
     setSaving(true);
     const formData = new FormData();
     Object.entries(form).forEach(([k, v]) => formData.append(k, v));
@@ -827,14 +826,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
           </button>
         </div>
         <div style={{ padding: 32, maxHeight: "70vh", overflowY: "auto" }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 16,
-              marginBottom: 20,
-            }}
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label
                 style={{
@@ -916,8 +908,15 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
             >
               <option value="Pending">Chờ xử lý</option>
               <option value="Confirmed">Đã xác nhận</option>
-              <option value="Waived">Miễn trừ</option>
+              <option value="Waived" disabled={item?.isPenaltySettled}>
+                Miễn trừ
+              </option>
             </select>
+            {item?.isPenaltySettled ? (
+              <div style={{ fontSize: 12, color: "#b45309", marginTop: 6 }}>
+                Biên bản đã thanh toán nên không thể chuyển sang miễn trừ.
+              </div>
+            ) : null}
           </div>
           <div
             style={{
@@ -1162,7 +1161,8 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
   const canSubmit =
     item.status === "Confirmed" &&
     Number(item.remainingToReplenish || 0) > 0 &&
-    Number(item.availableStock || 0) > 0;
+    Number(item.availableStock || 0) > 0 &&
+    item.equipmentIsActive !== false;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -1217,13 +1217,7 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
         </div>
 
         <div style={{ padding: 32, display: "flex", flexDirection: "column", gap: 16 }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: 12,
-            }}
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 4 }}>THIẾU CẦN BÙ</div>
               <div style={{ fontSize: 22, fontWeight: 800, color: "#0f172a" }}>{item.remainingToReplenish}</div>
@@ -1269,7 +1263,9 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
             <div style={{ background: "#fff7ed", color: "#c2410c", borderRadius: 14, padding: "12px 14px", fontSize: 13, fontWeight: 600 }}>
               {item.status !== "Confirmed"
                 ? "Chỉ bổ sung được khi biên bản đã ở trạng thái Đã xác nhận."
-                : "Kho hiện chưa có tồn khả dụng hoặc biên bản đã được bổ sung đủ."}
+                : item.equipmentIsActive === false
+                  ? "Vật tư đã ngừng kinh doanh hoặc đã bị tắt, không thể bổ sung lại vào phòng."
+                  : "Kho hiện chưa có tồn khả dụng hoặc biên bản đã được bổ sung đủ."}
             </div>
           ) : null}
         </div>
@@ -1347,7 +1343,7 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
         ),
       );
       initialQuantities[item.id] = suggested;
-      if (Number(item.availableStock || 0) > 0) {
+      if (Number(item.availableStock || 0) > 0 && item.equipmentIsActive !== false) {
         initialIds.push(item.id);
       }
     });
@@ -1466,16 +1462,15 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
                     Number(item.availableStock || 0),
                   ),
                 );
-                const disabled = Number(item.availableStock || 0) <= 0;
+                const disabled =
+                  Number(item.availableStock || 0) <= 0 ||
+                  item.equipmentIsActive === false;
                 const checked = selectedIds.includes(item.id);
                 return (
                   <label
                     key={item.id}
+                    className="grid grid-cols-1 md:grid-cols-[auto_1.4fr_0.8fr_0.8fr] gap-3 md:items-center"
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "auto 1.4fr 0.8fr 0.8fr",
-                      gap: 14,
-                      alignItems: "center",
                       padding: 16,
                       borderRadius: 16,
                       border: checked ? "1.5px solid #4f645b" : "1px solid #e2e8f0",
@@ -1494,6 +1489,11 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
                       <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
                         Thiếu cần bù: {item.remainingToReplenish} · Tồn khả dụng: {item.availableStock}
                       </div>
+                      {item.equipmentIsActive === false ? (
+                        <div style={{ fontSize: 12, color: "#9a3412", fontWeight: 700, marginTop: 6 }}>
+                          Vật tư đã ngừng kinh doanh hoặc đã bị tắt.
+                        </div>
+                      ) : null}
                     </div>
                     <div>
                       <div style={{ fontSize: 11, fontWeight: 800, color: "#64748b", marginBottom: 6 }}>
@@ -1512,7 +1512,11 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
                     <div style={{ fontSize: 12, color: "#64748b" }}>
                       <div style={{ fontWeight: 800, color: "#0f172a" }}>#{item.id}</div>
                       <div style={{ marginTop: 4 }}>
-                        {disabled ? "Hết tồn kho" : `Tối đa ${max}`}
+                        {item.equipmentIsActive === false
+                          ? "\u004e\u0067\u1eeb\u006e\u0067 \u006b\u0069\u006e\u0068 \u0064\u006f\u0061\u006e\u0068"
+                          : disabled
+                            ? "\u0048\u1ebf\u0074 \u0074\u1ed3\u006e \u006b\u0068\u006f"
+                            : `T\u1ed1\u0069 \u0111\u0061 ${max}`}
                       </div>
                     </div>
                   </label>
@@ -1583,154 +1587,53 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
 
 export function LossAndDamageHeader({ recordCount, onRefresh }) {
   return (
-    <>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: 28,
-        }}
-      >
-        <div>
-          <h2
-            style={{
-              fontSize: 26,
-              fontWeight: 800,
-              color: "#1c1917",
-              letterSpacing: "-0.025em",
-              margin: "0 0 4px",
-            }}
-          >
-            Thất thoát &amp; Đền bù
-          </h2>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-            Tổng{" "}
-            <span style={{ fontWeight: 700, color: "#1c1917" }}>{recordCount}</span>{" "}
-            biên bản sự cố
-          </p>
-        </div>
-        <button
-          onClick={onRefresh}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "10px 22px",
-            borderRadius: 12,
-            fontSize: 14,
-            fontWeight: 700,
-            background: "white",
-            color: "#1c1917",
-            border: "1.5px solid #e2e8e1",
-            cursor: "pointer",
-            boxShadow: "0 1px 4px rgba(0,0,0,.06)",
-          }}
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
-            refresh
-          </span>
-          Làm mới
-        </button>
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-7">
+      <div>
+        <h2 className="text-[26px] font-extrabold text-gray-900 tracking-tight m-0 mb-1">
+          Thất thoát & Đền bù
+        </h2>
+        <p className="text-[13px] text-gray-500 m-0">
+          Tổng <span className="font-bold text-gray-900">{recordCount}</span> biên bản sự cố
+        </p>
       </div>
-    </>
+      <button
+        onClick={onRefresh}
+        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-white text-gray-900 border-[1.5px] border-gray-200 cursor-pointer shadow-sm hover:bg-gray-50 transition-colors w-full sm:w-auto"
+      >
+        <span className="material-symbols-outlined text-[18px]">refresh</span>
+        Làm mới
+      </button>
+    </div>
   );
 }
 
 export function LossAndDamageStats({ stats, lastUpdated, fmtCurrency }) {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(3, 1fr)",
-        gap: 14,
-        marginBottom: 24,
-      }}
-    >
-      <div
-        style={{
-          background: "#fff7ed",
-          border: "1.5px solid #fde68a",
-          borderRadius: 16,
-          padding: "16px 18px",
-        }}
-      >
-        <p
-          style={{
-            fontSize: 9,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: ".12em",
-            color: "#d97706",
-            margin: "0 0 6px",
-            opacity: 0.8,
-          }}
-        >
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      <div className="bg-amber-50 border-[1.5px] border-amber-200 rounded-2xl p-[16px_18px] flex flex-col justify-center">
+        <p className="text-[9px] font-bold uppercase tracking-widest text-amber-600 m-0 mb-1.5 opacity-80">
           SỰ CỐ TRÊN TRANG
         </p>
-        <p style={{ fontSize: 28, fontWeight: 800, color: "#d97706", margin: 0 }}>
+        <p className="text-[28px] font-extrabold text-amber-600 m-0 leading-none">
           {stats.totalOnPage}{" "}
-          <span
-            style={{
-              fontSize: 13,
-              color: "#d97706",
-              fontWeight: 500,
-              opacity: 0.7,
-            }}
-          >
-            Bản ghi
-          </span>
+          <span className="text-[13px] font-medium opacity-70">Bản ghi</span>
         </p>
       </div>
 
-      <div
-        style={{
-          background: "#fef2f2",
-          border: "1.5px solid #fecaca",
-          borderRadius: 16,
-          padding: "16px 18px",
-        }}
-      >
-        <p
-          style={{
-            fontSize: 9,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: ".12em",
-            color: "#dc2626",
-            margin: "0 0 6px",
-            opacity: 0.8,
-          }}
-        >
+      <div className="bg-red-50 border-[1.5px] border-red-200 rounded-2xl p-[16px_18px] flex flex-col justify-center">
+        <p className="text-[9px] font-bold uppercase tracking-widest text-red-600 m-0 mb-1.5 opacity-80">
           TỔNG TIỀN ĐỀN BÙ
         </p>
-        <p style={{ fontSize: 24, fontWeight: 800, color: "#dc2626", margin: 0 }}>
+        <p className="text-[24px] font-extrabold text-red-600 m-0 leading-none truncate">
           {fmtCurrency(stats.penaltyOnPage)}
         </p>
       </div>
 
-      <div
-        style={{
-          background: "#f8f9fa",
-          border: "1.5px solid #f1f0ea",
-          borderRadius: 16,
-          padding: "16px 18px",
-        }}
-      >
-        <p
-          style={{
-            fontSize: 9,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: ".12em",
-            color: "#6b7280",
-            margin: "0 0 6px",
-            opacity: 0.8,
-          }}
-        >
+      <div className="bg-gray-50 border-[1.5px] border-gray-200 rounded-2xl p-[16px_18px] flex flex-col justify-center sm:col-span-2 lg:col-span-1">
+        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500 m-0 mb-1.5 opacity-80">
           CẬP NHẬT GẦN NHẤT
         </p>
-        <p style={{ fontSize: 28, fontWeight: 800, color: "#1c1917", margin: 0 }}>
+        <p className="text-[28px] font-extrabold text-gray-900 m-0 leading-none truncate">
           {lastUpdated
             ? lastUpdated.toLocaleTimeString("vi-VN", {
                 hour: "2-digit",
@@ -1750,79 +1653,28 @@ export function LossAndDamageToolbar({
   onClearFilters,
 }) {
   return (
-    <div
-      style={{
-        background: "white",
-        borderRadius: 18,
-        padding: "18px 22px",
-        border: "1px solid #f1f0ea",
-        boxShadow: "0 1px 4px rgba(0,0,0,.06)",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 20,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            background: "#f9f8f3",
-            padding: "8px 16px",
-            borderRadius: 12,
-            border: "1.5px solid #e2e8e1",
-          }}
-        >
-          <span
-            className="material-symbols-outlined"
-            style={{ fontSize: 18, color: "#9ca3af" }}
-          >
-            calendar_today
-          </span>
+    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200 shadow-sm flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+        <div className="flex items-center gap-2 bg-gray-50 px-3 py-2.5 rounded-xl border-[1.5px] border-gray-200 flex-1 sm:flex-none">
+          <span className="material-symbols-outlined text-[18px] text-gray-400">calendar_today</span>
           <input
             type="date"
             value={filters.fromDate}
             onChange={(e) => setFilters((f) => ({ ...f, fromDate: e.target.value }))}
-            style={{
-              border: "none",
-              background: "none",
-              fontSize: 13,
-              fontWeight: 600,
-              outline: "none",
-              color: "#1c1917",
-            }}
+            className="border-none bg-transparent text-[13px] font-semibold outline-none text-gray-900 w-full min-w-0"
           />
-          <span style={{ color: "#e2e8f0" }}>—</span>
+          <span className="text-gray-300">—</span>
           <input
             type="date"
             value={filters.toDate}
             onChange={(e) => setFilters((f) => ({ ...f, toDate: e.target.value }))}
-            style={{
-              border: "none",
-              background: "none",
-              fontSize: 13,
-              fontWeight: 600,
-              outline: "none",
-              color: "#1c1917",
-            }}
+            className="border-none bg-transparent text-[13px] font-semibold outline-none text-gray-900 w-full min-w-0"
           />
         </div>
         <select
           value={filters.status}
           onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
-          style={{
-            padding: "10px 16px",
-            borderRadius: 12,
-            border: "1.5px solid #e2e8e1",
-            fontSize: 13,
-            fontWeight: 600,
-            background: "#f9f8f3",
-            cursor: "pointer",
-            outline: "none",
-            fontFamily: "Manrope, sans-serif",
-          }}
+          className="px-4 py-3 sm:py-2.5 rounded-xl border-[1.5px] border-gray-200 text-[13px] font-semibold bg-gray-50 cursor-pointer outline-none w-full sm:w-auto"
         >
           <option value="">Tất cả trạng thái</option>
           <option value="Pending">Chờ xử lý</option>
@@ -1831,56 +1683,17 @@ export function LossAndDamageToolbar({
         </select>
         <button
           onClick={onApplyFilters}
-          style={{
-            padding: "10px 22px",
-            background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
-            color: "#e7fef3",
-            borderRadius: 12,
-            border: "none",
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            fontFamily: "Manrope, sans-serif",
-          }}
+          className="px-5 py-3 sm:py-2.5 bg-gradient-to-br from-emerald-600 to-emerald-800 text-emerald-50 rounded-xl border-none text-[13px] font-bold cursor-pointer flex items-center justify-center gap-2 w-full sm:w-auto shadow-sm"
         >
-          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
-            manage_search
-          </span>
+          <span className="material-symbols-outlined text-[18px]">manage_search</span>
           Lọc kết quả
         </button>
       </div>
       <button
         onClick={onClearFilters}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "9px 16px",
-          borderRadius: 10,
-          border: "1.5px solid #e2e8e1",
-          background: "white",
-          color: "#6b7280",
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: "pointer",
-          boxShadow: "0 1px 3px rgba(0,0,0,.04)",
-          fontFamily: "Manrope, sans-serif",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = "#4f645b";
-          e.currentTarget.style.color = "#4f645b";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = "#e2e8e1";
-          e.currentTarget.style.color = "#6b7280";
-        }}
+        className="inline-flex items-center justify-center gap-1.5 px-5 py-3 sm:py-2.5 rounded-xl border-[1.5px] border-gray-200 bg-white text-gray-500 text-[13px] font-semibold cursor-pointer shadow-sm hover:border-emerald-700 hover:text-emerald-700 w-full lg:w-auto transition-colors"
       >
-        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
-          filter_alt_off
-        </span>
+        <span className="material-symbols-outlined text-[16px]">filter_alt_off</span>
         Xóa bộ lọc
       </button>
     </div>
@@ -1901,7 +1714,6 @@ export function LossAndDamageTable({
   onEdit,
   onReplenish,
   onBatchReplenish,
-  onDelete,
   onPageChange,
 }) {
   return (
@@ -1910,11 +1722,11 @@ export function LossAndDamageTable({
         background: "white",
         borderRadius: 18,
         border: "1px solid #f1f0ea",
-        overflow: "hidden",
+        overflowX: "auto",
         boxShadow: "0 1px 4px rgba(0,0,0,.06)",
       }}
     >
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
         <thead>
           <tr style={{ background: "rgba(249,248,243,.6)" }}>
             {[
@@ -2046,9 +1858,9 @@ export function LossAndDamageTable({
                         className="btn-icon-p"
                         onClick={() => onReplenish(rec)}
                         title="Bổ sung lại vào phòng"
-                        disabled={rec.status !== "Confirmed" || rec.remainingToReplenish <= 0}
+                        disabled={!canReplenishRecord(rec)}
                         style={
-                          rec.status !== "Confirmed" || rec.remainingToReplenish <= 0
+                          !canReplenishRecord(rec)
                             ? { opacity: 0.4, cursor: "not-allowed" }
                             : { color: "#166534" }
                         }
@@ -2067,9 +1879,6 @@ export function LossAndDamageTable({
                         }
                       >
                         <span className="material-symbols-outlined">playlist_add_check</span>
-                      </button>
-                      <button className="btn-icon-p" onClick={() => onDelete(rec)} title="Xóa" style={{ color: "#ef4444" }}>
-                        <span className="material-symbols-outlined">delete_forever</span>
                       </button>
                     </div>
                   </td>
@@ -2133,8 +1942,6 @@ export default function LossAndDamagePage() {
   const [detailItem, setDetailItem] = useState(null);
   const [replenishItem, setReplenishItem] = useState(null);
   const [batchReplenishItem, setBatchReplenishItem] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -2181,18 +1988,6 @@ export default function LossAndDamagePage() {
       intervalRef.current = null;
     };
   }, [fetchRecords]);
-
-  const handleDelete = async () => {
-    setDeleteLoading(true);
-    try {
-      await axiosClient.delete(`/LossAndDamages/${deleteTarget.id}`);
-      showToast("Đã xóa vĩnh viễn biên bản.");
-      setDeleteTarget(null);
-      fetchRecords(true);
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
 
   const stats = {
     totalOnPage: records.slice((page - 1) * pageSize, page * pageSize).length,
@@ -2264,14 +2059,6 @@ export default function LossAndDamagePage() {
         onSaved={() => fetchRecords(true)}
         showToast={showToast}
       />
-      <ConfirmDialog
-        open={!!deleteTarget}
-        title="Xác nhận xóa"
-        message="Hành động này sẽ xóa vĩnh viễn biên bản và tất cả hình ảnh liên quan."
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
-        loading={deleteLoading}
-      />
 
       <div style={{ maxWidth: 1400, margin: "0 auto", position: "relative", zIndex: 0 }}>
         <LossAndDamageHeader
@@ -2306,13 +2093,13 @@ export default function LossAndDamagePage() {
           onEdit={setEditItem}
           onReplenish={setReplenishItem}
           onBatchReplenish={setBatchReplenishItem}
-          onDelete={setDeleteTarget}
           onPageChange={setPage}
         />
       </div>
     </>
   );
 }
+
 
 
 

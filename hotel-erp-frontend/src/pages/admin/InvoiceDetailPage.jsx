@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { addInvoiceAdjustment, finalizeInvoice, getInvoiceDetail, removeInvoiceAdjustment } from "../../api/invoicesApi";
 import { recordPayment } from "../../api/paymentsApi";
@@ -102,8 +102,13 @@ export default function InvoiceDetailPage() {
 
   const submitPayment = async (e) => {
     e.preventDefault();
-    if (Number(form.amountPaid) <= 0) {
+    const amountPaid = Number(form.amountPaid);
+    if (amountPaid <= 0) {
       showToast("Vui lòng nhập số tiền hợp lệ", "error");
+      return;
+    }
+    if (amountPaid > outstanding) {
+      showToast(`Số tiền thanh toán không được vượt quá dư nợ (${formatCurrency(outstanding)}).`, "error");
       return;
     }
     try {
@@ -111,7 +116,7 @@ export default function InvoiceDetailPage() {
         invoiceId: Number(id),
         paymentType: form.paymentType,
         paymentMethod: form.paymentMethod,
-        amountPaid: Number(form.amountPaid),
+        amountPaid,
         transactionCode: form.transactionCode || null,
         note: form.note || null,
       });
@@ -427,13 +432,13 @@ export default function InvoiceDetailPage() {
       </div>
 
       {!loading && invoice && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
+        <div className="flex flex-col xl:flex-row gap-6">
           {/* Left Column: Form & Table */}
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
               <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: "0 0 16px" }}>Phụ phí / Điều chỉnh hóa đơn</h3>
               <form onSubmit={submitAdjustment} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "160px 1fr 160px", gap: 14 }}>
+                <div className="flex flex-col sm:flex-row gap-3">
                   <select value={adjustmentForm.adjustmentType} onChange={(e) => setAdjustmentForm((prev) => ({ ...prev, adjustmentType: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
                     <option value="Surcharge">Phụ phí</option>
                     <option value="Discount">Giảm trừ thủ công</option>
@@ -454,7 +459,7 @@ export default function InvoiceDetailPage() {
                     style={inputStyle}
                   />
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 14, alignItems: "start" }}>
+                <div className="flex flex-col sm:flex-row gap-3 items-start">
                   <textarea
                     placeholder="Ghi chú thêm (tùy chọn)"
                     value={adjustmentForm.note}
@@ -481,10 +486,30 @@ export default function InvoiceDetailPage() {
                   </div>
                 )}
                 <form onSubmit={submitPayment} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Số tiền (Dư nợ: {formatCurrency(outstanding)})</label>
-                      <input type="number" min="0" step="1000" placeholder="VD: 1000000" value={form.amountPaid} onChange={(e) => setForm({ ...form, amountPaid: e.target.value })} required style={inputStyle} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"} />
+                      <input
+                        type="number"
+                        min="0"
+                        max={Math.max(0, outstanding)}
+                        step="1000"
+                        placeholder="VD: 1000000"
+                        value={form.amountPaid}
+                        onChange={(e) => {
+                          const nextValue = e.target.value;
+                          if (nextValue === "") {
+                            setForm({ ...form, amountPaid: "" });
+                            return;
+                          }
+                          const normalizedValue = Math.min(Number(nextValue), Math.max(0, outstanding));
+                          setForm({ ...form, amountPaid: String(normalizedValue) });
+                        }}
+                        required
+                        style={inputStyle}
+                        onFocus={(e) => e.target.style.borderColor = "#4f645b"}
+                        onBlur={(e) => e.target.style.borderColor = "#e2e8e1"}
+                      />
                     </div>
                     <div>
                       <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Loại thanh toán</label>
@@ -494,7 +519,7 @@ export default function InvoiceDetailPage() {
                       </select>
                     </div>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Phương thức</label>
                       <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} style={{ ...inputStyle, cursor: "pointer" }} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"}>
@@ -527,6 +552,7 @@ export default function InvoiceDetailPage() {
               <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Danh sách điều chỉnh</h3>
               </div>
+              <div className="overflow-x-auto">
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "white" }}>
@@ -571,12 +597,14 @@ export default function InvoiceDetailPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
             <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
               <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Dịch vụ đã sử dụng</h3>
               </div>
+              <div className="overflow-x-auto">
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "white" }}>
@@ -609,12 +637,14 @@ export default function InvoiceDetailPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
             <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
               <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Thiết bị / thất thoát</h3>
               </div>
+              <div className="overflow-x-auto">
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "white" }}>
@@ -659,12 +689,14 @@ export default function InvoiceDetailPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
             <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
               <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Lịch sử thanh toán</h3>
               </div>
+              <div className="overflow-x-auto">
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "white" }}>
@@ -704,11 +736,11 @@ export default function InvoiceDetailPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
 
-          {/* Right Column: Invoice Summary */}
-          <div>
+          <div className="w-full xl:w-[340px] shrink-0">
             <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,.06)", position: "sticky", top: 24 }}>
               <div style={{ marginBottom: 20 }}>
                 <p style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Liên kết Booking</p>
@@ -718,7 +750,7 @@ export default function InvoiceDetailPage() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
                 <button type="button" className="action-btn" style={{ padding: "12px 14px", fontSize: 13 }} onClick={() => printInvoiceDocument("draft")}>
                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>draft</span>
                   In bản nháp

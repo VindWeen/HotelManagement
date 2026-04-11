@@ -311,7 +311,7 @@ export default function ServicePage() {
         ) : null}
 
         <section style={{ ...panelStyle, padding: 24, marginBottom: 24 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.2fr 0.9fr auto", gap: 16, alignItems: "end" }}>
+          <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1.2fr_0.9fr_auto] gap-4 items-end">
             <div>
               <label style={labelStyle}>Tìm nhóm dịch vụ</label>
               <input value={categoryKeyword} onChange={(e) => setCategoryKeyword(e.target.value)} style={inputStyle} placeholder="Nhà hàng, Spa..." />
@@ -351,7 +351,7 @@ export default function ServicePage() {
           </div>
         </section>
 
-        <div style={{ display: "grid", gridTemplateColumns: "0.95fr 1.35fr", gap: 24 }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.35fr] gap-6">
           <section style={{ ...panelStyle, overflow: "hidden" }}>
             <SectionHeader
               icon="category"
@@ -519,7 +519,7 @@ export default function ServicePage() {
         }}
       >
         <form onSubmit={submitService}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label style={labelStyle}>Tên dịch vụ</label>
               <input

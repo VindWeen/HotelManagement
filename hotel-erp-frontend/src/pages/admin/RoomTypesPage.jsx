@@ -127,7 +127,7 @@ function CreateRoomTypeModal({ onClose, onCreated, showToast }) {
                     </button>
                 </div>
 
-                <div style={{ padding: "20px 28px", overflowY: "auto", flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ padding: "20px 28px", overflowY: "auto", flex: 1 }}>
                     {[
                         ["Tên hạng phòng *", "name", "text", "Vd: Deluxe City View"],
                         ["Giá cơ bản *", "basePrice", "number", "VND/đêm"],
@@ -298,7 +298,7 @@ function EditRoomTypeModal({ roomType, onClose, onUpdated, showToast }) {
                     </button>
                 </div>
 
-                <div style={{ padding: "20px 28px", overflowY: "auto", flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" style={{ padding: "20px 28px", overflowY: "auto", flex: 1 }}>
                     {[
                         ["Tên hạng phòng *", "name", "text", "Vd: Deluxe City View"],
                         ["Giá cơ bản *", "basePrice", "number", "VND/đêm"],
@@ -534,7 +534,7 @@ function RoomTypeDetailModal({ roomTypeId, onClose, onUpdated, showToast }) {
                             )}
 
                             {/* Info Grid */}
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                                 {[
                                     ["Giá cơ bản", new Intl.NumberFormat("vi-VN").format(rt.basePrice) + "đ/đêm"],
                                     ["Loại giường", rt.bedType || "—"],
@@ -704,7 +704,7 @@ export default function RoomTypesPage() {
                 </div>
 
                 {/* Stat Cards */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 24 }}>
+                <div className="grid grid-cols-1 min-[420px]:grid-cols-3 gap-3 mb-6">
                     {[
                         { label: "TỔNG", value: stats.total, bg: "#f8f9fa", color: "#6b7280", border: "#f1f0ea", filter: "all" },
                         { label: "ĐANG HOẠT ĐỘNG", value: stats.active, bg: "#ecfdf5", color: "#059669", border: "#a7f3d0", filter: "active" },
@@ -727,7 +727,7 @@ export default function RoomTypesPage() {
 
                 {/* Cards Grid */}
                 {loading ? (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                         {Array.from({ length: 6 }).map((_, i) => (
                             <div key={i} className="skeleton" style={{ height: 220 }} />
                         ))}
@@ -738,7 +738,7 @@ export default function RoomTypesPage() {
                         <p style={{ color: "#9ca3af", fontWeight: 600, fontSize: 14 }}>Không có hạng phòng nào</p>
                     </div>
                 ) : (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                         {filtered.map(rt => {
                             const primaryImg = rt.primaryImage?.imageUrl;
                             return (

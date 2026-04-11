@@ -66,8 +66,8 @@ export default function SiteMapPage() {
 
       {error ? <div style={{ ...cardStyle, padding: 14, marginBottom: 20, color: "#b91c1c", background: "#fff7f7" }}>{error}</div> : null}
 
-      <div style={{ display: "grid", gridTemplateColumns: "360px minmax(0, 1fr)", gap: 24 }}>
-        <section style={{ ...cardStyle, overflow: "hidden" }}>
+      <div className="flex flex-col xl:flex-row gap-6">
+        <section className="w-full xl:w-[360px] shrink-0" style={{ ...cardStyle, overflow: "hidden" }}>
           <div style={{ padding: 18, borderBottom: "1px solid #f1f0ea" }}>
             <strong>Danh sách điểm đến</strong>
             <input
@@ -114,7 +114,7 @@ export default function SiteMapPage() {
                 <h3 style={{ margin: 0, fontSize: 22, color: "#1c1917" }}>{selected.name}</h3>
                 <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: 14 }}>{selected.address || "Chưa có địa chỉ."}</p>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 18 }}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                 <div style={{ padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                   <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#64748b", fontWeight: 700 }}>Latitude</div>
                   <div style={{ marginTop: 6, fontWeight: 700 }}>{selected.latitude ?? "-"}</div>

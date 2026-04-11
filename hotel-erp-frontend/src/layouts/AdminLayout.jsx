@@ -1,10 +1,11 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAdminAuthStore } from "../store/adminAuthStore";
 import { useLoadingStore } from "../store/loadingStore";
 import { logout } from "../api/authApi";
 import { getMyProfile } from "../api/userProfileApi";
 import { useSignalR } from "../hooks/useSignalR";
+import { useResponsiveAdmin } from "../hooks/useResponsiveAdmin";
 import NotificationMenu from "../components/NotificationMenu";
 
 const THEME_STORAGE_KEY = "admin-theme-mode";
@@ -13,20 +14,20 @@ const SIDEBAR_WIDTH = 256;
 function getPalette(mode) {
   if (mode === "dark") {
     return {
-      pageBg: "#0f1720",
-      shellBg: "#111827",
-      headerBg: "rgba(15,23,32,.88)",
-      panelBg: "#18212f",
-      panelMuted: "#111827",
-      panelBorder: "rgba(148,163,184,.14)",
-      textMain: "#e5eef6",
-      textSub: "#9fb1c5",
-      brand: "#8fbfa6",
-      brandStrong: "#6ea089",
-      activeBg: "rgba(110,160,137,.18)",
-      activeText: "#d8f3e7",
-      overlay: "rgba(2,6,23,.62)",
-      divider: "rgba(148,163,184,.16)",
+      pageBg: "#000000",
+      shellBg: "#000000",
+      headerBg: "rgba(0, 0, 0, 0.9)",
+      panelBg: "#000000",
+      panelMuted: "#050505",
+      panelBorder: "rgba(255,255,255,0.1)",
+      textMain: "#ffffff",
+      textSub: "#d1d5db",
+      brand: "#ffffff",
+      brandStrong: "#ffffff",
+      activeBg: "#333333",
+      activeText: "#ffffff",
+      overlay: "rgba(0,0,0,0.85)",
+      divider: "rgba(255,255,255,0.08)",
     };
   }
 
@@ -73,7 +74,8 @@ function buildNavItems(hasPermission) {
     hasPermission("MANAGE_ROOMS") && { to: "/admin/room-types", icon: "category", label: "Hạng phòng" },
     hasPermission("MANAGE_INVENTORY") && { to: "/admin/items", icon: "inventory_2", label: "Vật tư & Minibar" },
     hasPermission("MANAGE_INVENTORY") && { to: "/admin/loss-damage", icon: "report_problem", label: "Thất thoát & Đền bù" },
-    hasPermission("MANAGE_BOOKINGS") && { to: "/admin/bookings", icon: "confirmation_number", label: "Booking & Voucher" },
+    hasPermission("MANAGE_BOOKINGS") && { to: "/admin/bookings", icon: "confirmation_number", label: "Booking" },
+    hasPermission("MANAGE_BOOKINGS") && { to: "/admin/vouchers", icon: "local_offer", label: "Voucher" },
     hasPermission("MANAGE_SERVICES") && { to: "/admin/services", icon: "room_service", label: "Quản lý dịch vụ" },
     hasPermission("MANAGE_INVOICES") && { to: "/admin/invoices", icon: "receipt_long", label: "Hóa đơn" },
     hasPermission("MANAGE_USERS") && { to: "/admin/memberships", icon: "workspace_premium", label: "Khách hàng thành viên" },
@@ -100,10 +102,7 @@ export default function AdminLayout() {
     if (typeof window === "undefined") return "light";
     return localStorage.getItem(THEME_STORAGE_KEY) || "light";
   });
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.innerWidth < 1100;
-  });
+  const { width, isMobile } = useResponsiveAdmin();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const palette = useMemo(() => getPalette(themeMode), [themeMode]);
@@ -124,18 +123,8 @@ export default function AdminLayout() {
   }, [user?.id, user?.fullName, updateUser]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-
-    const syncViewport = () => {
-      const mobile = window.innerWidth < 1100;
-      setIsMobile(mobile);
-      if (!mobile) setSidebarOpen(false);
-    };
-
-    syncViewport();
-    window.addEventListener("resize", syncViewport);
-    return () => window.removeEventListener("resize", syncViewport);
-  }, []);
+    if (!isMobile) setSidebarOpen(false);
+  }, [isMobile]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -181,6 +170,412 @@ export default function AdminLayout() {
         @media (max-width: 1099px) {
           .admin-desktop-links { display: none !important; }
         }
+
+        /* ADMIN WIDE DARK MODE OVERRIDES */
+        /* Exhaustive List of Bright Background Overrides */
+        .dark [style*="background:#ffffff"], .dark [style*="background: #ffffff"],
+        .dark [style*="background-color:#ffffff"], .dark [style*="background-color: #ffffff"],
+        .dark [style*="background:white"], .dark [style*="background: white"],
+        .dark [style*="background-color:white"], .dark [style*="background-color: white"],
+        .dark [style*="background:#faf8f3"], .dark [style*="background: #faf8f3"],
+        .dark [style*="background:#f9f8f3"], .dark [style*="background: #f9f8f3"],
+        .dark [style*="background:#fcfbf8"], .dark [style*="background: #fcfbf8"],
+        .dark [style*="background:#fcf8f3"], .dark [style*="background: #fcf8f3"],
+        .dark [style*="background:#fcfbf6"], .dark [style*="background: #fcfbf6"],
+        .dark [style*="background:#f1f0ea"], .dark [style*="background: #f1f0ea"],
+        .dark [style*="background:#f8f9fa"], .dark [style*="background: #f8f9fa"],
+        .dark [style*="background:#f3f4f6"], .dark [style*="background: #f3f4f6"],
+        .dark [style*="background:#f9fafb"], .dark [style*="background: #f9fafb"],
+        .dark [style*="background:#eef7f1"], .dark [style*="background: #eef7f1"],
+        .dark [style*="background:#ecfdf5"], .dark [style*="background: #ecfdf5"],
+        .dark [style*="background:#fef3c7"], .dark [style*="background: #fef3c7"],
+        .dark [style*="background:#edf2f7"], .dark [style*="background: #edf2f7"] {
+           background-color: #000000 !important;
+           box-shadow: none !important;
+        }
+
+        .dark [style*="background:linear-gradient(135deg,#d1e8dd,#c3dacf)"] {
+           background: #1a1a1a !important;
+        }
+
+        /* Status Badge Overrides (make them outlines or transparent in dark mode) */
+        .dark [style*="background:#ecfdf5"], .dark [style*="background: #ecfdf5"],
+        .dark [style*="background:#e0e7ff"], .dark [style*="background: #e0e7ff"],
+        .dark [style*="background:#fef2f2"], .dark [style*="background: #fef2f2"],
+        .dark [style*="background:#fef3c7"], .dark [style*="background: #fef3c7"],
+        .dark [style*="background:#fff7ed"], .dark [style*="background: #fff7ed"] {
+           background-color: rgba(255,255,255,0.05) !important;
+           border: 1px solid currentColor !important;
+        }
+
+        .dark [style*="border:1px solid #f1f0ea"], .dark [style*="border: 1px solid #f1f0ea"],
+        .dark [style*="border:1.5px solid #f1f0ea"], .dark [style*="border: 1.5px solid #f1f0ea"],
+        .dark [style*="border:1.5px solid #e2e8e1"], .dark [style*="border: 1.5px solid #e2e8e1"] {
+           border-color: rgba(255,255,255,0.15) !important;
+        }
+
+        .dark [style*="color:#1c1917"], .dark [style*="color: #1c1917"],
+        .dark [style*="color:rgb(28, 25, 23)"], .dark [style*="color: rgb(28, 25, 23)"],
+        .dark [style*="color:#374151"], .dark [style*="color: #374151"],
+        .dark [style*="color:rgb(55, 65, 81)"], .dark [style*="color: rgb(55, 65, 81)"],
+        .dark [style*="color:#4b5563"], .dark [style*="color: #4b5563"],
+        .dark [style*="color:rgb(75, 85, 99)"], .dark [style*="color: rgb(75, 85, 99)"],
+        .dark [style*="color:#5e6059"], .dark [style*="color: #5e6059"],
+        .dark [style*="color:#31332e"], .dark [style*="color: #31332e"],
+        .dark [style*="color:#334155"], .dark [style*="color: #334155"],
+        .dark [style*="color:#44403c"], .dark [style*="color: #44403c"],
+        .dark [style*="color:#78716c"], .dark [style*="color: #78716c"],
+        .dark [style*="color:#57534e"], .dark [style*="color: #57534e"] {
+          color: #ffffff !important;
+        }
+
+        .dark [style*="color:#5e6059"], .dark [style*="color: #5e6059"],
+        .dark [style*="color:#31332e"], .dark [style*="color: #31332e"],
+        .dark [style*="color:#334155"], .dark [style*="color: #334155"],
+        .dark [style*="color:#44403c"], .dark [style*="color: #44403c"],
+        .dark [style*="color:#78716c"], .dark [style*="color: #78716c"],
+        .dark [style*="color:#6b7280"], .dark [style*="color: #6b7280"],
+        .dark [style*="color:#a8a29e"], .dark [style*="color: #a8a29e"],
+        .dark [style*="color:#78716c"], .dark [style*="color: #78716c"],
+        .dark [style*="color:#57534e"], .dark [style*="color: #57534e"],
+        .dark [style*="color:#44403c"], .dark [style*="color: #44403c"],
+        .dark [style*="color:#52525b"], .dark [style*="color: #52525b"] {
+          color: #94a3b8 !important;
+        }
+
+        .dark [style*="color:#1f2937"], .dark [style*="color: #1f2937"],
+        .dark [style*="color:#111827"], .dark [style*="color: #111827"],
+        .dark [style*="color:#292524"], .dark [style*="color: #292524"] {
+          color: #ffffff !important;
+        }
+
+        .dark [style*="color:#6b7280"], .dark [style*="color: #6b7280"],
+        .dark [style*="color:rgb(107, 114, 128)"], .dark [style*="color: rgb(107, 114, 128)"],
+        .dark [style*="color:#9ca3af"], .dark [style*="color: #9ca3af"],
+        .dark [style*="color:rgb(156, 163, 175)"], .dark [style*="color: rgb(156, 163, 175)"],
+        .dark [style*="color:rgba(0, 0, 0, 0.5)"], .dark [style*="color: rgba(0, 0, 0, 0.5)"] {
+          color: #d1d5db !important;
+        }
+
+        .dark [style*="border-color:#e2e8e1"], .dark [style*="border-color: #e2e8e1"],
+        .dark [style*="border-color:rgb(226, 232, 225)"], .dark [style*="border-color: rgb(226, 232, 225)"],
+        .dark [style*="border-color:#cbd5e1"], .dark [style*="border-color: #cbd5e1"],
+        .dark [style*="border-color:rgb(203, 213, 225)"], .dark [style*="border-color: rgb(203, 213, 225)"],
+        .dark [style*="solid #e2e8e1"], .dark [style*="solid rgb(226, 232, 225)"],
+        .dark [style*="border-bottom: 1px solid #e2e8e1"] {
+          border-color: rgba(255,255,255,0.08) !important;
+          border-bottom-color: rgba(255,255,255,0.08) !important;
+        }
+
+        .dark input:not([type="radio"]):not([type="checkbox"]), .dark select, .dark textarea {
+          background: #050505 !important;
+          color: #ffffff !important;
+          border-color: rgba(255,255,255,0.15) !important;
+        }
+
+        .dark table th {
+          background: rgba(255,255,255,0.04) !important;
+          color: #d1d5db !important;
+          border-color: rgba(255,255,255,0.1) !important;
+        }
+        .dark table td {
+          border-color: rgba(255,255,255,0.04) !important;
+          color: inherit !important;
+        }
+        .dark table tr:hover td {
+          background-color: rgba(255,255,255,0.03) !important;
+        }
+
+        .dark .modal-content, .dark .drawer-content { background: #000000 !important; }
+        .dark [style*="boxShadow"], .dark [style*="box-shadow"] {
+          box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important;
+        }
+
+        .dark .room-card { 
+            background: #000000 !important; 
+            border-color: rgba(255,255,255,0.12) !important;
+        }
+        .dark .status-badge { 
+            background: rgba(255,255,255,0.08) !important; 
+            color: #d1e1d9 !important;
+            border: 1px solid rgba(255,255,255,0.12) !important; 
+        }
+
+        /* --- BROAD REFINEMENTS FOR ALL ADMIN PAGES --- */
+        .dark .bg-white, .dark .bg-gray-50, .dark .bg-gray-100, 
+        .dark .bg-stone-50, .dark .bg-stone-100, .dark .bg-slate-50, .dark .bg-slate-100,
+        .dark [style*="background: white"], 
+        .dark [style*="background-color: white"],
+        .dark [style*="background: #fff"],
+        .dark [style*="background-color: #fff"],
+        .dark [style*="background: #ffffff"],
+        .dark [style*="background-color: #ffffff"],
+        .dark [style*="background: rgb(255, 255, 255)"],
+        .dark [style*="background-color: rgb(255, 255, 255)"] {
+          background-color: #000000 !important;
+          border-color: rgba(255,255,255,0.12) !important;
+        }
+
+        /* Catch common light backgrounds with space and color format variations */
+        .dark [style*="background:#f9f8f3"], .dark [style*="background: #f9f8f3"],
+        .dark [style*="background-color:#f9f8f3"], .dark [style*="background-color: #f9f8f3"],
+        .dark [style*="rgb(249,248,243)"], .dark [style*="rgb(249, 248, 243)"],
+        .dark [style*="background:#faf8f3"], .dark [style*="background: #faf8f3"],
+        .dark [style*="background-color:#faf8f3"], .dark [style*="background-color: #faf8f3"],
+        .dark [style*="rgb(250,248,243)"], .dark [style*="rgb(250, 248, 243)"],
+        .dark [style*="background:#fafaf9"], .dark [style*="background: #fafaf9"],
+        .dark [style*="background-color:#fafaf9"], .dark [style*="background-color: #fafaf9"],
+        .dark [style*="rgb(250,250,249)"], .dark [style*="rgb(250, 250, 249)"],
+        .dark [style*="background:#fafaf8"], .dark [style*="background: #fafaf8"],
+        .dark [style*="background-color:#fafaf8"], .dark [style*="background-color: #fafaf8"],
+        .dark [style*="rgb(250,250,248)"], .dark [style*="rgb(250, 250, 248)"],
+        .dark [style*="background:#f8fafc"], .dark [style*="background: #f8fafc"],
+        .dark [style*="background-color:#f8fafc"], .dark [style*="background-color: #f8fafc"],
+        .dark [style*="rgb(248,250,252)"], .dark [style*="rgb(248, 250, 252)"],
+        .dark [style*="background:#f0f7f3"], .dark [style*="background: #f0f7f3"],
+        .dark [style*="rgb(240,247,243)"], .dark [style*="rgb(240, 247, 243)"],
+        .dark [style*="rgba(249,248,243"], .dark [style*="rgba(249, 248, 243"],
+        .dark [style*="rgba(250,248,243"], .dark [style*="rgba(250, 248, 243"],
+        .dark [style*="rgba(227,227,219"], .dark [style*="rgba(227, 227, 219"] {
+          background-color: rgba(255,255,255,0.06) !important;
+        }
+
+        /* Catch dark brand colors used as text and make them bright */
+        .dark [style*="color:#4f645b"], .dark [style*="color: #4f645b"],
+        .dark [style*="color:#1a3826"], .dark [style*="color: #1a3826"] {
+          color: #ffffff !important;
+        }
+
+        /* Catch error/warning/info light backgrounds */
+        .dark .bg-amber-50, .dark .bg-red-50, .dark .bg-blue-50, .dark .bg-emerald-50,
+        .dark [style*="background: #fff1f2"],
+        .dark [style*="background-color: #fff1f2"],
+        .dark [style*="background: #eff6ff"],
+        .dark [style*="background-color: #eff6ff"],
+        .dark [style*="background: #fee2e2"],
+        .dark [style*="background-color: #fee2e2"] {
+          background-color: rgba(255,255,255,0.06) !important;
+          color: #ffffff !important;
+        }
+
+        /* Text colors */
+        .dark .text-stone-700, .dark .text-stone-800, .dark .text-stone-900,
+        .dark .text-gray-700, .dark .text-gray-800, .dark .text-gray-900,
+        .dark .text-slate-700, .dark .text-slate-800, .dark .text-slate-900,
+        .dark [style*="color: #1c1917"], .dark [style*="color: #0f172a"],
+        .dark [style*="color: #1e293b"], .dark [style*="color: #374151"], 
+        .dark [style*="color: #334155"] {
+          color: #ffffff !important;
+        }
+
+        .dark .text-stone-400, .dark .text-stone-500, .dark .text-stone-600,
+        .dark .text-gray-400, .dark .text-gray-500, .dark .text-gray-600,
+        .dark .text-slate-400, .dark .text-slate-500, .dark .text-slate-600,
+        .dark [style*="color: #6b7280"], .dark [style*="color: #94a3b8"],
+        .dark [style*="color: #64748b"], .dark [style*="color: #9ca3af"],
+        .dark [style*="color: #78716c"] {
+          color: #d1d5db !important;
+        }
+
+        /* Borders */
+        .dark .border-stone-100, .dark .border-stone-200, .dark .border-stone-300,
+        .dark .border-gray-100, .dark .border-gray-200, .dark .border-gray-300,
+        .dark .border-slate-100, .dark .border-slate-200, .dark .border-slate-300,
+        .dark [style*="border: 1px solid #e2e8e1"],
+        .dark [style*="border: 1.5px solid #e2e8e1"],
+        .dark [style*="border: 1px solid #f1f0ea"],
+        .dark [style*="border: 1px solid #ece7de"],
+        .dark [style*="border-color: #e2e8e1"],
+        .dark [style*="border-color: #f1f0ea"] {
+          border-color: rgba(255,255,255,0.08) !important;
+        }
+
+        /* Table specific */
+        .dark tr[style*="background: rgba(249,248,243"],
+        .dark tr[style*="background-color: rgba(249,248,243"] {
+          background-color: rgba(255,255,255,0.04) !important;
+          border-bottom-color: rgba(255,255,255,0.08) !important;
+        }
+
+        /* Modals and Overlays */
+        .dark .modal-backdrop { background: rgba(0,0,0,0.85) !important; }
+        .dark [style*="background: white"][style*="borderRadius: 24"],
+        .dark [style*="background: white"][style*="border-radius: 20"],
+        .dark div[class*="modal"] div[class*="bg-white"] {
+           background-color: #000000 !important;
+           border: 1px solid rgba(255,255,255,0.2) !important;
+           color: #ffffff !important;
+        }
+
+        /* Buttons and Interactive */
+        .dark .pg-btn:hover:not(.active) { background: rgba(255,255,255,0.1) !important; }
+        .dark .pg-btn.active, .dark .tab-btn.active, .dark .active-filter {
+          background-color: #333333 !important;
+          color: #ffffff !important;
+          border-color: #555555 !important;
+        }
+
+        .dark button:not(.pg-btn):not(.action-btn):not([style*="background:none"]),
+        .dark .pg-btn:not(.active),
+        .dark .btn-icon-p { 
+          background: #262626 !important;
+          color: #ffffff !important;
+          border: 1px solid rgba(255,255,255,0.3) !important;
+        }
+
+        .dark button[style*="background:linear-gradient"],
+        .dark button[style*="background-color:linear-gradient"],
+        .dark button[style*="background:#4f645b"],
+        .dark button[style*="background: #4f645b"] {
+          background: #ffffff !important;
+          color: #000000 !important;
+          border: none !important;
+          font-weight: 800 !important;
+        }
+
+        /* Catch specific 'Active State' colors from RoomTypes stats and others and make them gray */
+        .dark [style*="border-color:#059669"], .dark [style*="border-color: #059669"],
+        .dark [style*="border-color:#6b7280"], .dark [style*="border-color: #6b7280"],
+        .dark [style*="border-color:#1a3826"], .dark [style*="border-color: #1a3826"],
+        .dark [style*="border-color:#4f645b"], .dark [style*="border-color: #4f645b"],
+        .dark [style*="solid #059669"], .dark [style*="solid #6b7280"], .dark [style*="solid #1a3826"] {
+           background-color: #333333 !important;
+           border-color: #555555 !important;
+           color: #ffffff !important;
+        }
+
+        .dark .status-badge { 
+            background: rgba(255,255,255,0.08) !important; 
+            color: #ffffff !important;
+            border: 1px solid rgba(255,255,255,0.15) !important; 
+        }
+        
+        /* Tooltips/Popovers if any */
+        .dark [style*="box-shadow: 0 20px 40px rgba(15,23,42,.14)"] {
+           background-color: #000000 !important;
+           border-color: rgba(255,255,255,0.2) !important;
+           box-shadow: 0 10px 40px rgba(0,0,0,0.85) !important;
+        }
+
+        /* Toggle Switches */
+        .dark .slider { 
+            background-color: #4b5563 !important; 
+        }
+        .dark input:checked + .slider { 
+            background-color: #10b981 !important; 
+        }
+        .dark .slider:before {
+            background-color: #ffffff !important;
+        }
+        .dark .toggle-switch span[style*="background:#4f645b"] {
+            background-color: #10b981 !important;
+        }
+        .dark .toggle-switch span[style*="background:#d1d5db"] {
+            background-color: #4b5563 !important;
+        }
+        .dark .primary-card-p {
+           background-color: #000000 !important;
+           border-color: rgba(255,255,255,0.1) !important;
+           color: #ffffff !important;
+        }
+
+        .dark .sub-card-p {
+           background-color: #121212 !important;
+           border-color: rgba(255,255,255,0.12) !important;
+           color: #ffffff !important;
+        }
+
+        /* Membership Badge Text - Force black for visibility on light rank backgrounds */
+        .dark .tier-badge-text-p, 
+        .dark .tier-badge-text-p div, 
+        .dark .tier-badge-text-p span,
+        .dark .tier-badge-text-p p {
+           color: #000000 !important;
+        }
+
+        /* Quill Editor Dark Mode */
+        .dark .ql-toolbar.ql-snow, 
+        .dark .ql-container.ql-snow {
+          border-color: rgba(255,255,255,0.1) !important;
+          background-color: #000000 !important;
+          color: #ffffff !important;
+        }
+        .dark .ql-editor {
+          color: #ffffff !important;
+        }
+        .dark .ql-snow .ql-stroke {
+          stroke: #d1d5db !important;
+        }
+        .dark .ql-snow .ql-fill {
+          fill: #d1d5db !important;
+        }
+        .dark .ql-snow .ql-picker {
+          color: #d1d5db !important;
+        }
+        .dark .ql-toolbar.ql-snow {
+          background-color: #121212 !important;
+        }
+        .dark .ql-editor.ql-blank::before {
+          color: rgba(255,255,255,0.4) !important;
+        }
+        
+        /* Combobox / Select / Input Dark Mode */
+        .dark select option {
+          background-color: #121212 !important;
+          color: #ffffff !important;
+        }
+        .dark input, .dark select, .dark textarea {
+          background-color: #1a1a1a !important;
+          border-color: rgba(255,255,255,0.15) !important;
+          color: #ffffff !important;
+        }
+        /* Specific treatment for date/time inputs to make them 'bright' as requested */
+        .dark input[type="date"], 
+        .dark input[type="datetime-local"],
+        .dark input[type="time"] {
+          background-color: #262626 !important;
+          border-color: rgba(255,255,255,0.3) !important;
+          color-scheme: dark !important;
+        }
+        
+        /* Checkbox / Radio Dark Mode */
+        .dark input[type="checkbox"], .dark input[type="radio"] {
+          accent-color: #10b981 !important;
+          cursor: pointer;
+        }
+        /* Optional: improve visibility of unchecked state */
+        .dark input[type="checkbox"] {
+          border: 1px solid rgba(255,255,255,0.3) !important;
+        }
+
+        /* Toggle Switch Refinement (Off state) */
+        .dark .toggle-track-p {
+          background-color: #3f3f3f !important;
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1) !important;
+        }
+        /* Toggle Switch (On state) */
+        .dark .toggle-track-p[style*="background:#4f645b"],
+        .dark .toggle-track-p[style*="background: #4f645b"] {
+          background-color: #10b981 !important;
+        }
+        /* Ensure toggle outer button stays transparent to avoid 'square' artifact */
+        .dark .btn-reset-p,
+        .dark .toggle-track-p.parent-button, 
+        .dark button[style*="background:transparent"],
+        .dark button[style*="background: transparent"] {
+          background-color: transparent !important;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
+        
+        /* Pure text highlighted for Dark Mode */
+        .dark .pure-text-p {
+          background: transparent !important;
+          border: none !important;
+          padding: 0 !important;
+          box-shadow: none !important;
+        }
       `}</style>
 
       {isLoading && (
@@ -195,6 +590,7 @@ export default function AdminLayout() {
           background: palette.pageBg,
           minHeight: "100vh",
           color: palette.textMain,
+          overflowX: "hidden",
         }}
       >
         {isMobile && sidebarOpen && (
@@ -225,7 +621,7 @@ export default function AdminLayout() {
             background: palette.shellBg,
             display: "flex",
             flexDirection: "column",
-            padding: "32px 16px",
+            padding: isMobile ? "22px 12px 18px" : "32px 16px",
             zIndex: 50,
             overflow: "hidden",
             boxShadow: isMobile ? "0 18px 48px rgba(0,0,0,.22)" : "none",
@@ -338,7 +734,7 @@ export default function AdminLayout() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: isMobile ? "0 16px" : "0 32px",
+            padding: isMobile ? "0 12px" : width < 1280 ? "0 24px" : "0 32px",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 12 : 32, flex: 1 }}>
@@ -363,59 +759,30 @@ export default function AdminLayout() {
               </button>
             )}
 
-            <div style={{ position: "relative", width: isMobile ? "100%" : 320, maxWidth: isMobile ? "100%" : 320 }}>
-              <span
-                className="material-symbols-outlined"
-                style={{
-                  position: "absolute",
-                  left: 12,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: palette.textSub,
-                  fontSize: 18,
-                }}
-              >
-                search
-              </span>
-              <input
-                value={topSearch}
-                onChange={(e) => onSearch(e.target.value)}
-                style={{
-                  width: "100%",
-                  background: palette.panelMuted,
-                  color: palette.textMain,
-                  border: `1px solid ${palette.panelBorder}`,
-                  borderRadius: 9999,
-                  padding: "8px 16px 8px 40px",
-                  fontSize: 12,
-                  outline: "none",
-                }}
-                placeholder="Tìm kiếm tài nguyên..."
-              />
-            </div>
-
-            <nav className="admin-desktop-links" style={{ display: "flex", gap: 24 }}>
-              {["Hotels", "Analytics", "Reports"].map((item, i) => (
-                <a
-                  key={item}
-                  href="#"
-                  style={{
-                    fontSize: 14,
-                    fontWeight: i === 1 ? 600 : 500,
-                    color: i === 1 ? palette.brand : palette.textSub,
-                    textDecoration: "none",
-                    borderBottom: i === 1 ? `2px solid ${palette.brand}` : "none",
-                    paddingBottom: i === 1 ? 4 : 0,
-                  }}
-                >
-                  {item}
-                </a>
-              ))}
-            </nav>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 16, marginLeft: 12 }}>
-            <div style={{ display: "flex", gap: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <NavLink
+                to="/"
+                title="Về Trang Khách"
+                style={{
+                  padding: 8,
+                  border: `1px solid ${palette.panelBorder}`,
+                  background: palette.panelBg,
+                  cursor: "pointer",
+                  color: palette.textSub,
+                  borderRadius: "50%",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 19 }}>
+                  public
+                </span>
+              </NavLink>
+              
               <button
                 onClick={() => setThemeMode((prev) => (prev === "dark" ? "light" : "dark"))}
                 title={themeMode === "dark" ? "Chuyển sang light mode" : "Chuyển sang dark mode"}
@@ -439,6 +806,7 @@ export default function AdminLayout() {
               {canUseNotificationCenter ? <NotificationMenu /> : null}
 
               <button
+                title="Trợ giúp"
                 style={{
                   padding: 8,
                   border: "none",
@@ -446,9 +814,12 @@ export default function AdminLayout() {
                   cursor: "pointer",
                   color: palette.textSub,
                   borderRadius: "50%",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <span className="material-symbols-outlined">help_outline</span>
+                <span className="material-symbols-outlined" style={{ fontSize: 19 }}>help_outline</span>
               </button>
             </div>
 
@@ -521,7 +892,7 @@ export default function AdminLayout() {
             minHeight: "100vh",
           }}
         >
-          <div style={{ padding: isMobile ? 16 : 32 }}>
+          <div style={{ padding: isMobile ? "12px 12px 20px" : width < 1280 ? 24 : 32 }}>
             <Outlet />
           </div>
         </main>

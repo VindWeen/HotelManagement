@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getInvoices } from "../../api/invoicesApi";
 import { formatCurrency, formatDate } from "../../utils";
@@ -123,7 +123,7 @@ export default function InvoiceListPage() {
       </div>
 
       {/* Dashboard Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 24 }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div style={{ background: "white", border: "1.5px solid #f1f0ea", borderRadius: 16, padding: "20px" }}>
           <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "#9ca3af", margin: "0 0 8px" }}>TỔNG SỐ HÓA ĐƠN</p>
           <p style={{ fontSize: 28, fontWeight: 800, color: "#1c1917", margin: 0 }}>{rows.length}</p>

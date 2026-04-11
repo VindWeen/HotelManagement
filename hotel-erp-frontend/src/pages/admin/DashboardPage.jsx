@@ -1,4 +1,4 @@
-﻿// src/pages/admin/DashboardPage.jsx
+// src/pages/admin/DashboardPage.jsx
 // Dashboard thực tế — tích hợp API: Bookings, Rooms, Users, Reviews, Vouchers, LossAndDamages, Equipments
 import { useState, useEffect, useCallback } from "react";
 import { getBookings } from "../../api/bookingsApi";
@@ -403,6 +403,55 @@ export default function DashboardPage() {
         tr.hover-row:hover td { background:rgba(249,248,243,.6); }
         .room-card { transition: transform .15s, box-shadow .15s; }
         .room-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+
+        /* --- DARK MODE DASHBOARD OVERRIDES --- */
+        .dark .db-title { color: #e8edea !important; }
+        .dark .db-subtitle { color: #9ca6a0 !important; }
+        .dark .db-subtitle-highlight { color: #a2c4b2 !important; }
+        
+        .dark .card-in { 
+          background: #141514 !important; 
+          border-color: rgba(255,255,255,0.06) !important;
+          box-shadow: none !important;
+        }
+        .dark .card-in > div > div[style*="border-radius: 12px"],
+        .dark .card-in > div > div {
+          /* Mute the bright icon backgrounds in KPI cards */
+          background: rgba(255,255,255,0.06) !important; 
+        }
+        
+        .dark .card-in p[style*="rgba(0,0,0,.5)"],
+        .dark .card-in p[style*="#9ca3af"],
+        .dark .card-in p { 
+           color: #9ca6a0 !important; 
+        }
+        
+        .dark .card-in h3[style*="#1c1917"], 
+        .dark .card-in h4[style*="#1c1917"] { color: #e8edea !important; }
+        
+        .dark .card-in span[style*="#374151"] { color: #e8edea !important; }
+        .dark .card-in span[style*="#1c1917"] { color: #e8edea !important; }
+        .dark .card-in th, .dark .card-in td { color: #c8dfd3 !important; }
+        
+        .dark .refresh-btn {
+          background: #1a1c1a !important;
+          color: #e8edea !important;
+          border-color: rgba(255,255,255,0.12) !important;
+        }
+        .dark .refresh-btn:hover { background: #242624 !important; }
+        .dark tr.hover-row:hover td { background: rgba(255,255,255,0.03) !important; }
+        .dark .progress-bar { background: #2a2c2a !important; }
+        .dark .room-card { 
+            background: #141514 !important; 
+            border-color: rgba(255,255,255,0.06) !important;
+        }
+        .dark .room-card h4 { color: #e8edea !important; }
+        .dark .room-card p { color: #9ca6a0 !important; }
+        .dark .status-badge { 
+            background: rgba(255,255,255,0.08) !important; 
+            color: #d1e1d9 !important;
+            border: 1px solid rgba(255,255,255,0.12) !important; 
+        }
       `}</style>
 
       <div style={{ maxWidth: 1400, margin: "0 auto", fontFamily: "Manrope, sans-serif" }}>
@@ -410,12 +459,12 @@ export default function DashboardPage() {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
           <div>
-            <h2 style={{ fontSize: 28, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.03em", margin: "0 0 5px" }}>
+            <h2 className="db-title" style={{ fontSize: 28, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.03em", margin: "0 0 5px" }}>
               Tổng quan hoạt động
             </h2>
-            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+            <p className="db-subtitle" style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
               Dữ liệu thực tế · Cập nhật lần cuối:{" "}
-              <span style={{ fontWeight: 600, color: "#4f645b" }}>
+              <span className="db-subtitle-highlight" style={{ fontWeight: 600, color: "#4f645b" }}>
                 {new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
               </span>
             </p>
@@ -428,8 +477,8 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* KPI Row 1 */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, marginBottom: 20 }}>
+        {/* KPI Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-5">
           {[
             {
               icon: "payments", bg: "#d1e8dd", iconBg: "rgba(47,67,60,.1)", iconColor: "#2f433c",
@@ -487,8 +536,8 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* KPI Row 2: Thất thoát + Vật tư */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 28 }}>
+        {/* REVENUE CHART & QUICK ACTIONS */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-7">
           {/* Thất thoát hư hỏng */}
           <div className="card-in" style={{ background: "linear-gradient(135deg,#fff1f2 0%,#ffe4e6 100%)", borderRadius: 18, padding: 22, border: "1.5px solid #fecdd3", animationDelay: "220ms", animationFillMode: "both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
@@ -542,7 +591,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Row 2: Revenue + Room Type Occupancy */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
           <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "200ms", animationFillMode: "both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
               <div>
@@ -606,7 +655,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Row 3: Booking Status + Reviews + Quick Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 20 }}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
           <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "300ms", animationFillMode: "both" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: "0 0 18px" }}>Phân loại booking</h4>
             {loading ? (

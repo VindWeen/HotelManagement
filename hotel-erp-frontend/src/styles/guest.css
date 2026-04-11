@@ -1,0 +1,508 @@
+/* ================================================================
+   GUEST PORTAL — DESIGN SYSTEM
+   The Ethereal Hotel
+   ================================================================
+   Import vào GuestLayout hoặc src/index.css:
+   @import './styles/guest.css';
+   ================================================================ */
+
+
+
+/* ================================================================
+   CSS CUSTOM PROPERTIES (Design Tokens)
+   ================================================================ */
+:root {
+  /* --- PRIMARY PALETTE --- */
+  --g-primary:          #1a3826;
+  --g-primary-hover:    #4f645b;
+  --g-primary-light:    #6e8b7c;
+  --g-primary-muted:    rgba(236, 253, 245, 0.55);
+  --g-primary-subtle:   rgba(26, 56, 38, 0.04);
+
+  /* --- GOLD ACCENT (Reusing Primary/Brand for Admin Sync) --- */
+  --g-gold:             #1a3826;
+  --g-gold-hover:       #4f645b;
+  --g-gold-light:       #6e8b7c;
+  --g-gold-pale:        #ecfdf5;
+  --g-gold-muted:       rgba(236, 253, 245, 0.55);
+
+  /* --- NEUTRAL / BACKGROUND --- */
+  --g-bg:               #f8f9fa;
+  --g-bg-cream:         #f3f4f6;
+  --g-bg-card:          #ffffff;
+  --g-surface:          #ffffff;
+  --g-surface-raised:   #f8f9fa;
+
+  /* --- TEXT --- */
+  --g-text:             #1c1917;   /* Warm black */
+  --g-text-secondary:   #4b5563;
+  --g-text-muted:       #78716c;
+  --g-text-faint:       #a8a29e;
+  --g-text-inverse:     #ffffff;
+  --g-text-on-primary:  #e7fef0;
+
+  /* --- BORDERS --- */
+  --g-border:           #e8e2d9;
+  --g-border-strong:    #d1c9be;
+  --g-border-light:     #f0ece3;
+
+  /* --- STATUS COLORS --- */
+  --g-success:          #15803d;
+  --g-success-bg:       #f0fdf4;
+  --g-success-border:   #bbf7d0;
+  --g-warning:          #b45309;
+  --g-warning-bg:       #fffbeb;
+  --g-warning-border:   #fde68a;
+  --g-error:            #dc2626;
+  --g-error-bg:         #fef2f2;
+  --g-error-border:     #fecaca;
+  --g-info:             #1d4ed8;
+  --g-info-bg:          #eff6ff;
+  --g-info-border:      #bfdbfe;
+  --g-neutral:          #6b7280;
+  --g-neutral-bg:       #f9fafb;
+  --g-neutral-border:   #e5e7eb;
+
+  /* --- TYPOGRAPHY --- */
+  --g-font-heading:     'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  --g-font-body:        'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Font scale */
+  --g-text-xs:    0.75rem;    /* 12px */
+  --g-text-sm:    0.875rem;   /* 14px */
+  --g-text-base:  1rem;       /* 16px */
+  --g-text-lg:    1.125rem;   /* 18px */
+  --g-text-xl:    1.25rem;    /* 20px */
+  --g-text-2xl:   1.5rem;     /* 24px */
+  --g-text-3xl:   1.875rem;   /* 30px */
+  --g-text-4xl:   2.25rem;    /* 36px */
+  --g-text-5xl:   3rem;       /* 48px */
+  --g-text-6xl:   3.75rem;    /* 60px */
+  --g-text-7xl:   4.5rem;     /* 72px */
+
+  /* Line heights */
+  --g-leading-tight:   1.15;
+  --g-leading-snug:    1.35;
+  --g-leading-normal:  1.6;
+  --g-leading-relaxed: 1.75;
+
+  /* Letter spacings */
+  --g-tracking-tight:  -0.04em;
+  --g-tracking-normal:  0;
+  --g-tracking-wide:    0.05em;
+  --g-tracking-wider:   0.1em;
+  --g-tracking-widest:  0.2em;
+
+  /* --- SPACING SCALE --- */
+  --g-space-1:   4px;
+  --g-space-2:   8px;
+  --g-space-3:   12px;
+  --g-space-4:   16px;
+  --g-space-5:   20px;
+  --g-space-6:   24px;
+  --g-space-7:   28px;
+  --g-space-8:   32px;
+  --g-space-10:  40px;
+  --g-space-12:  48px;
+  --g-space-14:  56px;
+  --g-space-16:  64px;
+  --g-space-20:  80px;
+  --g-space-24:  96px;
+  --g-space-32:  128px;
+  --g-space-40:  160px;
+
+  /* --- LAYOUT --- */
+  --g-container-sm:   640px;
+  --g-container-md:   768px;
+  --g-container-lg:   1024px;
+  --g-container-xl:   1200px;
+  --g-container-2xl:  1440px;
+  --g-container-pad:  clamp(16px, 5vw, 48px);
+
+  /* --- BORDER RADIUS --- */
+  --g-radius-xs:    4px;
+  --g-radius-sm:    8px;
+  --g-radius-md:    14px;
+  --g-radius-lg:    20px;
+  --g-radius-xl:    28px;
+  --g-radius-2xl:   40px;
+  --g-radius-full:  9999px;
+
+  /* --- SHADOWS --- */
+  --g-shadow-xs:  0 1px 2px rgba(0,0,0,0.05);
+  --g-shadow-sm:  0 2px 8px rgba(0,0,0,0.06);
+  --g-shadow-md:  0 6px 20px rgba(0,0,0,0.08);
+  --g-shadow-lg:  0 14px 40px rgba(0,0,0,0.10);
+  --g-shadow-xl:  0 24px 64px rgba(0,0,0,0.12);
+  --g-shadow-2xl: 0 40px 80px rgba(0,0,0,0.14);
+
+  /* --- TRANSITIONS --- */
+  --g-ease:        cubic-bezier(0.4, 0, 0.2, 1);
+  --g-ease-out:    cubic-bezier(0, 0, 0.2, 1);
+  --g-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --g-transition:  0.2s var(--g-ease);
+  --g-transition-slow: 0.35s var(--g-ease);
+
+  /* --- HEADER HEIGHT --- */
+  --g-header-h: 72px;
+
+  /* --- Z-INDEX SCALE --- */
+  --g-z-base:     1;
+  --g-z-sticky:   100;
+  --g-z-header:   200;
+  --g-z-dropdown: 300;
+  --g-z-modal:    400;
+  --g-z-toast:    500;
+}
+
+/* ================================================================
+   KEYFRAME ANIMATIONS
+   ================================================================ */
+@keyframes g-fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes g-fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes g-fadeInDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes g-scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes g-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes g-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes g-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+@keyframes g-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+@keyframes g-slide-in-right {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes g-modal-enter {
+  from { opacity: 0; transform: scale(0.92) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ================================================================
+   UTILITY CLASSES
+   ================================================================ */
+
+/* Animations */
+.g-animate-fade     { animation: g-fadeIn 0.3s var(--g-ease) both; }
+.g-animate-up       { animation: g-fadeInUp 0.4s var(--g-ease) both; }
+.g-animate-down     { animation: g-fadeInDown 0.3s var(--g-ease) both; }
+.g-animate-scale    { animation: g-scaleIn 0.3s var(--g-ease-spring) both; }
+.g-animate-float    { animation: g-float 3s ease-in-out infinite; }
+
+/* Animation delays */
+.g-delay-100 { animation-delay: 0.1s; }
+.g-delay-200 { animation-delay: 0.2s; }
+.g-delay-300 { animation-delay: 0.3s; }
+.g-delay-400 { animation-delay: 0.4s; }
+.g-delay-500 { animation-delay: 0.5s; }
+
+/* Skeleton loading */
+.g-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--g-surface) 25%,
+    var(--g-border) 50%,
+    var(--g-surface) 75%
+  );
+  background-size: 200% auto;
+  animation: g-shimmer 1.4s linear infinite;
+  border-radius: var(--g-radius-sm);
+}
+
+/* Scrollbar */
+.g-scroll-thin::-webkit-scrollbar             { width: 6px; height: 6px; }
+.g-scroll-thin::-webkit-scrollbar-track       { background: transparent; }
+.g-scroll-thin::-webkit-scrollbar-thumb       { background: var(--g-border-strong); border-radius: var(--g-radius-full); }
+.g-scroll-thin::-webkit-scrollbar-thumb:hover { background: var(--g-text-faint); }
+
+/* Focus ring */
+.g-focus-ring:focus-visible {
+  outline: 2px solid var(--g-primary);
+  outline-offset: 2px;
+  border-radius: var(--g-radius-sm);
+}
+
+/* Typography utilities */
+.g-heading {
+  font-family: var(--g-font-heading);
+  color: var(--g-text);
+  line-height: var(--g-leading-tight);
+  letter-spacing: var(--g-tracking-tight);
+}
+
+.g-label {
+  font-family: var(--g-font-body);
+  font-weight: 700;
+  font-size: var(--g-text-xs);
+  letter-spacing: var(--g-tracking-widest);
+  text-transform: uppercase;
+  color: var(--g-text-muted);
+}
+
+/* Divider with text */
+.g-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--g-space-4);
+  color: var(--g-text-faint);
+  font-size: var(--g-text-sm);
+}
+.g-divider::before,
+.g-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--g-border);
+}
+
+/* ================================================================
+   RESPONSIVE BREAKPOINTS
+   Mobile:  < 768px
+   Tablet:  768px – 1199px
+   Desktop: >= 1200px
+   ================================================================ */
+
+@media (max-width: 767px) {
+  :root {
+    --g-header-h: 60px;
+  }
+}
+
+/* ================================================================
+   GUEST PORTAL — GLOBAL BASE STYLES
+   Chỉ áp dụng trong scope .guest-portal
+   ================================================================ */
+.guest-portal {
+  font-family: var(--g-font-body);
+  background: var(--g-bg);
+  color: var(--g-text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.guest-portal *,
+.guest-portal *::before,
+.guest-portal *::after {
+  box-sizing: border-box;
+}
+
+.guest-portal img {
+  max-width: 100%;
+  display: block;
+}
+
+.guest-portal a {
+  color: var(--g-primary);
+  text-decoration: none;
+  transition: color var(--g-transition);
+}
+
+.guest-portal a:hover {
+  color: var(--g-primary-light);
+}
+
+/* ================================================================
+   GUEST BUTTON SYSTEM
+   ================================================================ */
+
+/* Primary (Forest Green) */
+.g-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--g-space-2);
+  padding: 12px 28px;
+  background: var(--g-primary);
+  color: var(--g-text-on-primary);
+  font-family: var(--g-font-body);
+  font-size: var(--g-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: none;
+  border-radius: var(--g-radius-full);
+  cursor: pointer;
+  transition: background var(--g-transition), transform var(--g-transition), box-shadow var(--g-transition);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.g-btn-primary:hover {
+  background: var(--g-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(26, 56, 38, 0.25);
+}
+.g-btn-primary:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Gold accent */
+.g-btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--g-space-2);
+  padding: 12px 28px;
+  background: var(--g-gold);
+  color: #fff;
+  font-family: var(--g-font-body);
+  font-size: var(--g-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: none;
+  border-radius: var(--g-radius-full);
+  cursor: pointer;
+  transition: background var(--g-transition), transform var(--g-transition), box-shadow var(--g-transition);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.g-btn-gold:hover {
+  background: var(--g-gold-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(184, 150, 46, 0.3);
+}
+
+/* Outlined */
+.g-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--g-space-2);
+  padding: 11px 27px;
+  background: transparent;
+  color: var(--g-primary);
+  font-family: var(--g-font-body);
+  font-size: var(--g-text-sm);
+  font-weight: 600;
+  border: 1.5px solid var(--g-primary);
+  border-radius: var(--g-radius-full);
+  cursor: pointer;
+  transition: all var(--g-transition);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.g-btn-outline:hover {
+  background: var(--g-primary-muted);
+  transform: translateY(-1px);
+}
+
+/* Ghost */
+.g-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--g-space-2);
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--g-text-secondary);
+  font-family: var(--g-font-body);
+  font-size: var(--g-text-sm);
+  font-weight: 500;
+  border: none;
+  border-radius: var(--g-radius-md);
+  cursor: pointer;
+  transition: all var(--g-transition);
+  text-decoration: none;
+}
+.g-btn-ghost:hover {
+  background: var(--g-surface);
+  color: var(--g-text);
+}
+
+/* Size modifiers */
+.g-btn-sm { padding: 8px 18px; font-size: var(--g-text-xs); }
+.g-btn-lg { padding: 16px 36px; font-size: var(--g-text-base); }
+.g-btn-xl { padding: 18px 48px; font-size: var(--g-text-lg); }
+
+/* ================================================================
+   CARD STYLES
+   ================================================================ */
+.g-card {
+  background: var(--g-bg-card);
+  border-radius: var(--g-radius-lg);
+  border: 1px solid var(--g-border);
+  box-shadow: var(--g-shadow-sm);
+  overflow: hidden;
+  transition: transform var(--g-transition), box-shadow var(--g-transition);
+}
+.g-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--g-shadow-lg);
+}
+
+/* ================================================================
+   SECTION HELPERS
+   ================================================================ */
+.g-section {
+  padding: var(--g-space-20) 0;
+}
+.g-section-lg {
+  padding: var(--g-space-32) 0;
+}
+
+/* ================================================================
+   IMAGE HELPERS
+   ================================================================ */
+.g-img-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ================================================================
+   PROSE (nội dung bài viết)
+   ================================================================ */
+.g-prose {
+  font-family: var(--g-font-body);
+  font-size: var(--g-text-base);
+  line-height: var(--g-leading-relaxed);
+  color: var(--g-text-secondary);
+}
+.g-prose h1, .g-prose h2, .g-prose h3, .g-prose h4 {
+  font-family: var(--g-font-heading);
+  color: var(--g-text);
+  line-height: var(--g-leading-snug);
+  margin: 1.5em 0 0.5em;
+}
+.g-prose p { margin: 0 0 1em; }
+.g-prose a { color: var(--g-primary); }
+.g-prose img { border-radius: var(--g-radius-md); margin: 1.5em 0; }
+.g-prose ul, .g-prose ol { padding-left: 1.5em; margin: 0 0 1em; }
+.g-prose li { margin: 0.25em 0; }
+.g-prose blockquote {
+  border-left: 3px solid var(--g-gold);
+  padding-left: 1em;
+  color: var(--g-text-muted);
+  font-style: italic;
+  margin: 1.5em 0;
+}

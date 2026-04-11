@@ -17,6 +17,7 @@ const inputStyle = {
   borderRadius: 12,
   border: "1px solid #d6d3d1",
   background: "#fff",
+  color: "inherit",
 };
 
 const statusMeta = {
@@ -149,10 +150,10 @@ export default function MaintenancePage() {
         </button>
       </div>
 
-      {errorMessage ? <div style={{ ...cardStyle, marginBottom: 20, padding: 14, color: "#b91c1c", background: "#fff7f7", borderColor: "#fecaca" }}>{errorMessage}</div> : null}
+      {errorMessage ? <div className="sub-card-p" style={{ ...cardStyle, marginBottom: 20, padding: 14, color: "#b91c1c", background: "#fff7f7", borderColor: "#fecaca" }}>{errorMessage}</div> : null}
 
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
-        <article style={{ ...cardStyle, padding: 22 }}>
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+        <article className="primary-card-p" style={{ ...cardStyle, padding: 22 }}>
           <h3 style={{ margin: "0 0 18px", fontSize: 18, color: "#1c1917", fontWeight: 800 }}>Tạo ticket bảo trì</h3>
           <form onSubmit={handleCreate} style={{ display: "grid", gap: 12 }}>
             <select value={form.roomId} onChange={(e) => setForm((prev) => ({ ...prev, roomId: e.target.value }))} style={inputStyle} required>
@@ -163,7 +164,7 @@ export default function MaintenancePage() {
             </select>
             <input value={form.title} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Tiêu đề sự cố" style={inputStyle} required />
             <textarea value={form.reason} onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))} placeholder="Mô tả / nguyên nhân" style={{ ...inputStyle, minHeight: 84, resize: "vertical" }} required />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <select value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))} style={inputStyle}>
                 <option value="Repair">Repair</option>
                 <option value="Inspection">Inspection</option>
@@ -176,7 +177,7 @@ export default function MaintenancePage() {
                 <option value="Critical">Critical</option>
               </select>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <select value={form.assignedToUserId} onChange={(e) => setForm((prev) => ({ ...prev, assignedToUserId: e.target.value }))} style={inputStyle}>
                 <option value="">Chưa phân công</option>
                 {staffOptions.map((user) => (
@@ -205,7 +206,7 @@ export default function MaintenancePage() {
               "Closed: vận hành xác nhận hoàn tất, backend bỏ Disabled và đưa phòng về Available + Dirty.",
               "Cancelled: ticket tạo nhầm hoặc không còn cần xử lý.",
             ].map((line) => (
-              <div key={line} style={{ background: "#faf8f3", borderRadius: 14, padding: 14, color: "#44403c", lineHeight: 1.6 }}>
+              <div key={line} className="sub-card-p" style={{ background: "#faf8f3", borderRadius: 14, padding: 14, color: "#44403c", lineHeight: 1.6 }}>
                 {line}
               </div>
             ))}
@@ -213,7 +214,7 @@ export default function MaintenancePage() {
         </article>
       </section>
 
-      <section style={{ ...cardStyle, overflow: "hidden" }}>
+      <section className="primary-card-p" style={{ ...cardStyle, overflow: "hidden" }}>
         <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1ece2", display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <strong style={{ color: "#1c1917", fontSize: 18 }}>Danh sách ticket bảo trì</strong>
           <select value={filters.status} onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))} style={{ ...inputStyle, width: 180 }}>

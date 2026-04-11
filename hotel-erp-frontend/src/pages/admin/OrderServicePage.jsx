@@ -7,7 +7,7 @@ import {
   updateOrderService,
   updateOrderServiceStatus,
 } from "../../api/orderServicesApi";
-import { getServices } from "../../api/servicesApi";
+import { getServiceCategories, getServices } from "../../api/servicesApi";
 import { formatCurrency, formatDate } from "../../utils";
 import {
   FormFooter,
@@ -32,9 +32,23 @@ const secondaryButtonStyle = {
 };
 
 const ORDER_STATUSES = ["Pending", "Delivered", "Cancelled"];
+const ORDER_STATUS_LABELS = {
+  Pending: "Chờ xử lý",
+  Delivered: "Đã giao",
+  Cancelled: "Đã hủy",
+};
+const BOOKING_STATUS_LABELS = {
+  Pending: "Chờ nhận",
+  Confirmed: "Đã xác nhận",
+  Checked_in: "Đang ở",
+  Checked_out_pending_settlement: "Chờ quyết toán",
+  Completed: "Hoàn tất",
+  Cancelled: "Đã hủy",
+};
 
 export default function OrderServicePage() {
   const [rows, setRows] = useState([]);
+  const [serviceCategoryOptions, setServiceCategoryOptions] = useState([]);
   const [serviceOptions, setServiceOptions] = useState([]);
   const [bookingDetailOptions, setBookingDetailOptions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -49,12 +63,16 @@ export default function OrderServicePage() {
   const [form, setForm] = useState({
     bookingDetailId: "",
     note: "",
-    items: [{ serviceId: "", quantity: 1, unitPriceOverride: "" }],
+    items: [{ categoryId: "", serviceId: "", quantity: 1, unitPriceOverride: "" }],
   });
 
   const activeServiceOptions = useMemo(
-    () => serviceOptions.filter((service) => service.isActive),
+    () => serviceOptions.filter((service) => service.isActive && service.categoryIsActive !== false),
     [serviceOptions],
+  );
+  const activeCategoryOptions = useMemo(
+    () => serviceCategoryOptions.filter((category) => category.isActive !== false),
+    [serviceCategoryOptions],
   );
 
   const selectedBookingDetail = useMemo(
@@ -99,17 +117,19 @@ export default function OrderServicePage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [orderRes, serviceRes, bookingOptionRes] = await Promise.all([
+      const [orderRes, categoryRes, serviceRes, bookingOptionRes] = await Promise.all([
         getOrderServices({
           page: 1,
           pageSize: 200,
           keyword,
           status,
         }),
+        getServiceCategories({ page: 1, pageSize: 200, includeInactive: true }),
         getServices({ page: 1, pageSize: 200, includeInactive: false }),
         getOrderServiceBookingOptions(),
       ]);
       setRows(orderRes.data?.data || []);
+      setServiceCategoryOptions(categoryRes.data?.data || []);
       setServiceOptions(serviceRes.data?.data || []);
       setBookingDetailOptions(bookingOptionRes.data?.data || []);
     } catch (error) {
@@ -128,7 +148,7 @@ export default function OrderServicePage() {
     setForm({
       bookingDetailId: "",
       note: "",
-      items: [{ serviceId: "", quantity: 1, unitPriceOverride: "" }],
+      items: [{ categoryId: "", serviceId: "", quantity: 1, unitPriceOverride: "" }],
     });
     setErrorMessage("");
     setModalOpen(true);
@@ -144,10 +164,14 @@ export default function OrderServicePage() {
         note: detail.note || "",
         items:
           detail.details?.map((line) => ({
+            categoryId:
+              line.categoryId?.toString() ||
+              serviceOptions.find((service) => String(service.id) === String(line.serviceId))?.categoryId?.toString() ||
+              "",
             serviceId: line.serviceId?.toString() || "",
             quantity: line.quantity || 1,
             unitPriceOverride: line.unitPrice?.toString() || "",
-          })) || [{ serviceId: "", quantity: 1, unitPriceOverride: "" }],
+          })) || [{ categoryId: "", serviceId: "", quantity: 1, unitPriceOverride: "" }],
       });
       setErrorMessage("");
       setModalOpen(true);
@@ -170,7 +194,11 @@ export default function OrderServicePage() {
     setForm((prev) => ({
       ...prev,
       items: prev.items.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [field]: value } : item,
+        itemIndex === index
+          ? field === "categoryId"
+            ? { ...item, categoryId: value, serviceId: "" }
+            : { ...item, [field]: value }
+          : item,
       ),
     }));
   };
@@ -178,7 +206,7 @@ export default function OrderServicePage() {
   const addLine = () => {
     setForm((prev) => ({
       ...prev,
-      items: [...prev.items, { serviceId: "", quantity: 1, unitPriceOverride: "" }],
+      items: [...prev.items, { categoryId: "", serviceId: "", quantity: 1, unitPriceOverride: "" }],
     }));
   };
 
@@ -188,6 +216,11 @@ export default function OrderServicePage() {
       items: prev.items.filter((_, itemIndex) => itemIndex !== index),
     }));
   };
+
+  const getBookingStatusLabelShort = (value) => BOOKING_STATUS_LABELS[value] || value || "—";
+  const getOrderStatusLabelShort = (value) => ORDER_STATUS_LABELS[value] || value || "—";
+  const getServicesByCategory = (categoryId) =>
+    activeServiceOptions.filter((service) => String(service.categoryId || "") === String(categoryId || ""));
 
   const submitForm = async (e) => {
     e.preventDefault();
@@ -238,7 +271,7 @@ export default function OrderServicePage() {
           </button>
         }
         filterContent={
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 0.9fr", gap: 16, alignItems: "end" }}>
+          <div className="grid grid-cols-1 md:grid-cols-[1.4fr_0.9fr] gap-4 items-end">
             <div>
               <label style={labelStyle}>Tìm booking / khách / phòng</label>
               <input value={keyword} onChange={(e) => setKeyword(e.target.value)} style={inputStyle} placeholder="Booking code, khách, số phòng..." />
@@ -247,7 +280,7 @@ export default function OrderServicePage() {
               <label style={labelStyle}>Trạng thái</label>
               <select value={status} onChange={(e) => setStatus(e.target.value)} style={inputStyle}>
                 <option value="">Tất cả</option>
-                {ORDER_STATUSES.map((item) => <option key={item} value={item}>{item}</option>)}
+                {ORDER_STATUSES.map((item) => <option key={item} value={item}>{getOrderStatusLabelShort(item)}</option>)}
               </select>
             </div>
           </div>
@@ -301,7 +334,7 @@ export default function OrderServicePage() {
                           disabled={!item.isActive}
                         >
                           {ORDER_STATUSES.map((orderStatus) => (
-                            <option key={orderStatus} value={orderStatus}>{orderStatus}</option>
+                            <option key={orderStatus} value={orderStatus}>{getOrderStatusLabelShort(orderStatus)}</option>
                           ))}
                         </select>
                       </td>
@@ -323,7 +356,7 @@ export default function OrderServicePage() {
       {modalOpen ? (
         <SharedModal open={modalOpen} onClose={() => setModalOpen(false)} title={editingItem ? "Cập nhật đơn dịch vụ" : "Tạo đơn dịch vụ"}>
           <form onSubmit={submitForm}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label style={labelStyle}>Booking / Phòng / Khách</label>
                 <select
@@ -347,11 +380,11 @@ export default function OrderServicePage() {
             </div>
 
             {selectedBookingDetail ? (
-              <div style={{ marginTop: 14, padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0", display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-3" style={{ padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                 <InfoChip label="Booking" value={selectedBookingDetail.bookingCode || `#${selectedBookingDetail.bookingId || "—"}`} />
                 <InfoChip label="Khách" value={selectedBookingDetail.guestName || "—"} />
                 <InfoChip label="Phòng" value={selectedBookingDetail.roomNumber || "—"} />
-                <InfoChip label="Trạng thái" value={selectedBookingDetail.bookingStatus || "—"} />
+                <InfoChip label="Trạng thái" value={getBookingStatusLabelShort(selectedBookingDetail.bookingStatus)} />
               </div>
             ) : null}
 
@@ -362,12 +395,21 @@ export default function OrderServicePage() {
               </div>
               <div style={{ display: "grid", gap: 12 }}>
                 {form.items.map((item, index) => (
-                  <div key={`${index}-${item.serviceId}`} style={{ padding: 14, borderRadius: 14, border: "1px solid #f1ede7", background: "#fffdfa", display: "grid", gridTemplateColumns: "1.6fr 0.7fr 0.9fr auto", gap: 12, alignItems: "end" }}>
+                  <div key={`${index}-${item.serviceId}`} className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr_0.7fr_0.9fr_auto] gap-3 items-end" style={{ padding: 14, borderRadius: 14, border: "1px solid #f1ede7", background: "#fffdfa" }}>
+                    <div>
+                      <label style={labelStyle}>Nhóm dịch vụ</label>
+                      <select value={item.categoryId} onChange={(e) => updateItemField(index, "categoryId", e.target.value)} style={inputStyle}>
+                        <option value="">Chọn nhóm dịch vụ</option>
+                        {activeCategoryOptions.map((category) => (
+                          <option key={category.id} value={category.id}>{category.name}</option>
+                        ))}
+                      </select>
+                    </div>
                     <div>
                       <label style={labelStyle}>Dịch vụ</label>
                       <select value={item.serviceId} onChange={(e) => updateItemField(index, "serviceId", e.target.value)} style={inputStyle}>
-                        <option value="">Chọn dịch vụ</option>
-                        {activeServiceOptions.map((service) => (
+                        <option value="">{item.categoryId ? "Chọn dịch vụ" : "Chọn nhóm trước"}</option>
+                        {getServicesByCategory(item.categoryId).map((service) => (
                           <option key={service.id} value={service.id}>{service.name}</option>
                         ))}
                       </select>
@@ -384,7 +426,7 @@ export default function OrderServicePage() {
                       Xóa dòng
                     </button>
                     {item.serviceId ? (
-                      <div style={{ gridColumn: "1 / span 4", fontSize: 12, color: "#6b7280", marginTop: -2 }}>
+                      <div style={{ gridColumn: "1 / span 5", fontSize: 12, color: "#6b7280", marginTop: -2 }}>
                         Đơn giá gốc: {formatCurrency(activeServiceOptions.find((service) => String(service.id) === String(item.serviceId))?.price || 0)}
                       </div>
                     ) : null}
@@ -407,7 +449,7 @@ export default function OrderServicePage() {
             <DetailGrid label="Phòng" value={detailItem.roomNumber || "?"} />
             <DetailGrid label="Loại phòng" value={detailItem.roomTypeName || "?"} />
             <DetailGrid label="Ngày tạo" value={formatDate(detailItem.orderDate)} />
-            <DetailGrid label="Trạng thái" value={detailItem.status || "?"} />
+            <DetailGrid label="Trạng thái" value={getOrderStatusLabelShort(detailItem.status)} />
             <DetailGrid label="Tổng tiền" value={formatCurrency(detailItem.totalAmount)} />
             <div style={{ marginTop: 8 }}>
               <strong style={{ color: "#1c1917" }}>Dòng dịch vụ</strong>
