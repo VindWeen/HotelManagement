@@ -11,6 +11,7 @@ const AttractionDetailPage = lazy(() => import("../pages/guest/AttractionDetailP
 const ReviewsPage = lazy(() => import("../pages/guest/ReviewsPage"));
 const GuestDashboardPage = lazy(() => import("../pages/guest/dashboard/DashboardPage"));
 const GuestProfilePage = lazy(() => import("../pages/guest/profile/ProfilePage"));
+const MyBookingPage = lazy(() => import("../pages/guest/mybooking/MyBookingPage"));
 
 function RouteFallback() {
   return (
@@ -64,6 +65,14 @@ export default function GuestRoutes() {
         element={
           <GuestProtectedRoute>
             {withSuspense(<GuestProfilePage />)}
+          </GuestProtectedRoute>
+        }
+      />
+      <Route
+        path="/guest/my-bookings"
+        element={
+          <GuestProtectedRoute>
+            {withSuspense(<MyBookingPage />)}
           </GuestProtectedRoute>
         }
       />
