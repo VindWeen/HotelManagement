@@ -46,6 +46,10 @@ const normalizeLossRecord = (item) => ({
   ...item,
   images: parseImages(item.images || item.imgUrl),
   replenishedQuantity: Number(item.replenishedQuantity || 0),
+  equipmentIsActive:
+    item.equipmentIsActive ?? item.EquipmentIsActive ?? true,
+  isPenaltySettled:
+    item.isPenaltySettled ?? item.IsPenaltySettled ?? false,
   remainingToReplenish: Math.max(
     0,
     Number(
@@ -58,7 +62,8 @@ const normalizeLossRecord = (item) => ({
 const canReplenishRecord = (item) =>
   item?.status === "Confirmed" &&
   Number(item?.remainingToReplenish || 0) > 0 &&
-  Number(item?.availableStock || 0) > 0;
+  Number(item?.availableStock || 0) > 0 &&
+  item?.equipmentIsActive !== false;
 
 const getReplenishGroupKey = (item) => {
   if (item?.bookingDetailId) return `booking-detail-${item.bookingDetailId}`;
@@ -71,7 +76,11 @@ const getBulkReplenishCandidates = (records, seedItem) => {
   const groupKey = getReplenishGroupKey(seedItem);
   return records
     .filter((item) => getReplenishGroupKey(item) === groupKey)
-    .filter((item) => item.status === "Confirmed" && Number(item.remainingToReplenish || 0) > 0)
+    .filter(
+      (item) =>
+        item.status === "Confirmed" &&
+        Number(item.remainingToReplenish || 0) > 0,
+    )
     .sort((a, b) => {
       if ((a.roomNumber || "") !== (b.roomNumber || "")) {
         return String(a.roomNumber || "").localeCompare(String(b.roomNumber || ""));
@@ -751,6 +760,10 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
   };
 
   const handleSave = async () => {
+    if (item?.isPenaltySettled && form.status === "Waived") {
+      showToast("Biên bản đã thanh toán, không thể chuyển sang miễn trừ.", "error");
+      return;
+    }
     setSaving(true);
     const formData = new FormData();
     Object.entries(form).forEach(([k, v]) => formData.append(k, v));
@@ -895,8 +908,15 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
             >
               <option value="Pending">Chờ xử lý</option>
               <option value="Confirmed">Đã xác nhận</option>
-              <option value="Waived">Miễn trừ</option>
+              <option value="Waived" disabled={item?.isPenaltySettled}>
+                Miễn trừ
+              </option>
             </select>
+            {item?.isPenaltySettled ? (
+              <div style={{ fontSize: 12, color: "#b45309", marginTop: 6 }}>
+                Biên bản đã thanh toán nên không thể chuyển sang miễn trừ.
+              </div>
+            ) : null}
           </div>
           <div
             style={{
@@ -1141,7 +1161,8 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
   const canSubmit =
     item.status === "Confirmed" &&
     Number(item.remainingToReplenish || 0) > 0 &&
-    Number(item.availableStock || 0) > 0;
+    Number(item.availableStock || 0) > 0 &&
+    item.equipmentIsActive !== false;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -1242,7 +1263,9 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
             <div style={{ background: "#fff7ed", color: "#c2410c", borderRadius: 14, padding: "12px 14px", fontSize: 13, fontWeight: 600 }}>
               {item.status !== "Confirmed"
                 ? "Chỉ bổ sung được khi biên bản đã ở trạng thái Đã xác nhận."
-                : "Kho hiện chưa có tồn khả dụng hoặc biên bản đã được bổ sung đủ."}
+                : item.equipmentIsActive === false
+                  ? "Vật tư đã ngừng kinh doanh hoặc đã bị tắt, không thể bổ sung lại vào phòng."
+                  : "Kho hiện chưa có tồn khả dụng hoặc biên bản đã được bổ sung đủ."}
             </div>
           ) : null}
         </div>
@@ -1320,7 +1343,7 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
         ),
       );
       initialQuantities[item.id] = suggested;
-      if (Number(item.availableStock || 0) > 0) {
+      if (Number(item.availableStock || 0) > 0 && item.equipmentIsActive !== false) {
         initialIds.push(item.id);
       }
     });
@@ -1439,7 +1462,9 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
                     Number(item.availableStock || 0),
                   ),
                 );
-                const disabled = Number(item.availableStock || 0) <= 0;
+                const disabled =
+                  Number(item.availableStock || 0) <= 0 ||
+                  item.equipmentIsActive === false;
                 const checked = selectedIds.includes(item.id);
                 return (
                   <label
@@ -1464,6 +1489,11 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
                       <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
                         Thiếu cần bù: {item.remainingToReplenish} · Tồn khả dụng: {item.availableStock}
                       </div>
+                      {item.equipmentIsActive === false ? (
+                        <div style={{ fontSize: 12, color: "#9a3412", fontWeight: 700, marginTop: 6 }}>
+                          Vật tư đã ngừng kinh doanh hoặc đã bị tắt.
+                        </div>
+                      ) : null}
                     </div>
                     <div>
                       <div style={{ fontSize: 11, fontWeight: 800, color: "#64748b", marginBottom: 6 }}>
@@ -1482,7 +1512,11 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
                     <div style={{ fontSize: 12, color: "#64748b" }}>
                       <div style={{ fontWeight: 800, color: "#0f172a" }}>#{item.id}</div>
                       <div style={{ marginTop: 4 }}>
-                        {disabled ? "Hết tồn kho" : `Tối đa ${max}`}
+                        {item.equipmentIsActive === false
+                          ? "\u004e\u0067\u1eeb\u006e\u0067 \u006b\u0069\u006e\u0068 \u0064\u006f\u0061\u006e\u0068"
+                          : disabled
+                            ? "\u0048\u1ebf\u0074 \u0074\u1ed3\u006e \u006b\u0068\u006f"
+                            : `T\u1ed1\u0069 \u0111\u0061 ${max}`}
                       </div>
                     </div>
                   </label>
@@ -1680,7 +1714,6 @@ export function LossAndDamageTable({
   onEdit,
   onReplenish,
   onBatchReplenish,
-  onDelete,
   onPageChange,
 }) {
   return (
@@ -1825,9 +1858,9 @@ export function LossAndDamageTable({
                         className="btn-icon-p"
                         onClick={() => onReplenish(rec)}
                         title="Bổ sung lại vào phòng"
-                        disabled={rec.status !== "Confirmed" || rec.remainingToReplenish <= 0}
+                        disabled={!canReplenishRecord(rec)}
                         style={
-                          rec.status !== "Confirmed" || rec.remainingToReplenish <= 0
+                          !canReplenishRecord(rec)
                             ? { opacity: 0.4, cursor: "not-allowed" }
                             : { color: "#166534" }
                         }
@@ -1846,9 +1879,6 @@ export function LossAndDamageTable({
                         }
                       >
                         <span className="material-symbols-outlined">playlist_add_check</span>
-                      </button>
-                      <button className="btn-icon-p" onClick={() => onDelete(rec)} title="Xóa" style={{ color: "#ef4444" }}>
-                        <span className="material-symbols-outlined">delete_forever</span>
                       </button>
                     </div>
                   </td>
@@ -1912,8 +1942,6 @@ export default function LossAndDamagePage() {
   const [detailItem, setDetailItem] = useState(null);
   const [replenishItem, setReplenishItem] = useState(null);
   const [batchReplenishItem, setBatchReplenishItem] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -1960,18 +1988,6 @@ export default function LossAndDamagePage() {
       intervalRef.current = null;
     };
   }, [fetchRecords]);
-
-  const handleDelete = async () => {
-    setDeleteLoading(true);
-    try {
-      await axiosClient.delete(`/LossAndDamages/${deleteTarget.id}`);
-      showToast("Đã xóa vĩnh viễn biên bản.");
-      setDeleteTarget(null);
-      fetchRecords(true);
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
 
   const stats = {
     totalOnPage: records.slice((page - 1) * pageSize, page * pageSize).length,
@@ -2043,14 +2059,6 @@ export default function LossAndDamagePage() {
         onSaved={() => fetchRecords(true)}
         showToast={showToast}
       />
-      <ConfirmDialog
-        open={!!deleteTarget}
-        title="Xác nhận xóa"
-        message="Hành động này sẽ xóa vĩnh viễn biên bản và tất cả hình ảnh liên quan."
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
-        loading={deleteLoading}
-      />
 
       <div style={{ maxWidth: 1400, margin: "0 auto", position: "relative", zIndex: 0 }}>
         <LossAndDamageHeader
@@ -2085,13 +2093,13 @@ export default function LossAndDamagePage() {
           onEdit={setEditItem}
           onReplenish={setReplenishItem}
           onBatchReplenish={setBatchReplenishItem}
-          onDelete={setDeleteTarget}
           onPageChange={setPage}
         />
       </div>
     </>
   );
 }
+
 
 
 

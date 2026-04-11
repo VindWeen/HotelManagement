@@ -102,8 +102,13 @@ export default function InvoiceDetailPage() {
 
   const submitPayment = async (e) => {
     e.preventDefault();
-    if (Number(form.amountPaid) <= 0) {
+    const amountPaid = Number(form.amountPaid);
+    if (amountPaid <= 0) {
       showToast("Vui lòng nhập số tiền hợp lệ", "error");
+      return;
+    }
+    if (amountPaid > outstanding) {
+      showToast(`Số tiền thanh toán không được vượt quá dư nợ (${formatCurrency(outstanding)}).`, "error");
       return;
     }
     try {
@@ -111,7 +116,7 @@ export default function InvoiceDetailPage() {
         invoiceId: Number(id),
         paymentType: form.paymentType,
         paymentMethod: form.paymentMethod,
-        amountPaid: Number(form.amountPaid),
+        amountPaid,
         transactionCode: form.transactionCode || null,
         note: form.note || null,
       });
@@ -484,7 +489,27 @@ export default function InvoiceDetailPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Số tiền (Dư nợ: {formatCurrency(outstanding)})</label>
-                      <input type="number" min="0" step="1000" placeholder="VD: 1000000" value={form.amountPaid} onChange={(e) => setForm({ ...form, amountPaid: e.target.value })} required style={inputStyle} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"} />
+                      <input
+                        type="number"
+                        min="0"
+                        max={Math.max(0, outstanding)}
+                        step="1000"
+                        placeholder="VD: 1000000"
+                        value={form.amountPaid}
+                        onChange={(e) => {
+                          const nextValue = e.target.value;
+                          if (nextValue === "") {
+                            setForm({ ...form, amountPaid: "" });
+                            return;
+                          }
+                          const normalizedValue = Math.min(Number(nextValue), Math.max(0, outstanding));
+                          setForm({ ...form, amountPaid: String(normalizedValue) });
+                        }}
+                        required
+                        style={inputStyle}
+                        onFocus={(e) => e.target.style.borderColor = "#4f645b"}
+                        onBlur={(e) => e.target.style.borderColor = "#e2e8e1"}
+                      />
                     </div>
                     <div>
                       <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Loại thanh toán</label>

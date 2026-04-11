@@ -1,4 +1,4 @@
-﻿﻿--============================================== TẠO DATABASE ============================================
+﻿--============================================== TẠO DATABASE ============================================
 use master
 if exists(select * from sys.databases where name = 'HotelManagementDB')
     drop database [HotelManagementDB]
@@ -441,6 +441,7 @@ CREATE TABLE [dbo].[Attractions](
     [distance_km]   [decimal](5, 2)  NULL,
     [description]   [nvarchar](max)  NULL,
     [image_url]     [nvarchar](max)  NULL,              -- ảnh hiển thị card grid
+    [cloudinary_public_id] [nvarchar](255) NULL,        -- để xóa / thay ảnh trên Cloudinary
     [map_embed_link][nvarchar](max)  NULL,
     [is_active]     [bit]            NOT NULL DEFAULT 1,  -- Soft Delete
 PRIMARY KEY CLUSTERED ([id] ASC)

@@ -58,8 +58,8 @@ export default function PublicArticlePage() {
       </header>
 
       <main style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px 72px" }}>
-        <div className={`flex flex-col ${article.attraction ? 'lg:flex-row' : ''} items-start`} style={{ gap: 24 }}>
-          <article className="w-full" style={{ background: "white", borderRadius: 28, border: "1px solid #ede7dd", boxShadow: "0 20px 60px rgba(17,24,39,.06)", overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: article.attraction ? "minmax(0, 1fr) 360px" : "minmax(0, 1fr)", gap: 24, alignItems: "start" }}>
+          <article style={{ background: "white", borderRadius: 28, border: "1px solid #ede7dd", boxShadow: "0 20px 60px rgba(17,24,39,.06)", overflow: "hidden" }}>
             {article.thumbnailUrl ? (
               <img src={article.thumbnailUrl} alt={article.title} style={{ width: "100%", maxHeight: 420, objectFit: "cover", display: "block" }} />
             ) : null}
@@ -69,7 +69,7 @@ export default function PublicArticlePage() {
           </article>
 
           {article.attraction ? (
-            <aside className="w-full lg:w-[360px] shrink-0" style={{ display: "grid", gap: 16 }}>
+            <aside style={{ display: "grid", gap: 16 }}>
               <section style={{ background: "white", borderRadius: 24, border: "1px solid #ede7dd", boxShadow: "0 20px 60px rgba(17,24,39,.06)", overflow: "hidden", position: "sticky", top: 24 }}>
                 <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1ede6", background: "#fbfaf7" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#4f645b" }}>Địa điểm liên kết</div>

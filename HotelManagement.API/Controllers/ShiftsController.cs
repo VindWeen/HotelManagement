@@ -69,6 +69,16 @@ public class ShiftsController : ControllerBase
         if (request.PlannedEnd <= request.PlannedStart)
             return BadRequest(new { message = "Thời gian kết thúc phải lớn hơn thời gian bắt đầu." });
 
+        var user = await _db.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Id == request.UserId);
+
+        if (user == null)
+            return NotFound(new { message = $"Không tìm thấy nhân sự #{request.UserId}." });
+
+        if (string.Equals(user.Role?.Name, "Guest", StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { message = "Không thể phân ca cho tài khoản Guest." });
+
         var overlap = await _db.Shifts.AnyAsync(s =>
             s.UserId == request.UserId &&
             s.Status != ShiftStatuses.Completed &&

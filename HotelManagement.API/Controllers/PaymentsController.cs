@@ -128,6 +128,27 @@ public class PaymentsController : ControllerBase
         if (invoice == null)
             return NotFound(new { success = false, message = $"Không tìm thấy hóa đơn #{invoiceId}." });
 
+        var paidAmount = invoice.Payments
+            .Where(p => p.Status == PaymentStatuses.Success)
+            .Sum(p => p.PaymentType == PaymentTypes.Refund ? -p.AmountPaid : p.AmountPaid);
+        var depositAmount = invoice.BookingId.HasValue
+            ? await _db.Bookings
+                .Where(b => b.Id == invoice.BookingId.Value)
+                .Select(b => b.DepositAmount ?? 0m)
+                .FirstOrDefaultAsync()
+            : 0m;
+        var outstandingAmount = Math.Max(0m, (invoice.FinalTotal ?? 0m) - paidAmount - depositAmount);
+
+        if (request.AmountPaid > outstandingAmount)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = $"Số tiền thanh toán không được vượt quá dư nợ hiện tại ({outstandingAmount:N0}đ).",
+                outstandingAmount
+            });
+        }
+
         var invoicePayment = new Payment
         {
             InvoiceId = invoiceId,

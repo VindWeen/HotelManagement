@@ -2,6 +2,7 @@ using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using HotelManagement.API.Services;
 using HotelManagement.Core.Authorization;
+using HotelManagement.Core.Constants;
 using HotelManagement.Core.Entities;
 using HotelManagement.Core.Helpers;
 using HotelManagement.Core.Models.Enums;
@@ -68,6 +69,16 @@ public class LossAndDamagesController : ControllerBase
 
     private static int ComputeRemainingToReplenish(LossAndDamage record)
         => Math.Max(0, Math.Max(1, record.Quantity) - Math.Max(0, record.ReplenishedQuantity));
+
+    private async Task<bool> IsPenaltySettledAsync(LossAndDamage record)
+    {
+        if (!record.BookingDetailId.HasValue)
+            return false;
+
+        return await _db.BookingDetails
+            .Where(bd => bd.Id == record.BookingDetailId.Value)
+            .AnyAsync(bd => bd.Booking != null && bd.Booking.Status == BookingStatuses.Completed);
+    }
 
     private static string ComputeRoomStatus(string businessStatus, string cleaningStatus)
         => businessStatus switch
@@ -274,6 +285,8 @@ public class LossAndDamagesController : ControllerBase
                 ReporterName = l.Reporter != null ? l.Reporter.FullName : null,
                 AvailableStock = l.RoomInventory != null && l.RoomInventory.Equipment != null ? l.RoomInventory.Equipment.InStockQuantity : 0,
                 RoomInventoryQuantity = l.RoomInventory != null ? l.RoomInventory.Quantity : null,
+                EquipmentIsActive = l.RoomInventory != null && l.RoomInventory.Equipment != null ? l.RoomInventory.Equipment.IsActive : true,
+                IsPenaltySettled = l.BookingDetail != null && l.BookingDetail.Booking != null && l.BookingDetail.Booking.Status == BookingStatuses.Completed,
             })
             .ToListAsync();
 
@@ -298,6 +311,8 @@ public class LossAndDamagesController : ControllerBase
             l.ReporterName,
             l.AvailableStock,
             l.RoomInventoryQuantity,
+            l.EquipmentIsActive,
+            l.IsPenaltySettled,
             Images = ParseImages(l.ImgUrl)
         }).ToList();
 
@@ -332,6 +347,8 @@ public class LossAndDamagesController : ControllerBase
                 ReporterName = l.Reporter != null ? l.Reporter.FullName : null,
                 AvailableStock = l.RoomInventory != null && l.RoomInventory.Equipment != null ? l.RoomInventory.Equipment.InStockQuantity : 0,
                 RoomInventoryQuantity = l.RoomInventory != null ? l.RoomInventory.Quantity : null,
+                EquipmentIsActive = l.RoomInventory != null && l.RoomInventory.Equipment != null ? l.RoomInventory.Equipment.IsActive : true,
+                IsPenaltySettled = l.BookingDetail != null && l.BookingDetail.Booking != null && l.BookingDetail.Booking.Status == BookingStatuses.Completed,
             })
             .FirstOrDefaultAsync();
 
@@ -359,6 +376,8 @@ public class LossAndDamagesController : ControllerBase
             record.ReporterName,
             record.AvailableStock,
             record.RoomInventoryQuantity,
+            record.EquipmentIsActive,
+            record.IsPenaltySettled,
             Images = ParseImages(record.ImgUrl)
         });
     }
@@ -465,7 +484,10 @@ public class LossAndDamagesController : ControllerBase
         var oldQuantity = record.Quantity;
 
         if (request.Quantity < record.ReplenishedQuantity)
-            return BadRequest(new { message = "S? l??ng kh?ng ???c nh? h?n ph?n ?? b? sung." });
+            return BadRequest(new { message = "Số lượng không được nhỏ hơn phần đã bổ sung." });
+
+        if (request.Status?.Trim() == "Waived" && await IsPenaltySettledAsync(record))
+            return BadRequest(new { message = "Không thể chuyển sang miễn trừ vì khoản thất thoát này đã được thanh toán." });
 
         var currentImages = new List<ImageItem>();
         if (!string.IsNullOrEmpty(record.ImgUrl))
@@ -595,7 +617,7 @@ public class LossAndDamagesController : ControllerBase
     public async Task<IActionResult> Replenish(int id, [FromBody] ReplenishLossAndDamageRequest request)
     {
         if (request.Quantity < 1)
-            return BadRequest(new { message = "S? l??ng b? sung ph?i l?n h?n 0." });
+            return BadRequest(new { message = "Số lượng bổ sung phải lớn hơn 0." });
 
         var record = await _db.LossAndDamages
             .Include(l => l.RoomInventory)
@@ -603,17 +625,20 @@ public class LossAndDamagesController : ControllerBase
             .FirstOrDefaultAsync(l => l.Id == id);
 
         if (record is null)
-            return NotFound(new { message = $"Kh?ng t?m th?y bi?n b?n #{id}." });
+            return NotFound(new { message = $"Không tìm thấy biên bản #{id}." });
 
         if (record.Status != "Confirmed")
-            return BadRequest(new { message = "Ch? c? th? b? sung sau khi bi?n b?n ?? x?c nh?n." });
+            return BadRequest(new { message = "Chỉ có thể bổ sung sau khi biên bản đã xác nhận." });
 
         if (!record.RoomInventoryId.HasValue || record.RoomInventory?.Equipment is null)
-            return BadRequest(new { message = "Bi?n b?n n?y kh?ng g?n v?i v?t t? ph?ng ?? b? sung." });
+            return BadRequest(new { message = "Biên bản này không gắn với vật tư phòng để bổ sung." });
+
+        if (!record.RoomInventory.Equipment.IsActive)
+            return BadRequest(new { message = "Vật tư này đã ngừng kinh doanh hoặc đang bị vô hiệu hóa, không thể bổ sung lại vào phòng." });
 
         var remaining = ComputeRemainingToReplenish(record);
         if (remaining <= 0)
-            return BadRequest(new { message = "Bi?n b?n n?y ?? b? sung ??." });
+            return BadRequest(new { message = "Biên bản này đã được bổ sung đủ." });
 
         var roomInventory = record.RoomInventory;
         var equipment = roomInventory.Equipment;
@@ -621,7 +646,7 @@ public class LossAndDamagesController : ControllerBase
         if (availableStock <= 0)
             return BadRequest(new
             {
-                message = "Kho hi?n kh?ng c?n t?n kh? d?ng ?? b? sung.",
+                message = "Kho hiện không còn tồn khả dụng để bổ sung.",
                 remainingToReplenish = remaining,
                 availableStock
             });
@@ -650,8 +675,8 @@ public class LossAndDamagesController : ControllerBase
         return Ok(new
         {
             message = remainingAfter == 0
-                ? "?? b? sung ?? v?t t? cho ph?ng."
-                : $"?? b? sung {actualQuantity} v? c?n thi?u {remainingAfter}.",
+                ? "Đã bổ sung đủ vật tư cho phòng."
+                : $"Đã bổ sung {actualQuantity} và còn thiếu {remainingAfter}.",
             replenishedQuantity = actualQuantity,
             totalReplenishedQuantity = record.ReplenishedQuantity,
             remainingToReplenish = remainingAfter,

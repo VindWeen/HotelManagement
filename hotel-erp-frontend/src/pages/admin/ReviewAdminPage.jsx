@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { approveReview, getReviews } from "../../api/reviewsApi";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const cardStyle = {
   background: "white",
@@ -18,6 +19,7 @@ function formatDate(date) {
 }
 
 export default function ReviewAdminPage() {
+  const { isMobile } = useResponsiveAdmin();
   const [status, setStatus] = useState("pending");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -52,15 +54,15 @@ export default function ReviewAdminPage() {
   };
 
   return (
-    <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 24 }}>
+    <div style={{ maxWidth: 1400, margin: "0 auto", paddingInline: isMobile ? 4 : 0 }}>
+      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", gap: 16, marginBottom: 24 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 24, color: "#1c1917", fontWeight: 700 }}>Duyệt đánh giá</h2>
           <p style={{ margin: "6px 0 0", color: "#6b7280", fontSize: 14 }}>
             Kiểm tra đánh giá từ khách và duyệt hoặc từ chối ngay trong admin.
           </p>
         </div>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ minWidth: 220, padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e8e1", background: "#f9f8f3" }}>
+        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ minWidth: isMobile ? 0 : 220, width: isMobile ? "100%" : "auto", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e8e1", background: "#f9f8f3" }}>
           <option value="pending">Chờ duyệt</option>
           <option value="approved">Đã duyệt</option>
           <option value="rejected">Đã từ chối</option>
@@ -74,6 +76,40 @@ export default function ReviewAdminPage() {
           <strong style={{ color: "#1c1917" }}>Danh sách đánh giá</strong>
           <p style={{ margin: "4px 0 0", color: "#78716c", fontSize: 13 }}>Tổng cộng {rows.length} đánh giá.</p>
         </div>
+        {isMobile ? (
+          <div style={{ display: "grid", gap: 12, padding: 16 }}>
+            {loading ? (
+              <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Đang tải dữ liệu...</div>
+            ) : rows.length === 0 ? (
+              <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Chưa có đánh giá phù hợp bộ lọc.</div>
+            ) : (
+              rows.map((review) => (
+                <article key={review.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ fontWeight: 700, color: "#1c1917" }}>{review.user?.fullName || "-"}</div>
+                      <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>{review.roomType?.name || "-"}</div>
+                    </div>
+                    <div style={{ fontWeight: 700, color: "#1c1917" }}>{review.rating}/5</div>
+                  </div>
+                  <div style={{ fontSize: 13, color: "#57534e", lineHeight: 1.6 }}>{review.comment || "-"}</div>
+                  {review.rejectionReason ? <div style={{ color: "#b91c1c", fontSize: 12 }}>Lý do từ chối: {review.rejectionReason}</div> : null}
+                  <div style={{ fontSize: 12, color: "#78716c" }}>{formatDate(review.createdAt)}</div>
+                  <div>
+                    {status === "pending" ? (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        <button type="button" onClick={() => handleApprove(review.id, true)} style={{ padding: "10px 10px", borderRadius: 10, border: "1px solid #bbf7d0", background: "#ecfdf5", color: "#047857", cursor: "pointer" }}>Duyệt</button>
+                        <button type="button" onClick={() => handleApprove(review.id, false)} style={{ padding: "10px 10px", borderRadius: 10, border: "1px solid #fecaca", background: "#fff7f7", color: "#b91c1c", cursor: "pointer" }}>Từ chối</button>
+                      </div>
+                    ) : (
+                      <span style={{ color: "#78716c", fontSize: 13 }}>Đã xử lý</span>
+                    )}
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+        ) : (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -115,6 +151,7 @@ export default function ReviewAdminPage() {
             </tbody>
           </table>
         </div>
+        )}
       </section>
     </div>
   );

@@ -319,8 +319,13 @@ export default function ArticleAdminPage() {
       if (!normalizedSearch) return true;
 
       const title = article.title?.toLowerCase() || "";
+      const slug = article.slug?.toLowerCase() || "";
       const categoryName = article.category?.name?.toLowerCase() || "";
-      return title.includes(normalizedSearch) || categoryName.includes(normalizedSearch);
+      return (
+        title.includes(normalizedSearch) ||
+        slug.includes(normalizedSearch) ||
+        categoryName.includes(normalizedSearch)
+      );
     });
   }, [articles, visibilityFilter, articleSearch]);
 

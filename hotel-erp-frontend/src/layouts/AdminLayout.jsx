@@ -5,6 +5,7 @@ import { useLoadingStore } from "../store/loadingStore";
 import { logout } from "../api/authApi";
 import { getMyProfile } from "../api/userProfileApi";
 import { useSignalR } from "../hooks/useSignalR";
+import { useResponsiveAdmin } from "../hooks/useResponsiveAdmin";
 import NotificationMenu from "../components/NotificationMenu";
 
 const THEME_STORAGE_KEY = "admin-theme-mode";
@@ -73,7 +74,8 @@ function buildNavItems(hasPermission) {
     hasPermission("MANAGE_ROOMS") && { to: "/admin/room-types", icon: "category", label: "Hạng phòng" },
     hasPermission("MANAGE_INVENTORY") && { to: "/admin/items", icon: "inventory_2", label: "Vật tư & Minibar" },
     hasPermission("MANAGE_INVENTORY") && { to: "/admin/loss-damage", icon: "report_problem", label: "Thất thoát & Đền bù" },
-    hasPermission("MANAGE_BOOKINGS") && { to: "/admin/bookings", icon: "confirmation_number", label: "Booking & Voucher" },
+    hasPermission("MANAGE_BOOKINGS") && { to: "/admin/bookings", icon: "confirmation_number", label: "Booking" },
+    hasPermission("MANAGE_BOOKINGS") && { to: "/admin/vouchers", icon: "local_offer", label: "Voucher" },
     hasPermission("MANAGE_SERVICES") && { to: "/admin/services", icon: "room_service", label: "Quản lý dịch vụ" },
     hasPermission("MANAGE_INVOICES") && { to: "/admin/invoices", icon: "receipt_long", label: "Hóa đơn" },
     hasPermission("MANAGE_USERS") && { to: "/admin/memberships", icon: "workspace_premium", label: "Khách hàng thành viên" },
@@ -100,10 +102,7 @@ export default function AdminLayout() {
     if (typeof window === "undefined") return "light";
     return localStorage.getItem(THEME_STORAGE_KEY) || "light";
   });
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.innerWidth < 1100;
-  });
+  const { width, isMobile } = useResponsiveAdmin();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const palette = useMemo(() => getPalette(themeMode), [themeMode]);
@@ -124,18 +123,8 @@ export default function AdminLayout() {
   }, [user?.id, user?.fullName, updateUser]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-
-    const syncViewport = () => {
-      const mobile = window.innerWidth < 1100;
-      setIsMobile(mobile);
-      if (!mobile) setSidebarOpen(false);
-    };
-
-    syncViewport();
-    window.addEventListener("resize", syncViewport);
-    return () => window.removeEventListener("resize", syncViewport);
-  }, []);
+    if (!isMobile) setSidebarOpen(false);
+  }, [isMobile]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -632,7 +621,7 @@ export default function AdminLayout() {
             background: palette.shellBg,
             display: "flex",
             flexDirection: "column",
-            padding: "32px 16px",
+            padding: isMobile ? "22px 12px 18px" : "32px 16px",
             zIndex: 50,
             overflow: "hidden",
             boxShadow: isMobile ? "0 18px 48px rgba(0,0,0,.22)" : "none",
@@ -745,7 +734,7 @@ export default function AdminLayout() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: isMobile ? "0 16px" : "0 32px",
+            padding: isMobile ? "0 12px" : width < 1280 ? "0 24px" : "0 32px",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 12 : 32, flex: 1 }}>
@@ -899,13 +888,11 @@ export default function AdminLayout() {
         <main
           style={{
             marginLeft: isMobile ? 0 : SIDEBAR_WIDTH,
-            width: isMobile ? "100%" : `calc(100% - ${SIDEBAR_WIDTH}px)`,
             paddingTop: 64,
             minHeight: "100vh",
-            overflowX: "hidden",
           }}
         >
-          <div style={{ padding: isMobile ? 16 : 32, overflowX: "hidden" }}>
+          <div style={{ padding: isMobile ? "12px 12px 20px" : width < 1280 ? 24 : 32 }}>
             <Outlet />
           </div>
         </main>

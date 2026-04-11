@@ -11,6 +11,7 @@ public class Attraction
     public decimal? DistanceKm { get; set; }
     public string? Description { get; set; }
     public string? ImageUrl { get; set; }
+    public string? CloudinaryPublicId { get; set; }
     public string? MapEmbedLink { get; set; }
     public bool IsActive { get; set; } = true;
 

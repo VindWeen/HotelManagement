@@ -58,6 +58,19 @@ export const updateAttraction = (id, data) =>
     axiosClient.put(`/Attractions/${id}`, data);
 
 /**
+ * POST /api/Attractions/upload-image  [MANAGE_CONTENT]
+ * Body: FormData with image file
+ * Response: { message, url, publicId }
+ */
+export const uploadAttractionImage = (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return axiosClient.post("/Attractions/upload-image", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+    });
+};
+
+/**
  * DELETE /api/Attractions/{id}  [MANAGE_CONTENT]
  * Soft delete
  * Response: { message }

@@ -2,6 +2,39 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { completeShift, confirmShift, createShift, getCurrentShifts, getShifts, handoverShift, startShift } from "../../api/shiftsApi";
 import { getUsers } from "../../api/userManagementApi";
 
+const SHIFT_TIME_PRESETS = {
+  Morning: { start: "07:00", end: "14:30", label: "07:00 - 14:30" },
+  Afternoon: { start: "14:30", end: "22:00", label: "14:30 - 22:00" },
+  Night: { start: "22:00", end: "07:00", label: "22:00 - 07:00" },
+};
+
+function toLocalInputValue(date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  const hours = `${date.getHours()}`.padStart(2, "0");
+  const minutes = `${date.getMinutes()}`.padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function buildShiftDateRange(shiftType) {
+  const preset = SHIFT_TIME_PRESETS[shiftType] || SHIFT_TIME_PRESETS.Morning;
+  const now = new Date();
+  const start = new Date(now);
+  const [startHour, startMinute] = preset.start.split(":").map(Number);
+  start.setHours(startHour, startMinute, 0, 0);
+
+  const end = new Date(start);
+  const [endHour, endMinute] = preset.end.split(":").map(Number);
+  end.setHours(endHour, endMinute, 0, 0);
+  if (end <= start) end.setDate(end.getDate() + 1);
+
+  return {
+    plannedStart: toLocalInputValue(start),
+    plannedEnd: toLocalInputValue(end),
+  };
+}
+
 const pageCard = {
   background: "#fff",
   border: "1px solid #ece7de",
@@ -42,8 +75,7 @@ export default function ShiftManagementPage() {
     userId: "",
     shiftType: "Morning",
     department: "Reception",
-    plannedStart: "",
-    plannedEnd: "",
+    ...buildShiftDateRange("Morning"),
   });
 
   const load = useCallback(async () => {
@@ -71,7 +103,12 @@ export default function ShiftManagementPage() {
   }, [load]);
 
   const staffOptions = useMemo(
-    () => (users || []).filter((item) => item.status !== false),
+    () =>
+      (users || []).filter(
+        (item) =>
+          item.status !== false &&
+          String(item.roleName || item.role?.name || "").toLowerCase() !== "guest",
+      ),
     [users],
   );
 
@@ -91,8 +128,7 @@ export default function ShiftManagementPage() {
         userId: "",
         shiftType: "Morning",
         department: "Reception",
-        plannedStart: "",
-        plannedEnd: "",
+        ...buildShiftDateRange("Morning"),
       });
       await load();
     } catch (error) {
@@ -144,7 +180,7 @@ export default function ShiftManagementPage() {
               ))}
             </select>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <select value={form.shiftType} onChange={(e) => setForm((prev) => ({ ...prev, shiftType: e.target.value }))} style={inputStyle}>
+              <select value={form.shiftType} onChange={(e) => setForm((prev) => ({ ...prev, shiftType: e.target.value, ...buildShiftDateRange(e.target.value) }))} style={inputStyle}>
                 <option value="Morning">Ca sáng</option>
                 <option value="Afternoon">Ca chiều</option>
                 <option value="Night">Ca đêm</option>
@@ -158,6 +194,9 @@ export default function ShiftManagementPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input type="datetime-local" value={form.plannedStart} onChange={(e) => setForm((prev) => ({ ...prev, plannedStart: e.target.value }))} style={inputStyle} required />
               <input type="datetime-local" value={form.plannedEnd} onChange={(e) => setForm((prev) => ({ ...prev, plannedEnd: e.target.value }))} style={inputStyle} required />
+            </div>
+            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 700 }}>
+              Khung giờ mặc định: {SHIFT_TIME_PRESETS[form.shiftType]?.label || "--"}
             </div>
             <button type="submit" disabled={saving} style={{ height: 42, borderRadius: 12, border: "none", background: "#4f645b", color: "#ecfdf5", fontWeight: 800, cursor: "pointer" }}>
               {saving ? "Đang lưu..." : "Tạo ca"}

@@ -479,6 +479,7 @@ public class BookingsController : ControllerBase
             var assignedRoom = await _context.Rooms.FirstOrDefaultAsync(r => r.Id == detail.RoomId.Value, cancellationToken);
             if (assignedRoom != null)
             {
+                await EnsureRoomCanCheckInAsync(booking, detail, assignedRoom.Id, assignedRoom.RoomNumber, cancellationToken);
                 assignedRoom.BusinessStatus = RoomBusinessStatuses.Occupied;
                 assignedRoom.Status = ComputeRoomStatus(assignedRoom.BusinessStatus, assignedRoom.CleaningStatus);
                 detail.Room = assignedRoom;
@@ -494,6 +495,7 @@ public class BookingsController : ControllerBase
                     : "Không còn phòng trống sạch phù hợp cho loại phòng này.");
             }
 
+            await EnsureRoomCanCheckInAsync(booking, detail, room.Id, room.RoomNumber, cancellationToken);
             detail.RoomId = room.Id;
             detail.Room = room;
             room.BusinessStatus = RoomBusinessStatuses.Occupied;
@@ -502,6 +504,38 @@ public class BookingsController : ControllerBase
 
         booking.Status = BookingStatuses.CheckedIn;
         booking.CheckInTime ??= DateTime.UtcNow;
+    }
+
+    private async Task EnsureRoomCanCheckInAsync(
+        Booking booking,
+        BookingDetail detail,
+        int roomId,
+        string? roomNumber,
+        CancellationToken cancellationToken = default)
+    {
+        var activeConflict = await _context.BookingDetails
+            .AsNoTracking()
+            .Where(bd =>
+                bd.RoomId == roomId &&
+                bd.Id != detail.Id &&
+                bd.BookingId != booking.Id &&
+                bd.Booking != null &&
+                bd.Booking.Status == BookingStatuses.CheckedIn)
+            .Select(bd => new
+            {
+                bd.BookingId,
+                BookingCode = bd.Booking != null ? bd.Booking.BookingCode : null,
+                GuestName = bd.Booking != null ? bd.Booking.GuestName : null
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (activeConflict != null)
+        {
+            var occupant = !string.IsNullOrWhiteSpace(activeConflict.GuestName)
+                ? activeConflict.GuestName
+                : activeConflict.BookingCode ?? $"booking #{activeConflict.BookingId}";
+            throw new InvalidOperationException($"Phòng {roomNumber ?? roomId.ToString()} hiện còn khách {occupant} chưa checkout.");
+        }
     }
 
     private static string? NormalizeGuestEmail(string? email)
