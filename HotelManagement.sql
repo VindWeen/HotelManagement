@@ -430,7 +430,7 @@ CREATE TABLE [dbo].[Articles](
 PRIMARY KEY CLUSTERED ([id] ASC)
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-
+--
 CREATE TABLE [dbo].[Attractions](
     [id]            [int]            IDENTITY(1,1) NOT NULL,
     [name]          [nvarchar](255)  NOT NULL,
