@@ -23,17 +23,18 @@ export default function EmptyState({
   message,
   action,
   compact = false,
+  align = 'center',
 }) {
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
+      alignItems: align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center',
       justifyContent: 'center',
-      textAlign: 'center',
+      textAlign: align,
       padding: compact
-        ? 'var(--g-space-10) var(--g-space-6)'
-        : 'var(--g-space-20) var(--g-space-6)',
+        ? `var(--g-space-10) ${align === 'center' ? 'var(--g-space-6)' : 0}`
+        : `var(--g-space-20) ${align === 'center' ? 'var(--g-space-6)' : 0}`,
       fontFamily: 'var(--g-font-body)',
     }}>
       {/* Icon */}

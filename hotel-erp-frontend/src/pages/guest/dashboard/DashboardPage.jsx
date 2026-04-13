@@ -343,6 +343,7 @@ export default function GuestDashboardPage() {
           {pendingReviews.length === 0 ? (
             <EmptyState
               compact
+              align="left"
               icon="⭐"
               title="Không có review chờ thực hiện"
               message="Khi hoàn tất lưu trú và chưa đánh giá, booking sẽ hiển thị tại đây."
@@ -383,6 +384,7 @@ export default function GuestDashboardPage() {
           {submittedReviews.length === 0 ? (
             <EmptyState
               compact
+              align="left"
               icon="📝"
               title="Bạn chưa gửi review nào"
               message="Review đã gửi sẽ hiển thị ở đây để bạn theo dõi duyệt."
