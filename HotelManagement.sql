@@ -247,10 +247,14 @@ CREATE TABLE [dbo].[Bookings](
     -- Trạng thái & nguồn
     [status]                 [nvarchar](50)   NULL,          -- Pending / Confirmed / Checked_in / Checked_out_pending_settlement / Completed / Cancelled
     [source]                 [nvarchar](20)   NOT NULL DEFAULT 'online',  -- online / walk_in / phone
-    -- Ghi chú & hủy
+    -- Ghi chú & hủy & chính sách
     [note]                   [nvarchar](500)  NULL,
     [cancellation_reason]    [nvarchar](500)  NULL,
     [cancelled_at]           [datetime]       NULL,
+    [expires_at]             [datetime]       NULL,          -- thời điểm hết hạn giữ chỗ cho booking online
+    [refund_policy]          [nvarchar](20)   NULL DEFAULT 'refundable', -- refundable / non_refundable / partial
+    [refundable_until]       [datetime]       NULL,          -- hạn hoàn cọc
+    [refund_amount]          [decimal](18, 2) NULL,          -- số tiền hoàn cọc thực tế
 PRIMARY KEY CLUSTERED ([id] ASC)
 ) ON [PRIMARY]
 GO
@@ -536,6 +540,13 @@ CREATE NONCLUSTERED INDEX [IX_Articles_AttractionId] ON [dbo].[Articles] ([attra
 GO
 ALTER TABLE [dbo].[Bookings]           ADD UNIQUE NONCLUSTERED ([booking_code] ASC)
 CREATE NONCLUSTERED INDEX [ix_payments_booking_id] ON [dbo].[Payments]([booking_id] ASC)
+GO
+CREATE NONCLUSTERED INDEX [IX_Bookings_Status_ExpiresAt]
+    ON [dbo].[Bookings] ([status] ASC, [expires_at] ASC)
+    WHERE [expires_at] IS NOT NULL
+GO
+CREATE NONCLUSTERED INDEX [IX_Bookings_UserId_Status]
+    ON [dbo].[Bookings] ([user_id] ASC, [status] ASC)
 GO
 ALTER TABLE [dbo].[Equipments]         ADD UNIQUE NONCLUSTERED ([item_code] ASC)
 GO
