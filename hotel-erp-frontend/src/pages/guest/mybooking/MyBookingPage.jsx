@@ -6,6 +6,7 @@ import {
   PageContainer,
   SectionTitle,
   StatusBadge,
+  GuestModal,
 } from "../../../components/guest";
 import { formatCurrency } from "../../../utils";
 import { getBookingStatusLabel } from "../../../utils/statusLabels";
@@ -247,6 +248,23 @@ const styles = `
     font-size: var(--g-text-sm);
     text-align: right;
   }
+  .mb-btn-detail {
+    padding: 6px 14px;
+    border: 1px solid var(--g-primary);
+    background: transparent;
+    color: var(--g-primary);
+    border-radius: var(--g-radius-md);
+    font-size: var(--g-text-xs);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .mb-btn-detail:hover {
+    background: var(--g-primary);
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(26,56,38,0.15);
+  }
 
   /* Booking footer */
   .mb-booking-footer {
@@ -299,6 +317,7 @@ export default function MyBookingPage() {
   const [error, setError] = useState("");
   const [bookings, setBookings] = useState([]);
   const [activeTab, setActiveTab] = useState("all");
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -440,17 +459,128 @@ export default function MyBookingPage() {
         ) : (
           <div className="mb-list">
             {filtered.map((booking) => (
-              <BookingItem key={booking.id} booking={booking} />
+              <BookingItem key={booking.id} booking={booking} onViewDetail={setSelectedBooking} />
             ))}
           </div>
         )}
       </PageContainer>
+
+      {/* Detail Modal */}
+      {selectedBooking && (
+        <GuestModal
+          open={!!selectedBooking}
+          onClose={() => setSelectedBooking(null)}
+          title="Chi Tiết Đặt Phòng"
+        >
+          <div style={{ display: "grid", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div className="mb-detail-item">
+                <span className="mb-detail-label">Mã Booking</span>
+                <span className="mb-detail-value" style={{ color: "var(--g-primary)", fontSize: "1.2rem" }}>
+                  {selectedBooking.bookingCode}
+                </span>
+              </div>
+              <div className="mb-detail-item">
+                <span className="mb-detail-label">Trạng thái</span>
+                <StatusBadge variant={getStatusVariant(selectedBooking.status)} dot>
+                  {getBookingStatusLabel(selectedBooking.status)}
+                </StatusBadge>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              <div className="mb-detail-label">Thông tin khách & Đặt chỗ</div>
+              <div style={{ padding: 16, background: "var(--g-surface-raised)", borderRadius: "var(--g-radius-lg)", display: "grid", gap: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "var(--g-text-muted)", fontSize: "var(--g-text-sm)" }}>Khách hàng</span>
+                  <strong style={{ color: "var(--g-text)" }}>{selectedBooking.guestName}</strong>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "var(--g-text-muted)", fontSize: "var(--g-text-sm)" }}>Điện thoại</span>
+                  <strong>{selectedBooking.guestPhone}</strong>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "var(--g-text-muted)", fontSize: "var(--g-text-sm)" }}>Email</span>
+                  <strong>{selectedBooking.guestEmail || "—"}</strong>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--g-border-light)", paddingTop: 10 }}>
+                  <span style={{ color: "var(--g-text-muted)", fontSize: "var(--g-text-sm)" }}>Số lượng khách</span>
+                  <strong>{selectedBooking.numAdults} người lớn{selectedBooking.numChildren > 0 ? `, ${selectedBooking.numChildren} trẻ em` : ""}</strong>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "var(--g-text-muted)", fontSize: "var(--g-text-sm)" }}>Nguồn</span>
+                  <strong>{selectedBooking.source === "online" ? "Trực tuyến" : "Tại quầy"}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gap: 8 }}>
+              <div className="mb-detail-label">Phòng đã chọn</div>
+              {selectedBooking.bookingDetails?.map((d, idx) => (
+                <div key={idx} style={{ padding: 14, border: "1px solid var(--g-border-light)", borderRadius: "var(--g-radius-md)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--g-bg-card)" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: "var(--g-text)", display: "flex", alignItems: "center", gap: 6 }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--g-primary)" }}>hotel</span>
+                      {d.roomTypeName}
+                    </div>
+                    <div style={{ fontSize: "var(--g-text-xs)", color: "var(--g-text-secondary)", marginTop: 2 }}>
+                      {formatDate(d.checkInDate)} → {formatDate(d.checkOutDate)}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontWeight: 700, color: "var(--g-primary)" }}>
+                      {formatCurrency(d.totalPrice || d.estimatedPrice || 0)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {selectedBooking.note && (
+              <div style={{ display: "grid", gap: 8 }}>
+                <div className="mb-detail-label">Ghi chú</div>
+                <div style={{ padding: 12, background: "var(--g-warning-bg)", color: "var(--g-text)", fontSize: "var(--g-text-sm)", borderRadius: "var(--g-radius-md)", border: "1px solid var(--g-warning-border)", fontStyle: "italic" }}>
+                  "{selectedBooking.note}"
+                </div>
+              </div>
+            )}
+
+            {selectedBooking.refundPolicy && (
+              <div style={{ display: "grid", gap: 8 }}>
+                <div className="mb-detail-label">Chính sách & Hết hạn</div>
+                <div style={{ padding: 12, background: "rgba(0,0,0,0.03)", borderRadius: "var(--g-radius-md)", fontSize: "var(--g-text-xs)", color: "var(--g-text-muted)", lineHeight: 1.5 }}>
+                  <div>• {selectedBooking.refundPolicy}</div>
+                  {selectedBooking.refundableUntil && (
+                    <div style={{ marginTop: 4 }}>• Hủy trước <strong>{new Date(selectedBooking.refundableUntil).toLocaleString("vi-VN")}</strong> để nhận hoàn tiền.</div>
+                  )}
+                  {selectedBooking.expiresAt && selectedBooking.status === "Pending" && (
+                    <div style={{ marginTop: 4, color: "var(--g-error)" }}>
+                      • Booking này sẽ tự động hủy nếu không thanh toán trước <strong>{new Date(selectedBooking.expiresAt).toLocaleString("vi-VN")}</strong>.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div style={{ borderTop: "1px solid var(--g-border-light)", paddingTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span className="mb-detail-label">Tổng thanh toán</span>
+              <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--g-primary)" }}>
+                {formatCurrency(selectedBooking.totalEstimatedAmount)}
+              </span>
+            </div>
+
+            <button className="g-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={() => setSelectedBooking(null)}>
+              Đóng
+            </button>
+          </div>
+        </GuestModal>
+      )}
     </>
   );
 }
 
 /* ──────────── Booking Item Card ──────────── */
-function BookingItem({ booking }) {
+function BookingItem({ booking, onViewDetail }) {
   const details = booking.bookingDetails || [];
 
   return (
@@ -459,9 +589,6 @@ function BookingItem({ booking }) {
       <div className="mb-booking-header">
         <div>
           <div className="mb-booking-code">{booking.bookingCode || `#${booking.id}`}</div>
-          <div className="mb-booking-date-created">
-            Tạo lúc: {formatDateTime(booking.createdAt)}
-          </div>
         </div>
         <StatusBadge variant={getStatusVariant(booking.status)} dot>
           {getBookingStatusLabel(booking.status)}
@@ -517,7 +644,9 @@ function BookingItem({ booking }) {
                   {formatDate(d.checkInDate)} → {formatDate(d.checkOutDate)}
                 </div>
                 <div className="mb-room-price">
-                  {formatCurrency(d.totalPrice || d.estimatedPrice || 0)}
+                  <button className="mb-btn-detail" onClick={() => onViewDetail(booking)}>
+                    Xem chi tiết
+                  </button>
                 </div>
               </div>
             ))}

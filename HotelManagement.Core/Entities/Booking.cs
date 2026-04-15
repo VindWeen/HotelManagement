@@ -30,10 +30,15 @@ public class Booking
     public string? Status { get; set; } // Pending / Confirmed / Checked_in / Checked_out_pending_settlement / Completed / Cancelled
     public string Source { get; set; } = "online"; // online / walk_in / phone
 
-    // Ghi chú & hủy
+    // Ghi chú & hủy & chính sách
     public string? Note { get; set; }
     public string? CancellationReason { get; set; }
     public DateTime? CancelledAt { get; set; }
+
+    public DateTime? ExpiresAt { get; set; }
+    public string? RefundPolicy { get; set; } = "refundable"; // refundable | non_refundable | partial
+    public DateTime? RefundableUntil { get; set; }
+    public decimal? RefundAmount { get; set; }
 
     // Navigation
     public User? User { get; set; }

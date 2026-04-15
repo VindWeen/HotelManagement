@@ -83,6 +83,7 @@ public class BookingDetailResponse
     public DateTime CheckInDate { get; set; }
     public DateTime CheckOutDate { get; set; }
     public decimal PricePerNight { get; set; }
+    public decimal TotalPrice { get; set; }
     public string? Note { get; set; }
     public string? RoomName { get; set; }
     public string? RoomTypeName { get; set; }
@@ -121,6 +122,10 @@ public class BookingResponse
     public string? Note { get; set; }
     public string? CancellationReason { get; set; }
     public DateTime? CancelledAt { get; set; }
+    public DateTime? ExpiresAt { get; set; }
+    public string? RefundPolicy { get; set; }
+    public DateTime? RefundableUntil { get; set; }
+    public decimal? RefundAmount { get; set; }
     public BookingPaymentSummaryResponse PaymentSummary { get; set; } = new();
     public List<BookingDetailResponse> BookingDetails { get; set; } = new();
 }

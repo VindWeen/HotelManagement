@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
@@ -175,6 +175,10 @@ public class BookingsController : ControllerBase
         Note = b.Note,
         CancellationReason = b.CancellationReason,
         CancelledAt = b.CancelledAt,
+        ExpiresAt = b.ExpiresAt,
+        RefundPolicy = b.RefundPolicy,
+        RefundableUntil = b.RefundableUntil,
+        RefundAmount = b.RefundAmount,
         PaymentSummary = BuildPaymentSummary(b),
         BookingDetails = b.BookingDetails.Select(d => new BookingDetailResponse
         {
@@ -185,6 +189,7 @@ public class BookingsController : ControllerBase
             CheckInDate = d.CheckInDate,
             CheckOutDate = d.CheckOutDate,
             PricePerNight = d.PricePerNight,
+            TotalPrice = CalculateNights(d.CheckInDate, d.CheckOutDate) * d.PricePerNight,
             Note = d.Note,
             RoomName = d.Room?.RoomNumber,
             RoomTypeName = d.RoomType?.Name
@@ -942,6 +947,17 @@ public class BookingsController : ControllerBase
                 BookingCode = await GenerateBookingCodeAsync()
             };
 
+            if (normalizedSource == BookingSources.Online)
+            {
+                booking.ExpiresAt = DateTime.UtcNow.AddHours(24);
+                booking.RefundPolicy = "refundable";
+            }
+            if (request.Details.Any())
+            {
+                var earliestCheckIn = request.Details.Min(d => NormalizeStayDates(d.CheckInDate, d.CheckOutDate).CheckInDate);
+                booking.RefundableUntil = earliestCheckIn.AddHours(-48);
+            }
+
             var roomTypeIds = request.Details.Select(d => d.RoomTypeId).Distinct().ToList();
             var roomTypesDict = await _context.RoomTypes
                 .Where(rt => roomTypeIds.Contains(rt.Id))
@@ -1170,9 +1186,27 @@ public class BookingsController : ControllerBase
         if (!_statusFlowService.CanTransition(b.Status, BookingStatuses.Cancelled, out var cancelError))
             return BookingActionError(StatusCodes.Status400BadRequest, cancelError);
 
+        var previousStatus = b.Status;
         b.Status = BookingStatuses.Cancelled;
         b.CancellationReason = reason;
         b.CancelledAt = DateTime.UtcNow;
+
+        // Xử lý chính sách hoàn cọc (Cancel Policy)
+        if (previousStatus == BookingStatuses.Pending)
+        {
+            b.RefundAmount = b.DepositAmount; // Hoàn toàn bộ (dù Pending thường chưa cọc, nhưng đề phòng có)
+        }
+        else if (previousStatus == BookingStatuses.Confirmed)
+        {
+            if (b.RefundPolicy == "refundable" && b.RefundableUntil.HasValue && DateTime.UtcNow <= b.RefundableUntil.Value)
+            {
+                b.RefundAmount = (b.DepositAmount ?? 0m) * 0.5m; // Hủy trước 48h -> hoàn 50%
+            }
+            else
+            {
+                b.RefundAmount = 0m; // Hủy sát giờ hoặc non_refundable -> mất cọc
+            }
+        }
 
         foreach (var d in b.BookingDetails)
         {
@@ -1541,5 +1575,102 @@ public class BookingsController : ControllerBase
         await _invoiceService.CreateFromBookingAsync(b.Id);
 
         return BookingActionSuccess("Check-out booking thành công. Booking đang chờ quyết toán hóa đơn.", b);
+    }
+
+    /// <summary>
+    /// GET /api/Bookings/guest/availability
+    /// [AllowAnonymous] — Kiểm tra số phòng còn trống theo loại phòng cho khoảng ngày đặt.
+    /// Dùng cho trang đặt phòng guest, không cần đăng nhập.
+    /// Params: checkInDate, checkOutDate, numAdults, numChildren
+    /// </summary>
+    [AllowAnonymous]
+    [HttpGet("guest/availability")]
+    public async Task<IActionResult> GetGuestAvailability(
+        [FromQuery] DateTime checkInDate,
+        [FromQuery] DateTime checkOutDate,
+        [FromQuery] int numAdults = 1,
+        [FromQuery] int numChildren = 0,
+        CancellationToken cancellationToken = default)
+    {
+        if (checkInDate == default || checkOutDate == default)
+            return BookingActionError(StatusCodes.Status400BadRequest, "Vui lòng cung cấp ngày nhận phòng và trả phòng.");
+
+        var (normalizedCheckIn, normalizedCheckOut) = NormalizeStayDates(checkInDate, checkOutDate);
+
+        if (normalizedCheckOut <= normalizedCheckIn)
+            return BookingActionError(StatusCodes.Status400BadRequest, "Ngày trả phòng phải sau ngày nhận phòng.");
+
+        var roomTypes = await _context.RoomTypes
+            .AsNoTracking()
+            .Where(rt => rt.IsActive)
+            .OrderBy(rt => rt.BasePrice)
+            .ToListAsync(cancellationToken);
+
+        var result = new List<object>();
+        var nights = CalculateNights(normalizedCheckIn, normalizedCheckOut);
+
+        foreach (var roomType in roomTypes)
+        {
+            var totalRooms = await CountTotalRoomsByTypeAsync(roomType.Id, cancellationToken);
+            var bookedRooms = await CountBookedRoomsAsync(roomType.Id, normalizedCheckIn, normalizedCheckOut, cancellationToken: cancellationToken);
+            var availableRooms = Math.Max(0, totalRooms - bookedRooms);
+            var meetsCapacity = roomType.CapacityAdults >= numAdults && (roomType.CapacityAdults + roomType.CapacityChildren >= numAdults + numChildren);
+
+            result.Add(new
+            {
+                roomType.Id,
+                roomType.Name,
+                roomType.BasePrice,
+                roomType.CapacityAdults,
+                roomType.CapacityChildren,
+                roomType.BedType,
+                roomType.AreaSqm,
+                roomType.Description,
+                roomType.IsActive,
+                TotalRooms = totalRooms,
+                AvailableRooms = availableRooms,
+                IsAvailable = availableRooms > 0,
+                MeetsCapacity = meetsCapacity,
+                SuggestedTotal = nights * roomType.BasePrice,
+                Nights = nights
+            });
+        }
+
+        return Ok(new
+        {
+            success = true,
+            message = "Lấy danh sách phòng khả dụng thành công.",
+            data = result,
+            meta = new
+            {
+                checkInDate = normalizedCheckIn,
+                checkOutDate = normalizedCheckOut,
+                nights,
+                numAdults,
+                numChildren
+            }
+        });
+    }
+
+    [RequirePermission(PermissionCodes.ManageBookings)]
+    [HttpPost("expire-pending")]
+    public async Task<IActionResult> ExpirePendingBookings(CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var expired = await _context.Bookings
+            .Where(b => b.Status == "Pending" 
+                     && b.ExpiresAt != null 
+                     && b.ExpiresAt <= now)
+            .ToListAsync(ct);
+        
+        foreach (var b in expired)
+        {
+            b.Status = "Cancelled";
+            b.CancellationReason = "Hết thời gian chờ thanh toán cọc.";
+            b.CancelledAt = now;
+        }
+        
+        await _context.SaveChangesAsync(ct);
+        return Ok(new { success = true, expired = expired.Count });
     }
 }
