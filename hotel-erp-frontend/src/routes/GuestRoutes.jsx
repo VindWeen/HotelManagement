@@ -9,8 +9,8 @@ const ArticleDetailPage = lazy(() => import("../pages/guest/ArticleDetailPage"))
 const AttractionsPage = lazy(() => import("../pages/guest/AttractionsPage"));
 const AttractionDetailPage = lazy(() => import("../pages/guest/AttractionDetailPage"));
 const ReviewsPage = lazy(() => import("../pages/guest/ReviewsPage"));
-const GuestDashboardPage = lazy(() => import("../pages/guest/dashboard/DashboardPage"));
-const GuestProfilePage = lazy(() => import("../pages/guest/profile/ProfilePage"));
+const GuestDashboardPage = lazy(() => import("../pages/guest/DashboardPage"));
+const GuestProfilePage = lazy(() => import("../pages/guest/ProfilePage"));
 
 function RouteFallback() {
   return (
