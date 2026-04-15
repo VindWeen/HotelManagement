@@ -11,6 +11,8 @@ const AttractionDetailPage = lazy(() => import("../pages/guest/AttractionDetailP
 const ReviewsPage = lazy(() => import("../pages/guest/ReviewsPage"));
 const GuestDashboardPage = lazy(() => import("../pages/guest/DashboardPage"));
 const GuestProfilePage = lazy(() => import("../pages/guest/ProfilePage"));
+const MyBookingPage = lazy(() => import("../pages/guest/MyBookingPage"));
+const BookingPage    = lazy(() => import("../pages/guest/BookingPage"));
 
 function RouteFallback() {
   return (
@@ -38,6 +40,7 @@ export default function GuestRoutes() {
   return (
     <Route element={<GuestLayout />}>
       <Route path="/" element={withSuspense(<HomePage />)} />
+      <Route path="/booking" element={withSuspense(<BookingPage />)} />
       <Route path="/articles" element={withSuspense(<ArticlesPage />)} />
       <Route path="/articles/:slug" element={withSuspense(<ArticleDetailPage />)} />
       <Route path="/attractions" element={withSuspense(<AttractionsPage />)} />
@@ -64,6 +67,14 @@ export default function GuestRoutes() {
         element={
           <GuestProtectedRoute>
             {withSuspense(<GuestProfilePage />)}
+          </GuestProtectedRoute>
+        }
+      />
+      <Route
+        path="/guest/my-bookings"
+        element={
+          <GuestProtectedRoute>
+            {withSuspense(<MyBookingPage />)}
           </GuestProtectedRoute>
         }
       />
