@@ -5,19 +5,52 @@ import { getUsers } from "../../api/userManagementApi";
 
 const cardStyle = {
   background: "#fff",
-  border: "1px solid #ece7de",
+  border: "1px solid #f1f0ea",
   borderRadius: 20,
-  boxShadow: "0 10px 30px rgba(28,25,23,.05)",
+  boxShadow: "0 1px 3px rgba(0,0,0,.06)",
 };
 
 const inputStyle = {
   width: "100%",
   boxSizing: "border-box",
-  padding: "10px 12px",
+  padding: "10px 14px",
   borderRadius: 12,
-  border: "1px solid #d6d3d1",
-  background: "#fff",
-  color: "inherit",
+  border: "1.5px solid #e2e8e1",
+  background: "#f9f8f3",
+  fontSize: 14,
+  fontWeight: 600,
+  color: "#1c1917",
+  outline: "none",
+  fontFamily: "'Manrope', sans-serif",
+  transition: "all 0.2s",
+};
+
+const PRIMARY_BUTTON = {
+  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+  color: "#e7fef3",
+  border: "none",
+  borderRadius: 12,
+  padding: "10px 22px",
+  fontSize: 14,
+  fontWeight: 800,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+  transition: "all 0.15s",
+};
+
+const SECONDARY_BUTTON = {
+  padding: "10px 22px",
+  borderRadius: 12,
+  border: "1.5px solid #e2e8e1",
+  background: "white",
+  color: "#57534e",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+  transition: "all 0.15s",
 };
 
 const statusMeta = {
@@ -138,6 +171,10 @@ export default function MaintenancePage() {
 
   return (
     <div style={{ maxWidth: 1360, margin: "0 auto" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+      `}</style>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 28, color: "#1c1917", fontWeight: 800 }}>Bảo trì phòng</h2>
@@ -145,7 +182,7 @@ export default function MaintenancePage() {
             Workflow này tách ticket bảo trì khỏi trạng thái vận hành của phòng. Khi ticket có `blocksRoom`, backend sẽ đưa phòng sang `Disabled` cho tới lúc đóng ticket.
           </p>
         </div>
-        <button type="button" onClick={load} disabled={loading} style={{ height: 42, padding: "0 16px", borderRadius: 12, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 700, cursor: "pointer" }}>
+        <button type="button" onClick={load} disabled={loading} style={{ ...SECONDARY_BUTTON, height: 42 }}>
           {loading ? "Đang tải..." : "Làm mới"}
         </button>
       </div>
@@ -190,8 +227,8 @@ export default function MaintenancePage() {
               <input type="checkbox" checked={form.blocksRoom} onChange={(e) => setForm((prev) => ({ ...prev, blocksRoom: e.target.checked }))} />
               Block phòng ngay khi mở ticket
             </label>
-            <button type="submit" disabled={saving} style={{ height: 42, borderRadius: 12, border: "none", background: "#4f645b", color: "#ecfdf5", fontWeight: 800, cursor: "pointer" }}>
-              {saving ? "Đang lưu..." : "Tạo ticket"}
+            <button type="submit" disabled={saving} style={{ ...PRIMARY_BUTTON, height: 44, justifyContent: "center" }}>
+              {saving ? "Đang lưu..." : "Tạo ticket bảo trì"}
             </button>
           </form>
         </article>

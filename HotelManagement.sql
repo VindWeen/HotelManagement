@@ -80,13 +80,9 @@ GO
 CREATE TABLE [dbo].[Audit_Logs](
     [id]          [int]            IDENTITY(1,1) NOT NULL,
     [user_id]     [int]            NULL,
-    [action]      [nvarchar](50)   NOT NULL,
-    [table_name]  [nvarchar](100)  NOT NULL,
-    [record_id]   [int]            NOT NULL,
-    [old_value]   [nvarchar](max)  NULL,
-    [new_value]   [nvarchar](max)  NULL,
-    [user_agent]  [nvarchar](500)  NULL,
-    [created_at]  [datetime]       NULL,
+    [role_name]   [nvarchar](100)  NOT NULL,
+    [log_date]    [date]           NOT NULL,
+    [log_data]    [nvarchar](max)  NOT NULL,
 PRIMARY KEY CLUSTERED ([id] ASC)
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
@@ -556,12 +552,17 @@ ALTER TABLE [dbo].[Users]              ADD UNIQUE NONCLUSTERED ([email] ASC)
 GO
 ALTER TABLE [dbo].[Vouchers]           ADD UNIQUE NONCLUSTERED ([code] ASC)
 GO
+CREATE NONCLUSTERED INDEX [ix_audit_logs_log_date] ON [dbo].[Audit_Logs]([log_date] ASC)
+GO
+CREATE NONCLUSTERED INDEX [ix_audit_logs_user_id_log_date] ON [dbo].[Audit_Logs]([user_id] ASC, [log_date] ASC)
+GO
+CREATE NONCLUSTERED INDEX [ix_audit_logs_role_name] ON [dbo].[Audit_Logs]([role_name] ASC)
+GO
 
 -- ============================================================
 -- DEFAULT CONSTRAINTS
 -- ============================================================
 ALTER TABLE [dbo].[Articles]           ADD DEFAULT (getdate())    FOR [published_at]
-ALTER TABLE [dbo].[Audit_Logs]         ADD DEFAULT (getdate())    FOR [created_at]
 ALTER TABLE [dbo].[Bookings]           ADD DEFAULT ('Pending')    FOR [status]
 ALTER TABLE [dbo].[Equipments]         ADD DEFAULT ((0))          FOR [total_quantity]
 ALTER TABLE [dbo].[Equipments]         ADD DEFAULT ((0))          FOR [in_use_quantity]
@@ -774,8 +775,9 @@ INSERT [dbo].[Permissions] ([id], [name], [permission_code]) VALUES (9,  N'MANAG
 INSERT [dbo].[Permissions] ([id], [name], [permission_code]) VALUES (10, N'MANAGE_INVENTORY', N'MANAGE_INVENTORY')
 INSERT [dbo].[Permissions] ([id], [name], [permission_code]) VALUES (11, N'VIEW_USERS',       N'VIEW_USERS')
 INSERT [dbo].[Permissions] ([id], [name], [permission_code]) VALUES (12, N'VIEW_ROLES',       N'VIEW_ROLES')
-INSERT [dbo].[Permissions] ([id], [name], [permission_code]) VALUES (13, N'EDIT_ROLES',       N'EDIT_ROLES')
-INSERT [dbo].[Permissions] ([id], [name], [permission_code]) VALUES (14, N'CREATE_USERS',     N'CREATE_USERS')
+INSERT [dbo].[Permissions] ([id], [name], [permission_code]) VALUES (13, N'VIEW_AUDIT_LOGS',  N'VIEW_AUDIT_LOGS')
+INSERT [dbo].[Permissions] ([id], [name], [permission_code]) VALUES (14, N'EDIT_ROLES',       N'EDIT_ROLES')
+INSERT [dbo].[Permissions] ([id], [name], [permission_code]) VALUES (15, N'CREATE_USERS',     N'CREATE_USERS')
 SET IDENTITY_INSERT [dbo].[Permissions] OFF
 GO
 
@@ -834,6 +836,7 @@ INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (1, 11)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (1, 12)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (1, 13)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (1, 14)
+INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (1, 15)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 1)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 2)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 4)
@@ -845,6 +848,7 @@ INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 9)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 10)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 11)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 12)
+INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 13)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (3, 1)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (3, 4)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (3, 5)
@@ -877,6 +881,7 @@ INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (9, 5)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (9, 6)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (9, 8)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (9, 9)
+INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (9, 13)
 GO
 
 -- 6. Amenities

@@ -1,6 +1,7 @@
 using HotelManagement.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
+using System.Text.Json;
 
 namespace HotelManagement.Infrastructure.Data;
 
@@ -54,12 +55,45 @@ public class AppDbContext : DbContext
     public DbSet<LoyaltyTransaction> LoyaltyTransactions => Set<LoyaltyTransaction>();
     public DbSet<VoucherUsage> VoucherUsages => Set<VoucherUsage>();
 
+    public override int SaveChanges()
+    {
+        NormalizeAuditLogs();
+        return base.SaveChanges();
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        NormalizeAuditLogs();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        await NormalizeAuditLogsAsync(cancellationToken);
+        return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        await NormalizeAuditLogsAsync(cancellationToken);
+        return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         // ── 1. Map tên bảng SQL (snake_case / underscore) ────────
         modelBuilder.Entity<AuditLog>().ToTable("Audit_Logs");
+        modelBuilder.Entity<AuditLog>()
+            .Property(a => a.LogDate)
+            .HasColumnType("date");
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(a => a.LogDate);
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(a => new { a.UserId, a.LogDate });
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(a => a.RoleName);
         modelBuilder.Entity<RoomType>().ToTable("Room_Types");
         modelBuilder.Entity<RoomTypeAmenity>().ToTable("RoomType_Amenities");
         modelBuilder.Entity<RoomImage>().ToTable("Room_Images");
@@ -256,5 +290,150 @@ public class AppDbContext : DbContext
     private static string ToSnakeCase(string name)
     {
         return Regex.Replace(name, @"([a-z0-9])([A-Z])", "$1_$2").ToLower();
+    }
+
+    private void NormalizeAuditLogs()
+    {
+        var pending = ChangeTracker.Entries<AuditLog>()
+            .Where(x => x.State == EntityState.Added)
+            .Select(x => x.Entity)
+            .Where(x => string.IsNullOrWhiteSpace(x.LogData) || string.IsNullOrWhiteSpace(x.RoleName))
+            .ToList();
+
+        if (pending.Count == 0) return;
+
+        var rolesByUserId = BuildAuditRoleLookup(pending.Select(x => x.UserId).Where(x => x.HasValue).Select(x => x!.Value));
+
+        foreach (var auditLog in pending)
+        {
+            NormalizeAuditLog(auditLog, rolesByUserId);
+        }
+    }
+
+    private async Task NormalizeAuditLogsAsync(CancellationToken cancellationToken)
+    {
+        var pending = ChangeTracker.Entries<AuditLog>()
+            .Where(x => x.State == EntityState.Added)
+            .Select(x => x.Entity)
+            .Where(x => string.IsNullOrWhiteSpace(x.LogData) || string.IsNullOrWhiteSpace(x.RoleName))
+            .ToList();
+
+        if (pending.Count == 0) return;
+
+        var userIds = pending
+            .Select(x => x.UserId)
+            .Where(x => x.HasValue)
+            .Select(x => x!.Value)
+            .Distinct()
+            .ToList();
+
+        var rolesByUserId = await Users
+            .AsNoTracking()
+            .Where(u => userIds.Contains(u.Id))
+            .Include(u => u.Role)
+            .ToDictionaryAsync(u => u.Id, u => u.Role != null ? u.Role.Name : "System", cancellationToken);
+
+        foreach (var auditLog in pending)
+        {
+            NormalizeAuditLog(auditLog, rolesByUserId);
+        }
+    }
+
+    private Dictionary<int, string> BuildAuditRoleLookup(IEnumerable<int> userIds)
+    {
+        var ids = userIds.Distinct().ToList();
+        if (ids.Count == 0) return new Dictionary<int, string>();
+
+        return Users
+            .AsNoTracking()
+            .Where(u => ids.Contains(u.Id))
+            .Include(u => u.Role)
+            .ToDictionary(u => u.Id, u => u.Role != null ? u.Role.Name : "System");
+    }
+
+    private static void NormalizeAuditLog(AuditLog auditLog, IReadOnlyDictionary<int, string> rolesByUserId)
+    {
+        if (string.IsNullOrWhiteSpace(auditLog.RoleName))
+        {
+            auditLog.RoleName = auditLog.UserId.HasValue && rolesByUserId.TryGetValue(auditLog.UserId.Value, out var roleName)
+                ? roleName
+                : "System";
+        }
+
+        var eventTime = auditLog.CreatedAt ?? DateTime.UtcNow;
+        if (auditLog.LogDate == default)
+        {
+            auditLog.LogDate = eventTime.Date;
+        }
+
+        if (string.IsNullOrWhiteSpace(auditLog.LogData))
+        {
+            var actionType = string.IsNullOrWhiteSpace(auditLog.Action) ? "UPDATE" : auditLog.Action!.Trim();
+            var payload = new
+            {
+                TotalEvents = 1,
+                Summary = new
+                {
+                    text = BuildLegacySummary(auditLog)
+                },
+                Events = new[]
+                {
+                    new
+                    {
+                        eventId = Guid.NewGuid().ToString(),
+                        timestamp = eventTime,
+                        actionType,
+                        entityType = string.IsNullOrWhiteSpace(auditLog.TableName) ? "System" : auditLog.TableName,
+                        context = new
+                        {
+                            recordId = auditLog.RecordId,
+                            userAgent = auditLog.UserAgent
+                        },
+                        changes = new
+                        {
+                            oldData = TryParseJson(auditLog.OldValue),
+                            newData = TryParseJson(auditLog.NewValue)
+                        },
+                        message = BuildLegacySummary(auditLog)
+                    }
+                }
+            };
+
+            auditLog.LogData = JsonSerializer.Serialize(payload);
+        }
+    }
+
+    private static object? TryParseJson(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+
+        try
+        {
+            using var document = JsonDocument.Parse(raw);
+            return document.RootElement.Clone();
+        }
+        catch
+        {
+            return raw;
+        }
+    }
+
+    private static string BuildLegacySummary(AuditLog auditLog)
+    {
+        if (!string.IsNullOrWhiteSpace(auditLog.Action))
+        {
+            return auditLog.Action!.ToUpperInvariant() switch
+            {
+                "LOGIN" => "Đăng nhập hệ thống.",
+                "LOGOUT" => "Đăng xuất hệ thống.",
+                "REGISTER" => "Đăng ký tài khoản mới.",
+                "FORGOT_PASSWORD_RESET" => "Đặt lại mật khẩu bằng quên mật khẩu.",
+                "GRANT_PERMISSION" => "Cấp quyền cho vai trò.",
+                "REVOKE_PERMISSION" => "Thu hồi quyền khỏi vai trò.",
+                _ => $"{auditLog.Action} {auditLog.TableName ?? "System"}#{auditLog.RecordId}"
+            };
+        }
+
+        return $"{auditLog.TableName ?? "System"}#{auditLog.RecordId}";
     }
 }

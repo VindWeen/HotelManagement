@@ -9,16 +9,21 @@ export const panelStyle = {
   boxShadow: "0 1px 3px rgba(0,0,0,.06)",
 };
 
+export const globalFontReset = `* { font-family: 'Manrope', sans-serif; }`;
+
 export const inputStyle = {
   width: "100%",
   background: "#f9f8f3",
-  border: "1px solid #e2e8e1",
+  border: "1.5px solid #e2e8e1",
   borderRadius: 12,
   padding: "10px 14px",
   fontSize: 14,
+  fontWeight: 600,
+  color: "#1c1917",
   outline: "none",
   boxSizing: "border-box",
-  color: "inherit",
+  fontFamily: "'Manrope', sans-serif",
+  transition: "all 0.2s",
 };
 
 export const labelStyle = {
@@ -95,6 +100,10 @@ export function ServiceAdminShell({
 }) {
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        ${globalFontReset}
+      `}</style>
       <div
         style={{
           display: "flex",
@@ -119,10 +128,11 @@ export function ServiceAdminShell({
           </p>
           <h2
             style={{
-              margin: "6px 0 0",
-              fontSize: 26,
+              margin: "4px 0 0",
+              fontSize: 28,
               fontWeight: 800,
               color: "#1c1917",
+              letterSpacing: "-0.02em",
             }}
           >
             {title}
@@ -180,7 +190,7 @@ export function ServiceAdminShell({
                 <div
                   style={{
                     fontSize: 11,
-                    fontWeight: 700,
+                    fontWeight: 800,
                     letterSpacing: ".08em",
                     textTransform: "uppercase",
                     color: "#78716c",
@@ -250,7 +260,7 @@ function ServiceViewLink({ to, active, icon, label }) {
         textDecoration: "none",
         background: active ? "#4f645b" : "transparent",
         color: active ? "#ecfdf5" : "#57534e",
-        fontWeight: active ? 700 : 600,
+        fontWeight: 800,
         transition: "all .15s",
       }}
     >
@@ -490,21 +500,23 @@ export function VisibilitySwitch({ checked, disabled, onChange }) {
   );
 }
 
-export function primaryButton(soft) {
+export function primaryButton(disabled) {
   return {
-    padding: "10px 18px",
+    background: disabled
+      ? "#a8a29e"
+      : "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+    color: "#e7fef3",
+    border: "none",
     borderRadius: 12,
-    border: soft ? "1px solid #d8dfd7" : "none",
-    background: soft ? "white" : "#4f645b",
-    color: soft ? "#1c1917" : "#e7fef3",
-    display: "flex",
+    padding: "10px 22px",
+    fontSize: 14,
+    fontWeight: 800,
+    cursor: disabled ? "not-allowed" : "pointer",
+    display: "inline-flex",
     alignItems: "center",
     gap: 8,
-    fontWeight: 600,
-    cursor: "pointer",
-    boxShadow: soft
-      ? "0 1px 3px rgba(0,0,0,.06)"
-      : "0 8px 18px rgba(79,100,91,.18)",
+    boxShadow: disabled ? "none" : "0 4px 12px rgba(79,100,91,.2)",
+    transition: "all 0.15s",
   };
 }
 

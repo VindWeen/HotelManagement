@@ -7,7 +7,7 @@ namespace HotelManagement.API.Services;
 
 public interface IEmailService
 {
-    Task SendBookingConfirmationAsync(string toEmail, string guestName, string bookingCode, DateTime checkIn, DateTime checkOut, decimal totalAmount);
+    Task SendBookingConfirmationAsync(string toEmail, string guestName, string bookingCode, DateTime checkIn, DateTime checkOut, decimal totalAmount, string? webUrl = null);
     Task SendNewStaffAccountAsync(string toEmail, string fullName, string password, string roleName);
     Task SendGuestWelcomeAsync(string toEmail, string fullName);
     Task SendGuestAccountCreatedAsync(string toEmail, string fullName, string password);
@@ -25,8 +25,18 @@ public class EmailService : IEmailService
         _config = config;
     }
 
-    public Task SendBookingConfirmationAsync(string toEmail, string guestName, string bookingCode, DateTime checkIn, DateTime checkOut, decimal totalAmount)
+    public Task SendBookingConfirmationAsync(string toEmail, string guestName, string bookingCode, DateTime checkIn, DateTime checkOut, decimal totalAmount, string? webUrl = null)
     {
+        var safeWebUrl = string.IsNullOrWhiteSpace(webUrl) ? null : WebUtility.HtmlEncode(webUrl.Trim());
+        var websiteBlock = safeWebUrl == null
+            ? string.Empty
+            : $"""
+                <div style="margin: 20px 0; padding: 16px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px;">
+                    <p style="margin: 0 0 10px; color: #075985; font-weight: 600;">Ban co the xem lai booking va thong tin khach san tai website:</p>
+                    <a href="{safeWebUrl}" style="display: inline-block; padding: 10px 16px; border-radius: 999px; background: #4f645b; color: #ffffff; text-decoration: none; font-weight: 700;">Mo website khach san</a>
+                    <p style="margin: 10px 0 0; color: #6b7280; font-size: 12px;">Hoac truy cap truc tiep: {safeWebUrl}</p>
+                </div>
+                """;
         var subject = $"[Hotel] Xác nhận đặt phòng #{bookingCode}";
         var body = $"""
             <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
@@ -52,6 +62,8 @@ public class EmailService : IEmailService
                         <td style="padding: 10px; border: 1px solid #e5e7eb; color: #4f645b; font-weight: 700;">{totalAmount:N0} VNĐ</td>
                     </tr>
                 </table>
+
+                {websiteBlock}
 
                 <p style="color: #6b7280; font-size: 13px;">Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ chúng tôi.</p>
                 <p style="color: #6b7280; font-size: 13px;">Trân trọng,<br/><strong>Hotel Management Team</strong></p>

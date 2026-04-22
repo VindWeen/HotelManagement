@@ -85,6 +85,7 @@ function buildNavItems(hasPermission) {
     hasPermission("MANAGE_CONTENT") && { to: "/admin/reviews", icon: "reviews", label: "Đánh giá" },
     hasPermission("MANAGE_USERS") && { to: "/admin/staff", icon: "group", label: "Danh sách Nhân sự" },
     hasPermission("VIEW_ROLES") && { to: "/admin/roles", icon: "shield_person", label: "Vai trò & Phân quyền" },
+    hasPermission("VIEW_AUDIT_LOGS") && { to: "/admin/audit-logs", icon: "history", label: "Nhật ký hoạt động" },
   ].filter(Boolean);
 }
 

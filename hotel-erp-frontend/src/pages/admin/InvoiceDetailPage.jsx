@@ -41,7 +41,7 @@ const InvoiceStatusBadge = ({ status }) => {
     Draft: { bg: "#e0f2fe", text: "#0369a1", icon: "draft" },
     Ready_To_Collect: { bg: "#ede9fe", text: "#6d28d9", icon: "point_of_sale" },
     Unpaid: { bg: "#fef2f2", text: "#dc2626", icon: "pending_actions" },
-    Partially_Paid: { bg: "#fef3c7", text: "#d97706", icon: "hourglass_half" },
+    Partially_Paid: { bg: "#fef3c7", text: "#d97706", icon: "hourglass_top" },
     Paid: { bg: "#ecfdf5", text: "#059669", icon: "check_circle" },
     Refunded: { bg: "#f3f4f6", text: "#6b7280", icon: "replay" }
   };
@@ -397,14 +397,17 @@ export default function InvoiceDetailPage() {
 
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", paddingBottom: 40 }}>
-      <style>{`        * { font-family: 'Manrope', sans-serif; }        @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+        @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
         .table-row { transition: background 0.1s; border-bottom: 1px solid #f1f0ea; }
         .table-row:hover { background: #fafaf8 !important; }
         .badge-p { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
-        .action-btn { display: inline-flex; alignItems: center; gap: 8px; padding: 10px 22px; borderRadius: 12px; font-size: 14px; font-weight: 700; background: white; color: #1c1917; border: 1.5px solid #e2e8e1; cursor: pointer; transition: all 0.15s; justify-content: center; }
+        .action-btn { display: inline-flex; alignItems: center; gap: 8px; padding: 10px 22px; borderRadius: 12px; font-size: 14px; font-weight: 800; background: white; color: #1c1917; border: 1.5px solid #e2e8e1; cursor: pointer; transition: all 0.15s; justify-content: center; }
         .action-btn:hover:not(:disabled) { border-color: #4f645b; color: #4f645b; background: #f0faf5; }
-        .action-btn.primary { background: linear-gradient(135deg,#4f645b 0%,#43574f 100%); color: #e7fef3; border: none; }
+        .action-btn.primary { background: linear-gradient(135deg,#4f645b 0%,#43574f 100%); color: #e7fef3; border: none; font-weight: 800; }
         .action-btn.primary:hover:not(:disabled) { box-shadow: 0 4px 14px rgba(79,100,91,0.25); }
         .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
       `}</style>
@@ -417,24 +420,24 @@ export default function InvoiceDetailPage() {
       <div style={{ marginBottom: 28 }}>
         <button
           onClick={() => navigate("/admin/invoices")}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#6b7280", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, marginBottom: 12 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#6b7280", fontSize: 13, fontWeight: 800, cursor: "pointer", padding: 0, marginBottom: 12 }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
           Quay lại danh sách
         </button>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.025em", margin: 0 }}>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.03em", margin: 0 }}>
             Chi tiết Hóa đơn
-            {invoice && <span style={{ marginLeft: 12, color: "#9ca3af", fontWeight: 600, fontSize: 16 }}>#{invoice.id}</span>}
+            {invoice && <span style={{ marginLeft: 14, color: "#9ca3af", fontWeight: 600, fontSize: 18 }}>#{invoice.id}</span>}
           </h2>
           {invoice && <InvoiceStatusBadge status={invoice.status} />}
         </div>
       </div>
 
       {!loading && invoice && (
-        <div className="flex flex-col xl:flex-row gap-6">
+        <div className="flex flex-col xl:flex-row gap-8">
           {/* Left Column: Form & Table */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
             <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
               <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: "0 0 16px" }}>Phụ phí / Điều chỉnh hóa đơn</h3>
               <form onSubmit={submitAdjustment} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -488,7 +491,7 @@ export default function InvoiceDetailPage() {
                 <form onSubmit={submitPayment} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Số tiền (Dư nợ: {formatCurrency(outstanding)})</label>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 6 }}>Số tiền (Dư nợ: {formatCurrency(outstanding)})</label>
                       <input
                         type="number"
                         min="0"
@@ -512,7 +515,7 @@ export default function InvoiceDetailPage() {
                       />
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Loại thanh toán</label>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 6 }}>Loại thanh toán</label>
                       <select value={form.paymentType} onChange={(e) => setForm({ ...form, paymentType: e.target.value })} style={{ ...inputStyle, cursor: "pointer" }} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"}>
                         <option value="Final_Settlement">Thanh toán cuối</option>
                         <option value="Refund">Hoàn tiền</option>
@@ -521,7 +524,7 @@ export default function InvoiceDetailPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Phương thức</label>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 6 }}>Phương thức</label>
                       <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} style={{ ...inputStyle, cursor: "pointer" }} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"}>
                         <option value="Cash">Tiền mặt (Cash)</option>
                         <option value="Momo">Momo</option>
@@ -531,7 +534,7 @@ export default function InvoiceDetailPage() {
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Mã giao dịch</label>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 6 }}>Mã giao dịch</label>
                       <input placeholder="VD: VNP1234..." value={form.transactionCode} onChange={(e) => setForm({ ...form, transactionCode: e.target.value })} style={inputStyle} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"} />
                     </div>
                   </div>
@@ -740,7 +743,7 @@ export default function InvoiceDetailPage() {
             </div>
           </div>
 
-          <div className="w-full xl:w-[340px] shrink-0">
+          <div className="w-full xl:w-[320px] shrink-0">
             <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,.06)", position: "sticky", top: 24 }}>
               <div style={{ marginBottom: 20 }}>
                 <p style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Liên kết Booking</p>

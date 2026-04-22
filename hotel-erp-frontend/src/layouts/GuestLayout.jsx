@@ -1,31 +1,14 @@
 import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
+import FullscreenLoader from '../components/guest/FullscreenLoader';
 import GuestHeader from '../components/guest/GuestHeader';
 import GuestFooter from '../components/guest/GuestFooter';
-import LoadingSpinner from '../components/guest/LoadingSpinner';
 import '../styles/guest.css';
 
 /**
  * GuestLayout
- * Layout chính cho toàn bộ Guest/Public Portal.
- *
- * Cấu trúc:
- *   <div class="guest-portal">
- *     <GuestHeader />          — sticky, glassmorphism
- *     <main>                   — nội dung trang (via Outlet)
- *       <Outlet />
- *     </main>
- *     <GuestFooter />
- *   </div>
- *
- * Dùng trong GuestRoutes:
- *   <Route element={<GuestLayout />}>
- *     <Route path="/" element={<HomePage />} />
- *     ...
- *   </Route>
+ * Layout chinh cho toan bo Guest/Public Portal.
  */
-
-import FullscreenLoader from '../components/guest/FullscreenLoader';
 
 function PageFallback() {
   return <FullscreenLoader />;

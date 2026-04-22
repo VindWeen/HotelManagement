@@ -41,34 +41,38 @@ const getPermissionLabel = (permission) =>
 
 // â”€â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const TOAST_STYLES = {
-  success: {
-    bg: "#1e3a2f",
-    border: "#2d5a45",
-    text: "#a7f3d0",
-    prog: "#34d399",
-    icon: "check_circle",
-  },
-  error: {
-    bg: "#3a1e1e",
-    border: "#5a2d2d",
-    text: "#fca5a5",
-    prog: "#f87171",
-    icon: "error",
-  },
-  warning: {
-    bg: "#3a2e1a",
-    border: "#5a4820",
-    text: "#fcd34d",
-    prog: "#fbbf24",
-    icon: "warning",
-  },
-  info: {
-    bg: "#1e2f3a",
-    border: "#2d4a5a",
-    text: "#93c5fd",
-    prog: "#60a5fa",
-    icon: "info",
-  },
+  success: { bg: "#1e3a2f", border: "#2d5a45", text: "#a7f3d0", prog: "#34d399", icon: "check_circle" },
+  error: { bg: "#3a1e1e", border: "#5a2d2d", text: "#fca5a5", prog: "#f87171", icon: "error" },
+  warning: { bg: "#3a2e1a", border: "#5a4820", text: "#fcd34d", prog: "#fbbf24", icon: "warning" },
+  info: { bg: "#1e2f3a", border: "#2d4a5a", text: "#93c5fd", prog: "#60a5fa", icon: "info" },
+};
+
+const PRIMARY_BUTTON = {
+  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+  color: "#e7fef3",
+  border: "none",
+  borderRadius: 12,
+  padding: "10px 22px",
+  fontSize: 14,
+  fontWeight: 800,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+  transition: "all 0.15s",
+};
+
+const SECONDARY_BUTTON = {
+  background: "#fff",
+  color: "#57534e",
+  border: "1.5px solid #e2e8e1",
+  borderRadius: 12,
+  padding: "10px 22px",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+  transition: "all 0.15s",
 };
 
 function Toast({ id, msg, type = "success", dur = 3500, onDismiss }) {
@@ -814,34 +818,33 @@ export default function RolePermissionPage() {
   return (
     <>
       <style>{`
-                .skel { background:linear-gradient(90deg,rgba(255,255,255,0.05) 25%,rgba(255,255,255,0.1) 50%,rgba(255,255,255,0.05) 75%); background-size:600px; animation:shimmer 1.4s infinite; border-radius:6px; height:13px; }
-                .fade-row { animation:fadeRow .2s ease forwards; }
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
 
-                @keyframes fadeRow { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes spin360 { to{transform:rotate(360deg)} }
+        .skel { background:linear-gradient(90deg,rgba(0,0,0,0.05) 25%,rgba(0,0,0,0.1) 50%,rgba(0,0,0,0.05) 75%); background-size:600px; animation:shimmer 1.4s infinite; border-radius:6px; height:13px; }
+        .fade-row { animation:fadeRow .2s ease forwards; }
 
-                .perm-btn {
-                    display:inline-flex; align-items:center; gap:6px;
-                    padding:8px 16px; border-radius:9px; font-size:13px; font-weight:700;
-                    background:rgba(16,185,129,0.1); color:#10b981; border:1.5px solid rgba(16,185,129,.2);
-                    cursor:pointer; transition:all .15s; font-family:'Manrope',sans-serif;
-                }
-                .perm-btn:hover { background:#10b981; color:#fff; border-color:#10b981; }
+        @keyframes fadeRow { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes spin360 { to{transform:rotate(360deg)} }
+        @keyframes toastIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes toastProgress { from{width:100%} to{width:0} }
 
-                .refresh-btn {
-                    display:inline-flex; align-items:center; gap:8px;
-                    padding:10px 22px; border-radius:12px; font-size:14px; font-weight:700;
-                    background:transparent; color:inherit; border:1.5px solid rgba(255,255,255,0.1);
-                    cursor:pointer; transition:all .15s; font-family:'Manrope',sans-serif;
-                }
-                .refresh-btn:hover { background:rgba(255,255,255,0.05); border-color:rgba(255,255,255,0.2); }
+        .perm-btn {
+            display:inline-flex; align-items:center; gap:6px;
+            padding:8px 16px; border-radius:10px; font-size:13px; font-weight:700;
+            background:rgba(79,100,91,0.08); color:#4f645b; border:1.5px solid rgba(79,100,91,.15);
+            cursor:pointer; transition:all .15s; font-family:'Manrope',sans-serif;
+        }
+        .perm-btn:hover { background:#4f645b; color:#fff; border-color:#4f645b; }
 
-                .pg-btn { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:inherit; opacity:0.6; background:transparent; border:none; cursor:pointer; transition:background .15s,color .15s; font-family:'Manrope',sans-serif; }
-                .pg-btn:hover:not(:disabled) { background:rgba(255,255,255,0.05); opacity:1; }
-                .pg-btn.active { background:#10b981; color:#fff; font-weight:700; cursor:default; opacity:1; }
-                .pg-btn:disabled { opacity:.2; cursor:not-allowed; }
+        .pg-btn { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:#57534e; opacity:0.6; background:transparent; border:none; cursor:pointer; transition:all .15s; font-family:'Manrope',sans-serif; }
+        .pg-btn:hover:not(:disabled) { background:rgba(0,0,0,0.05); opacity:1; }
+        .pg-btn.active { background:#4f645b; color:#fff; font-weight:700; cursor:default; opacity:1; }
+        .pg-btn:disabled { opacity:.2; cursor:not-allowed; }
 
-                tr:hover td { background:rgba(255,255,255,.02) !important; }
+        tr:hover td { background:#fafaf9 !important; }
+        .table-head { background:#f9f8f3; border-bottom:1.5px solid #e2e8e1; }
+        .table-cell { border-bottom:1px solid #f1f0ea; padding:16px 20px; }
             `}</style>
 
       {/* Khu v?c thĂ´ng bĂ¡o */}
@@ -876,7 +879,7 @@ export default function RolePermissionPage() {
       )}
 
       {/* Content Area */}
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+      <div style={{ width: "100%", maxWidth: 1440, margin: "0 auto" }}>
         {/* Page header */}
         <div
           style={{
@@ -891,7 +894,7 @@ export default function RolePermissionPage() {
               style={{
                 fontSize: 28,
                 fontWeight: 800,
-                color: "inherit",
+                color: "#1c1917",
                 letterSpacing: "-0.03em",
                 margin: "0 0 6px",
               }}
@@ -913,7 +916,7 @@ export default function RolePermissionPage() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="refresh-btn sub-card-p"
+            style={{ ...SECONDARY_BUTTON, height: 42, gap: 8 }}
           >
             <span
               className="material-symbols-outlined"
@@ -970,20 +973,19 @@ export default function RolePermissionPage() {
           {/* Table */}
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "rgba(255,255,255,0.02)" }}>
+              <thead className="table-head">
+                <tr>
                   {["ID", "TÊN VAI TRÒ", "MÔ TẢ", "THAO TÁC"].map((h, i) => (
                     <th
                       key={h}
                       style={{
-                        padding: "14px 28px",
+                        padding: "16px 28px",
                         fontSize: 11,
-                        fontWeight: 700,
+                        fontWeight: 800,
                         letterSpacing: ".1em",
-                        color: "#9ca3af",
+                        color: "#78716c",
                         textAlign: i === 3 ? "right" : "left",
                         whiteSpace: "nowrap",
-                        borderBottom: "1px solid #f1f0ea",
                       }}
                     >
                       {h}

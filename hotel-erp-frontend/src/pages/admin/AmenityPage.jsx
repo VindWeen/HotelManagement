@@ -11,6 +11,48 @@ import {
 import { useAdminAuthStore } from "../../store/adminAuthStore";
 import { useNavigate } from "react-router-dom";
 
+const INPUT_STYLE = {
+  width: "100%",
+  padding: "10px 14px",
+  borderRadius: 12,
+  border: "1.5px solid #e2e8e1",
+  background: "#f9f8f3",
+  fontSize: 14,
+  fontWeight: 600,
+  color: "#1c1917",
+  outline: "none",
+  fontFamily: "'Manrope', sans-serif",
+  transition: "all 0.2s",
+};
+
+const PRIMARY_BUTTON = {
+  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+  color: "#e7fef3",
+  border: "none",
+  borderRadius: 12,
+  padding: "10px 22px",
+  fontSize: 14,
+  fontWeight: 800,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+  transition: "all 0.15s",
+};
+
+const SECONDARY_BUTTON = {
+  padding: "10px 22px",
+  borderRadius: 12,
+  border: "1.5px solid #e2e8e1",
+  background: "white",
+  color: "#57534e",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+  transition: "all 0.15s",
+};
+
 // ─── Toast ────────────────────────────────────────────────────────────────────
 const TOAST_STYLES = {
   success: {
@@ -263,14 +305,9 @@ function AmenityModal({ mode, amenity, onClose, onSaved, showToast }) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoFocus
-                style={{
-                  width: "100%", background: "#f9f8f3", border: "1.5px solid #e2e8e1",
-                  borderRadius: 12, padding: "10px 14px", fontSize: 14, outline: "none",
-                  boxSizing: "border-box", transition: "border .15s",
-                  fontFamily: "inherit",
-                }}
-                onFocus={(e) => e.target.style.borderColor = "#4f645b"}
-                onBlur={(e) => e.target.style.borderColor = "#e2e8e1"}
+                style={INPUT_STYLE}
+                onFocus={(e) => { e.target.style.borderColor = "#4f645b"; e.target.style.boxShadow = "0 0 0 2px rgba(79,100,91,0.1)"; }}
+                onBlur={(e) => { e.target.style.borderColor = "#e2e8e1"; e.target.style.boxShadow = "none"; }}
               />
             </div>
 
@@ -284,14 +321,9 @@ function AmenityModal({ mode, amenity, onClose, onSaved, showToast }) {
                 placeholder="VD: wifi / coffee / ac_unit hoặc https://..."
                 value={iconUrl}
                 onChange={(e) => setIconUrl(e.target.value)}
-                style={{
-                  width: "100%", background: "#f9f8f3", border: "1.5px solid #e2e8e1",
-                  borderRadius: 12, padding: "10px 14px", fontSize: 14, outline: "none",
-                  boxSizing: "border-box", transition: "border .15s",
-                  fontFamily: "inherit",
-                }}
-                onFocus={(e) => { e.target.style.borderColor = "#4f645b"; setShowIcons(true); }}
-                onBlur={(e) => { e.target.style.borderColor = "#e2e8e1"; setTimeout(() => setShowIcons(false), 150); }}
+                style={INPUT_STYLE}
+                onFocus={(e) => { e.target.style.borderColor = "#4f645b"; e.target.style.boxShadow = "0 0 0 2px rgba(79,100,91,0.1)"; setShowIcons(true); }}
+                onBlur={(e) => { e.target.style.borderColor = "#e2e8e1"; e.target.style.boxShadow = "none"; setTimeout(() => setShowIcons(false), 150); }}
               />
 
               {/* Icon Suggestions */}
@@ -336,11 +368,7 @@ function AmenityModal({ mode, amenity, onClose, onSaved, showToast }) {
             <button
               type="button"
               onClick={onClose}
-              style={{
-                flex: 1, padding: "11px", borderRadius: 11, fontSize: 14, fontWeight: 600,
-                background: "none", border: "1.5px solid #e2e8e1", color: "#4b5563",
-                cursor: "pointer", fontFamily: "inherit",
-              }}
+              style={{ ...SECONDARY_BUTTON, flex: 1 }}
             >
               Hủy
             </button>
@@ -348,11 +376,8 @@ function AmenityModal({ mode, amenity, onClose, onSaved, showToast }) {
               type="submit"
               disabled={loading}
               style={{
-                flex: 2, padding: "11px", borderRadius: 11, fontSize: 14, fontWeight: 700,
-                background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
-                color: "#e7fef3", border: "none", cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                opacity: loading ? 0.65 : 1, fontFamily: "inherit",
+                ...PRIMARY_BUTTON, flex: 2, justifyContent: "center",
+                opacity: loading ? 0.65 : 1,
               }}
             >
               {loading && (
@@ -577,6 +602,8 @@ export default function AmenityPage() {
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
+        * { font-family: 'Manrope', sans-serif; }
+
         .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align:middle; }
 
         .toggle-switch { position:relative; display:inline-block; width:44px; height:24px; }
@@ -600,7 +627,7 @@ export default function AmenityPage() {
 
         .pg-btn { width:2rem; height:2rem; border-radius:.5rem; display:flex; align-items:center; justify-content:center; font-size:.875rem; font-weight:500; color:#6b7280; background:transparent; border:none; cursor:pointer; transition:background .15s,color .15s; font-family:inherit; }
         .pg-btn:hover:not(:disabled) { background:#f3f4f6; }
-        .pg-btn.active { background:#333333; color:#ffffff; font-weight:700; cursor:default; }
+        .pg-btn.active { background:#4f645b; color:#e7fef3; font-weight:700; cursor:default; }
         .pg-btn:disabled { opacity:.35; cursor:not-allowed; }
         .pg-btn.icon { color:#9ca3af; }
 
@@ -635,7 +662,7 @@ export default function AmenityPage() {
         {/* Page Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
           <div>
-            <h2 style={{ fontSize: 24, fontWeight: 700, color: "#1c1917", letterSpacing: "-0.025em", margin: "0 0 4px" }}>
+            <h2 style={{ fontSize: 28, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.02em", margin: "0 0 4px" }}>
               Quản lý Tiện nghi Phòng
             </h2>
             <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>
@@ -651,12 +678,7 @@ export default function AmenityPage() {
           <div style={{ display: "flex", gap: 12 }}>
             <button
               onClick={loadAmenities}
-              style={{
-                padding: "8px 18px", borderRadius: 12, fontSize: 14, fontWeight: 500,
-                background: "white", color: "#1c1917", border: "1px solid #e2e8e1",
-                cursor: "pointer", display: "flex", alignItems: "center", gap: 7,
-                boxShadow: "0 1px 3px rgba(0,0,0,.06)", fontFamily: "inherit",
-              }}
+              style={SECONDARY_BUTTON}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 17, ...(loading ? { animation: "spin .7s linear infinite" } : {}) }}>
                 refresh
@@ -666,12 +688,7 @@ export default function AmenityPage() {
             {hasPermission("MANAGE_ROOMS") && (
               <button
                 onClick={() => setModal({ type: "add" })}
-                style={{
-                  padding: "8px 20px", borderRadius: 12, fontSize: 14, fontWeight: 600,
-                  background: "#4f645b", color: "#e7fef3", border: "none",
-                  cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
-                  boxShadow: "0 4px 12px rgba(79,100,91,.2)", fontFamily: "inherit",
-                }}
+                style={PRIMARY_BUTTON}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add</span>
                 Thêm tiện nghi
@@ -697,9 +714,8 @@ export default function AmenityPage() {
               placeholder="Tìm tên tiện nghi..."
               onChange={(e) => onSearch(e.target.value)}
               style={{
-                width: "100%", background: "#f9f8f3", border: "1px solid #e2e8e1",
-                borderRadius: 11, padding: "9px 14px 9px 38px", fontSize: 14,
-                outline: "none", boxSizing: "border-box", fontFamily: "inherit",
+                ...INPUT_STYLE,
+                padding: "9px 14px 9px 38px",
               }}
             />
           </div>

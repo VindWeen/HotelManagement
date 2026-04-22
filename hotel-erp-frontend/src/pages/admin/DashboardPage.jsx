@@ -382,15 +382,17 @@ export default function DashboardPage() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
         .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align: middle; }
         @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
+        .skeleton { background:linear-gradient(90deg,rgba(0,0,0,0.05) 25%,rgba(0,0,0,0.1) 50%,rgba(0,0,0,0.05) 75%); background-size:600px; animation:shimmer 1.4s infinite; border-radius:6px; }
         @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         @keyframes countUp { from{opacity:0;transform:scale(.85)} to{opacity:1;transform:scale(1)} }
         .card-in { animation: fadeUp .35s ease forwards; }
         .kpi-val { animation: countUp .45s cubic-bezier(.22,1,.36,1) forwards; }
-        .refresh-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:10px; font-size:13px; font-weight:700; background:white; color:#1c1917; border:1.5px solid #e2e8e1; cursor:pointer; font-family:'Manrope',sans-serif; transition:background .15s; }
-        .refresh-btn:hover { background:#f9f8f3; }
+        .refresh-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:10px; font-size:13px; font-weight:800; background:white; color:#1c1917; border:1.5px solid #e2e8e1; cursor:pointer; font-family:'Manrope',sans-serif; transition:background .15s; }
+        .refresh-btn:hover { background:#f9f8f3; border-color:#4f645b; color:#4f645b; }
         .refresh-btn:active { transform:scale(.97); }
         @keyframes spin { to { transform:rotate(360deg) } }
         .spin { animation:spin .7s linear infinite; }
@@ -583,7 +585,7 @@ export default function DashboardPage() {
               </div>
             )}
             {loading ? <Skel h={12} w={160} /> : (
-              <p style={{ fontSize: 11, fontWeight: 600, color: "#0369a1", margin: 0 }}>
+              <p style={{ fontSize: 11, fontWeight: 800, color: "#0369a1", margin: 0, opacity: 0.8 }}>
                 {fmt(stats.inUseEquipmentUnits)} đang dùng · {fmt(stats.damagedEquipmentUnits)} hư hỏng
               </p>
             )}
@@ -595,7 +597,7 @@ export default function DashboardPage() {
           <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "200ms", animationFillMode: "both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
               <div>
-                <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: "0 0 2px" }}>Doanh thu 7 ngày qua</h4>
+                <h4 style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", margin: "0 0 2px" }}>Doanh thu 7 ngày qua</h4>
                 <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>Chỉ tính hóa đơn đã thanh toán</p>
               </div>
               {!loading && (
@@ -617,7 +619,7 @@ export default function DashboardPage() {
 
           <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "260ms", animationFillMode: "both" }}>
             <div style={{ marginBottom: 18 }}>
-              <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: "0 0 2px" }}>Tình trạng loại phòng</h4>
+              <h4 style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", margin: "0 0 2px" }}>Tình trạng loại phòng</h4>
               <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>Tỷ lệ lấp đầy theo loại</p>
             </div>
             {loading ? (
@@ -844,7 +846,7 @@ export default function DashboardPage() {
         {/* Room Status Grid */}
         <div className="card-in" style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", overflow: "hidden", animationDelay: "500ms", animationFillMode: "both" }}>
           <div style={{ padding: "20px 28px", borderBottom: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-            <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: 0 }}>Trạng thái phòng</h4>
+            <h4 style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", margin: 0 }}>Trạng thái phòng</h4>
 
             {/* Legend badges */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

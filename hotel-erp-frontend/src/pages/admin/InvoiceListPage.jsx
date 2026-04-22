@@ -40,7 +40,7 @@ const InvoiceStatusBadge = ({ status }) => {
     Draft: { bg: "#e0f2fe", text: "#0369a1", icon: "draft" },
     Ready_To_Collect: { bg: "#ede9fe", text: "#6d28d9", icon: "point_of_sale" },
     Unpaid: { bg: "#fef2f2", text: "#dc2626", icon: "pending_actions" },
-    Partially_Paid: { bg: "#fef3c7", text: "#d97706", icon: "hourglass_half" },
+    Partially_Paid: { bg: "#fef3c7", text: "#d97706", icon: "hourglass_top" },
     Paid: { bg: "#ecfdf5", text: "#059669", icon: "check_circle" },
     Refunded: { bg: "#f3f4f6", text: "#6b7280", icon: "replay" }
   };
@@ -92,7 +92,10 @@ export default function InvoiceListPage() {
 
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-      <style>{`        * { font-family: 'Manrope', sans-serif; }        @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+        @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
         .table-row { transition: background 0.1s; border-bottom: 1px solid #f1f0ea; }
         .table-row:hover { background: #fafaf8 !important; }

@@ -1,35 +1,33 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route } from "react-router-dom";
+import FullscreenLoader from "../components/guest/FullscreenLoader";
 import GuestLayout from "../layouts/GuestLayout";
 import GuestProtectedRoute from "./GuestProtectedRoute";
 
-const HomePage = lazy(() => import("../pages/guest/HomePage"));
-const ArticlesPage = lazy(() => import("../pages/guest/ArticlesPage"));
-const ArticleDetailPage = lazy(() => import("../pages/guest/ArticleDetailPage"));
-const AttractionsPage = lazy(() => import("../pages/guest/AttractionsPage"));
-const AttractionDetailPage = lazy(() => import("../pages/guest/AttractionDetailPage"));
-const ReviewsPage = lazy(() => import("../pages/guest/ReviewsPage"));
-const GuestDashboardPage = lazy(() => import("../pages/guest/DashboardPage"));
-const GuestProfilePage = lazy(() => import("../pages/guest/ProfilePage"));
-const MyBookingPage = lazy(() => import("../pages/guest/MyBookingPage"));
-const BookingPage    = lazy(() => import("../pages/guest/BookingPage"));
+const GUEST_LOADER_MIN_MS = 1000;
+
+function lazyWithMinDelay(importer, minDelay = GUEST_LOADER_MIN_MS) {
+  return lazy(() =>
+    Promise.all([
+      importer(),
+      new Promise((resolve) => setTimeout(resolve, minDelay)),
+    ]).then(([moduleExports]) => moduleExports),
+  );
+}
+
+const HomePage = lazyWithMinDelay(() => import("../pages/guest/HomePage"));
+const ArticlesPage = lazyWithMinDelay(() => import("../pages/guest/ArticlesPage"));
+const ArticleDetailPage = lazyWithMinDelay(() => import("../pages/guest/ArticleDetailPage"));
+const AttractionsPage = lazyWithMinDelay(() => import("../pages/guest/AttractionsPage"));
+const AttractionDetailPage = lazyWithMinDelay(() => import("../pages/guest/AttractionDetailPage"));
+const ReviewsPage = lazyWithMinDelay(() => import("../pages/guest/ReviewsPage"));
+const GuestDashboardPage = lazyWithMinDelay(() => import("../pages/guest/DashboardPage"));
+const GuestProfilePage = lazyWithMinDelay(() => import("../pages/guest/ProfilePage"));
+const MyBookingPage = lazyWithMinDelay(() => import("../pages/guest/MyBookingPage"));
+const BookingPage = lazyWithMinDelay(() => import("../pages/guest/BookingPage"));
 
 function RouteFallback() {
-  return (
-    <div
-      style={{
-        minHeight: "40vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "'Manrope', sans-serif",
-        color: "#6b7280",
-        fontSize: 14,
-      }}
-    >
-      Đang tải trang...
-    </div>
-  );
+  return <FullscreenLoader />;
 }
 
 function withSuspense(node) {

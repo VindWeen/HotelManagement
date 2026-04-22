@@ -1,8 +1,49 @@
-// src/pages/admin/HousekeepingPage.jsx
 import { useState, useEffect, useCallback } from "react";
-import axiosClient from "../../api/axios";
 import { getRooms, updateCleaningStatus } from "../../api/roomsApi";
 import { getInventoryByRoom } from "../../api/roomInventoriesApi";
+import axiosClient from "../../api/axios";
+
+const INPUT_STYLE = {
+  width: "100%",
+  padding: "10px 14px",
+  borderRadius: 12,
+  border: "1.5px solid #e2e8e1",
+  background: "#f9f8f3",
+  fontSize: 14,
+  fontWeight: 600,
+  color: "#1c1917",
+  outline: "none",
+  fontFamily: "'Manrope', sans-serif",
+  transition: "all 0.2s",
+};
+
+const PRIMARY_BUTTON = {
+  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+  color: "#e7fef3",
+  border: "none",
+  borderRadius: 12,
+  padding: "10px 22px",
+  fontSize: 14,
+  fontWeight: 800,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+  transition: "all 0.15s",
+};
+
+const SECONDARY_BUTTON = {
+  padding: "10px 22px",
+  borderRadius: 12,
+  border: "1.5px solid #e2e8e1",
+  background: "white",
+  color: "#57534e",
+  fontSize: 14,
+  fontWeight: 800,
+  cursor: "pointer",
+  transition: "all 0.15s",
+};
 
 // ─── Toast Component ──────────────────────────────────────────────────────────
 function Toast({ id, msg, type = "success", dur = 4000, onDismiss }) {
@@ -201,6 +242,7 @@ export default function HousekeepingPage() {
 
       // 1. Kiểm kê mất/sử dụng vật tư -> cập nhật Loss_And_Damages ở trạng thái Pending
       const usedOrLost = inventories.filter((inv) => missingItems[inv.id]?.isMissing);
+      const createdLossItems = [];
 
       for (const inv of usedOrLost) {
         const qtyMissing = parseInt(missingItems[inv.id].quantity, 10) || 1;
@@ -221,8 +263,15 @@ export default function HousekeepingPage() {
             });
           }
 
-          await axiosClient.post("/LossAndDamages", formData, {
+          const createRes = await axiosClient.post("/LossAndDamages", formData, {
             headers: { "Content-Type": "multipart/form-data" }
+          });
+          createdLossItems.push({
+            lossAndDamageId: createRes?.data?.id,
+            roomInventoryId: inv.id,
+            quantity: qtyMissing,
+            penaltyAmount,
+            description: note,
           });
         } catch (err) {
           console.error("Lỗi khi ghi nhận mất vật tư:", err);
@@ -231,6 +280,17 @@ export default function HousekeepingPage() {
 
       // 2. Nếu có thất thoát chờ xử lý thì chuyển sang PendingLoss.
       // Nếu không có thất thoát thì trả phòng về Clean ngay.
+      if (createdLossItems.length > 0) {
+        try {
+          await axiosClient.post("/LossAndDamages/housekeeping-audit-group", {
+            roomNumber,
+            items: createdLossItems,
+          });
+        } catch (err) {
+          console.error("Loi khi ghi audit log housekeeping:", err);
+        }
+      }
+
       const nextCleaningStatus = usedOrLost.length > 0 ? "PendingLoss" : "Clean";
       await updateCleaningStatus(roomId, nextCleaningStatus);
 
@@ -269,6 +329,10 @@ export default function HousekeepingPage() {
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+      `}</style>
+      <style>{`
         @keyframes fadeRow { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
         @keyframes modalScaleIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
@@ -289,8 +353,8 @@ export default function HousekeepingPage() {
 
       <div style={{ maxWidth: 1400, margin: "0 auto", animation: "fadeRow .3s ease" }}>
         <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.025em", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>
-            Nghiệp vụ Dọn Phòng
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.02em", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>
+            Nghiệp vụ Buồng phòng
           </h2>
           <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
             Danh sách các phòng đang trong trạng thái cần dọn dẹp. Có thể dọn nhanh hàng loạt với các phòng bẩn, còn phòng bảo trì xử lý riêng theo từng phòng.
@@ -301,7 +365,7 @@ export default function HousekeepingPage() {
           <select
             value={floorFilter}
             onChange={(e) => setFloorFilter(e.target.value)}
-            style={{ padding: "9px 14px", borderRadius: 12, fontSize: 13, border: "1.5px solid #d6d3d1", background: "white", minWidth: 150 }}
+            style={{ ...INPUT_STYLE, width: "auto", minWidth: 160 }}
           >
             <option value="">Tất cả tầng</option>
             {allFloors.map((floor) => (
@@ -310,7 +374,7 @@ export default function HousekeepingPage() {
           </select>
           <button
             onClick={loadDirtyRooms}
-            style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "white", color: "#4f645b", border: "1.5px solid #4f645b", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "Manrope, sans-serif" }}
+            style={SECONDARY_BUTTON}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>refresh</span>
             Làm mới
@@ -318,7 +382,11 @@ export default function HousekeepingPage() {
           <button
             onClick={handleBulkClean}
             disabled={selectedCount === 0 || bulkCleaning}
-            style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: selectedCount === 0 || bulkCleaning ? "#e7e5e4" : "#166534", color: "white", border: "1.5px solid transparent", cursor: selectedCount === 0 || bulkCleaning ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 7, fontFamily: "Manrope, sans-serif", opacity: selectedCount === 0 || bulkCleaning ? 0.75 : 1 }}
+            style={{
+              ...PRIMARY_BUTTON,
+              opacity: selectedCount === 0 || bulkCleaning ? 0.6 : 1,
+              cursor: selectedCount === 0 || bulkCleaning ? "not-allowed" : "pointer"
+            }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>done_all</span>
             {bulkCleaning ? "Đang dọn..." : `Dọn nhanh hàng loạt${selectedCount > 0 ? ` (${selectedCount})` : ""}`}
@@ -326,8 +394,8 @@ export default function HousekeepingPage() {
         </div>
 
         {selectableRooms.length > 0 && (
-          <div style={{ marginBottom: 18, background: "#fff", border: "1px solid #ece7de", borderRadius: 16, padding: "14px 18px", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <label className="check-container" style={{ fontWeight: 700, color: "#1c1917" }}>
+          <div style={{ marginBottom: 18, background: "#fff", border: "1px solid #f1f0ea", borderRadius: 16, padding: "14px 18px", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <label className="check-container" style={{ fontWeight: 800, color: "#1c1917" }}>
               Chọn tất cả phòng bẩn có thể dọn nhanh
               <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
               <span className="checkmark"></span>
@@ -545,14 +613,14 @@ export default function HousekeepingPage() {
                   )}
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 32 }}>
-                    <button onClick={() => setWizardStep(1)} style={{ padding: "12px 24px", borderRadius: 12, background: "white", border: "1.5px solid #cbd5e1", color: "#475569", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Manrope, sans-serif" }}>
+                    <button onClick={() => setWizardStep(1)} style={{ padding: "12px 24px", borderRadius: 12, background: "white", border: "1.5px solid #cbd5e1", color: "#475569", fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Manrope, sans-serif" }}>
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
                       Quay lại
                     </button>
                     <button
                       onClick={handleFinishCleaning}
                       disabled={isFinishing}
-                      style={{ background: "linear-gradient(135deg, #059669 0%, #047857 100%)", color: "white", padding: "14px 28px", borderRadius: 12, fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 10, boxShadow: "0 8px 20px rgba(5,150,105,.3)", opacity: isFinishing ? 0.7 : 1, fontFamily: "Manrope, sans-serif" }}
+                      style={{ background: "linear-gradient(135deg, #059669 0%, #047857 100%)", color: "white", padding: "14px 28px", borderRadius: 12, fontSize: 14, fontWeight: 800, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 10, boxShadow: "0 8px 20px rgba(5,150,105,.3)", opacity: isFinishing ? 0.7 : 1, fontFamily: "Manrope, sans-serif" }}
                     >
                       {isFinishing ? (
                         <>Đang hoàn tất nghiệp vụ buồng phòng...</>

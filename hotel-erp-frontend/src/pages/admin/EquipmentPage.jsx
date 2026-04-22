@@ -15,10 +15,13 @@ const INPUT_STYLE = {
   width: "100%",
   padding: "10px 14px",
   borderRadius: 12,
-  border: "1px solid #e2e8e1",
-  background: "#fff",
+  border: "1.5px solid #e2e8e1",
+  background: "#f9f8f3",
   fontSize: 14,
+  fontWeight: 600,
+  color: "#1c1917",
   outline: "none",
+  fontFamily: "'Manrope', sans-serif",
 };
 
 const emptyForm = {
@@ -580,7 +583,11 @@ export default function EquipmentPage() {
 
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+        @keyframes spin { to { transform: rotate(360deg) } }
+`}</style>
       <Toast message={toast.message} type={toast.type} onClose={closeToast} />
 
       <EquipmentModal
@@ -621,7 +628,7 @@ export default function EquipmentPage() {
               background: "white",
               color: "#1c1917",
               fontSize: 13,
-              fontWeight: 700,
+              fontWeight: 800,
               cursor: "pointer",
               opacity: syncPreviewLoading || syncRunning ? 0.65 : 1,
             }}
@@ -637,7 +644,7 @@ export default function EquipmentPage() {
               background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
               color: "#e7fef3",
               fontSize: 13,
-              fontWeight: 700,
+              fontWeight: 800,
               cursor: "pointer",
             }}
           >
@@ -651,7 +658,7 @@ export default function EquipmentPage() {
               border: "1px solid #e2e8e1",
               background: "white",
               fontSize: 13,
-              fontWeight: 700,
+              fontWeight: 800,
               cursor: "pointer",
             }}
           >
@@ -718,7 +725,7 @@ export default function EquipmentPage() {
                     "Trạng thái",
                     "Thao tác",
                   ].map((title) => (
-                    <th key={title} style={{ padding: "14px 16px", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#9ca3af", textAlign: "left", borderBottom: "1px solid #f1f0ea" }}>
+                    <th key={title} style={{ padding: "14px 16px", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", color: "#6b7280", textAlign: "left", borderBottom: "1px solid #f1f0ea" }}>
                       {title}
                     </th>
                   ))}
@@ -727,8 +734,8 @@ export default function EquipmentPage() {
               <tbody>
                 {paginatedItems.map((item) => (
                   <tr key={item.id} style={{ borderBottom: "1px solid #f8fafc" }}>
-                    <td style={{ padding: "16px", fontSize: 13, fontFamily: "monospace", fontWeight: 700, color: "#4f645b" }}>{item.itemCode}</td>
-                    <td style={{ padding: "16px", fontSize: 14, fontWeight: 700, color: "#1c1917" }}>
+                    <td style={{ padding: "16px", fontSize: 13, fontFamily: "monospace", fontWeight: 800, color: "#4f645b" }}>{item.itemCode}</td>
+                    <td style={{ padding: "16px", fontSize: 14, fontWeight: 800, color: "#1c1917" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         {item.imageUrl ? (
                           <img src={item.imageUrl} alt={item.name} style={{ width: 42, height: 42, borderRadius: 10, objectFit: "cover", border: "1px solid #f1f0ea" }} />
@@ -742,13 +749,13 @@ export default function EquipmentPage() {
                     </td>
                     <td style={{ padding: "16px", fontSize: 13, color: "#475569" }}>{item.category || "—"}</td>
                     <td style={{ padding: "16px", fontSize: 13, color: "#475569" }}>{item.unit || "—"}</td>
-                    <td style={{ padding: "16px", fontSize: 13, fontWeight: 700 }}>{item.totalQuantity ?? 0}</td>
-                    <td style={{ padding: "16px", fontSize: 13, fontWeight: 700 }}>{item.inUseQuantity ?? 0}</td>
-                    <td style={{ padding: "16px", fontSize: 13, fontWeight: 700 }}>{item.damagedQuantity ?? 0}</td>
-                    <td style={{ padding: "16px", fontSize: 13, fontWeight: 700 }}>{item.liquidatedQuantity ?? 0}</td>
-                    <td style={{ padding: "16px", fontSize: 13, fontWeight: 700, color: "#2563eb" }}>{item.inStockQuantity ?? 0}</td>
+                    <td style={{ padding: "16px", fontSize: 13, fontWeight: 800 }}>{item.totalQuantity ?? 0}</td>
+                    <td style={{ padding: "16px", fontSize: 13, fontWeight: 800 }}>{item.inUseQuantity ?? 0}</td>
+                    <td style={{ padding: "16px", fontSize: 13, fontWeight: 800 }}>{item.damagedQuantity ?? 0}</td>
+                    <td style={{ padding: "16px", fontSize: 13, fontWeight: 800 }}>{item.liquidatedQuantity ?? 0}</td>
+                    <td style={{ padding: "16px", fontSize: 13, fontWeight: 800, color: "#2563eb" }}>{item.inStockQuantity ?? 0}</td>
                     <td style={{ padding: "16px", fontSize: 13, color: "#475569" }}>{fmtCurrency(item.basePrice)}</td>
-                    <td style={{ padding: "16px", fontSize: 13, color: "#dc2626", fontWeight: 700 }}>{fmtCurrency(item.defaultPriceIfLost)}</td>
+                    <td style={{ padding: "16px", fontSize: 13, color: "#dc2626", fontWeight: 800 }}>{fmtCurrency(item.defaultPriceIfLost)}</td>
                     <td style={{ padding: "16px", fontSize: 13, color: "#475569" }}>{item.supplier || "—"}</td>
                     <td style={{ padding: "16px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -783,7 +790,7 @@ export default function EquipmentPage() {
                             }}
                           />
                         </button>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: item.isActive ? "#10b981" : "#9ca3af" }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: item.isActive ? "#10b981" : "#9ca3af" }}>
                           {togglingId === item.id ? "Đang đổi..." : item.isActive ? "Bật" : "Tắt"}
                         </span>
                       </div>
@@ -851,7 +858,7 @@ export default function EquipmentPage() {
                     background: active ? "#4f645b" : "transparent",
                     color: active ? "#e7fef3" : "#6b7280",
                     fontSize: 13,
-                    fontWeight: 700,
+                    fontWeight: 800,
                   }}
                 >
                   {pageNumber}

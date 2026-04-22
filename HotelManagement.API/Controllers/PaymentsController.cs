@@ -1,4 +1,4 @@
-﻿using HotelManagement.API.Services;
+using HotelManagement.API.Services;
 using HotelManagement.Core.Authorization;
 using HotelManagement.Core.Constants;
 using HotelManagement.Core.Entities;
@@ -163,6 +163,30 @@ public class PaymentsController : ControllerBase
 
         _db.Payments.Add(invoicePayment);
         await _db.SaveChangesAsync();
+
+        // [MỚI] Đồng bộ lại DepositAmount cho Booking liên quan
+        if (invoice.BookingId.HasValue)
+        {
+            var bId = invoice.BookingId.Value;
+            var relatedBooking = await _db.Bookings.FirstOrDefaultAsync(b => b.Id == bId);
+            if (relatedBooking != null)
+            {
+                // Tính tổng tất cả payment thành công liên quan đến booking này (trực tiếp hoặc qua invoice)
+                var totalPaid = await _db.Payments
+                    .Where(p => (p.BookingId == bId || (p.InvoiceId != null && _db.Invoices.Any(i => i.Id == p.InvoiceId && i.BookingId == bId))) && p.Status == PaymentStatuses.Success)
+                    .SumAsync(p => p.PaymentType == PaymentTypes.Refund ? -p.AmountPaid : p.AmountPaid);
+
+                relatedBooking.DepositAmount = Math.Max(0m, totalPaid);
+                
+                // Nếu đang Pending mà nộp đủ tiền qua invoice thì cũng auto Confirm
+                if (relatedBooking.Status == BookingStatuses.Pending && relatedBooking.DepositAmount >= relatedBooking.RequiredBookingDepositAmount)
+                {
+                    relatedBooking.Status = BookingStatuses.Confirmed;
+                }
+                
+                await _db.SaveChangesAsync();
+            }
+        }
 
         var finalized = await _invoiceService.FinalizeAsync(invoice.Id);
 

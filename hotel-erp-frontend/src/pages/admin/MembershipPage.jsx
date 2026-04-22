@@ -8,19 +8,24 @@ import {
 
 const card = {
   background: "#fff",
-  border: "1px solid #ece7de",
+  border: "1px solid #f1f0ea",
   borderRadius: 20,
-  boxShadow: "0 10px 30px rgba(28,25,23,.05)",
+  boxShadow: "0 1px 3px rgba(0,0,0,.06)",
 };
 
 const input = {
   width: "100%",
-  background: "#fcfbf8",
-  border: "1px solid #e7e2d8",
-  borderRadius: 14,
-  padding: "11px 14px",
+  background: "#f9f8f3",
+  border: "1.5px solid #e2e8e1",
+  borderRadius: 12,
+  padding: "10px 14px",
   fontSize: 14,
+  fontWeight: 600,
+  color: "#1c1917",
+  outline: "none",
   boxSizing: "border-box",
+  fontFamily: "'Manrope', sans-serif",
+  transition: "all 0.2s",
 };
 
 const label = {
@@ -34,23 +39,31 @@ const label = {
 };
 
 const primaryBtn = {
-  padding: "10px 16px",
-  borderRadius: 14,
+  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+  color: "#e7fef3",
   border: "none",
-  background: "#4f645b",
-  color: "#ecfdf5",
+  borderRadius: 12,
+  padding: "10px 22px",
+  fontSize: 14,
   fontWeight: 800,
   cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+  transition: "all 0.15s",
 };
 
 const ghostBtn = {
-  padding: "10px 16px",
-  borderRadius: 14,
-  border: "1px solid #e7e2d8",
-  background: "#fff",
+  padding: "10px 22px",
+  borderRadius: 12,
+  border: "1.5px solid #e2e8e1",
+  background: "white",
   color: "#57534e",
+  fontSize: 14,
   fontWeight: 700,
   cursor: "pointer",
+  transition: "all 0.15s",
 };
 
 const sortOptions = [
@@ -453,6 +466,10 @@ export default function MembershipPage() {
 
   return (
     <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+      `}</style>
       <div style={{ maxWidth: 1360, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 18, flexWrap: "wrap", marginBottom: 24 }}>
           <div>

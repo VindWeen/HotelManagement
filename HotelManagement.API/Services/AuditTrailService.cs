@@ -1,6 +1,5 @@
 ﻿using HotelManagement.Infrastructure.Data;
 using System.Security.Claims;
-using HotelManagement.Core.Entities;
 using HotelManagement.Core.Helpers;
 
 namespace HotelManagement.API.Services;
@@ -34,10 +33,12 @@ public interface IAuditTrailService
 public class AuditTrailService : IAuditTrailService
 {
     private readonly IActivityLogService _activityLog;
+    private readonly IAuditLogGroupService _auditLogGroup;
 
-    public AuditTrailService(IActivityLogService activityLog)
+    public AuditTrailService(IActivityLogService activityLog, IAuditLogGroupService auditLogGroup)
     {
         _activityLog = activityLog;
+        _auditLogGroup = auditLogGroup;
     }
 
     public async Task WriteAsync(
@@ -63,19 +64,45 @@ public class AuditTrailService : IAuditTrailService
             metadata: entry.Metadata
         );
 
-        db.AuditLogs.Add(new AuditLog
-        {
-            UserId = userId,
-            Action = entry.ActionCode,
-            TableName = entry.TableName,
-            RecordId = entry.RecordId ?? entry.EntityId ?? 0,
-            OldValue = entry.OldValue,
-            NewValue = entry.NewValue,
-            UserAgent = request.Headers["User-Agent"].ToString(),
-            CreatedAt = DateTime.UtcNow
-        });
+        db.AuditLogs.Add(_auditLogGroup.CreateSingle(
+            user,
+            summary: entry.Message,
+            actionType: entry.ActionCode,
+            entityType: entry.EntityType,
+            message: entry.Message,
+            context: new
+            {
+                tableName = entry.TableName,
+                recordId = entry.RecordId ?? entry.EntityId,
+                entityLabel = entry.EntityLabel,
+                userAgent = request.Headers["User-Agent"].ToString()
+            },
+            changes: new
+            {
+                oldData = ParseJsonIfPossible(entry.OldValue),
+                newData = ParseJsonIfPossible(entry.NewValue),
+                metadata = ParseJsonIfPossible(entry.Metadata)
+            },
+            userIdOverride: userId,
+            roleNameOverride: roleName
+        ));
 
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static object? ParseJsonIfPossible(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(raw);
+            return doc.RootElement.Clone();
+        }
+        catch
+        {
+            return raw;
+        }
     }
 }
 

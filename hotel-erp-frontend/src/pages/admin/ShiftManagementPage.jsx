@@ -37,18 +37,51 @@ function buildShiftDateRange(shiftType) {
 
 const pageCard = {
   background: "#fff",
-  border: "1px solid #ece7de",
+  border: "1px solid #f1f0ea",
   borderRadius: 20,
-  boxShadow: "0 10px 30px rgba(28,25,23,.05)",
+  boxShadow: "0 1px 3px rgba(0,0,0,.06)",
 };
 
 const inputStyle = {
   width: "100%",
   boxSizing: "border-box",
-  padding: "10px 12px",
+  padding: "10px 14px",
   borderRadius: 12,
-  border: "1px solid #d6d3d1",
-  background: "#fff",
+  border: "1.5px solid #e2e8e1",
+  background: "#f9f8f3",
+  fontSize: 13,
+  fontWeight: 600,
+  color: "#1c1917",
+  outline: "none",
+  fontFamily: "'Manrope', sans-serif",
+};
+
+const PRIMARY_BUTTON = {
+  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+  color: "#e7fef3",
+  border: "none",
+  borderRadius: 12,
+  padding: "10px 22px",
+  fontSize: 14,
+  fontWeight: 800,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+  transition: "all 0.15s",
+};
+
+const SECONDARY_BUTTON = {
+  padding: "10px 22px",
+  borderRadius: 12,
+  border: "1.5px solid #e2e8e1",
+  background: "white",
+  color: "#57534e",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+  transition: "all 0.15s",
 };
 
 const statusMeta = {
@@ -155,6 +188,10 @@ export default function ShiftManagementPage() {
 
   return (
     <div style={{ maxWidth: 1360, margin: "0 auto" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+      `}</style>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 28, color: "#1c1917", fontWeight: 800 }}>Ca làm việc</h2>
@@ -162,7 +199,7 @@ export default function ShiftManagementPage() {
             Module này hỗ trợ phân ca, bắt đầu ca, ghi chú bàn giao và xác nhận hoàn tất. Quy tắc chồng ca và ca active cùng bộ phận được xử lý ở backend.
           </p>
         </div>
-        <button type="button" onClick={load} disabled={loading} style={{ height: 42, padding: "0 16px", borderRadius: 12, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 700, cursor: "pointer" }}>
+        <button type="button" onClick={load} disabled={loading} style={{ ...SECONDARY_BUTTON, height: 42 }}>
           {loading ? "Đang tải..." : "Làm mới"}
         </button>
       </div>
@@ -198,8 +235,8 @@ export default function ShiftManagementPage() {
             <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 700 }}>
               Khung giờ mặc định: {SHIFT_TIME_PRESETS[form.shiftType]?.label || "--"}
             </div>
-            <button type="submit" disabled={saving} style={{ height: 42, borderRadius: 12, border: "none", background: "#4f645b", color: "#ecfdf5", fontWeight: 800, cursor: "pointer" }}>
-              {saving ? "Đang lưu..." : "Tạo ca"}
+            <button type="submit" disabled={saving} style={{ ...PRIMARY_BUTTON, height: 44, justifyContent: "center" }}>
+              {saving ? "Đang lưu..." : "Tạo ca làm việc"}
             </button>
           </form>
         </article>

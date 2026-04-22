@@ -33,6 +33,7 @@ public class BookingsController : ControllerBase
     private readonly IPaymentService _paymentService;
     private readonly IInvoiceService _invoiceService;
     private readonly IAuditTrailService _auditTrail;
+    private readonly IConfiguration _config;
 
     public BookingsController(
         AppDbContext context,
@@ -43,7 +44,8 @@ public class BookingsController : ControllerBase
         IVoucherValidationService voucherValidationService,
         IPaymentService paymentService,
         IInvoiceService invoiceService,
-        IAuditTrailService auditTrail)
+        IAuditTrailService auditTrail,
+        IConfiguration config)
     {
         _context = context;
         _redis = redis;
@@ -54,6 +56,7 @@ public class BookingsController : ControllerBase
         _paymentService = paymentService;
         _invoiceService = invoiceService;
         _auditTrail = auditTrail;
+        _config = config;
     }
 
     private IDatabase RedisDb => _redis.GetDatabase();
@@ -549,31 +552,49 @@ public class BookingsController : ControllerBase
     private static string? NormalizeGuestPhone(string? phone)
         => string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
 
-    private async Task EnsureGuestAccountLinkedOnCheckInAsync(
+    private string? GetFrontendBaseUrl()
+        => string.IsNullOrWhiteSpace(_config["Frontend:BaseUrl"])
+            ? null
+            : _config["Frontend:BaseUrl"]!.Trim().TrimEnd('/');
+
+    private async Task<bool> EnsureGuestAccountLinkedAsync(
         Booking booking,
         string? guestName,
         string? guestPhone,
         string? guestEmail,
         string? nationalId,
+        bool sendNewAccountEmail = false,
         CancellationToken cancellationToken = default)
     {
         booking.GuestName = string.IsNullOrWhiteSpace(guestName) ? booking.GuestName?.Trim() : guestName.Trim();
         booking.GuestPhone = NormalizeGuestPhone(guestPhone) ?? NormalizeGuestPhone(booking.GuestPhone);
         booking.GuestEmail = NormalizeGuestEmail(guestEmail) ?? NormalizeGuestEmail(booking.GuestEmail);
+        var normalizedNationalId = string.IsNullOrWhiteSpace(nationalId) ? null : nationalId.Trim();
 
         if (booking.UserId.HasValue)
-            return;
+        {
+            var linkedUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == booking.UserId.Value, cancellationToken);
+            if (linkedUser != null)
+            {
+                linkedUser.FullName = string.IsNullOrWhiteSpace(linkedUser.FullName) ? booking.GuestName ?? linkedUser.FullName : linkedUser.FullName;
+                linkedUser.Phone ??= booking.GuestPhone;
+                linkedUser.Email = NormalizeGuestEmail(linkedUser.Email) ?? booking.GuestEmail ?? linkedUser.Email;
+                linkedUser.NationalId ??= normalizedNationalId;
+                linkedUser.UpdatedAt = DateTime.UtcNow;
+            }
+
+            return false;
+        }
 
         if (string.IsNullOrWhiteSpace(booking.GuestName) ||
             string.IsNullOrWhiteSpace(booking.GuestPhone) ||
-            string.IsNullOrWhiteSpace(booking.GuestEmail) ||
-            string.IsNullOrWhiteSpace(nationalId))
+            string.IsNullOrWhiteSpace(booking.GuestEmail))
         {
-            throw new InvalidOperationException("Khách chưa có hồ sơ cần nhập đủ họ tên, số điện thoại, email và CCCD trước khi check-in.");
+            throw new InvalidOperationException("Khách chưa có hồ sơ cần nhập đủ họ tên, số điện thoại và email để tạo/liên kết tài khoản.");
         }
 
         var normalizedEmail = booking.GuestEmail!;
-        var trimmedNationalId = nationalId.Trim();
+        var trimmedNationalId = normalizedNationalId;
 
         var existingUser = await _context.Users
             .FirstOrDefaultAsync(u => u.Email == normalizedEmail, cancellationToken);
@@ -581,13 +602,14 @@ public class BookingsController : ControllerBase
         if (existingUser != null)
         {
             booking.UserId = existingUser.Id;
-            booking.GuestName = existingUser.FullName;
+            booking.GuestName = existingUser.FullName ?? booking.GuestName;
             booking.GuestEmail = existingUser.Email;
             booking.GuestPhone = existingUser.Phone ?? booking.GuestPhone;
+            existingUser.FullName = string.IsNullOrWhiteSpace(existingUser.FullName) ? booking.GuestName! : existingUser.FullName;
             existingUser.Phone ??= booking.GuestPhone;
-            existingUser.NationalId ??= trimmedNationalId;
+            existingUser.NationalId ??= normalizedNationalId;
             existingUser.UpdatedAt = DateTime.UtcNow;
-            return;
+            return false;
         }
 
         var guestRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Guest", cancellationToken);
@@ -603,7 +625,7 @@ public class BookingsController : ControllerBase
             FullName = booking.GuestName!,
             Email = normalizedEmail,
             Phone = booking.GuestPhone,
-            NationalId = trimmedNationalId,
+            NationalId = normalizedNationalId,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(plainPassword),
             RoleId = guestRole?.Id,
             MembershipId = defaultMembership?.Id,
@@ -615,7 +637,12 @@ public class BookingsController : ControllerBase
         await _context.SaveChangesAsync(cancellationToken);
 
         booking.UserId = guestUser.Id;
-        _ = _email.SendGuestAccountCreatedAsync(guestUser.Email, guestUser.FullName, plainPassword);
+        if (sendNewAccountEmail)
+        {
+            _ = _email.SendGuestAccountCreatedAsync(guestUser.Email, guestUser.FullName, plainPassword);
+        }
+
+        return true;
     }
 
     [RequirePermission(PermissionCodes.ManageBookings)]
@@ -661,8 +688,10 @@ public class BookingsController : ControllerBase
             .ToList();
 
         var pendingCheckouts = bookings
-            .Where(b => b.Status == BookingStatuses.CheckedIn
-                && b.BookingDetails.Any(d => d.CheckOutDate.Date <= targetDate))
+            .Where(b =>
+                ((b.Status == BookingStatuses.CheckedIn) ||
+                 (b.Status == BookingStatuses.CheckedOutPendingSettlement))
+                && b.BookingDetails.Any(d => d.CheckOutDate.Date == targetDate))
             .ToList();
 
         var response = new ReceptionDashboardResponse
@@ -946,6 +975,16 @@ public class BookingsController : ControllerBase
                 Note = request.Note,
                 BookingCode = await GenerateBookingCodeAsync()
             };
+            if (!booking.UserId.HasValue && normalizedSource == BookingSources.WalkIn)
+            {
+                await EnsureGuestAccountLinkedAsync(
+                    booking,
+                    request.GuestName,
+                    request.GuestPhone,
+                    request.GuestEmail,
+                    nationalId: null,
+                    sendNewAccountEmail: true);
+            }
 
             if (normalizedSource == BookingSources.Online)
             {
@@ -1058,6 +1097,23 @@ public class BookingsController : ControllerBase
                 NewValue = $"{{\"bookingCode\": \"{booking.BookingCode}\", \"total\": {booking.TotalEstimatedAmount}}}"
             });
 
+            if (normalizedSource == BookingSources.WalkIn)
+            {
+                var toEmail = booking.GuestEmail ?? request.GuestEmail;
+                var firstDetail = booking.BookingDetails.OrderBy(d => d.CheckInDate).FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(toEmail) && firstDetail != null)
+                {
+                    _ = _email.SendBookingConfirmationAsync(
+                        toEmail,
+                        booking.GuestName ?? "Quy khach",
+                        booking.BookingCode,
+                        firstDetail.CheckInDate,
+                        firstDetail.CheckOutDate,
+                        booking.TotalEstimatedAmount,
+                        GetFrontendBaseUrl());
+                }
+            }
+
             return BookingActionSuccess("Tạo booking thành công.", booking);
         }
         finally
@@ -1163,7 +1219,8 @@ public class BookingsController : ControllerBase
                 b.BookingCode,
                 detail?.CheckInDate ?? DateTime.Now,
                 detail?.CheckOutDate ?? DateTime.Now.AddDays(1),
-                b.TotalEstimatedAmount
+                b.TotalEstimatedAmount,
+                GetFrontendBaseUrl()
             );
         }
 
@@ -1263,7 +1320,7 @@ public class BookingsController : ControllerBase
 
         try
         {
-            await EnsureGuestAccountLinkedOnCheckInAsync(booking, request.GuestName, request.GuestPhone, request.GuestEmail, request.NationalId, cancellationToken);
+            await EnsureGuestAccountLinkedAsync(booking, request.GuestName, request.GuestPhone, request.GuestEmail, request.NationalId, sendNewAccountEmail: true, cancellationToken);
             await ApplyCheckInToDetailAsync(booking, detail, request.RoomId, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
         }
@@ -1320,7 +1377,7 @@ public class BookingsController : ControllerBase
 
         try
         {
-            await EnsureGuestAccountLinkedOnCheckInAsync(booking, request?.GuestName, request?.GuestPhone, request?.GuestEmail, request?.NationalId, cancellationToken);
+            await EnsureGuestAccountLinkedAsync(booking, request?.GuestName, request?.GuestPhone, request?.GuestEmail, request?.NationalId, sendNewAccountEmail: true, cancellationToken);
         }
         catch (InvalidOperationException ex)
         {

@@ -5,6 +5,7 @@ import { createInvoiceFromBooking, getInvoiceByBookingId } from "../../api/invoi
 import { recordPayment } from "../../api/paymentsApi";
 import { getVouchers } from "../../api/vouchersApi";
 import { formatDate, formatCurrency } from "../../utils";
+import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
 import { getBookingSourceLabel, getBookingStatusLabel } from "../../utils/statusLabels";
 
 const ALLOWED_ACTIONS = {
@@ -313,7 +314,7 @@ function BookingPaymentModal({ open, booking, mode, loading, onConfirm, onCancel
         : booking.depositAmount || 0;
 
     setForm({
-      amountPaid: suggestedAmount > 0 ? String(Math.ceil(suggestedAmount)) : "",
+      amountPaid: suggestedAmount > 0 ? formatMoneyInput(String(Math.ceil(suggestedAmount))) : "",
       paymentMethod: "Cash",
       transactionCode: "",
       note: "",
@@ -340,7 +341,7 @@ function BookingPaymentModal({ open, booking, mode, loading, onConfirm, onCancel
         <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 8px" }}>{title}</h3>
         <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px" }}>{helper}</p>
         <div style={{ display: "grid", gap: 12, marginBottom: 20 }}>
-          <input type="number" min="0" step="1000" value={form.amountPaid} onChange={(e) => setForm((prev) => ({ ...prev, amountPaid: e.target.value }))} placeholder="Số tiền" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
+          <input type="text" inputMode="numeric" value={form.amountPaid} onChange={(e) => setForm((prev) => ({ ...prev, amountPaid: formatMoneyInput(e.target.value) }))} placeholder="Số tiền" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
           <select value={form.paymentMethod} onChange={(e) => setForm((prev) => ({ ...prev, paymentMethod: e.target.value }))} style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }}>
             <option value="Cash">Tiền mặt</option>
             <option value="Momo">Momo</option>
@@ -354,9 +355,9 @@ function BookingPaymentModal({ open, booking, mode, loading, onConfirm, onCancel
         <div style={{ display: "flex", gap: 12 }}>
           <button onClick={onCancel} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "white", fontWeight: 700, color: "#6b7280", cursor: "pointer", fontSize: 14 }}>Đóng</button>
           <button
-            onClick={() => onConfirm({ ...form, amountPaid: Number(form.amountPaid) })}
-            disabled={loading || Number(form.amountPaid) <= 0}
-            style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "#4f645b", fontWeight: 700, color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, opacity: (Number(form.amountPaid) <= 0 || loading) ? 0.6 : 1 }}
+            onClick={() => onConfirm({ ...form, amountPaid: parseMoneyInput(form.amountPaid) })}
+            disabled={loading || parseMoneyInput(form.amountPaid) <= 0}
+            style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "#4f645b", fontWeight: 700, color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, opacity: (parseMoneyInput(form.amountPaid) <= 0 || loading) ? 0.6 : 1 }}
           >
             {loading ? <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "white", borderRadius: "50%", animation: "spin .65s linear infinite" }} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>payments</span>}
             Xác nhận
@@ -416,8 +417,7 @@ export default function BookingListPage() {
     voucherId: "",
     source: "walk_in",
     note: "",
-    selectedRoomTypeId: "",
-    selectedRoomId: "",
+    selectedRooms: [],
   });
 
   const showToast = useCallback((msg, type = "success") => {
@@ -500,21 +500,19 @@ export default function BookingListPage() {
   }, [page, totalPages]);
 
   const estimatedBookingAmount = useMemo(() => {
-    const selectedRoomType = availableRoomTypes.find((item) => String(item.id) === String(bookingForm.selectedRoomTypeId));
-    if (selectedRoomType?.suggestedTotal) {
-      return Number(selectedRoomType.suggestedTotal);
-    }
-
-    if (!bookingForm.checkInDate || !bookingForm.checkOutDate || availableRoomTypes.length === 0) {
+    if (!bookingForm.selectedRooms?.length) {
       return 0;
     }
 
-    return Number(availableRoomTypes[0]?.suggestedTotal || 0);
-  }, [availableRoomTypes, bookingForm.selectedRoomTypeId, bookingForm.checkInDate, bookingForm.checkOutDate]);
+    return bookingForm.selectedRooms.reduce(
+      (sum, room) => sum + Number(room.suggestedTotal || 0),
+      0,
+    );
+  }, [bookingForm.selectedRooms]);
 
   const selectableVouchers = useMemo(() => {
     const now = new Date();
-    const selectedRoomTypeId = bookingForm.selectedRoomTypeId ? Number(bookingForm.selectedRoomTypeId) : null;
+    const selectedRoomTypeIds = [...new Set((bookingForm.selectedRooms || []).map((room) => Number(room.roomTypeId)).filter(Boolean))];
 
     return vouchers.filter((voucher) => {
       if (!voucher.isActive) return false;
@@ -523,11 +521,15 @@ export default function BookingListPage() {
       if (voucher.validTo && new Date(voucher.validTo) < now) return false;
       if (voucher.usageLimit != null && voucher.usedCount >= voucher.usageLimit) return false;
       if (voucher.minBookingValue != null && estimatedBookingAmount > 0 && estimatedBookingAmount < Number(voucher.minBookingValue)) return false;
-      if (voucher.applicableRoomTypeId && selectedRoomTypeId && Number(voucher.applicableRoomTypeId) !== selectedRoomTypeId) return false;
+      if (
+        voucher.applicableRoomTypeId &&
+        selectedRoomTypeIds.length > 0 &&
+        !selectedRoomTypeIds.includes(Number(voucher.applicableRoomTypeId))
+      ) return false;
 
       return true;
     });
-  }, [vouchers, estimatedBookingAmount, bookingForm.selectedRoomTypeId]);
+  }, [vouchers, estimatedBookingAmount, bookingForm.selectedRooms]);
 
   const runAction = async (item, action) => {
     const id = item.id;
@@ -722,6 +724,47 @@ export default function BookingListPage() {
   }, [bookingForm.voucherId, selectableVouchers]);
 
   useEffect(() => {
+    setBookingForm((prev) => {
+      if (!prev.selectedRooms?.length) {
+        return prev;
+      }
+
+      const selectableRoomMap = new Map();
+      availableRoomTypes.forEach((item) => {
+        (item.rooms || []).forEach((room) => {
+          if (room.selectable) {
+            selectableRoomMap.set(String(room.id), {
+              roomId: String(room.id),
+              roomTypeId: String(item.id),
+              roomNumber: room.roomNumber,
+              roomTypeName: item.name,
+              suggestedTotal: Number(item.suggestedTotal || 0),
+            });
+          }
+        });
+      });
+
+      const nextSelectedRooms = prev.selectedRooms
+        .map((room) => selectableRoomMap.get(String(room.roomId)) || null)
+        .filter(Boolean);
+
+      if (nextSelectedRooms.length === prev.selectedRooms.length) {
+        const same = nextSelectedRooms.every((room, index) =>
+          room.roomId === prev.selectedRooms[index]?.roomId &&
+          room.roomTypeId === prev.selectedRooms[index]?.roomTypeId &&
+          room.suggestedTotal === prev.selectedRooms[index]?.suggestedTotal,
+        );
+        if (same) return prev;
+      }
+
+      return {
+        ...prev,
+        selectedRooms: nextSelectedRooms,
+      };
+    });
+  }, [availableRoomTypes]);
+
+  useEffect(() => {
     let ignore = false;
 
     const fetchMembers = async () => {
@@ -770,8 +813,32 @@ export default function BookingListPage() {
     setMemberSuggestOpen(false);
   };
 
+  const toggleSelectedRoom = (roomTypeItem, room) => {
+    if (!room.selectable) return;
+
+    setBookingForm((prev) => {
+      const exists = prev.selectedRooms.some((selected) => String(selected.roomId) === String(room.id));
+
+      return {
+        ...prev,
+        selectedRooms: exists
+          ? prev.selectedRooms.filter((selected) => String(selected.roomId) !== String(room.id))
+          : [
+              ...prev.selectedRooms,
+              {
+                roomTypeId: String(roomTypeItem.id),
+                roomId: String(room.id),
+                roomNumber: room.roomNumber,
+                roomTypeName: roomTypeItem.name,
+                suggestedTotal: Number(roomTypeItem.suggestedTotal || 0),
+              },
+            ],
+      };
+    });
+  };
+
   const handleCreateBooking = async () => {
-    if (!bookingForm.selectedRoomTypeId || !bookingForm.selectedRoomId) {
+    if (!bookingForm.selectedRooms?.length) {
       showToast("Bạn chưa chọn phòng khả dụng cụ thể.", "warning");
       return;
     }
@@ -788,14 +855,12 @@ export default function BookingListPage() {
         voucherId: bookingForm.voucherId ? Number(bookingForm.voucherId) : null,
         source: bookingForm.source,
         note: bookingForm.note,
-        details: [
-          {
-            roomTypeId: Number(bookingForm.selectedRoomTypeId),
-            roomId: Number(bookingForm.selectedRoomId),
-            checkInDate: bookingForm.checkInDate,
-            checkOutDate: bookingForm.checkOutDate,
-          },
-        ],
+        details: bookingForm.selectedRooms.map((room) => ({
+          roomTypeId: Number(room.roomTypeId),
+          roomId: Number(room.roomId),
+          checkInDate: bookingForm.checkInDate,
+          checkOutDate: bookingForm.checkOutDate,
+        })),
       });
 
       showToast("Đã tạo booking mới thành công.");
@@ -813,8 +878,7 @@ export default function BookingListPage() {
         voucherId: "",
         source: "walk_in",
         note: "",
-        selectedRoomTypeId: "",
-        selectedRoomId: "",
+        selectedRooms: [],
       });
       setAvailableRoomTypes([]);
       await load();
@@ -841,7 +905,10 @@ export default function BookingListPage() {
 
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-      <style>{`        * { font-family: 'Manrope', sans-serif; }        @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+        @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
         @keyframes modalSlideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
         @keyframes spin { to{transform:rotate(360deg)} }
@@ -1091,7 +1158,9 @@ export default function BookingListPage() {
 
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                         {(item.rooms || []).map((room) => {
-                          const selectedRoom = String(room.id) === String(bookingForm.selectedRoomId);
+                          const selectedRoom = bookingForm.selectedRooms.some(
+                            (selected) => String(selected.roomId) === String(room.id),
+                          );
                           const selectable = room.selectable;
                           const bookingStatusLabel = room.bookingStatusLabel || (selectable ? "Có thể book" : "Không khả dụng");
                           const liveStatusLabel = room.liveStatusLabel || "Chưa rõ trạng thái";
@@ -1105,14 +1174,7 @@ export default function BookingListPage() {
                               key={room.id}
                               type="button"
                               disabled={!selectable}
-                              onClick={() => setBookingForm((prev) => {
-                                const isSameRoom = String(prev.selectedRoomId) === String(room.id);
-                                return {
-                                  ...prev,
-                                  selectedRoomTypeId: isSameRoom ? "" : String(item.id),
-                                  selectedRoomId: isSameRoom ? "" : String(room.id),
-                                };
-                              })}
+                              onClick={() => toggleSelectedRoom(item, room)}
                               style={{
                                 minWidth: 120,
                                 textAlign: "left",
@@ -1138,6 +1200,61 @@ export default function BookingListPage() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+
+          <div
+            style={{
+              border: "1px solid #e5e7eb",
+              borderRadius: 16,
+              background: bookingForm.selectedRooms.length ? "#f8fafc" : "#fafaf8",
+              padding: 16,
+              marginBottom: 16,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: bookingForm.selectedRooms.length ? 12 : 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#1c1917" }}>
+                Phòng đã chọn {bookingForm.selectedRooms.length ? `(${bookingForm.selectedRooms.length})` : ""}
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#166534" }}>
+                {formatCurrency(estimatedBookingAmount)}
+              </div>
+            </div>
+
+            {bookingForm.selectedRooms.length ? (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                {bookingForm.selectedRooms.map((room) => (
+                  <button
+                    key={room.roomId}
+                    type="button"
+                    onClick={() => setBookingForm((prev) => ({
+                      ...prev,
+                      selectedRooms: prev.selectedRooms.filter((selected) => String(selected.roomId) !== String(room.roomId)),
+                    }))}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "8px 12px",
+                      borderRadius: 999,
+                      border: "1px solid #bbf7d0",
+                      background: "#f0fdf4",
+                      color: "#166534",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span>{room.roomNumber}</span>
+                    <span style={{ opacity: 0.75 }}>{room.roomTypeName}</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>close</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 13, color: "#6b7280" }}>
+                Chưa chọn phòng nào. Bấm vào từng phòng khả dụng để chọn, bấm lại lần nữa để bỏ chọn.
               </div>
             )}
           </div>

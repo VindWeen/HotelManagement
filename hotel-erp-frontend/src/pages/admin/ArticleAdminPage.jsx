@@ -28,12 +28,15 @@ const cardStyle = {
 const inputStyle = {
   width: "100%",
   background: "#f9f8f3",
-  border: "1px solid #e2e8e1",
+  border: "1.5px solid #e2e8e1",
   borderRadius: 12,
   padding: "10px 14px",
   fontSize: 14,
+  fontWeight: 600,
+  color: "#1c1917",
   outline: "none",
   boxSizing: "border-box",
+  fontFamily: "'Manrope', sans-serif",
 };
 
 const labelStyle = {
@@ -82,7 +85,7 @@ function Overlay({ title, onClose, children }) {
           overflowY: "auto",
           background: "white",
           borderRadius: 24,
-          border: "1px solid #ede7dd",
+          border: "1px solid #f1f0ea",
           boxShadow: "0 24px 60px rgba(28,25,23,.18)",
         }}
       >
@@ -775,10 +778,14 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
 
   return (
     <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+      `}</style>
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 24 }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 24, color: "#1c1917", fontWeight: 700 }}>
+            <h2 style={{ margin: "0 0 4px", fontSize: 28, color: "#1c1917", fontWeight: 800, letterSpacing: "-0.02em" }}>
               Quản lý bài viết
             </h2>
             <p style={{ margin: "6px 0 0", color: "#6b7280", fontSize: 14 }}>
@@ -789,46 +796,46 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
             <button
               onClick={openCreate}
               style={{
-                height: 36,
-                padding: "0 18px",
-                borderRadius: 12,
-                fontSize: 13,
-                fontWeight: 700,
-                background: "#4f645b",
-                color: "#ecfdf5",
+                background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+                color: "#e7fef3",
                 border: "none",
+                borderRadius: 12,
+                padding: "0 22px",
+                height: 42,
+                fontSize: 14,
+                fontWeight: 800,
                 cursor: "pointer",
-                display: "flex",
+                display: "inline-flex",
                 alignItems: "center",
-                gap: 7,
-                lineHeight: 1,
-                boxShadow: "0 4px 12px rgba(79,100,91,.18)",
+                gap: 8,
+                boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+                transition: "all 0.15s",
               }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: 16, lineHeight: 1 }}>add_circle</span>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_circle</span>
               Tạo bài viết
             </button>
           ) : activeTab === "categories" ? (
             <button
               onClick={() => setCategoryModalOpen(true)}
               style={{
-                height: 36,
-                padding: "0 18px",
-                borderRadius: 12,
-                fontSize: 13,
-                fontWeight: 700,
-                background: "#4f645b",
-                color: "#ecfdf5",
+                background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+                color: "#e7fef3",
                 border: "none",
+                borderRadius: 12,
+                padding: "0 22px",
+                height: 42,
+                fontSize: 14,
+                fontWeight: 800,
                 cursor: "pointer",
-                display: "flex",
+                display: "inline-flex",
                 alignItems: "center",
-                gap: 7,
-                lineHeight: 1,
-                boxShadow: "0 4px 12px rgba(79,100,91,.18)",
+                gap: 8,
+                boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+                transition: "all 0.15s",
               }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: 16, lineHeight: 1 }}>add_circle</span>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_circle</span>
               Thêm danh mục
             </button>
           ) : null}

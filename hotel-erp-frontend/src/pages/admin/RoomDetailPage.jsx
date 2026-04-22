@@ -46,7 +46,7 @@ function Toast({ id, msg, type = "success", onDismiss }) {
 
 // ??? Skeleton ?????????????????????????????????????????????????????????????????
 const Skel = ({ w = "100%", h = 16, r = 8 }) => (
-    <div style={{ width: w, height: h, borderRadius: r, background: "linear-gradient(90deg,#e8e8e0 25%,#f2f2ea 50%,#e8e8e0 75%)", backgroundSize: "600px", animation: "shimmer 1.4s infinite" }} />
+    <div style={{ width: w, height: h, borderRadius: r, background: "linear-gradient(90deg,rgba(0,0,0,0.05) 25%,rgba(0,0,0,0.1) 50%,rgba(0,0,0,0.05) 75%)", backgroundSize: "600px", animation: "shimmer 1.4s infinite" }} />
 );
 
 
@@ -88,10 +88,10 @@ export function RoomDetailHeader({
             alignItems: "center",
             gap: 6,
             fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: ".15em",
+            fontWeight: 800,
+            letterSpacing: ".1em",
             textTransform: "uppercase",
-            color: "#4f645b",
+            color: "#6b7280",
             background: "none",
             border: "none",
             cursor: "pointer",
@@ -130,10 +130,10 @@ export function RoomDetailHeader({
             padding: "10px 20px",
             borderRadius: 12,
             fontSize: 14,
-            fontWeight: 600,
+            fontWeight: 800,
             background: "white",
             color: "#1c1917",
-            border: "1px solid #e2e8e1",
+            border: "1.5px solid #e2e8e1",
             cursor: "pointer",
             boxShadow: "0 1px 3px rgba(0,0,0,.06)",
           }}
@@ -154,10 +154,10 @@ export function RoomDetailHeader({
               padding: "10px 20px",
               borderRadius: 12,
               fontSize: 14,
-              fontWeight: 600,
+              fontWeight: 800,
               background: "white",
               color: "#1c1917",
-              border: "1px solid #e2e8e1",
+              border: "1.5px solid #e2e8e1",
               cursor: "pointer",
               boxShadow: "0 1px 3px rgba(0,0,0,.06)",
               opacity: loadingInv ? 0.65 : 1,
@@ -180,7 +180,7 @@ export function RoomDetailHeader({
               padding: "10px 24px",
               borderRadius: 12,
               fontSize: 14,
-              fontWeight: 700,
+              fontWeight: 800,
               background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
               color: "#e7fef3",
               border: "none",
@@ -1163,7 +1163,9 @@ export default function RoomDetailPage() {
 
     return (
         <>
-            <style>{`
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
         @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
         @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
@@ -1176,7 +1178,7 @@ export default function RoomDetailPage() {
         .pg-btn:disabled { opacity:.35; cursor:not-allowed; }
         .action-btn { padding:7px 8px; border:none; background:none; cursor:pointer; border-radius:8px; transition:all .15s; display:flex; align-items:center; }
         .action-btn:hover { background:#f3f4f6; }
-        .tab-btn { padding:0 4px 16px; font-size:14px; font-weight:600; background:none; border:none; cursor:pointer; transition:all .15s; position:relative; }
+        .tab-btn { padding:0 4px 16px; font-size:14px; font-weight:800; background:none; border:none; cursor:pointer; transition:all .15s; position:relative; }
         tr.inv-row:hover td { background:rgba(249,248,243,.6); }
       `}</style>
 

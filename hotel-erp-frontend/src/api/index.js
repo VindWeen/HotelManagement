@@ -28,4 +28,5 @@ export * from './loyaltyMembersApi';
 export * from './dashboardApi';
 export * from './shiftsApi';
 export * from './maintenanceApi';
+export * from './auditLogsApi';
 

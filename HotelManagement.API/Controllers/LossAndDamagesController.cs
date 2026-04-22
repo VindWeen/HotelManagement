@@ -22,12 +22,18 @@ public class LossAndDamagesController : ControllerBase
     private readonly AppDbContext _db;
     private readonly Cloudinary _cloudinary;
     private readonly INotificationService _notificationService;
+    private readonly IAuditLogGroupService _auditLogGroup;
 
-    public LossAndDamagesController(AppDbContext db, Cloudinary cloudinary, INotificationService notificationService)
+    public LossAndDamagesController(
+        AppDbContext db,
+        Cloudinary cloudinary,
+        INotificationService notificationService,
+        IAuditLogGroupService auditLogGroup)
     {
         _db = db;
         _cloudinary = cloudinary;
         _notificationService = notificationService;
+        _auditLogGroup = auditLogGroup;
     }
 
     private class ImageItem
@@ -69,6 +75,17 @@ public class LossAndDamagesController : ControllerBase
 
     private static int ComputeRemainingToReplenish(LossAndDamage record)
         => Math.Max(0, Math.Max(1, record.Quantity) - Math.Max(0, record.ReplenishedQuantity));
+
+    private static string BuildHousekeepingLossSummary(string roomNumber, IReadOnlyList<string> itemNames)
+    {
+        if (itemNames.Count == 0)
+            return $"Ghi nhận thất thoát vật tư tại phòng {roomNumber}.";
+
+        if (itemNames.Count == 1)
+            return $"Ghi nhận thất thoát {itemNames[0]} tại phòng {roomNumber}.";
+
+        return $"Ghi nhận thất thoát {itemNames[0]} tại phòng {roomNumber}. (và {itemNames.Count - 1} sự kiện khác)";
+    }
 
     private async Task<bool> IsPenaltySettledAsync(LossAndDamage record)
     {
@@ -562,6 +579,87 @@ public class LossAndDamagesController : ControllerBase
         });
     }
 
+    [HttpPost("housekeeping-audit-group")]
+    [RequirePermission(PermissionCodes.ManageInventory)]
+    public async Task<IActionResult> CreateHousekeepingAuditGroup([FromBody] CreateHousekeepingLossAuditGroupRequest request)
+    {
+        if (request.Items is null || request.Items.Count == 0)
+            return BadRequest(new { message = "Danh sách vật tư thất thoát không được để trống." });
+
+        var roomNumber = string.IsNullOrWhiteSpace(request.RoomNumber) ? "N/A" : request.RoomNumber.Trim();
+        var roomInventoryIds = request.Items
+            .Where(x => x.RoomInventoryId > 0)
+            .Select(x => x.RoomInventoryId)
+            .Distinct()
+            .ToList();
+
+        var inventoryLookup = await _db.RoomInventories
+            .AsNoTracking()
+            .Where(ri => roomInventoryIds.Contains(ri.Id))
+            .Select(ri => new
+            {
+                ri.Id,
+                ItemName = ri.Equipment != null ? ri.Equipment.Name : null,
+                RoomNumber = ri.Room != null ? ri.Room.RoomNumber : null
+            })
+            .ToDictionaryAsync(x => x.Id, x => x);
+
+        var events = new List<AuditLogGroupEvent>();
+        var itemNames = new List<string>();
+
+        foreach (var item in request.Items)
+        {
+            inventoryLookup.TryGetValue(item.RoomInventoryId, out var inventory);
+            var itemName = string.IsNullOrWhiteSpace(inventory?.ItemName)
+                ? $"Vat tu #{item.RoomInventoryId}"
+                : inventory!.ItemName!;
+            var effectiveRoomNumber = string.IsNullOrWhiteSpace(inventory?.RoomNumber)
+                ? roomNumber
+                : inventory!.RoomNumber!;
+
+            itemNames.Add(itemName);
+            events.Add(new AuditLogGroupEvent
+            {
+                EventId = Guid.NewGuid().ToString(),
+                Timestamp = DateTime.UtcNow,
+                ActionType = "CREATE",
+                EntityType = "LossAndDamage",
+                Context = new
+                {
+                    damageId = item.LossAndDamageId,
+                    roomNumber = effectiveRoomNumber,
+                    targetItem = itemName,
+                    roomInventoryId = item.RoomInventoryId
+                },
+                Changes = new
+                {
+                    oldData = (object?)null,
+                    newData = new
+                    {
+                        item.Quantity,
+                        item.PenaltyAmount,
+                        item.Description
+                    }
+                },
+                Message = $"Ghi nhận thất thoát {itemName} tại phòng {effectiveRoomNumber}."
+            });
+        }
+
+        var auditLog = _auditLogGroup.CreateGroup(
+            User,
+            BuildHousekeepingLossSummary(roomNumber, itemNames),
+            events);
+
+        _db.AuditLogs.Add(auditLog);
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Đã ghi nhật ký hoạt động cho danh sách vật tư thất thoát.",
+            totalEvents = events.Count
+        });
+    }
+
     [HttpDelete("{id:int}")]
     [RequirePermission(PermissionCodes.ManageInventory)]
     public async Task<IActionResult> Delete(int id)
@@ -696,6 +794,21 @@ public class CreateLossAndDamageRequest
     public string? Description { get; set; }
     public string? Status { get; set; }
     public List<IFormFile>? Images { get; set; }
+}
+
+public class CreateHousekeepingLossAuditGroupRequest
+{
+    public string? RoomNumber { get; set; }
+    public List<CreateHousekeepingLossAuditItemRequest> Items { get; set; } = [];
+}
+
+public class CreateHousekeepingLossAuditItemRequest
+{
+    public int LossAndDamageId { get; set; }
+    public int RoomInventoryId { get; set; }
+    public int Quantity { get; set; }
+    public decimal PenaltyAmount { get; set; }
+    public string? Description { get; set; }
 }
 
 public class UpdateLossAndDamageRequest

@@ -23,10 +23,11 @@ const panelStyle = {
 const inputStyle = {
   width: "100%",
   background: "#f9f8f3",
-  border: "1px solid #e2e8e1",
+  border: "1.5px solid #e2e8e1",
   borderRadius: 12,
   padding: "10px 14px",
   fontSize: 14,
+  fontWeight: 600,
   outline: "none",
   boxSizing: "border-box",
 };
@@ -268,6 +269,10 @@ export default function ServicePage() {
 
   return (
     <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+      `}</style>
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
         <div
           style={{
@@ -279,7 +284,7 @@ export default function ServicePage() {
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "#1c1917" }}>
+            <h2 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: "#1c1917" }}>
               Quản lý Dịch vụ
             </h2>
             <p style={{ margin: "6px 0 0", fontSize: 14, color: "#6b7280" }}>
@@ -448,7 +453,7 @@ export default function ServicePage() {
                       <tr key={service.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
                         <td style={{ padding: "16px 18px" }}>
                           <div>
-                            <div style={{ fontWeight: 700, color: "#1c1917", fontSize: 14 }}>{service.name}</div>
+                            <div style={{ fontWeight: 800, color: "#1c1917", fontSize: 14 }}>{service.name}</div>
                             <div style={{ color: "#78716c", fontSize: 12, marginTop: 4 }}>
                               {service.description || "Chưa có mô tả"}
                             </div>
@@ -630,7 +635,7 @@ function SectionHeader({ icon, title, subtitle }) {
         <span className="material-symbols-outlined">{icon}</span>
       </div>
       <div>
-        <div style={{ fontWeight: 700, color: "#1c1917" }}>{title}</div>
+        <div style={{ fontWeight: 800, color: "#1c1917" }}>{title}</div>
         <div style={{ fontSize: 12, color: "#78716c", marginTop: 2 }}>{subtitle}</div>
       </div>
     </div>
@@ -675,7 +680,7 @@ function IconButton({ icon, title, onClick, danger = false }) {
         width: 36,
         height: 36,
         borderRadius: 10,
-        border: "1px solid #ece7de",
+        border: "1px solid #f1f0ea",
         background: danger ? "#fff7f7" : "white",
         color: danger ? "#dc2626" : "#57534e",
         display: "flex",
@@ -721,7 +726,7 @@ function FormFooter({ submitting, onClose }) {
           border: "1px solid #e7e5e4",
           background: "white",
           color: "#57534e",
-          fontWeight: 600,
+          fontWeight: 800,
           cursor: "pointer",
         }}
       >
@@ -736,7 +741,7 @@ function FormFooter({ submitting, onClose }) {
           border: "none",
           background: "#4f645b",
           color: "#e7fef3",
-          fontWeight: 700,
+          fontWeight: 800,
           cursor: "pointer",
           opacity: submitting ? 0.7 : 1,
         }}

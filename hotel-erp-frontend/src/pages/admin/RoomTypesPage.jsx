@@ -652,6 +652,8 @@ export default function RoomTypesPage() {
     return (
         <>
             <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
         @keyframes spin { to{transform:rotate(360deg)} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
         @keyframes fadeRow { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }

@@ -938,8 +938,8 @@ function RoomManagementHeader({
             padding: "9px 20px",
             borderRadius: 12,
             fontSize: 13,
-            fontWeight: 700,
-            background: "#4f645b",
+            fontWeight: 800,
+            background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
             color: "#e7fef3",
             border: "none",
             cursor: "pointer",
@@ -994,13 +994,13 @@ function RoomManagementSummary({ stats }) {
           </p>
           <p
             style={{
-              fontSize: 9,
-              fontWeight: 700,
+              fontSize: 10,
+              fontWeight: 800,
               textTransform: "uppercase",
-              letterSpacing: ".12em",
+              letterSpacing: ".1em",
               color: item.color,
               margin: 0,
-              opacity: 0.7,
+              opacity: 0.8,
             }}
           >
             {item.label}
@@ -1122,7 +1122,7 @@ function RoomManagementFilters({
             border: "1.5px solid #fecaca",
             color: "#dc2626",
             cursor: "pointer",
-            fontWeight: 700,
+            fontWeight: 800,
             fontSize: 13,
             display: "flex",
             alignItems: "center",
@@ -1172,11 +1172,11 @@ function RoomManagementTable({
                   key={heading}
                   style={{
                     padding: "15px 24px",
-                    fontSize: 10,
-                    fontWeight: 700,
+                    fontSize: 11,
+                    fontWeight: 800,
                     textTransform: "uppercase",
                     letterSpacing: ".1em",
-                    color: "#9ca3af",
+                    color: "#78716c",
                     textAlign: index === 5 ? "right" : "left",
                   }}
                 >
@@ -1239,7 +1239,7 @@ function RoomManagementTable({
                         background: "#f0faf5",
                         border: "1.5px solid #a7f3d0",
                         color: "#059669",
-                        fontWeight: 700,
+                        fontWeight: 800,
                         fontSize: 12,
                         cursor: "pointer",
                         display: "flex",
@@ -1514,14 +1514,17 @@ export default function RoomManagementPage() {
 
     return (
         <>
-            <style>{`        @keyframes spin { to{transform:rotate(360deg)} }
+        <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+        @keyframes spin { to{transform:rotate(360deg)} }
         @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
         @keyframes fadeRow { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-        .skeleton { background:linear-gradient(90deg,#e8e8e0 25%,#f2f2ea 50%,#e8e8e0 75%); background-size:600px; animation:shimmer 1.4s infinite; border-radius:6px; }
+        .skeleton { background:linear-gradient(90deg,rgba(0,0,0,0.05) 25%,rgba(0,0,0,0.1) 50%,rgba(0,0,0,0.05) 75%); background-size:600px; animation:shimmer 1.4s infinite; border-radius:6px; }
         .fade-row { animation:fadeRow .2s ease forwards; }
         tbody tr:hover td { background:#fafaf8 !important; }
-        .pg-btn { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; color:#6b7280; background:transparent; border:none; cursor:pointer; transition:background .15s,color .15s; font-family:'Manrope',sans-serif; }
+        .pg-btn { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#6b7280; background:transparent; border:none; cursor:pointer; transition:background .15s,color .15s; font-family:'Manrope',sans-serif; }
         .pg-btn:hover:not(:disabled) { background:#f3f4f6; }
         .pg-btn.active { background:#4f645b; color:#e7fef3; cursor:default; }
         .pg-btn:disabled { opacity:.35; cursor:not-allowed; }
