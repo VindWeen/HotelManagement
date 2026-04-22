@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getMyBookings } from "../../../api/bookingsApi";
-import { getMyReviewStatus } from "../../../api/reviewsApi";
-import { getMyProfile } from "../../../api/userProfileApi";
-import { EmptyState, LoadingSpinner, PageContainer, SectionTitle, StatusBadge } from "../../../components/guest";
-import { formatCurrency } from "../../../utils";
-import { getBookingStatusLabel } from "../../../utils/statusLabels";
+import { getMyBookings } from "../../api/bookingsApi";
+import { getMyReviewStatus } from "../../api/reviewsApi";
+import { getMyProfile } from "../../api/userProfileApi";
+import { EmptyState, LoadingSpinner, PageContainer, SectionTitle, StatusBadge } from "../../components/guest";
+import { formatCurrency } from "../../utils";
+import { getBookingStatusLabel } from "../../utils/statusLabels";
 
 const ACTIVE_STAY_STATUSES = new Set(["Checked_in", "CheckedIn"]);
 const UPCOMING_STATUSES = new Set(["Pending", "Confirmed"]);

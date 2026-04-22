@@ -565,6 +565,15 @@ export default function GuestHeader() {
                       Dashboard của tôi
                     </Link>
                     <Link
+                      to="/guest/my-bookings"
+                      className="gh-account-link"
+                      onClick={() => setAccountMenuOpen(false)}
+                      role="menuitem"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>book_online</span>
+                      My Booking
+                    </Link>
+                    <Link
                       to="/guest/profile"
                       className="gh-account-link"
                       onClick={() => setAccountMenuOpen(false)}
@@ -647,6 +656,15 @@ export default function GuestHeader() {
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>space_dashboard</span>
                 Dashboard của tôi
+              </Link>
+              <Link
+                to="/guest/my-bookings"
+                className="gh-panel-link"
+                onClick={closeMenu}
+                tabIndex={menuOpen ? 0 : -1}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>book_online</span>
+                My Booking
               </Link>
               <Link
                 to="/guest/profile"

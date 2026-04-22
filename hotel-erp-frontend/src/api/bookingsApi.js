@@ -119,3 +119,17 @@ export const extendStay = (id, data) =>
 export const earlyCheckOut = (id, data) =>
     axiosClient.patch(`/Bookings/${id}/early-checkout`, data);
 
+/**
+ * GET /api/Bookings/guest/availability  [AllowAnonymous]
+ * Kiểm tra số phòng trống theo loại phòng cho khoảng ngày đặt.
+ * Dùng cho trang đặt phòng guest — không cần đăng nhập.
+ * Params: { checkInDate, checkOutDate, numAdults, numChildren }
+ * Response: {
+ *   success, data: [{id, name, basePrice, availableRooms, isAvailable, meetsCapacity, ...}],
+ *   meta: { checkInDate, checkOutDate, nights, numAdults, numChildren }
+ * }
+ */
+export const getGuestAvailability = (params = {}) => {
+    const query = buildQueryString(params);
+    return axiosClient.get(`/Bookings/guest/availability?${query}`);
+};

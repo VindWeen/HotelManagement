@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { getMyProfile, updateProfile, changePassword, uploadAvatar } from "../../../api/userProfileApi";
-import { PageContainer, SectionTitle, LoadingSpinner, StatusBadge } from "../../../components/guest";
-import { useAdminAuthStore } from "../../../store/adminAuthStore";
-import { getFullImageUrl } from "../../../utils/imageUtils";
+import { getMyProfile, updateProfile, changePassword, uploadAvatar } from "../../api/userProfileApi";
+import { PageContainer, SectionTitle, LoadingSpinner, StatusBadge } from "../../components/guest";
+import { useAdminAuthStore } from "../../store/adminAuthStore";
+import { getFullImageUrl } from "../../utils/imageUtils";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
