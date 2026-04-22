@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { useAdminAuthStore } from "../../store/adminAuthStore";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import {
     getRooms,
     createRoom,
@@ -255,7 +256,7 @@ function StatusDropdown({ options, current, onSelect, configMap }) {
 
 // ─── Create Room Modal ─────────────────────────────────────────────────────────
 // ─── Create Room Wizard ─────────────────────────────────────────────────────────
-function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, canManageInventory }) {
+function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, canManageInventory, isMobile = false }) {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -541,18 +542,18 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
             </div>
 
             {/* Stepper */}
-            <div style={{ padding: "40px 20px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+            <div style={{ padding: isMobile ? "20px 12px" : "40px 20px", display: "flex", justifyContent: isMobile ? "flex-start" : "center", alignItems: isMobile ? "stretch" : "center", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0 }}>
                 <StepItem active={step >= 1} current={step === 1} icon="home" label={isBulkMode ? "Thông tin chung" : "Thông tin chính"} color={activeColor} />
-                <div style={{ height: 2, width: 100, background: step >= 2 ? activeColor : "#e5e7eb", margin: "0 16px" }} />
+                {!isMobile && <div style={{ height: 2, width: 100, background: step >= 2 ? activeColor : "#e5e7eb", margin: "0 16px" }} />}
                 <StepItem active={step >= 2} current={step === 2} icon={isBulkMode ? "format_list_numbered" : "local_cafe"} label={isBulkMode ? "Danh sách phòng" : "Tiện ích"} color={activeColor} />
-                <div style={{ height: 2, width: 100, background: step >= 3 ? activeColor : "#e5e7eb", margin: "0 16px" }} />
+                {!isMobile && <div style={{ height: 2, width: 100, background: step >= 3 ? activeColor : "#e5e7eb", margin: "0 16px" }} />}
                 <StepItem active={canManageInventory && step >= 3} current={step === 3} icon="key" label="Vật tư & Minibar" color={activeColor} />
             </div>
 
             {/* Content Container */}
-            <div style={{ maxWidth: 1000, margin: "0 auto", width: "100%", padding: "0 20px 60px" }}>
+            <div style={{ maxWidth: 1000, margin: "0 auto", width: "100%", padding: isMobile ? "0 12px 28px" : "0 20px 60px" }}>
                 {step === 1 && (
-                    <div style={{ display: "flex", gap: 60 }}>
+                    <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 18 : 60 }}>
                         {/* Form area */}
                         <div style={{ flex: 1 }}>
                             {!isBulkMode && (
@@ -877,6 +878,7 @@ function RoomManagementHeader({
   viewMode,
   onViewModeChange,
   onCreateRoom,
+  isMobile = false,
 }) {
   return (
     <div
@@ -902,7 +904,8 @@ function RoomManagementHeader({
           )}
         </p>
       </div>
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", width: isMobile ? "100%" : "auto", flexDirection: isMobile ? "column" : "row" }}>
+        {!isMobile && (
         <div style={{ display: "flex", gap: 2, background: "#f1f0ea", padding: 4, borderRadius: 12 }}>
           {["table", "grid"].map((mode) => (
             <button
@@ -932,22 +935,25 @@ function RoomManagementHeader({
             </button>
           ))}
         </div>
+        )}
         <button
           onClick={onCreateRoom}
           style={{
             padding: "9px 20px",
             borderRadius: 12,
             fontSize: 13,
-            fontWeight: 700,
-            background: "#4f645b",
+            fontWeight: 800,
+            background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
             color: "#e7fef3",
             border: "none",
             cursor: "pointer",
             display: "flex",
+            justifyContent: "center",
             alignItems: "center",
             gap: 7,
             boxShadow: "0 4px 12px rgba(79,100,91,.2)",
             fontFamily: "Manrope, sans-serif",
+            width: isMobile ? "100%" : "auto",
           }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
@@ -994,13 +1000,13 @@ function RoomManagementSummary({ stats }) {
           </p>
           <p
             style={{
-              fontSize: 9,
-              fontWeight: 700,
+              fontSize: 10,
+              fontWeight: 800,
               textTransform: "uppercase",
-              letterSpacing: ".12em",
+              letterSpacing: ".1em",
               color: item.color,
               margin: 0,
-              opacity: 0.7,
+              opacity: 0.8,
             }}
           >
             {item.label}
@@ -1122,7 +1128,7 @@ function RoomManagementFilters({
             border: "1.5px solid #fecaca",
             color: "#dc2626",
             cursor: "pointer",
-            fontWeight: 700,
+            fontWeight: 800,
             fontSize: 13,
             display: "flex",
             alignItems: "center",
@@ -1172,11 +1178,11 @@ function RoomManagementTable({
                   key={heading}
                   style={{
                     padding: "15px 24px",
-                    fontSize: 10,
-                    fontWeight: 700,
+                    fontSize: 11,
+                    fontWeight: 800,
                     textTransform: "uppercase",
                     letterSpacing: ".1em",
-                    color: "#9ca3af",
+                    color: "#78716c",
                     textAlign: index === 5 ? "right" : "left",
                   }}
                 >
@@ -1239,7 +1245,7 @@ function RoomManagementTable({
                         background: "#f0faf5",
                         border: "1.5px solid #a7f3d0",
                         color: "#059669",
-                        fontWeight: 700,
+                        fontWeight: 800,
                         fontSize: 12,
                         cursor: "pointer",
                         display: "flex",
@@ -1429,6 +1435,7 @@ export {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function RoomManagementPage() {
+    const { isMobile } = useResponsiveAdmin();
     const permissions = useAdminAuthStore((s) => s.permissions);
     const navigate = useNavigate();
     const [rooms, setRooms] = useState([]);
@@ -1511,17 +1518,21 @@ export default function RoomManagementPage() {
 
     const clearFilters = () => setFilters({ businessStatus: "", cleaningStatus: "", roomTypeId: "", floor: "" });
     const hasFilters = Object.values(filters).some(Boolean);
+    const effectiveViewMode = isMobile ? "grid" : viewMode;
 
     return (
         <>
-            <style>{`        @keyframes spin { to{transform:rotate(360deg)} }
+        <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+        @keyframes spin { to{transform:rotate(360deg)} }
         @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
         @keyframes fadeRow { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-        .skeleton { background:linear-gradient(90deg,#e8e8e0 25%,#f2f2ea 50%,#e8e8e0 75%); background-size:600px; animation:shimmer 1.4s infinite; border-radius:6px; }
+        .skeleton { background:linear-gradient(90deg,rgba(0,0,0,0.05) 25%,rgba(0,0,0,0.1) 50%,rgba(0,0,0,0.05) 75%); background-size:600px; animation:shimmer 1.4s infinite; border-radius:6px; }
         .fade-row { animation:fadeRow .2s ease forwards; }
         tbody tr:hover td { background:#fafaf8 !important; }
-        .pg-btn { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; color:#6b7280; background:transparent; border:none; cursor:pointer; transition:background .15s,color .15s; font-family:'Manrope',sans-serif; }
+        .pg-btn { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#6b7280; background:transparent; border:none; cursor:pointer; transition:background .15s,color .15s; font-family:'Manrope',sans-serif; }
         .pg-btn:hover:not(:disabled) { background:#f3f4f6; }
         .pg-btn.active { background:#4f645b; color:#e7fef3; cursor:default; }
         .pg-btn:disabled { opacity:.35; cursor:not-allowed; }
@@ -1534,7 +1545,7 @@ export default function RoomManagementPage() {
 
             {/* Create Wizard or List View */}
             {createModalOpen ? (
-                <div style={{ maxWidth: 1400, margin: "0 auto", animation: "fadeRow .3s ease" }}>
+                <div style={{ maxWidth: 1400, margin: "0 auto", paddingInline: isMobile ? 4 : 0, animation: "fadeRow .3s ease" }}>
                     <CreateRoomWizard
                         roomTypes={roomTypes}
                         allRooms={rooms}
@@ -1542,16 +1553,18 @@ export default function RoomManagementPage() {
                         onCreated={loadRooms}
                         showToast={showToast}
                         canManageInventory={canManageInventory}
+                        isMobile={isMobile}
                     />
                 </div>
             ) : (
-                <div style={{ maxWidth: 1400, margin: "0 auto", animation: "fadeRow .3s ease" }}>
+                <div style={{ maxWidth: 1400, margin: "0 auto", paddingInline: isMobile ? 4 : 0, animation: "fadeRow .3s ease" }}>
                     <RoomManagementHeader
                         stats={stats}
                         hasFilters={hasFilters}
                         viewMode={viewMode}
                         onViewModeChange={setViewMode}
                         onCreateRoom={() => setCreateModalOpen(true)}
+                        isMobile={isMobile}
                     />
 
                     <RoomManagementSummary stats={stats} />
@@ -1566,7 +1579,7 @@ export default function RoomManagementPage() {
                     />
 
                     {/* Table View */}
-                    {viewMode === "table" && (
+                    {effectiveViewMode === "table" && (
                         <RoomManagementTable
                             loading={loading}
                             paginatedRooms={paginatedRooms}
@@ -1604,7 +1617,7 @@ export default function RoomManagementPage() {
                     )}
 
                     {/* Grid View */}
-                    {viewMode === "grid" && (
+                    {effectiveViewMode === "grid" && (
                         <RoomManagementGrid
                             loading={loading}
                             paginatedRooms={paginatedRooms}

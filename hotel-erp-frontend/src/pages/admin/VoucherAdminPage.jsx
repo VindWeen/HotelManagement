@@ -5,43 +5,53 @@ import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const pageCard = {
   background: "#fff",
-  border: "1px solid #ece7de",
+  border: "1px solid #f1f0ea",
   borderRadius: 20,
-  boxShadow: "0 10px 30px rgba(28,25,23,.05)",
+  boxShadow: "0 1px 4px rgba(28,25,23,.05)",
 };
 
 const inputStyle = {
   width: "100%",
   boxSizing: "border-box",
-  padding: "10px 12px",
+  padding: "10px 14px",
   borderRadius: 12,
-  border: "1px solid #d6d3d1",
-  background: "#fff",
+  border: "1.5px solid #e2e8e1",
+  background: "#f9f8f3",
+  fontSize: 13,
+  fontWeight: 600,
+  color: "#1c1917",
+  outline: "none",
+  fontFamily: "'Manrope', sans-serif",
 };
 
 const primaryButton = {
   height: 42,
-  padding: "0 16px",
+  padding: "0 18px",
   borderRadius: 12,
   border: "none",
-  background: "#4f645b",
-  color: "#ecfdf5",
+  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+  color: "#e7fef3",
   fontWeight: 800,
+  fontSize: 14,
   cursor: "pointer",
   display: "inline-flex",
   alignItems: "center",
   gap: 8,
+  fontFamily: "'Manrope', sans-serif",
+  boxShadow: "0 4px 12px rgba(79,100,91,.15)",
 };
 
 const secondaryButton = {
   height: 40,
   padding: "0 14px",
   borderRadius: 12,
-  border: "1px solid #d6d3d1",
+  border: "1.5px solid #e2e8e1",
   background: "#fff",
   color: "#57534e",
-  fontWeight: 700,
+  fontWeight: 800,
+  fontSize: 13,
   cursor: "pointer",
+  fontFamily: "'Manrope', sans-serif",
 };
 
 const defaultForm = {
@@ -275,6 +285,10 @@ export default function VoucherAdminPage() {
 
   return (
     <div style={{ maxWidth: 1360, margin: "0 auto", paddingInline: isMobile ? 4 : 0 }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+      `}</style>
       <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 28, color: "#1c1917", fontWeight: 800 }}>Voucher</h2>
@@ -368,7 +382,7 @@ export default function VoucherAdminPage() {
             <thead>
               <tr style={{ background: "#faf8f3", borderBottom: "1px solid #f1f0ea" }}>
                 {["Mã voucher", "Giảm giá", "Điều kiện", "Thời gian", "Trạng thái", "Thao tác"].map((heading, idx) => (
-                  <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 5 ? "right" : "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>
+                  <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 5 ? "right" : "left", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>
                     {heading}
                   </th>
                 ))}
@@ -412,11 +426,11 @@ export default function VoucherAdminPage() {
                     </td>
                     <td style={{ padding: "16px 18px", textAlign: "right" }}>
                       <div style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-                        <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", color: "#57534e", fontSize: 13, fontWeight: 700 }}>
+                        <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", color: "#57534e", fontSize: 13, fontWeight: 800 }}>
                           <input type="checkbox" checked={item.isActive !== false} onChange={() => handleToggleActive(item)} />
                           {item.isActive !== false ? "Bật" : "Tắt"}
                         </label>
-                        <button type="button" onClick={() => openEditModal(item)} style={secondaryButton}>Sửa</button>
+                        <button type="button" onClick={() => openEditModal(item)} style={{ ...secondaryButton, fontWeight: 800 }}>Sửa</button>
                       </div>
                     </td>
                   </tr>

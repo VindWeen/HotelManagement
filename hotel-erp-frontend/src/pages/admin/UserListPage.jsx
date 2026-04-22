@@ -1,4 +1,4 @@
-﻿// src/pages/admin/staff/UserListPage.jsx
+// src/pages/admin/staff/UserListPage.jsx
 // Giao diện khớp 1:1 với UserManagement.html + tích hợp API thực tế
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
@@ -13,6 +13,7 @@ import {
 import { getRoles } from "../../api/rolesApi";
 import { useAdminAuthStore } from "../../store/adminAuthStore";
 import { useNavigate } from "react-router-dom";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const PROTECTED_ASSIGN_ROLES = new Set(["Guest"]);
 const ROLE_LEVELS = {
@@ -48,6 +49,48 @@ const ACTION_LABELS = {
   LockAccount: "Khóa tài khoản",
   UnlockAccount: "Mở khóa",
   ViewUsers: "Xem danh sách",
+};
+
+const INPUT_STYLE = {
+  width: "100%",
+  padding: "10px 14px",
+  borderRadius: 12,
+  border: "1.5px solid #e2e8e1",
+  background: "#f9f8f3",
+  fontSize: 14,
+  fontWeight: 600,
+  color: "#1c1917",
+  outline: "none",
+  fontFamily: "'Manrope', sans-serif",
+  transition: "all 0.2s",
+};
+
+const PRIMARY_BUTTON = {
+  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+  color: "#e7fef3",
+  border: "none",
+  borderRadius: 12,
+  padding: "10px 22px",
+  fontSize: 14,
+  fontWeight: 800,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+  transition: "all 0.15s",
+};
+
+const SECONDARY_BUTTON = {
+  padding: "10px 22px",
+  borderRadius: 12,
+  border: "1.5px solid #e2e8e1",
+  background: "white",
+  color: "#57534e",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+  transition: "all 0.15s",
 };
 
 // Thành phần thông báo ──────────────────────────────────────────────────────────
@@ -664,6 +707,9 @@ export default function UserListPage() {
     <>
       {/* ── Global Styles ── */}
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+
         .toggle-switch { position:relative; display:inline-block; width:44px; height:24px; }
         .toggle-switch input { opacity:0; width:0; height:0; }
         .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#cbd5e1; transition:.4s; border-radius:24px; }
@@ -691,7 +737,7 @@ export default function UserListPage() {
 
         .pg-btn { width:2rem; height:2rem; border-radius:.5rem; display:flex; align-items:center; justify-content:center; font-size:.875rem; font-weight:500; color:#6b7280; background:transparent; border:none; cursor:pointer; transition:background .15s,color .15s; }
         .pg-btn:hover:not(:disabled) { background:#f3f4f6; }
-        .pg-btn.active { background:#4f645b; color:#e7fef3; font-weight:700; cursor:default; }
+        .pg-btn.active { background:#4f645b; color:#e7fef3; font-weight:800; cursor:default; }
         .pg-btn:disabled { opacity:.35; cursor:not-allowed; }
         .pg-btn.icon { color:#9ca3af; }
       `}</style>
@@ -725,7 +771,9 @@ export default function UserListPage() {
                   placeholder="Nguyễn Văn A"
                   value={fFullName}
                   onChange={(e) => setFFullName(e.target.value)}
-                  className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm text-stone-700 placeholder:text-stone-400 focus:border-[#4f645b] focus:ring-2 focus:ring-[#4f645b]/20 focus:outline-none transition"
+                  style={INPUT_STYLE}
+                  onFocus={(e) => { e.target.style.borderColor = "#4f645b"; e.target.style.boxShadow = "0 0 0 2px rgba(79,100,91,0.1)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "#e2e8e1"; e.target.style.boxShadow = "none"; }}
                 />
                 {fieldErrors.fullName && (
                   <p className="text-xs mt-1 text-red-600">{fieldErrors.fullName}</p>
@@ -739,7 +787,7 @@ export default function UserListPage() {
                   value={fEmail}
                   onChange={(e) => setFEmail(e.target.value)}
                   disabled={!!editingId}
-                  className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm text-stone-700 placeholder:text-stone-400 focus:border-[#4f645b] focus:ring-2 focus:ring-[#4f645b]/20 focus:outline-none transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{ ...INPUT_STYLE, opacity: editingId ? 0.6 : 1, cursor: editingId ? "not-allowed" : "text" }}
                 />
                 {fieldErrors.email && (
                   <p className="text-xs mt-1 text-red-600">{fieldErrors.email}</p>
@@ -752,7 +800,9 @@ export default function UserListPage() {
                   placeholder="09xxxxxxxx"
                   value={fPhone}
                   onChange={(e) => setFPhone(e.target.value)}
-                  className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm text-stone-700 placeholder:text-stone-400 focus:border-[#4f645b] focus:ring-2 focus:ring-[#4f645b]/20 focus:outline-none transition"
+                  style={INPUT_STYLE}
+                  onFocus={(e) => { e.target.style.borderColor = "#4f645b"; e.target.style.boxShadow = "0 0 0 2px rgba(79,100,91,0.1)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "#e2e8e1"; e.target.style.boxShadow = "none"; }}
                 />
               </div>
               <div className="mb-4">
@@ -796,15 +846,14 @@ export default function UserListPage() {
                 <button
                   type="button"
                   onClick={() => setAddModalOpen(false)}
-                  className="px-5 py-2 border border-stone-300 bg-white text-stone-700 rounded-xl text-sm font-semibold hover:bg-stone-50 transition-colors"
+                  style={SECONDARY_BUTTON}
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={formLoading}
-                  className="px-5 py-2 border border-transparent bg-primary text-on-primary rounded-xl text-sm font-bold hover:opacity-90 transition-all disabled:opacity-60 flex items-center"
-                  style={{ backgroundColor: "#4f645b", color: "#e7fef3" }}
+                  style={{ ...PRIMARY_BUTTON, opacity: formLoading ? 0.6 : 1 }}
                 >
                   {formLoading && <span className="spinner" />}
                   {editingId ? "Lưu" : "Thêm"}
@@ -854,7 +903,7 @@ export default function UserListPage() {
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${detailUser.status ? "bg-emerald-50 text-emerald-600" : "bg-stone-100 text-stone-500"}`}>
                           {detailUser.status ? "Hoạt động" : "Đã khóa"}
                         </span>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${ROLE_BADGE[detailUser.roleName] || "bg-stone-100 text-stone-500"}`}>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${ROLE_BADGE[detailUser.roleName] || "bg-stone-100 text-stone-500"}`}>
                           {detailUser.roleName || "—"}
                         </span>
                       </div>
@@ -874,7 +923,7 @@ export default function UserListPage() {
                       ["Ngày tạo", detailUser.createdAt ? new Date(detailUser.createdAt).toLocaleDateString("vi-VN") : "—"],
                     ].map(([k, v], i) => (
                       <div key={i} className="bg-stone-50 rounded-xl p-2.5">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">{k}</p>
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 mb-0.5">{k}</p>
                         <p className="text-sm font-semibold text-stone-700 truncate" title={String(v)}>{String(v)}</p>
                       </div>
                     ))}
@@ -979,10 +1028,10 @@ export function UserListHeader({
       <div>
         <h2
           style={{
-            fontSize: 24,
-            fontWeight: 700,
+            fontSize: 28,
+            fontWeight: 800,
             color: "#1c1917",
-            letterSpacing: "-0.025em",
+            letterSpacing: "-0.02em",
             margin: 0,
           }}
         >
@@ -1000,20 +1049,7 @@ export function UserListHeader({
       <div style={{ display: "flex", gap: 12 }}>
         <button
           onClick={onExportCSV}
-          style={{
-            padding: "8px 20px",
-            borderRadius: 12,
-            fontSize: 14,
-            fontWeight: 500,
-            background: "white",
-            color: "#1c1917",
-            border: "1px solid #e2e8e1",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            boxShadow: "0 1px 3px rgba(0,0,0,.06)",
-          }}
+          style={SECONDARY_BUTTON}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
             file_download
@@ -1022,20 +1058,7 @@ export function UserListHeader({
         </button>
         <button
           onClick={onOpenAdd}
-          style={{
-            padding: "8px 20px",
-            borderRadius: 12,
-            fontSize: 14,
-            fontWeight: 500,
-            background: "#4f645b",
-            color: "#e7fef3",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            boxShadow: "0 4px 12px rgba(79,100,91,.2)",
-          }}
+          style={PRIMARY_BUTTON}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
             person_add
@@ -1102,14 +1125,8 @@ export function UserListFilters({
             value={topSearch}
             onChange={(e) => onSearch(e.target.value)}
             style={{
-              width: "100%",
-              background: "#f9f8f3",
-              border: "1px solid #e2e8e1",
-              borderRadius: 12,
+              ...INPUT_STYLE,
               padding: "10px 16px 10px 40px",
-              fontSize: 14,
-              outline: "none",
-              boxSizing: "border-box",
             }}
             placeholder="Gõ từ khóa..."
           />
@@ -1132,15 +1149,7 @@ export function UserListFilters({
         <select
           value={filters.roleId}
           onChange={(e) => setFilters((f) => ({ ...f, roleId: e.target.value }))}
-          style={{
-            width: "100%",
-            background: "#f9f8f3",
-            border: "1px solid #e2e8e1",
-            borderRadius: 12,
-            padding: "10px 16px",
-            fontSize: 14,
-            outline: "none",
-          }}
+          style={INPUT_STYLE}
         >
           <option value="">Chọn vai trò</option>
           {roles.map((r) => (
@@ -1167,15 +1176,7 @@ export function UserListFilters({
         <select
           value={filters.status}
           onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
-          style={{
-            width: "100%",
-            background: "#f9f8f3",
-            border: "1px solid #e2e8e1",
-            borderRadius: 12,
-            padding: "10px 16px",
-            fontSize: 14,
-            outline: "none",
-          }}
+          style={INPUT_STYLE}
         >
           <option value="">Chọn trạng thái</option>
           <option value="active">Hoạt động</option>
@@ -1185,12 +1186,11 @@ export function UserListFilters({
       <button
         onClick={onClearFilters}
         style={{
-          background: "#f3f4f6",
-          border: "1px solid #e2e8e1",
-          color: "#4b5563",
+          ...SECONDARY_BUTTON,
           padding: 10,
-          borderRadius: 12,
-          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
         title="Xóa bộ lọc"
       >
@@ -1217,6 +1217,7 @@ export function UserListTable({
   ROLE_BADGE,
   SkeletonRows,
 }) {
+  const { isMobile } = useResponsiveAdmin();
   return (
     <div
       style={{
@@ -1227,6 +1228,58 @@ export function UserListTable({
         overflow: "hidden",
       }}
     >
+      {isMobile ? (
+        <div style={{ display: "grid", gap: 12, padding: 14 }}>
+          {loading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="skeleton" style={{ height: 132, borderRadius: 16 }} />
+            ))
+          ) : paginatedUsers.length === 0 ? null : (
+            paginatedUsers.map((u) => {
+              const active = u.status === true || u.status === 1;
+              const initial = (u.fullName || "?")[0].toUpperCase();
+              const roleClass = ROLE_BADGE[u.roleName] || "bg-stone-100 text-stone-500";
+              return (
+                <article key={u.id} className="fade-row" style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    {u.avatarUrl ? (
+                      <img alt="" src={u.avatarUrl} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(79,100,91,.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f645b", fontWeight: 900, fontSize: 15, flexShrink: 0 }}>
+                        {initial}
+                      </div>
+                    )}
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: 900, color: "#292524", fontSize: 16 }}>{u.fullName || "-"}</div>
+                      <div style={{ fontSize: 12, color: "#9ca3af" }}>#{u.id}</div>
+                      <div style={{ marginTop: 6, overflowWrap: "anywhere", fontSize: 13, color: "#4b5563" }}>{u.email || "-"}</div>
+                      <div style={{ fontSize: 13, color: "#6b7280" }}>{u.phone || "-"}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                    <span className={`px-3 py-1 ${roleClass} text-[10px] font-extrabold rounded-full uppercase`}>
+                      {u.roleName || "-"}
+                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: active ? "#059669" : "#9ca3af" }}>
+                        {active ? "Hoạt động" : "Đã khóa"}
+                      </span>
+                      <label className="toggle-switch">
+                        <input type="checkbox" checked={active} disabled={togglingIds.has(u.id)} onChange={() => handleToggle(u.id)} />
+                        <span className="slider" />
+                      </label>
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => openDetail(u.id)} style={{ height: 40, borderRadius: 12, border: "none", background: "#4f645b", color: "#fff", fontWeight: 900, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>visibility</span>
+                    Xem chi tiết
+                  </button>
+                </article>
+              );
+            })
+          )}
+        </div>
+      ) : (
       <div style={{ overflowX: "auto" }}>
         <table
           style={{
@@ -1325,7 +1378,7 @@ export function UserListTable({
                       {u.phone || "—"}
                     </td>
                     <td style={{ padding: "16px 24px" }}>
-                      <span className={`px-3 py-1 ${roleClass} text-[10px] font-bold rounded-full uppercase`}>
+                      <span className={`px-3 py-1 ${roleClass} text-[10px] font-extrabold rounded-full uppercase`}>
                         {u.roleName || "—"}
                       </span>
                     </td>
@@ -1387,6 +1440,7 @@ export function UserListTable({
           </tbody>
         </table>
       </div>
+      )}
 
       {!loading && paginatedUsers.length === 0 && (
         <div style={{ padding: "64px 0", textAlign: "center" }}>
@@ -1412,6 +1466,8 @@ export function UserListTable({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

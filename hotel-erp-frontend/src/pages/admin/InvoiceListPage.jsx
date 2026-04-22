@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getInvoices } from "../../api/invoicesApi";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import { formatCurrency, formatDate } from "../../utils";
 import { getInvoiceStatusLabel } from "../../utils/statusLabels";
 
@@ -40,7 +41,7 @@ const InvoiceStatusBadge = ({ status }) => {
     Draft: { bg: "#e0f2fe", text: "#0369a1", icon: "draft" },
     Ready_To_Collect: { bg: "#ede9fe", text: "#6d28d9", icon: "point_of_sale" },
     Unpaid: { bg: "#fef2f2", text: "#dc2626", icon: "pending_actions" },
-    Partially_Paid: { bg: "#fef3c7", text: "#d97706", icon: "hourglass_half" },
+    Partially_Paid: { bg: "#fef3c7", text: "#d97706", icon: "hourglass_top" },
     Paid: { bg: "#ecfdf5", text: "#059669", icon: "check_circle" },
     Refunded: { bg: "#f3f4f6", text: "#6b7280", icon: "replay" }
   };
@@ -54,6 +55,7 @@ const InvoiceStatusBadge = ({ status }) => {
 };
 
 export default function InvoiceListPage() {
+  const { isMobile } = useResponsiveAdmin();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState([]);
@@ -91,8 +93,11 @@ export default function InvoiceListPage() {
   }, [rows]);
 
   return (
-    <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-      <style>{`        * { font-family: 'Manrope', sans-serif; }        @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+    <div style={{ maxWidth: 1400, margin: "0 auto", paddingInline: isMobile ? 4 : 0 }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+        @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
         .table-row { transition: background 0.1s; border-bottom: 1px solid #f1f0ea; }
         .table-row:hover { background: #fafaf8 !important; }
@@ -105,7 +110,7 @@ export default function InvoiceListPage() {
         {toasts.map((t) => <Toast key={t.id} {...t} onDismiss={dismissToast} />)}
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, gap: 16, flexDirection: isMobile ? "column" : "row" }}>
         <div>
           <h2 style={{ fontSize: 26, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.025em", margin: "0 0 4px" }}>
             Quản lý Hóa đơn
@@ -116,7 +121,7 @@ export default function InvoiceListPage() {
         </div>
         <button
           onClick={load}
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 22px", borderRadius: 12, fontSize: 14, fontWeight: 700, background: "white", color: "#1c1917", border: "1.5px solid #e2e8e1", cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 22px", borderRadius: 12, fontSize: 14, fontWeight: 700, background: "white", color: "#1c1917", border: "1.5px solid #e2e8e1", cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,.06)", width: isMobile ? "100%" : "auto" }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>refresh</span> Làm mới
         </button>
@@ -138,11 +143,11 @@ export default function InvoiceListPage() {
         </div>
       </div>
 
-      <div style={{ background: "white", borderRadius: 18, padding: "18px 22px", border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "flex", gap: 12, alignItems: "center", marginBottom: 24 }}>
+      <div style={{ background: "white", borderRadius: 18, padding: "18px 22px", border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.06)", display: "flex", flexDirection: isMobile ? "column" : "row", gap: 12, alignItems: "center", marginBottom: 24 }}>
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          style={{ border: "1.5px solid #e2e8e1", background: "#f9f8f3", padding: "10px 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, color: "#1c1917", outline: "none", width: 200, fontFamily: "Manrope, sans-serif", cursor: "pointer" }}
+          style={{ border: "1.5px solid #e2e8e1", background: "#f9f8f3", padding: "10px 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, color: "#1c1917", outline: "none", width: isMobile ? "100%" : 200, fontFamily: "Manrope, sans-serif", cursor: "pointer" }}
         >
           <option value="">Tất cả trạng thái</option>
           <option value="Draft">Hóa đơn nháp</option>
@@ -154,7 +159,7 @@ export default function InvoiceListPage() {
         </select>
         <button
           onClick={() => { setStatus(""); }}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, border: "1.5px solid #e2e8e1", background: "white", color: "#6b7280", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 16px", borderRadius: 10, border: "1.5px solid #e2e8e1", background: "white", color: "#6b7280", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "Manrope, sans-serif", width: isMobile ? "100%" : "auto" }}
           onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#4f645b"; e.currentTarget.style.color = "#4f645b"; }}
           onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e2e8e1"; e.currentTarget.style.color = "#6b7280"; }}
         >
@@ -163,6 +168,41 @@ export default function InvoiceListPage() {
       </div>
 
       <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
+        {isMobile ? (
+          <div style={{ display: "grid", gap: 12, padding: 14 }}>
+            {!loading && rows.length === 0 ? (
+              <div style={{ padding: 28, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 42, marginBottom: 10, opacity: 0.5, display: "block" }}>search_off</span>
+                Không tìm thấy hóa đơn nào
+              </div>
+            ) : rows.map((item) => (
+              <article key={item.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12, boxShadow: "0 1px 3px rgba(0,0,0,.04)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 900, color: "#1c1917" }}>Hóa đơn #{item.id}</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#4f645b", marginTop: 4 }}>{item.bookingCode || item.bookingId || "-"}</div>
+                  </div>
+                  <InvoiceStatusBadge status={item.status} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                    <div style={{ fontSize: 11, color: "#78716c", fontWeight: 800 }}>Tổng tiền</div>
+                    <div style={{ fontSize: 14, color: "#16a34a", fontWeight: 900 }}>{formatCurrency(item.finalTotal)}</div>
+                  </div>
+                  <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                    <div style={{ fontSize: 11, color: "#78716c", fontWeight: 800 }}>Dư nợ</div>
+                    <div style={{ fontSize: 14, color: item.outstandingAmount > 0 ? "#dc2626" : "#6b7280", fontWeight: 900 }}>{formatCurrency(item.outstandingAmount)}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: "#78716c", fontWeight: 700 }}>Ngày tạo: {formatDate(item.createdAt)}</div>
+                <button onClick={() => navigate(`/admin/invoices/${item.id}`)} style={{ height: 40, borderRadius: 12, border: "none", background: "#4f645b", color: "#fff", fontWeight: 900, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>visibility</span>
+                  Xem chi tiết
+                </button>
+              </article>
+            ))}
+          </div>
+        ) : (
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "rgba(249,248,243,.6)" }}>
@@ -208,6 +248,7 @@ export default function InvoiceListPage() {
             ))}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   );

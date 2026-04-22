@@ -1,23 +1,57 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createMaintenanceTicket, getMaintenanceTickets, updateMaintenanceTicketStatus } from "../../api/maintenanceApi";
 import { getRooms } from "../../api/roomsApi";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import { getUsers } from "../../api/userManagementApi";
 
 const cardStyle = {
   background: "#fff",
-  border: "1px solid #ece7de",
+  border: "1px solid #f1f0ea",
   borderRadius: 20,
-  boxShadow: "0 10px 30px rgba(28,25,23,.05)",
+  boxShadow: "0 1px 3px rgba(0,0,0,.06)",
 };
 
 const inputStyle = {
   width: "100%",
   boxSizing: "border-box",
-  padding: "10px 12px",
+  padding: "10px 14px",
   borderRadius: 12,
-  border: "1px solid #d6d3d1",
-  background: "#fff",
-  color: "inherit",
+  border: "1.5px solid #e2e8e1",
+  background: "#f9f8f3",
+  fontSize: 14,
+  fontWeight: 600,
+  color: "#1c1917",
+  outline: "none",
+  fontFamily: "'Manrope', sans-serif",
+  transition: "all 0.2s",
+};
+
+const PRIMARY_BUTTON = {
+  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+  color: "#e7fef3",
+  border: "none",
+  borderRadius: 12,
+  padding: "10px 22px",
+  fontSize: 14,
+  fontWeight: 800,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+  transition: "all 0.15s",
+};
+
+const SECONDARY_BUTTON = {
+  padding: "10px 22px",
+  borderRadius: 12,
+  border: "1.5px solid #e2e8e1",
+  background: "white",
+  color: "#57534e",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+  transition: "all 0.15s",
 };
 
 const statusMeta = {
@@ -40,6 +74,7 @@ const fmtDateTime = (value) =>
     : "—";
 
 export default function MaintenancePage() {
+  const { isMobile } = useResponsiveAdmin();
   const [rooms, setRooms] = useState([]);
   const [staff, setStaff] = useState([]);
   const [rows, setRows] = useState([]);
@@ -138,6 +173,10 @@ export default function MaintenancePage() {
 
   return (
     <div style={{ maxWidth: 1360, margin: "0 auto" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+      `}</style>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 28, color: "#1c1917", fontWeight: 800 }}>Bảo trì phòng</h2>
@@ -145,7 +184,7 @@ export default function MaintenancePage() {
             Workflow này tách ticket bảo trì khỏi trạng thái vận hành của phòng. Khi ticket có `blocksRoom`, backend sẽ đưa phòng sang `Disabled` cho tới lúc đóng ticket.
           </p>
         </div>
-        <button type="button" onClick={load} disabled={loading} style={{ height: 42, padding: "0 16px", borderRadius: 12, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 700, cursor: "pointer" }}>
+        <button type="button" onClick={load} disabled={loading} style={{ ...SECONDARY_BUTTON, height: 42 }}>
           {loading ? "Đang tải..." : "Làm mới"}
         </button>
       </div>
@@ -190,8 +229,8 @@ export default function MaintenancePage() {
               <input type="checkbox" checked={form.blocksRoom} onChange={(e) => setForm((prev) => ({ ...prev, blocksRoom: e.target.checked }))} />
               Block phòng ngay khi mở ticket
             </label>
-            <button type="submit" disabled={saving} style={{ height: 42, borderRadius: 12, border: "none", background: "#4f645b", color: "#ecfdf5", fontWeight: 800, cursor: "pointer" }}>
-              {saving ? "Đang lưu..." : "Tạo ticket"}
+            <button type="submit" disabled={saving} style={{ ...PRIMARY_BUTTON, height: 44, justifyContent: "center" }}>
+              {saving ? "Đang lưu..." : "Tạo ticket bảo trì"}
             </button>
           </form>
         </article>
@@ -217,7 +256,7 @@ export default function MaintenancePage() {
       <section className="primary-card-p" style={{ ...cardStyle, overflow: "hidden" }}>
         <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1ece2", display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <strong style={{ color: "#1c1917", fontSize: 18 }}>Danh sách ticket bảo trì</strong>
-          <select value={filters.status} onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))} style={{ ...inputStyle, width: 180 }}>
+          <select value={filters.status} onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))} style={{ ...inputStyle, width: isMobile ? "100%" : 180 }}>
             <option value="">Tất cả trạng thái</option>
             <option value="Open">Open</option>
             <option value="InProgress">InProgress</option>
@@ -226,6 +265,45 @@ export default function MaintenancePage() {
             <option value="Cancelled">Cancelled</option>
           </select>
         </div>
+        {isMobile ? (
+          <div style={{ display: "grid", gap: 12, padding: 14 }}>
+            {rows.length === 0 ? (
+              <div style={{ padding: 24, textAlign: "center", color: "#9ca3af" }}>Chua co ticket bao tri nao.</div>
+            ) : rows.map((ticket) => {
+              const meta = statusMeta[ticket.status] || statusMeta.Open;
+              return (
+                <article key={ticket.id} style={{ border: "1px solid #f1ece2", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ color: "#1c1917", fontWeight: 900, fontSize: 16 }}>Phong {ticket.roomNumber}</div>
+                      <div style={{ color: "#6b7280", fontSize: 13 }}>{ticket.roomTypeName || "-"}</div>
+                    </div>
+                    <span style={{ padding: "6px 10px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 11, fontWeight: 900 }}>{ticket.status}</span>
+                  </div>
+                  <div>
+                    <div style={{ color: "#1c1917", fontWeight: 900 }}>{ticket.title}</div>
+                    <div style={{ color: "#6b7280", fontSize: 13, marginTop: 4 }}>{ticket.reason}</div>
+                    <div style={{ marginTop: 6, color: "#57534e", fontSize: 12, fontWeight: 800 }}>{ticket.category || "-"} - {ticket.priority}</div>
+                  </div>
+                  <div style={{ display: "grid", gap: 5, color: "#57534e", fontSize: 12 }}>
+                    <div>Mở: {fmtDateTime(ticket.openedAt)}</div>
+                    <div>ETA: {fmtDateTime(ticket.expectedDoneAt)}</div>
+                    <div>Báo cáo: {ticket.reportedBy?.fullName || "-"}</div>
+                    <div>Xử lý: {ticket.assignedTo?.fullName || "Chưa gán"}</div>
+                  </div>
+                  <textarea value={statusNotes[ticket.id] || ticket.resolutionNote || ""} onChange={(e) => setStatusNotes((prev) => ({ ...prev, [ticket.id]: e.target.value }))} placeholder="Ghi chú khi xử lý / đóng ticket" style={{ ...inputStyle, minHeight: 78, resize: "vertical" }} />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {["InProgress", "Resolved", "Closed", "Cancelled"].map((status) => (
+                      <button key={status} type="button" onClick={() => handleStatusUpdate(ticket.id, status)} disabled={saving || ticket.status === status} style={{ height: 36, borderRadius: 10, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 800, opacity: ticket.status === status ? 0.5 : 1 }}>
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", minWidth: 1100, borderCollapse: "collapse" }}>
             <thead>
@@ -303,6 +381,7 @@ export default function MaintenancePage() {
             </tbody>
           </table>
         </div>
+        )}
       </section>
     </div>
   );

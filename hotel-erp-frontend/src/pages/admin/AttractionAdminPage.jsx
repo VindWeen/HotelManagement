@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createAttraction,
   getAttractionById,
@@ -22,10 +22,11 @@ const cardStyle = {
 const inputStyle = {
   width: "100%",
   background: "#f9f8f3",
-  border: "1px solid #e2e8e1",
+  border: "1.5px solid #e2e8e1",
   borderRadius: 12,
   padding: "10px 14px",
   fontSize: 14,
+  fontWeight: 600,
   outline: "none",
   boxSizing: "border-box",
 };
@@ -45,14 +46,17 @@ const primaryButtonStyle = {
   alignItems: "center",
   justifyContent: "center",
   gap: 8,
-  padding: "6px 14px",
+  padding: "0 22px",
+  height: 42,
   borderRadius: 12,
   border: "none",
-  background: "#4f645b",
-  color: "#ecfdf5",
-  fontWeight: 700,
+  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+  color: "#e7fef3",
+  fontWeight: 800,
+  fontSize: 14,
   cursor: "pointer",
-  boxShadow: "0 4px 14px rgba(79,100,91,0.22)",
+  boxShadow: "0 4px 12px rgba(79,100,91,0.2)",
+  transition: "all 0.15s",
 };
 
 const emptyForm = {
@@ -375,6 +379,10 @@ export default function AttractionAdminPage() {
 
   return (
     <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+      `}</style>
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
           <div>
@@ -398,7 +406,7 @@ export default function AttractionAdminPage() {
                   <strong style={{ color: "#1c1917" }}>Danh sách địa điểm</strong>
                   <p style={{ margin: "4px 0 0", color: "#78716c", fontSize: 13 }}>Tổng cộng {items.length} địa điểm.</p>
                 </div>
-                <div style={{ display: "flex", gap: 2, background: "#f1f0ea", padding: 4, borderRadius: 12 }}>
+                {!isMobile && <div style={{ display: "flex", gap: 2, background: "#f1f0ea", padding: 4, borderRadius: 12 }}>
                   {["table", "grid"].map((mode) => (
                     <button
                       key={mode}
@@ -427,7 +435,7 @@ export default function AttractionAdminPage() {
                       {mode === "table" ? "Bảng" : "Lưới"}
                     </button>
                   ))}
-                </div>
+                </div>}
               </div>
 
               {viewMode === "table" && !isMobile ? (

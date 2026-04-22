@@ -57,6 +57,10 @@ export default function SiteMapPage() {
 
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+      `}</style>
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ margin: 0, fontSize: 24, color: "#1c1917", fontWeight: 700 }}>Site Map</h2>
         <p style={{ margin: "6px 0 0", color: "#6b7280", fontSize: 14 }}>

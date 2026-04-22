@@ -55,14 +55,19 @@ export default function ReviewAdminPage() {
 
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", paddingInline: isMobile ? 4 : 0 }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+      `}</style>
+
       <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", gap: 16, marginBottom: 24 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 24, color: "#1c1917", fontWeight: 700 }}>Duyệt đánh giá</h2>
+          <h2 style={{ margin: "0 0 4px", fontSize: 28, color: "#1c1917", fontWeight: 800, letterSpacing: "-0.025em" }}>Duyệt đánh giá</h2>
           <p style={{ margin: "6px 0 0", color: "#6b7280", fontSize: 14 }}>
             Kiểm tra đánh giá từ khách và duyệt hoặc từ chối ngay trong admin.
           </p>
         </div>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ minWidth: isMobile ? 0 : 220, width: isMobile ? "100%" : "auto", padding: "10px 14px", borderRadius: 12, border: "1px solid #e2e8e1", background: "#f9f8f3" }}>
+        <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ minWidth: isMobile ? 0 : 220, width: isMobile ? "100%" : "auto", padding: "10px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontWeight: 600 }}>
           <option value="pending">Chờ duyệt</option>
           <option value="approved">Đã duyệt</option>
           <option value="rejected">Đã từ chối</option>

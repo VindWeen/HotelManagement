@@ -35,6 +35,7 @@ const MembershipPage = lazy(() => import("../pages/admin/MembershipPage"));
 const ArticleAdminPage = lazy(() => import("../pages/admin/ArticleAdminPage"));
 const AttractionAdminPage = lazy(() => import("../pages/admin/AttractionAdminPage"));
 const ReviewAdminPage = lazy(() => import("../pages/admin/ReviewAdminPage"));
+const AuditLogsPage = lazy(() => import("../pages/admin/AuditLogsPage"));
 
 function RouteFallback() {
   return (
@@ -282,6 +283,14 @@ export default function AdminRoutes() {
           element={
             <RequirePermission permission="VIEW_ROLES">
               {withSuspense(<RolePermissionPage />)}
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="audit-logs"
+          element={
+            <RequirePermission permission="VIEW_AUDIT_LOGS">
+              {withSuspense(<AuditLogsPage />)}
             </RequirePermission>
           }
         />

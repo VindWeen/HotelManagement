@@ -3,7 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { addRoomToBooking, cancelBooking, checkIn, checkInRoom, checkOut, earlyCheckOut, extendStay, getBookingDetail } from "../../api/bookingsApi";
 import { createInvoiceFromBooking, getInvoiceByBookingId } from "../../api/invoicesApi";
 import { recordPayment } from "../../api/paymentsApi";
+import { getAdminRoomTypes } from "../../api/roomTypesApi";
 import { formatCurrency, formatDate } from "../../utils";
+import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
 import { getBookingSourceLabel, getBookingStatusLabel } from "../../utils/statusLabels";
 
 const ALLOWED_ACTIONS = {
@@ -138,7 +140,7 @@ function BookingPaymentModal({ open, booking, mode, loading, onConfirm, onCancel
         : booking.depositAmount || 0;
 
     setForm({
-      amountPaid: suggestedAmount > 0 ? String(Math.ceil(suggestedAmount)) : "",
+      amountPaid: suggestedAmount > 0 ? formatMoneyInput(String(Math.ceil(suggestedAmount))) : "",
       paymentMethod: "Cash",
       transactionCode: "",
       note: "",
@@ -165,7 +167,7 @@ function BookingPaymentModal({ open, booking, mode, loading, onConfirm, onCancel
         <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 8px" }}>{title}</h3>
         <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px" }}>{helper}</p>
         <div style={{ display: "grid", gap: 12, marginBottom: 20 }}>
-          <input type="number" min="0" step="1000" value={form.amountPaid} onChange={(e) => setForm((prev) => ({ ...prev, amountPaid: e.target.value }))} placeholder="Số tiền" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
+          <input type="text" inputMode="numeric" value={form.amountPaid} onChange={(e) => setForm((prev) => ({ ...prev, amountPaid: formatMoneyInput(e.target.value) }))} placeholder="Số tiền" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
           <select value={form.paymentMethod} onChange={(e) => setForm((prev) => ({ ...prev, paymentMethod: e.target.value }))} style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }}>
             <option value="Cash">Tiền mặt</option>
             <option value="Momo">Momo</option>
@@ -178,9 +180,278 @@ function BookingPaymentModal({ open, booking, mode, loading, onConfirm, onCancel
         </div>
         <div style={{ display: "flex", gap: 12 }}>
           <button onClick={onCancel} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "white", fontWeight: 700, color: "#6b7280", cursor: "pointer", fontSize: 14 }}>Đóng</button>
-          <button onClick={() => onConfirm({ ...form, amountPaid: Number(form.amountPaid) })} disabled={loading || Number(form.amountPaid) <= 0} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "#4f645b", fontWeight: 700, color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, opacity: (Number(form.amountPaid) <= 0 || loading) ? 0.6 : 1 }}>
+          <button onClick={() => onConfirm({ ...form, amountPaid: parseMoneyInput(form.amountPaid) })} disabled={loading || parseMoneyInput(form.amountPaid) <= 0} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "#4f645b", fontWeight: 700, color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, opacity: (parseMoneyInput(form.amountPaid) <= 0 || loading) ? 0.6 : 1 }}>
             {loading ? <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "white", borderRadius: "50%", animation: "spin .65s linear infinite" }} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>payments</span>}
             Xác nhận
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AddRoomModal({ open, loading, roomTypes, booking, form, onChange, onConfirm, onCancel }) {
+  if (!open) return null;
+
+  const selectedRoomType = roomTypes.find((item) => Number(item.id) === Number(form.roomTypeId));
+  const canSubmit = Number(form.roomTypeId) > 0 && form.checkInDate && form.checkOutDate;
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2200, padding: 20 }}
+      onClick={(e) => e.target === e.currentTarget && onCancel()}
+    >
+      <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 640, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)", padding: 30 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 22 }}>
+          <div>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>Thêm phòng vào booking</h3>
+            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+              Thêm một hạng phòng mới cho booking hiện tại. Hệ thống sẽ tự gán phòng phù hợp khi check-in.
+            </p>
+          </div>
+          <button onClick={onCancel} className="action-btn" style={{ padding: "8px 12px", fontSize: 12, height: "fit-content" }}>
+            Đóng
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14, marginBottom: 18 }}>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Hạng phòng</div>
+            <select
+              value={form.roomTypeId}
+              onChange={(e) => onChange("roomTypeId", e.target.value)}
+              style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 14, fontWeight: 600, outline: "none", color: "#1c1917" }}
+            >
+              <option value="">Chọn hạng phòng muốn thêm</option>
+              {roomTypes.map((roomType) => (
+                <option key={roomType.id} value={roomType.id}>
+                  {roomType.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Ngày nhận phòng</div>
+            <input
+              type="date"
+              value={form.checkInDate}
+              onChange={(e) => onChange("checkInDate", e.target.value)}
+              style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 14, fontWeight: 600, outline: "none", color: "#1c1917" }}
+            />
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Ngày trả phòng</div>
+            <input
+              type="date"
+              value={form.checkOutDate}
+              min={form.checkInDate || undefined}
+              onChange={(e) => onChange("checkOutDate", e.target.value)}
+              style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 14, fontWeight: 600, outline: "none", color: "#1c1917" }}
+            />
+          </div>
+
+          <div style={{ gridColumn: "1 / -1" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Ghi chú nội bộ</div>
+            <textarea
+              value={form.note}
+              onChange={(e) => onChange("note", e.target.value)}
+              placeholder="Ví dụ: Thêm phòng cho người thân đi cùng, cần gần phòng hiện tại..."
+              style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917", minHeight: 92, resize: "none" }}
+            />
+          </div>
+        </div>
+
+        <div style={{ border: "1px solid #ecebe4", background: "#fafaf8", borderRadius: 16, padding: 16, marginBottom: 22 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 10 }}>
+            Xem nhanh trước khi thêm
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
+            <div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Booking</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>#{booking?.bookingCode || "-"}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Hạng phòng</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{selectedRoomType?.name || "Chưa chọn"}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Giá niêm yết</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#4f645b" }}>
+                {selectedRoomType ? `${formatCurrency(selectedRoomType.basePrice || 0)}/đêm` : "-"}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 12 }}>
+          <button onClick={onCancel} className="action-btn" style={{ flex: 1, justifyContent: "center" }}>Hủy</button>
+          <button
+            onClick={onConfirm}
+            disabled={!canSubmit || loading}
+            className="action-btn primary"
+            style={{ flex: 1, justifyContent: "center", opacity: (!canSubmit || loading) ? 0.6 : 1 }}
+          >
+            {loading ? <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "white", borderRadius: "50%", animation: "spin .65s linear infinite" }} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_home</span>}
+            Xác nhận thêm phòng
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EarlyCheckOutModal({ open, detail, loading, form, onChange, onConfirm, onCancel }) {
+  if (!open || !detail) return null;
+
+  const canSubmit = !!form.newCheckOutDate;
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2200, padding: 20 }}
+      onClick={(e) => e.target === e.currentTarget && onCancel()}
+    >
+      <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 560, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)", padding: 30 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 22 }}>
+          <div>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>Cập nhật out sớm</h3>
+            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+              Điều chỉnh ngày trả phòng thực tế cho chặng lưu trú này để hệ thống tính lại booking.
+            </p>
+          </div>
+          <button onClick={onCancel} className="action-btn" style={{ padding: "8px 12px", fontSize: 12, height: "fit-content" }}>
+            Đóng
+          </button>
+        </div>
+
+        <div style={{ border: "1px solid #ecebe4", background: "#fafaf8", borderRadius: 16, padding: 16, marginBottom: 18 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 12 }}>
+            Thông tin chặng lưu trú
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14 }}>
+            <div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Hạng phòng</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{detail.roomTypeName || "-"}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Phòng</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{detail.roomName || "Chưa gán phòng"}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Check-in hiện tại</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1c1917" }}>{formatDate(detail.checkInDate)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Check-out đang lưu</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1c1917" }}>{formatDate(detail.checkOutDate)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 22 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Ngày trả phòng thực tế</div>
+          <input
+            type="date"
+            value={form.newCheckOutDate}
+            min={detail?.checkInDate?.slice?.(0, 10) || undefined}
+            max={detail?.checkOutDate?.slice?.(0, 10) || undefined}
+            onChange={(e) => onChange("newCheckOutDate", e.target.value)}
+            style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 14, fontWeight: 600, outline: "none", color: "#1c1917" }}
+          />
+          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
+            Ngày mới nên nằm trong khoảng từ ngày check-in đến ngày check-out hiện tại của chặng này.
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 12 }}>
+          <button onClick={onCancel} className="action-btn" style={{ flex: 1, justifyContent: "center" }}>Hủy</button>
+          <button
+            onClick={onConfirm}
+            disabled={!canSubmit || loading}
+            className="action-btn primary"
+            style={{ flex: 1, justifyContent: "center", opacity: (!canSubmit || loading) ? 0.6 : 1 }}
+          >
+            {loading ? <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "white", borderRadius: "50%", animation: "spin .65s linear infinite" }} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>event_available</span>}
+            Cập nhật out sớm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExtendStayModal({ open, detail, loading, form, onChange, onConfirm, onCancel }) {
+  if (!open || !detail) return null;
+
+  const canSubmit = !!form.newCheckOutDate;
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2200, padding: 20 }}
+      onClick={(e) => e.target === e.currentTarget && onCancel()}
+    >
+      <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 560, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)", padding: 30, animation: "modalSlideUp .3s ease-out" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 22 }}>
+          <div>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>Ở thêm ngày</h3>
+            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+              Kéo dài thời gian lưu trú cho chặng phòng này. Nếu phòng hiện tại bị trùng lịch, hệ thống sẽ gợi ý phòng thay thế.
+            </p>
+          </div>
+          <button onClick={onCancel} className="action-btn" style={{ padding: "8px 12px", fontSize: 12, height: "fit-content" }}>
+            Đóng
+          </button>
+        </div>
+
+        <div style={{ border: "1px solid #ecebe4", background: "#fafaf8", borderRadius: 16, padding: 16, marginBottom: 18 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 12 }}>
+            Thông tin chặng lưu trú
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14 }}>
+            <div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Hạng phòng</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{detail.roomTypeName || "-"}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Phòng</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{detail.roomName || "Chưa gán phòng"}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Check-in hiện tại</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1c1917" }}>{formatDate(detail.checkInDate)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Check-out đang lưu</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1c1917" }}>{formatDate(detail.checkOutDate)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 22 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Ngày trả phòng mới</div>
+          <input
+            type="date"
+            value={form.newCheckOutDate}
+            min={detail?.checkOutDate?.slice?.(0, 10) || undefined}
+            onChange={(e) => onChange("newCheckOutDate", e.target.value)}
+            style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 14, fontWeight: 600, outline: "none", color: "#1c1917" }}
+          />
+          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
+            Ngày mới phải sau ngày check-out hiện tại của chặng này.
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 12 }}>
+          <button onClick={onCancel} className="action-btn" style={{ flex: 1, justifyContent: "center" }}>Hủy</button>
+          <button
+            onClick={onConfirm}
+            disabled={!canSubmit || loading}
+            className="action-btn primary"
+            style={{ flex: 1, justifyContent: "center", opacity: (!canSubmit || loading) ? 0.6 : 1 }}
+          >
+            {loading ? <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "white", borderRadius: "50%", animation: "spin .65s linear infinite" }} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>event_repeat</span>}
+            Xác nhận ở thêm
           </button>
         </div>
       </div>
@@ -216,6 +487,7 @@ export default function BookingDetailPage() {
   const [loading, setLoading] = useState(false);
   const [booking, setBooking] = useState(null);
   const [timeline, setTimeline] = useState([]);
+  const [roomTypes, setRoomTypes] = useState([]);
   const [toasts, setToasts] = useState([]);
   const [extendStayConflict, setExtendStayConflict] = useState(null);
   
@@ -227,6 +499,15 @@ export default function BookingDetailPage() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentMode, setPaymentMode] = useState("deposit");
+  const [addRoomModalOpen, setAddRoomModalOpen] = useState(false);
+  const [addRoomLoading, setAddRoomLoading] = useState(false);
+  const [addRoomForm, setAddRoomForm] = useState({ roomTypeId: "", checkInDate: "", checkOutDate: "", note: "" });
+  const [earlyCheckOutTarget, setEarlyCheckOutTarget] = useState(null);
+  const [earlyCheckOutLoading, setEarlyCheckOutLoading] = useState(false);
+  const [earlyCheckOutForm, setEarlyCheckOutForm] = useState({ newCheckOutDate: "" });
+  const [extendStayTarget, setExtendStayTarget] = useState(null);
+  const [extendStayLoading, setExtendStayLoading] = useState(false);
+  const [extendStayForm, setExtendStayForm] = useState({ newCheckOutDate: "" });
 
   const showToast = useCallback((msg, type = "success") => {
     const toastId = Date.now() + Math.random();
@@ -253,6 +534,20 @@ export default function BookingDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    const loadRoomTypes = async () => {
+      try {
+        const res = await getAdminRoomTypes();
+        const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        setRoomTypes(data);
+      } catch {
+        setRoomTypes([]);
+      }
+    };
+
+    loadRoomTypes();
+  }, []);
 
   const canRun = (action) => {
     const status = booking?.status;
@@ -388,18 +683,34 @@ export default function BookingDetailPage() {
     }
   };
 
-  const handleExtendStay = async (detail) => {
-    const rawDate = window.prompt("Nhập ngày check-out mới (YYYY-MM-DD)", detail?.checkOutDate?.slice?.(0, 10) || "");
-    if (!rawDate) return;
+  const openExtendStayModal = (detail) => {
+    setExtendStayTarget(detail);
+    const currentOut = detail?.checkOutDate?.slice?.(0, 10) || "";
+    let suggested = "";
+    if (currentOut) {
+      const d = new Date(currentOut);
+      d.setDate(d.getDate() + 1);
+      suggested = d.toISOString().slice(0, 10);
+    }
+    setExtendStayForm({ newCheckOutDate: suggested });
+  };
 
+  const executeExtendStay = async () => {
+    if (!extendStayTarget || !extendStayForm.newCheckOutDate) return;
+    const detail = extendStayTarget;
+    const rawDate = extendStayForm.newCheckOutDate;
+
+    setExtendStayLoading(true);
     try {
       await extendStay(id, { bookingDetailId: detail.id, newCheckOutDate: rawDate });
       showToast("Đã cập nhật ở thêm ngày.");
       setExtendStayConflict(null);
+      setExtendStayTarget(null);
       await load();
     } catch (e) {
       const payload = e?.response?.data;
       if (payload?.data?.suggestions?.length) {
+        setExtendStayTarget(null);
         setExtendStayConflict({
           bookingDetailId: detail.id,
           newCheckOutDate: payload.data.newCheckOutDate || rawDate,
@@ -411,6 +722,8 @@ export default function BookingDetailPage() {
       } else {
         showToast(payload?.message || "Ở thêm ngày thất bại.", "error");
       }
+    } finally {
+      setExtendStayLoading(false);
     }
   };
 
@@ -431,33 +744,56 @@ export default function BookingDetailPage() {
     }
   };
 
-  const handleEarlyCheckOut = async (detail) => {
-    const rawDate = window.prompt("Nhập ngày check-out thực tế (YYYY-MM-DD)", detail?.checkOutDate?.slice?.(0, 10) || "");
-    if (!rawDate) return;
+  const openEarlyCheckOutModal = (detail) => {
+    setEarlyCheckOutTarget(detail);
+    setEarlyCheckOutForm({ newCheckOutDate: detail?.checkOutDate?.slice?.(0, 10) || "" });
+  };
 
+  const openAddRoomModal = () => {
+    const lastDetail = booking?.bookingDetails?.[booking.bookingDetails.length - 1];
+    setAddRoomForm({
+      roomTypeId: "",
+      checkInDate: lastDetail?.checkInDate?.slice?.(0, 10) || "",
+      checkOutDate: lastDetail?.checkOutDate?.slice?.(0, 10) || "",
+      note: "",
+    });
+    setAddRoomModalOpen(true);
+  };
+
+  const executeEarlyCheckOut = async () => {
+    if (!earlyCheckOutTarget || !earlyCheckOutForm.newCheckOutDate) return;
+
+    setEarlyCheckOutLoading(true);
     try {
-      await earlyCheckOut(id, { bookingDetailId: detail.id, newCheckOutDate: rawDate });
+      await earlyCheckOut(id, { bookingDetailId: earlyCheckOutTarget.id, newCheckOutDate: earlyCheckOutForm.newCheckOutDate });
       showToast("Đã cập nhật out sớm và tính lại booking.");
+      setEarlyCheckOutTarget(null);
       await load();
     } catch (e) {
       showToast(e?.response?.data?.message || "Out sớm thất bại.", "error");
+    } finally {
+      setEarlyCheckOutLoading(false);
     }
   };
 
-  const handleAddRoom = async () => {
-    const roomTypeId = window.prompt("Nhập RoomTypeId muốn thêm");
-    if (!roomTypeId) return;
-    const checkInDate = window.prompt("Nhập ngày check-in (YYYY-MM-DD)");
-    if (!checkInDate) return;
-    const checkOutDate = window.prompt("Nhập ngày check-out (YYYY-MM-DD)");
-    if (!checkOutDate) return;
+  const executeAddRoom = async () => {
+    if (!addRoomForm.roomTypeId || !addRoomForm.checkInDate || !addRoomForm.checkOutDate) return;
 
+    setAddRoomLoading(true);
     try {
-      await addRoomToBooking(id, { roomTypeId: Number(roomTypeId), checkInDate, checkOutDate });
+      await addRoomToBooking(id, {
+        roomTypeId: Number(addRoomForm.roomTypeId),
+        checkInDate: addRoomForm.checkInDate,
+        checkOutDate: addRoomForm.checkOutDate,
+        note: addRoomForm.note?.trim() || null,
+      });
       showToast("Đã thêm phòng vào booking.");
+      setAddRoomModalOpen(false);
       await load();
     } catch (e) {
       showToast(e?.response?.data?.message || "Thêm phòng thất bại.", "error");
+    } finally {
+      setAddRoomLoading(false);
     }
   };
 
@@ -482,18 +818,21 @@ export default function BookingDetailPage() {
 
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-      <style>{`        * { font-family: 'Manrope', sans-serif; }        @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+        @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
         @keyframes modalSlideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
         @keyframes spin { to{transform:rotate(360deg)} }
         .table-row { transition: background 0.1s; border-bottom: 1px solid #f1f0ea; }
         .table-row:hover { background: #fafaf8 !important; }
         .badge-p { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
-        .action-btn { display: inline-flex; alignItems: center; gap: 8px; padding: 10px 22px; borderRadius: 12px; font-size: 14px; font-weight: 700; background: white; color: #1c1917; border: 1.5px solid #e2e8e1; cursor: pointer; transition: all 0.15s; }
+        .action-btn { display: inline-flex; alignItems: center; gap: 8px; padding: 10px 22px; borderRadius: 12px; font-size: 14px; font-weight: 800; background: white; color: #1c1917; border: 1.5px solid #e2e8e1; cursor: pointer; transition: all 0.15s; }
         .action-btn:hover:not(:disabled) { border-color: #4f645b; color: #4f645b; background: #f0faf5; }
-        .action-btn.primary { background: linear-gradient(135deg,#4f645b 0%,#43574f 100%); color: #e7fef3; border: none; }
+        .action-btn.primary { background: linear-gradient(135deg,#4f645b 0%,#43574f 100%); color: #e7fef3; border: none; font-weight: 800; }
         .action-btn.primary:hover:not(:disabled) { box-shadow: 0 4px 14px rgba(79,100,91,0.25); }
-        .action-btn.danger { color: #dc2626; border-color: #fecaca; }
+        .action-btn.danger { color: #dc2626; border-color: #fecaca; font-weight: 800; }
         .action-btn.danger:hover:not(:disabled) { background: #fef2f2; }
         .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
       `}</style>
@@ -526,6 +865,34 @@ export default function BookingDetailPage() {
         onConfirm={executeBookingPayment}
         onCancel={() => setPaymentModalOpen(false)}
         loading={paymentLoading}
+      />
+      <AddRoomModal
+        open={addRoomModalOpen}
+        loading={addRoomLoading}
+        roomTypes={roomTypes}
+        booking={booking}
+        form={addRoomForm}
+        onChange={(field, value) => setAddRoomForm((prev) => ({ ...prev, [field]: value }))}
+        onConfirm={executeAddRoom}
+        onCancel={() => setAddRoomModalOpen(false)}
+      />
+      <EarlyCheckOutModal
+        open={!!earlyCheckOutTarget}
+        detail={earlyCheckOutTarget}
+        loading={earlyCheckOutLoading}
+        form={earlyCheckOutForm}
+        onChange={(field, value) => setEarlyCheckOutForm((prev) => ({ ...prev, [field]: value }))}
+        onConfirm={executeEarlyCheckOut}
+        onCancel={() => setEarlyCheckOutTarget(null)}
+      />
+      <ExtendStayModal
+        open={!!extendStayTarget}
+        detail={extendStayTarget}
+        loading={extendStayLoading}
+        form={extendStayForm}
+        onChange={(field, value) => setExtendStayForm((prev) => ({ ...prev, [field]: value }))}
+        onConfirm={executeExtendStay}
+        onCancel={() => setExtendStayTarget(null)}
       />
 
       {extendStayConflict && (
@@ -741,10 +1108,10 @@ export default function BookingDetailPage() {
                           )}
                           {(booking.status === "Confirmed" || booking.status === "Checked_in") && (
                             <>
-                              <button className="action-btn" style={{ padding: "8px 12px", fontSize: 12 }} onClick={() => handleExtendStay(detail)}>
+                              <button className="action-btn" style={{ padding: "8px 12px", fontSize: 12 }} onClick={() => openExtendStayModal(detail)}>
                                 Ở thêm
                               </button>
-                              <button className="action-btn" style={{ padding: "8px 12px", fontSize: 12 }} onClick={() => handleEarlyCheckOut(detail)}>
+                              <button className="action-btn" style={{ padding: "8px 12px", fontSize: 12 }} onClick={() => openEarlyCheckOutModal(detail)}>
                                 Out sớm
                               </button>
                             </>
@@ -780,7 +1147,7 @@ export default function BookingDetailPage() {
                 <button className="action-btn" disabled={!canRun("open_invoice")} onClick={() => runAction("open_invoice")}>
                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>receipt_long</span> Mở hóa đơn
                 </button>
-                <button className="action-btn" disabled={!(booking?.status === "Pending" || booking?.status === "Confirmed" || booking?.status === "Checked_in")} onClick={handleAddRoom}>
+                <button className="action-btn" disabled={!(booking?.status === "Pending" || booking?.status === "Confirmed" || booking?.status === "Checked_in")} onClick={openAddRoomModal}>
                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_home</span> Thêm phòng vào booking
                 </button>
                 <button className="action-btn" disabled={!canRun("refund")} onClick={() => runAction("refund")}>

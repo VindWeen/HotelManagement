@@ -113,6 +113,7 @@ builder.Services.AddScoped<JwtHelper>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
+builder.Services.AddScoped<IAuditLogGroupService, AuditLogGroupService>();
 builder.Services.AddScoped<IAuditTrailService, AuditTrailService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();

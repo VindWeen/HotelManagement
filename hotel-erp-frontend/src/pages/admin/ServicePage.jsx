@@ -12,6 +12,8 @@ import {
   updateServiceCategory,
 } from "../../api/servicesApi";
 import { formatCurrency } from "../../utils";
+import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const panelStyle = {
   background: "white",
@@ -23,10 +25,11 @@ const panelStyle = {
 const inputStyle = {
   width: "100%",
   background: "#f9f8f3",
-  border: "1px solid #e2e8e1",
+  border: "1.5px solid #e2e8e1",
   borderRadius: 12,
   padding: "10px 14px",
   fontSize: 14,
+  fontWeight: 600,
   outline: "none",
   boxSizing: "border-box",
 };
@@ -98,6 +101,7 @@ function Modal({ open, title, onClose, children }) {
 }
 
 export default function ServicePage() {
+  const { isMobile } = useResponsiveAdmin();
   const [categoryRows, setCategoryRows] = useState([]);
   const [serviceRows, setServiceRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -190,7 +194,7 @@ export default function ServicePage() {
       categoryId: service?.categoryId?.toString() || "",
       name: service?.name || "",
       description: service?.description || "",
-      price: service?.price?.toString() || "",
+      price: formatMoneyInput(service?.price || ""),
       unit: service?.unit || "",
       imageUrl: service?.imageUrl || "",
     });
@@ -226,7 +230,7 @@ export default function ServicePage() {
       categoryId: serviceForm.categoryId ? Number(serviceForm.categoryId) : null,
       name: serviceForm.name,
       description: serviceForm.description || null,
-      price: Number(serviceForm.price),
+      price: parseMoneyInput(serviceForm.price),
       unit: serviceForm.unit || null,
       imageUrl: serviceForm.imageUrl || null,
     };
@@ -268,6 +272,10 @@ export default function ServicePage() {
 
   return (
     <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Manrope', sans-serif; }
+      `}</style>
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
         <div
           style={{
@@ -279,7 +287,7 @@ export default function ServicePage() {
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "#1c1917" }}>
+            <h2 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: "#1c1917" }}>
               Quản lý Dịch vụ
             </h2>
             <p style={{ margin: "6px 0 0", fontSize: 14, color: "#6b7280" }}>
@@ -409,6 +417,43 @@ export default function ServicePage() {
               title="Dịch vụ"
               subtitle={`${serviceRows.length} dịch vụ`}
             />
+            {isMobile ? (
+              <div style={{ display: "grid", gap: 12, padding: 14 }}>
+                {loading ? (
+                  <EmptyState label="Đang tải dịch vụ..." icon="hourglass_top" />
+                ) : serviceRows.length === 0 ? (
+                  <EmptyState label="Chưa có dịch vụ phù hợp bộ lọc." icon="search_off" />
+                ) : serviceRows.map((service) => (
+                  <article key={service.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 900, color: "#1c1917", fontSize: 16 }}>{service.name}</div>
+                        <div style={{ color: "#78716c", fontSize: 12, marginTop: 4 }}>{service.description || "Chưa có mô tả"}</div>
+                      </div>
+                      <StatusChip active={service.isActive} label={service.isActive ? "Đang bán" : "Đã ẩn"} />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                        <div style={{ fontSize: 10, color: "#78716c", fontWeight: 900 }}>Nhóm</div>
+                        <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 800 }}>{service.categoryName || "Chưa gán"}</div>
+                      </div>
+                      <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                        <div style={{ fontSize: 10, color: "#78716c", fontWeight: 900 }}>Giá</div>
+                        <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 900 }}>{formatCurrency(service.price)}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+                      <span style={{ color: "#57534e", fontSize: 13 }}>{service.unit || "-"}</span>
+                      <div style={{ display: "inline-flex", gap: 8 }}>
+                        <IconButton icon="edit" title="Sửa" onClick={() => openServiceModal(service)} />
+                        <IconButton icon={service.isActive ? "visibility_off" : "visibility"} title={service.isActive ? "Ẩn" : "Hiện"} onClick={() => handleServiceAction(toggleService, service.id)} />
+                        <IconButton icon="delete" title="Xóa mềm" danger onClick={() => handleServiceAction(deleteService, service.id, `Xóa mềm dịch vụ \"${service.name}\"?`)} />
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
@@ -448,7 +493,7 @@ export default function ServicePage() {
                       <tr key={service.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
                         <td style={{ padding: "16px 18px" }}>
                           <div>
-                            <div style={{ fontWeight: 700, color: "#1c1917", fontSize: 14 }}>{service.name}</div>
+                            <div style={{ fontWeight: 800, color: "#1c1917", fontSize: 14 }}>{service.name}</div>
                             <div style={{ color: "#78716c", fontSize: 12, marginTop: 4 }}>
                               {service.description || "Chưa có mô tả"}
                             </div>
@@ -490,6 +535,7 @@ export default function ServicePage() {
                 </tbody>
               </table>
             </div>
+            )}
           </section>
         </div>
       </div>
@@ -546,10 +592,10 @@ export default function ServicePage() {
             <div>
               <label style={labelStyle}>Giá</label>
               <input
-                type="number"
-                min="0"
+                type="text"
+                inputMode="numeric"
                 value={serviceForm.price}
-                onChange={(e) => setServiceForm((prev) => ({ ...prev, price: e.target.value }))}
+                onChange={(e) => setServiceForm((prev) => ({ ...prev, price: formatMoneyInput(e.target.value) }))}
                 style={inputStyle}
               />
             </div>
@@ -630,7 +676,7 @@ function SectionHeader({ icon, title, subtitle }) {
         <span className="material-symbols-outlined">{icon}</span>
       </div>
       <div>
-        <div style={{ fontWeight: 700, color: "#1c1917" }}>{title}</div>
+        <div style={{ fontWeight: 800, color: "#1c1917" }}>{title}</div>
         <div style={{ fontSize: 12, color: "#78716c", marginTop: 2 }}>{subtitle}</div>
       </div>
     </div>
@@ -675,7 +721,7 @@ function IconButton({ icon, title, onClick, danger = false }) {
         width: 36,
         height: 36,
         borderRadius: 10,
-        border: "1px solid #ece7de",
+        border: "1px solid #f1f0ea",
         background: danger ? "#fff7f7" : "white",
         color: danger ? "#dc2626" : "#57534e",
         display: "flex",
@@ -721,7 +767,7 @@ function FormFooter({ submitting, onClose }) {
           border: "1px solid #e7e5e4",
           background: "white",
           color: "#57534e",
-          fontWeight: 600,
+          fontWeight: 800,
           cursor: "pointer",
         }}
       >
@@ -736,7 +782,7 @@ function FormFooter({ submitting, onClose }) {
           border: "none",
           background: "#4f645b",
           color: "#e7fef3",
-          fontWeight: 700,
+          fontWeight: 800,
           cursor: "pointer",
           opacity: submitting ? 0.7 : 1,
         }}

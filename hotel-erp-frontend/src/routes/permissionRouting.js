@@ -36,6 +36,7 @@ export function getDefaultAdminPath(role, permissions = []) {
   if (hasPermission(permissionSet, "MANAGE_INVOICES")) return "/admin/invoices";
   if (hasPermission(permissionSet, "MANAGE_ROOMS")) return "/admin/maintenance";
   if (hasPermission(permissionSet, "MANAGE_USERS")) return "/admin/staff";
+  if (hasPermission(permissionSet, "VIEW_AUDIT_LOGS")) return "/admin/audit-logs";
   if (hasPermission(permissionSet, "VIEW_ROLES")) return "/admin/roles";
 
   return "/403";

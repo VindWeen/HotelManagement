@@ -8,6 +8,7 @@ import {
   updateService,
 } from "../../api/servicesApi";
 import { formatCurrency } from "../../utils";
+import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
 import {
   EmptyState,
   FormFooter,
@@ -25,8 +26,10 @@ import {
   primaryButton,
   statusFilterOptions,
 } from "./ServiceAdminShared";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 export default function ServiceItemsPage() {
+  const { isMobile } = useResponsiveAdmin();
   const [serviceRows, setServiceRows] = useState([]);
   const [categoryRows, setCategoryRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -199,7 +202,7 @@ export default function ServiceItemsPage() {
       categoryId: service?.categoryId?.toString() || "",
       name: service?.name || "",
       description: service?.description || "",
-      price: service?.price?.toString() || "",
+      price: formatMoneyInput(service?.price || ""),
       unit: service?.unit || "",
       imageUrl: service?.imageUrl || "",
     });
@@ -216,7 +219,7 @@ export default function ServiceItemsPage() {
       categoryId: serviceForm.categoryId ? Number(serviceForm.categoryId) : null,
       name: serviceForm.name,
       description: serviceForm.description || null,
-      price: Number(serviceForm.price),
+      price: parseMoneyInput(serviceForm.price),
       unit: serviceForm.unit || null,
       imageUrl: serviceForm.imageUrl || null,
     };
@@ -373,6 +376,42 @@ export default function ServiceItemsPage() {
             </div>
           </div>
 
+          {isMobile ? (
+            <div style={{ display: "grid", gap: 12, padding: 14 }}>
+              {loading ? (
+                <EmptyState label="Đang tải dịch vụ..." icon="hourglass_top" />
+              ) : serviceRows.length === 0 ? (
+                <EmptyState label="Chưa có dịch vụ phù hợp bộ lọc." icon="search_off" />
+              ) : serviceRows.map((service) => (
+                <article key={service.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 900, color: "#1c1917", fontSize: 16 }}>{service.name}</div>
+                      <div style={{ color: "#78716c", fontSize: 12, marginTop: 4 }}>{service.description || "Chưa có mô tả"}</div>
+                    </div>
+                    <StatusChip active={service.isActive} label={service.isActive ? "Đang bán" : "Đã ẩn"} />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                      <div style={{ fontSize: 10, color: "#78716c", fontWeight: 900 }}>Nhóm</div>
+                      <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 800 }}>{service.categoryName || "Chưa gán"}</div>
+                    </div>
+                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                      <div style={{ fontSize: 10, color: "#78716c", fontWeight: 900 }}>Giá</div>
+                      <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 900 }}>{formatCurrency(service.price)}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                    <VisibilitySwitch checked={service.isActive} disabled={togglingIds.includes(service.id)} onChange={() => handleToggle(service.id)} />
+                    <div style={{ display: "inline-flex", gap: 8 }}>
+                      <IconButton icon="edit" title="Sua" onClick={() => openServiceModal(service)} />
+                      <IconButton icon="delete" title="Xoa mem" danger onClick={() => handleDelete(service.id, service.name)} />
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -503,6 +542,7 @@ export default function ServiceItemsPage() {
               </tbody>
             </table>
           </div>
+          )}
           <ServicePagination
             page={page}
             pageSize={pageSize}
@@ -556,11 +596,11 @@ export default function ServiceItemsPage() {
             <div>
               <label style={labelStyle}>Giá</label>
               <input
-                type="number"
-                min="0"
+                type="text"
+                inputMode="numeric"
                 value={serviceForm.price}
                 onChange={(e) =>
-                  setServiceForm((prev) => ({ ...prev, price: e.target.value }))
+                  setServiceForm((prev) => ({ ...prev, price: formatMoneyInput(e.target.value) }))
                 }
                 style={inputStyle}
               />
