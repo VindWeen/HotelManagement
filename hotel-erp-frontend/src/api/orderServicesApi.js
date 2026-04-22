@@ -37,3 +37,12 @@ export const deleteOrderService = (id) =>
 
 export const toggleOrderService = (id) =>
   axiosClient.patch(`/OrderServices/${id}/toggle-active`);
+
+// ─── Guest endpoints ───────────────────────────────────────────────────
+// Guest: Tạo đơn dịch vụ khi đang lưu trú
+export const createGuestOrderService = (data) =>
+  axiosClient.post("/OrderServices/guest", data);
+
+// Guest: Xem tất cả đơn dịch vụ của mình
+export const getMyGuestOrders = () =>
+  axiosClient.get("/OrderServices/guest/my-orders");

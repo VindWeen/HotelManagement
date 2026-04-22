@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getMyBookings } from "../../api/bookingsApi";
 import {
   EmptyState,
@@ -313,6 +314,7 @@ const styles = `
 
 /* ──────────── Component ──────────── */
 export default function MyBookingPage() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [bookings, setBookings] = useState([]);
@@ -569,9 +571,24 @@ export default function MyBookingPage() {
               </span>
             </div>
 
-            <button className="g-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={() => setSelectedBooking(null)}>
-              Đóng
-            </button>
+            {selectedBooking.status === "Pending" ? (
+              <div style={{ display: "flex", gap: 10, width: "100%" }}>
+                <button className="g-btn-outline" style={{ flex: 1, justifyContent: "center" }} onClick={() => setSelectedBooking(null)}>
+                  Đóng
+                </button>
+                <button 
+                  className="g-btn-primary" 
+                  style={{ flex: 1, justifyContent: "center" }} 
+                  onClick={() => navigate(`/guest/payment/deposit/${selectedBooking.id}`)}
+                >
+                  Thanh toán cọc ngay
+                </button>
+              </div>
+            ) : (
+              <button className="g-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={() => setSelectedBooking(null)}>
+                Đóng
+              </button>
+            )}
           </div>
         </GuestModal>
       )}

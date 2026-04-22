@@ -23,6 +23,37 @@ public class ServicesController : ControllerBase
         _auditTrail = auditTrail;
     }
 
+    // ─── GUEST ENDPOINT: Danh sách dịch vụ công khai ──────────────────
+    [HttpGet("guest/catalog")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetGuestCatalog()
+    {
+        var categories = await _db.ServiceCategories
+            .AsNoTracking()
+            .Where(c => c.IsActive)
+            .OrderBy(c => c.Name)
+            .Select(c => new
+            {
+                c.Id,
+                c.Name,
+                services = c.Services
+                    .Where(s => s.IsActive)
+                    .OrderBy(s => s.Name)
+                    .Select(s => new
+                    {
+                        s.Id,
+                        s.Name,
+                        s.Description,
+                        s.Price,
+                        s.Unit,
+                        s.ImageUrl
+                    })
+            })
+            .ToListAsync();
+
+        return Ok(new { success = true, data = categories });
+    }
+
     [HttpGet("categories")]
     [RequirePermission(PermissionCodes.ManageServices)]
     public async Task<IActionResult> GetCategories(
