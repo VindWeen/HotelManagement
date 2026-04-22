@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { getRooms, updateCleaningStatus } from "../../api/roomsApi";
 import { getInventoryByRoom } from "../../api/roomInventoriesApi";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import axiosClient from "../../api/axios";
 
 const INPUT_STYLE = {
@@ -75,9 +76,11 @@ function Toast({ id, msg, type = "success", dur = 4000, onDismiss }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function HousekeepingPage() {
+  const { isMobile } = useResponsiveAdmin();
   const [rooms, setRooms] = useState([]);
   const [allFloors, setAllFloors] = useState([]);
   const [floorFilter, setFloorFilter] = useState("");
+  const [roomSearch, setRoomSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [bulkCleaning, setBulkCleaning] = useState(false);
   const [toasts, setToasts] = useState([]);
@@ -125,10 +128,29 @@ export default function HousekeepingPage() {
   useEffect(() => { loadDirtyRooms(); }, [loadDirtyRooms]);
   useEffect(() => { loadAvailableFloors(); }, [loadAvailableFloors]);
 
-  const selectableRooms = rooms.filter((room) => room.cleaningStatus === "Dirty" && room.businessStatus !== "Disabled");
+  const roomSearchTokens = useMemo(
+    () => roomSearch
+      .split(/[\s,]+/)
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean),
+    [roomSearch]
+  );
+
+  const visibleRooms = useMemo(() => {
+    if (roomSearchTokens.length === 0) return rooms;
+    const searchSet = new Set(roomSearchTokens);
+    return rooms.filter((room) => searchSet.has(String(room.roomNumber || "").trim().toLowerCase()));
+  }, [rooms, roomSearchTokens]);
+
+  const selectableRooms = visibleRooms.filter((room) => room.cleaningStatus === "Dirty" && room.businessStatus !== "Disabled");
   const allSelectableIds = selectableRooms.map((room) => room.id);
-  const selectedCount = selectedRoomIds.length;
-  const allSelected = allSelectableIds.length > 0 && selectedRoomIds.length === allSelectableIds.length;
+  const selectedVisibleIds = selectedRoomIds.filter((id) => allSelectableIds.includes(id));
+  const selectedCount = selectedVisibleIds.length;
+  const allSelected = allSelectableIds.length > 0 && allSelectableIds.every((id) => selectedRoomIds.includes(id));
+
+  useEffect(() => {
+    setSelectedRoomIds((prev) => prev.filter((id) => allSelectableIds.includes(id)));
+  }, [rooms, roomSearch]);
 
   const toggleRoomSelection = (roomId) => {
     setSelectedRoomIds((prev) =>
@@ -138,34 +160,34 @@ export default function HousekeepingPage() {
 
   const toggleSelectAll = () => {
     setSelectedRoomIds((prev) =>
-      prev.length === allSelectableIds.length ? [] : allSelectableIds
+      allSelectableIds.every((id) => prev.includes(id)) ? [] : allSelectableIds
     );
   };
 
   const handleBulkClean = async () => {
-    if (selectedRoomIds.length === 0) {
+    if (selectedVisibleIds.length === 0) {
       showToast("Hãy chọn ít nhất một phòng bẩn để dọn hàng loạt.", "warning");
       return;
     }
 
     setBulkCleaning(true);
     try {
-      await Promise.all(selectedRoomIds.map((roomId) => updateCleaningStatus(roomId, "Clean")));
+      await Promise.all(selectedVisibleIds.map((roomId) => updateCleaningStatus(roomId, "Clean")));
 
-      const cleanedRooms = rooms
-        .filter((room) => selectedRoomIds.includes(room.id))
+      const cleanedRooms = visibleRooms
+        .filter((room) => selectedVisibleIds.includes(room.id))
         .map((room) => room.roomNumber)
         .join(", ");
 
       await axiosClient.post("/ActivityLogs/custom-notify", {
         actionCode: "HOUSEKEEPING_BULK_DONE",
-        message: `Nhân viên Buồng phòng đã dọn nhanh hàng loạt ${selectedRoomIds.length} phòng: ${cleanedRooms}.`,
+        message: `Nhân viên Buồng phòng đã dọn nhanh hàng loạt ${selectedVisibleIds.length} phòng: ${cleanedRooms}.`,
         targetRoleIds: [1, 2, 3],
         entityType: "Room",
-        entityId: selectedRoomIds[0]
+        entityId: selectedVisibleIds[0]
       }).catch(() => console.log("Bỏ qua lỗi custom-notify nếu chưa có BE endpoint"));
 
-      showToast(`Đã dọn nhanh ${selectedRoomIds.length} phòng về trạng thái Clean.`, "success");
+      showToast(`Đã dọn nhanh ${selectedVisibleIds.length} phòng về trạng thái Clean.`, "success");
       setSelectedRoomIds([]);
       await loadDirtyRooms();
       await loadAvailableFloors();
@@ -372,6 +394,22 @@ export default function HousekeepingPage() {
               <option key={floor} value={floor}>Tầng {floor}</option>
             ))}
           </select>
+          <input
+            value={roomSearch}
+            onChange={(e) => setRoomSearch(e.target.value)}
+            placeholder="Tìm phòng: 101, 102, 103..."
+            style={{ ...INPUT_STYLE, width: "min(100%, 320px)" }}
+          />
+          {roomSearch.trim() && (
+            <button
+              type="button"
+              onClick={() => setRoomSearch("")}
+              style={SECONDARY_BUTTON}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
+              Xóa tìm phòng
+            </button>
+          )}
           <button
             onClick={loadDirtyRooms}
             style={SECONDARY_BUTTON}
@@ -409,7 +447,7 @@ export default function HousekeepingPage() {
 
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Đang tải dữ liệu phòng...</div>
-        ) : rooms.length === 0 ? (
+        ) : visibleRooms.length === 0 ? (
           <div style={{ padding: "80px 0", textAlign: "center", background: "white", borderRadius: 18, border: "1px dashed #cbd5e1" }}>
             <span className="material-symbols-outlined" style={{ fontSize: 64, color: "#9ca3af", marginBottom: 16 }}>celebration</span>
             <p style={{ fontSize: 16, fontWeight: 700, color: "#4b5563", margin: "0 0 4px" }}>Không còn phòng nào cần dọn</p>
@@ -417,7 +455,7 @@ export default function HousekeepingPage() {
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
-            {rooms.map((room) => (
+            {visibleRooms.map((room) => (
               <div
                 key={room.id}
                 className="hk-card"
@@ -482,7 +520,7 @@ export default function HousekeepingPage() {
       {/* POPUP DỌN PHÒNG (wizard như cũ) */}
       {selectedRoom && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.55)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-          <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: wizardStep === 1 ? 520 : 900, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", animation: "modalScaleIn .2s ease-out", display: "flex", flexDirection: "column", overflow: "hidden", transition: "max-width .3s cubic-bezier(0.4, 0, 0.2, 1)" }}>
+          <div style={{ background: "white", borderRadius: isMobile ? "24px 24px 0 0" : 24, width: "100%", maxWidth: wizardStep === 1 ? 520 : 900, maxHeight: isMobile ? "92vh" : "none", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", animation: "modalScaleIn .2s ease-out", display: "flex", flexDirection: "column", overflow: "hidden", transition: "max-width .3s cubic-bezier(0.4, 0, 0.2, 1)" }}>
 
             <div style={{ padding: "20px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: wizardStep === 1 ? "#fafaf9" : "#fff1f2", transition: "background .3s" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -503,7 +541,7 @@ export default function HousekeepingPage() {
               </button>
             </div>
 
-            <div style={{ padding: 32, maxHeight: "75vh", overflowY: "auto" }}>
+            <div style={{ padding: isMobile ? 16 : 32, maxHeight: isMobile ? "calc(92vh - 86px)" : "75vh", overflowY: "auto" }}>
               {wizardStep === 1 ? (
                 <div style={{ textAlign: "center", animation: "fadeRow .3s ease" }}>
                   <div style={{ background: "#f9f8f3", width: 100, height: 100, borderRadius: "50%", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -541,6 +579,41 @@ export default function HousekeepingPage() {
                       <p style={{ color: "#9ca3af", margin: "4px 0 0", fontSize: 13 }}>Bạn có thể trực tiếp ấn Hoàn tất.</p>
                     </div>
                   ) : (
+                    isMobile ? (
+                    <div style={{ display: "grid", gap: 12 }}>
+                      {inventories.map((inv) => {
+                        const isMissing = missingItems[inv.id]?.isMissing;
+                        return (
+                          <article key={inv.id} style={{ border: `1.5px solid ${isMissing ? "#fca5a5" : "#e2e8f0"}`, borderRadius: 16, padding: 14, background: isMissing ? "#fff1f2" : "white", display: "grid", gap: 12 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                              <div>
+                                <div style={{ fontSize: 15, fontWeight: 900, color: isMissing ? "#b91c1c" : "#1e293b" }}>{inv.equipmentName}</div>
+                                <span style={{ display: "inline-flex", marginTop: 6, padding: "4px 8px", borderRadius: 999, background: inv.itemType === "Minibar" ? "#e0f2fe" : "#f1f5f9", color: inv.itemType === "Minibar" ? "#0284c7" : "#475569", fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>
+                                  {inv.itemType || "Asset"}
+                                </span>
+                              </div>
+                              <label className="check-container" style={{ margin: 0, paddingRight: 30 }}>
+                                Hao hụt
+                                <input type="checkbox" checked={isMissing} onChange={() => toggleMissingItem(inv.id)} />
+                                <span className="checkmark" style={{ top: -2 }}></span>
+                              </label>
+                            </div>
+                            {isMissing && (
+                              <div style={{ display: "grid", gap: 8, animation: "modalScaleIn .2s ease" }}>
+                                <input type="number" min="1" max={inv.quantity || 99} value={missingItems[inv.id]?.quantity || 1} onChange={(e) => updateMissingQuantity(inv.id, e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid #fca5a5", outline: "none", fontSize: 13, background: "white", fontWeight: 800, color: "#1c1917" }} />
+                                <input type="text" value={missingItems[inv.id]?.note || ""} onChange={(e) => updateMissingNote(inv.id, e.target.value)} placeholder="Nhập ghi chú chi tiết..." style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid #fca5a5", outline: "none", fontSize: 13, background: "white", boxSizing: "border-box" }} />
+                                <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 40, borderRadius: 10, background: "#fef2f2", border: "1.5px solid #fca5a5", color: "#ef4444", cursor: "pointer", position: "relative", flexShrink: 0, fontWeight: 800, fontSize: 13 }} title="Chụp/Tải ảnh bằng chứng">
+                                  <span className="material-symbols-outlined" style={{ fontSize: 20 }}>photo_camera</span>
+                                  Ảnh bằng chứng {missingItems[inv.id]?.files?.length > 0 ? `(${missingItems[inv.id].files.length})` : ""}
+                                  <input type="file" multiple accept="image/*" style={{ display: "none" }} onChange={(e) => updateMissingFiles(inv.id, e.target.files)} />
+                                </label>
+                              </div>
+                            )}
+                          </article>
+                        );
+                      })}
+                    </div>
+                    ) : (
                     <div style={{ border: "1px solid #e2e8f0", borderRadius: 16, overflow: "hidden" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse" }}>
                         <thead style={{ background: "#f8fafc" }}>
@@ -610,7 +683,7 @@ export default function HousekeepingPage() {
                         </tbody>
                       </table>
                     </div>
-                  )}
+                  ))}
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 32 }}>
                     <button onClick={() => setWizardStep(1)} style={{ padding: "12px 24px", borderRadius: 12, background: "white", border: "1.5px solid #cbd5e1", color: "#475569", fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Manrope, sans-serif" }}>

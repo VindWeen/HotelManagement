@@ -12,6 +12,8 @@ import {
   updateServiceCategory,
 } from "../../api/servicesApi";
 import { formatCurrency } from "../../utils";
+import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const panelStyle = {
   background: "white",
@@ -99,6 +101,7 @@ function Modal({ open, title, onClose, children }) {
 }
 
 export default function ServicePage() {
+  const { isMobile } = useResponsiveAdmin();
   const [categoryRows, setCategoryRows] = useState([]);
   const [serviceRows, setServiceRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -191,7 +194,7 @@ export default function ServicePage() {
       categoryId: service?.categoryId?.toString() || "",
       name: service?.name || "",
       description: service?.description || "",
-      price: service?.price?.toString() || "",
+      price: formatMoneyInput(service?.price || ""),
       unit: service?.unit || "",
       imageUrl: service?.imageUrl || "",
     });
@@ -227,7 +230,7 @@ export default function ServicePage() {
       categoryId: serviceForm.categoryId ? Number(serviceForm.categoryId) : null,
       name: serviceForm.name,
       description: serviceForm.description || null,
-      price: Number(serviceForm.price),
+      price: parseMoneyInput(serviceForm.price),
       unit: serviceForm.unit || null,
       imageUrl: serviceForm.imageUrl || null,
     };
@@ -414,6 +417,43 @@ export default function ServicePage() {
               title="Dịch vụ"
               subtitle={`${serviceRows.length} dịch vụ`}
             />
+            {isMobile ? (
+              <div style={{ display: "grid", gap: 12, padding: 14 }}>
+                {loading ? (
+                  <EmptyState label="Đang tải dịch vụ..." icon="hourglass_top" />
+                ) : serviceRows.length === 0 ? (
+                  <EmptyState label="Chưa có dịch vụ phù hợp bộ lọc." icon="search_off" />
+                ) : serviceRows.map((service) => (
+                  <article key={service.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 900, color: "#1c1917", fontSize: 16 }}>{service.name}</div>
+                        <div style={{ color: "#78716c", fontSize: 12, marginTop: 4 }}>{service.description || "Chưa có mô tả"}</div>
+                      </div>
+                      <StatusChip active={service.isActive} label={service.isActive ? "Đang bán" : "Đã ẩn"} />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                        <div style={{ fontSize: 10, color: "#78716c", fontWeight: 900 }}>Nhóm</div>
+                        <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 800 }}>{service.categoryName || "Chưa gán"}</div>
+                      </div>
+                      <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                        <div style={{ fontSize: 10, color: "#78716c", fontWeight: 900 }}>Giá</div>
+                        <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 900 }}>{formatCurrency(service.price)}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+                      <span style={{ color: "#57534e", fontSize: 13 }}>{service.unit || "-"}</span>
+                      <div style={{ display: "inline-flex", gap: 8 }}>
+                        <IconButton icon="edit" title="Sửa" onClick={() => openServiceModal(service)} />
+                        <IconButton icon={service.isActive ? "visibility_off" : "visibility"} title={service.isActive ? "Ẩn" : "Hiện"} onClick={() => handleServiceAction(toggleService, service.id)} />
+                        <IconButton icon="delete" title="Xóa mềm" danger onClick={() => handleServiceAction(deleteService, service.id, `Xóa mềm dịch vụ \"${service.name}\"?`)} />
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
@@ -495,6 +535,7 @@ export default function ServicePage() {
                 </tbody>
               </table>
             </div>
+            )}
           </section>
         </div>
       </div>
@@ -551,10 +592,10 @@ export default function ServicePage() {
             <div>
               <label style={labelStyle}>Giá</label>
               <input
-                type="number"
-                min="0"
+                type="text"
+                inputMode="numeric"
                 value={serviceForm.price}
-                onChange={(e) => setServiceForm((prev) => ({ ...prev, price: e.target.value }))}
+                onChange={(e) => setServiceForm((prev) => ({ ...prev, price: formatMoneyInput(e.target.value) }))}
                 style={inputStyle}
               />
             </div>

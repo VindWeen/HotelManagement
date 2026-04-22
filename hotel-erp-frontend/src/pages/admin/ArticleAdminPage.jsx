@@ -17,6 +17,7 @@ import {
   updateArticleCategory,
 } from "../../api/articleCategoriesApi";
 import { getAttractions } from "../../api/attractionsApi";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const cardStyle = {
   background: "white",
@@ -236,6 +237,7 @@ function QuillEditor({ value, onChange, onUploadImage, onOpenPreviewPage, editor
 }
 
 export default function ArticleAdminPage() {
+  const { isMobile } = useResponsiveAdmin();
   const [articles, setArticles] = useState([]);
   const [categories, setCategories] = useState([]);
   const [attractions, setAttractions] = useState([]);
@@ -338,6 +340,7 @@ export default function ArticleAdminPage() {
     const start = (page - 1) * ARTICLES_PER_PAGE;
     return filteredArticles.slice(start, start + ARTICLES_PER_PAGE);
   }, [filteredArticles, page]);
+  const effectiveViewMode = isMobile ? "grid" : viewMode;
 
   const paginationPages = useMemo(() => {
     const visible = Math.min(totalPages, 5);
@@ -782,8 +785,8 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
         * { font-family: 'Manrope', sans-serif; }
       `}</style>
-      <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 24 }}>
+      <div style={{ maxWidth: 1400, margin: "0 auto", paddingInline: isMobile ? 4 : 0 }}>
+        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", gap: 16, marginBottom: 24 }}>
           <div>
             <h2 style={{ margin: "0 0 4px", fontSize: 28, color: "#1c1917", fontWeight: 800, letterSpacing: "-0.02em" }}>
               Quản lý bài viết
@@ -807,7 +810,10 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                 cursor: "pointer",
                 display: "inline-flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: 8,
+                width: isMobile ? "100%" : "auto",
+                whiteSpace: "nowrap",
                 boxShadow: "0 4px 12px rgba(79,100,91,.2)",
                 transition: "all 0.15s",
               }}
@@ -830,7 +836,10 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                 cursor: "pointer",
                 display: "inline-flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: 8,
+                width: isMobile ? "100%" : "auto",
+                whiteSpace: "nowrap",
                 boxShadow: "0 4px 12px rgba(79,100,91,.2)",
                 transition: "all 0.15s",
               }}
@@ -881,6 +890,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
         {activeTab === "articles" ? (
           <section style={{ ...cardStyle, padding: 18, marginBottom: 24 }}>
             <div style={{ display: "flex", alignItems: "end", gap: 12, flexWrap: "wrap", justifyContent: "flex-start" }}>
+              {!isMobile && (
               <div>
                 <label style={labelStyle}>Tìm kiếm</label>
                 <input
@@ -890,6 +900,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                   style={{ ...inputStyle, minWidth: 220, padding: "7px 14px", fontSize: 13 }}
                 />
               </div>
+              )}
               <div>
                 <label style={labelStyle}>Lọc hiển thị</label>
                 <select value={visibilityFilter} onChange={(e) => setVisibilityFilter(e.target.value)} style={{ ...inputStyle, minWidth: 180, padding: "7px 14px", fontSize: 13 }}>
@@ -965,7 +976,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                 </p>
               </div>
             </div>
-            {viewMode === "table" ? (
+            {effectiveViewMode === "table" ? (
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
@@ -1144,6 +1155,38 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
               {filteredCategories.length === 0 ? (
                 <div style={{ padding: 28, textAlign: "center", color: "#9ca3af", border: "1px dashed #e7e5e4", borderRadius: 16 }}>
                   Chưa có danh mục nào.
+                </div>
+              ) : isMobile ? (
+                <div style={{ display: "grid", gap: 12 }}>
+                  {filteredCategories.map((category) => (
+                    <article key={category.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12 }}>
+                      {editingCategoryId === category.id ? (
+                        <input value={editingCategoryName} onChange={(e) => setEditingCategoryName(e.target.value)} style={{ ...inputStyle, padding: "9px 12px", fontSize: 13 }} />
+                      ) : (
+                        <div>
+                          <div style={{ fontWeight: 900, color: "#1c1917", fontSize: 16 }}>{category.name}</div>
+                          <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>{category.slug || "-"}</div>
+                        </div>
+                      )}
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12, color: "#57534e", fontWeight: 800 }}>{category.articleCount || 0} bài viết</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ padding: "6px 10px", borderRadius: 999, background: category.isActive !== false ? "#ecfdf5" : "#f5f5f4", color: category.isActive !== false ? "#047857" : "#57534e", fontSize: 11, fontWeight: 800 }}>
+                            {category.isActive !== false ? "Đang bật" : "Đang ẩn"}
+                          </span>
+                          <VisibilitySwitch checked={category.isActive !== false} onChange={() => handleToggleCategory(category.id)} />
+                        </div>
+                      </div>
+                      {editingCategoryId === category.id ? (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          <button type="button" onClick={cancelEditCategory} style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", fontWeight: 800 }}>Hủy</button>
+                          <button type="button" onClick={() => saveCategoryEdit(category.id)} style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid #dbe7df", background: "#f8fcf9", color: "#2f5d4d", fontWeight: 800 }}>Lưu</button>
+                        </div>
+                      ) : (
+                        <button type="button" onClick={() => startEditCategory(category)} style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", fontWeight: 800 }}>Sửa</button>
+                      )}
+                    </article>
+                  ))}
                 </div>
               ) : (
                 <div style={{ overflowX: "auto", border: "1px solid #f1f0ea", borderRadius: 16 }}>

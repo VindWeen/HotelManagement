@@ -32,9 +32,9 @@ public class EmailService : IEmailService
             ? string.Empty
             : $"""
                 <div style="margin: 20px 0; padding: 16px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px;">
-                    <p style="margin: 0 0 10px; color: #075985; font-weight: 600;">Ban co the xem lai booking va thong tin khach san tai website:</p>
-                    <a href="{safeWebUrl}" style="display: inline-block; padding: 10px 16px; border-radius: 999px; background: #4f645b; color: #ffffff; text-decoration: none; font-weight: 700;">Mo website khach san</a>
-                    <p style="margin: 10px 0 0; color: #6b7280; font-size: 12px;">Hoac truy cap truc tiep: {safeWebUrl}</p>
+                    <p style="margin: 0 0 10px; color: #075985; font-weight: 600;">Bạn có thể xem lại booking và thông tin khách sạn tại website:</p>
+                    <a href="{safeWebUrl}" style="display: inline-block; padding: 10px 16px; border-radius: 999px; background: #4f645b; color: #ffffff; text-decoration: none; font-weight: 700;">Mở website khách sạn</a>
+                    <p style="margin: 10px 0 0; color: #6b7280; font-size: 12px;">Hoặc truy cập trực tiếp: {safeWebUrl}</p>
                 </div>
                 """;
         var subject = $"[Hotel] Xác nhận đặt phòng #{bookingCode}";

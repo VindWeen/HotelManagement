@@ -1,6 +1,7 @@
 // src/pages/admin/LossAndDamagePage.jsx
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import axiosClient from "../../api/axios";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 const fmtCurrency = (n) =>
   n == null ? "0đ" : `${new Intl.NumberFormat("vi-VN").format(n)}đ`;
 
@@ -1744,16 +1745,68 @@ export function LossAndDamageTable({
   onBatchReplenish,
   onPageChange,
 }) {
+  const { isMobile } = useResponsiveAdmin();
   return (
     <div
       style={{
         background: "white",
         borderRadius: 18,
         border: "1px solid #f1f0ea",
-        overflowX: "auto",
+        overflowX: isMobile ? "hidden" : "auto",
         boxShadow: "0 1px 4px rgba(0,0,0,.06)",
       }}
     >
+      {isMobile ? (
+        <div style={{ display: "grid", gap: 12, padding: 14 }}>
+          {loading ? (
+            <div style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Dang dong bo du lieu...</div>
+          ) : paged.length === 0 ? (
+            <div style={{ padding: 32, textAlign: "center", color: "#94a3b8" }}>Phong ban chua ghi nhan su co nao</div>
+          ) : paged.map((rec) => {
+            const imgs = rec.images || [];
+            const dt = fmtDateTime(rec.createdAt);
+            const batchCandidates = getBulkReplenishCandidates(records, rec);
+            const canBatchReplenish = batchCandidates.length > 1;
+            return (
+              <article key={rec.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 900, color: "#64748b" }}>#{rec.id}</div>
+                    <div style={{ marginTop: 4, fontSize: 16, fontWeight: 900, color: "#0f172a" }}>{rec.itemName}</div>
+                    <div style={{ marginTop: 6, display: "inline-flex", padding: "3px 10px", borderRadius: 8, background: "#f0faf5", color: "#1a3826", fontWeight: 900, border: "1.5px solid #a7f3d0" }}>Phong {rec.roomNumber}</div>
+                  </div>
+                  <div className="badge-p" style={{ background: imgs.length > 0 ? "#ecfdf5" : "#f1f5f9", color: imgs.length > 0 ? "#065f46" : "#64748b" }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{imgs.length > 0 ? "image" : "hide_image"}</span>
+                    {imgs.length > 0 ? `${imgs.length} ảnh` : "Không ảnh"}
+                  </div>
+                </div>
+                {rec.status === "Confirmed" ? (
+                  <div style={{ display: "inline-flex", width: "fit-content", padding: "4px 10px", borderRadius: 999, background: rec.remainingToReplenish > 0 ? "#fff7ed" : "#ecfdf5", color: rec.remainingToReplenish > 0 ? "#c2410c" : "#15803d", fontSize: 12, fontWeight: 900 }}>
+                    {rec.remainingToReplenish > 0 ? `Còn thiếu ${rec.remainingToReplenish}` : "Đã bổ sung đủ"}
+                  </div>
+                ) : null}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                    <div style={{ fontSize: 10, color: "#64748b", fontWeight: 900 }}>Số lượng</div>
+                    <div style={{ fontSize: 15, color: "#1c1917", fontWeight: 900 }}>{rec.quantity}</div>
+                  </div>
+                  <div style={{ background: "#fef2f2", borderRadius: 12, padding: 10 }}>
+                    <div style={{ fontSize: 10, color: "#ef4444", fontWeight: 900 }}>Đền bù</div>
+                    <div style={{ fontSize: 15, color: "#ef4444", fontWeight: 900 }}>{fmtCurrency(rec.penaltyAmount)}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>{dt.date} {dt.time}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8 }}>
+                  <button className="btn-icon-p" onClick={() => onView(rec)} title="Xem chi tiet" style={{ width: "100%" }}><span className="material-symbols-outlined">visibility</span></button>
+                  <button className="btn-icon-p" onClick={() => onEdit(rec)} title="Chinh sua" style={{ width: "100%" }}><span className="material-symbols-outlined">edit_square</span></button>
+                  <button className="btn-icon-p" onClick={() => onReplenish(rec)} title="Bo sung lai vao phong" disabled={!canReplenishRecord(rec)} style={{ width: "100%", ...(!canReplenishRecord(rec) ? { opacity: 0.4, cursor: "not-allowed" } : { color: "#166534" }) }}><span className="material-symbols-outlined">inventory_2</span></button>
+                  <button className="btn-icon-p" onClick={() => onBatchReplenish(rec)} title="Bo sung hang loat" disabled={!canBatchReplenish} style={{ width: "100%", ...(!canBatchReplenish ? { opacity: 0.4, cursor: "not-allowed" } : { color: "#1d4ed8" }) }}><span className="material-symbols-outlined">playlist_add_check</span></button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
         <thead>
           <tr style={{ background: "rgba(249,248,243,.6)" }}>
@@ -1916,6 +1969,7 @@ export function LossAndDamageTable({
           )}
         </tbody>
       </table>
+      )}
 
       <footer
         style={{
@@ -2082,6 +2136,28 @@ function LossAndDamageTableUnified({
   onBatchReplenish,
   onPageChange,
 }) {
+  const { isMobile } = useResponsiveAdmin();
+  if (isMobile) {
+    return (
+      <LossAndDamageTable
+        loading={loading}
+        paged={paged}
+        records={records}
+        page={page}
+        pageSize={pageSize}
+        recordsCount={recordsCount}
+        totalPages={totalPages}
+        fmtDateTime={fmtDateTime}
+        fmtCurrency={fmtCurrency}
+        onView={onView}
+        onEdit={onEdit}
+        onReplenish={onReplenish}
+        onBatchReplenish={onBatchReplenish}
+        onPageChange={onPageChange}
+      />
+    );
+  }
+
   const renderPagination = () => {
     if (totalPages <= 1) return null;
     const DELTA = 2;

@@ -5,6 +5,7 @@ import {
   getLoyaltyMemberTransactions,
   getLoyaltyMembers,
 } from "../../api/loyaltyMembersApi";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const card = {
   background: "#fff",
@@ -360,6 +361,7 @@ function Stat({ title, value, helper, theme }) {
 }
 
 export default function MembershipPage() {
+  const { isMobile } = useResponsiveAdmin();
   const [tiers, setTiers] = useState([]);
   const [rows, setRows] = useState([]);
   const [summary, setSummary] = useState({ totalMembers: 0, totalPoints: 0, totalUsablePoints: 0, activeMembers: 0, lockedMembers: 0, tierBreakdown: [] });
@@ -470,7 +472,7 @@ export default function MembershipPage() {
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
         * { font-family: 'Manrope', sans-serif; }
       `}</style>
-      <div style={{ maxWidth: 1360, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1360, margin: "0 auto", paddingInline: isMobile ? 4 : 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 18, flexWrap: "wrap", marginBottom: 24 }}>
           <div>
             <h2 style={{ margin: 0, fontSize: 28, color: "#1c1917", fontWeight: 800 }}>Khách hàng thành viên</h2>
@@ -553,6 +555,48 @@ export default function MembershipPage() {
               <strong style={{ color: "#1c1917", fontSize: 16 }}>Danh sách loyalty member</strong>
               <p style={{ margin: "6px 0 0", color: "#78716c", fontSize: 13 }}>Hiển thị {fmt(rows.length)} / {fmt(pagination.totalItems)} khách hàng thành viên.</p>
             </div>
+            {isMobile ? (
+              <div style={{ display: "grid", gap: 12, padding: 14 }}>
+                {loading ? <div style={{ padding: 28, textAlign: "center", color: "#9ca3af" }}>Dang tai du lieu loyalty...</div> : null}
+                {!loading && rows.length === 0 ? <div style={{ padding: 28, textAlign: "center", color: "#9ca3af" }}>Khong co khach hang nao khop voi bo loc hien tai.</div> : null}
+                {!loading && rows.map((row) => {
+                  const status = statusMeta(row.status);
+                  return (
+                    <article key={row.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+                      <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 999, background: "linear-gradient(135deg, #d6f5eb, #eefaf4)", color: "#14532d", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, flexShrink: 0 }}>
+                          {(row.fullName || "?").charAt(0).toUpperCase()}
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ color: "#1c1917", fontWeight: 900, fontSize: 16 }}>{row.fullName}</div>
+                          <div style={{ color: "#6b7280", fontSize: 13, overflowWrap: "anywhere" }}>{row.email || "-"}</div>
+                          <div style={{ color: "#a8a29e", fontSize: 12 }}>{row.phone || "Chua co so dien thoai"}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                        <TierBadge name={row.membershipTier} colorHex={row.membershipColor} />
+                        <span style={{ display: "inline-flex", padding: "6px 10px", borderRadius: 999, fontSize: 10, fontWeight: 900, background: status.bg, color: status.color, textTransform: "uppercase" }}>{status.label}</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div style={{ background: "#f8f6f1", borderRadius: 12, padding: 10 }}>
+                          <div style={{ color: "#a8a29e", fontSize: 10, fontWeight: 900, textTransform: "uppercase" }}>Tích lũy</div>
+                          <div style={{ marginTop: 4, color: "#1f2937", fontWeight: 900 }}>{fmt(row.loyaltyPoints)}</div>
+                        </div>
+                        <div style={{ background: "#f8f6f1", borderRadius: 12, padding: 10 }}>
+                          <div style={{ color: "#a8a29e", fontSize: 10, fontWeight: 900, textTransform: "uppercase" }}>Khả dụng</div>
+                          <div style={{ marginTop: 4, color: "#0f766e", fontWeight: 900 }}>{fmt(row.loyaltyPointsUsable)}</div>
+                        </div>
+                      </div>
+                      <div style={{ color: "#57534e", fontSize: 12 }}>Giao dịch: {fmt(row.transactionCount)} - Tham gia: {fmtDate(row.createdAt)}</div>
+                      <button type="button" onClick={() => openDetail(row.id)} style={{ ...primaryBtn, width: "100%", justifyContent: "center" }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>visibility</span>
+                        Xem chi tiết
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", minWidth: 900, borderCollapse: "collapse" }}>
                 <thead>
@@ -644,6 +688,7 @@ export default function MembershipPage() {
                 </tbody>
               </table>
             </div>
+            )}
             <div style={{ padding: "16px 20px", borderTop: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <div style={{ color: "#78716c", fontSize: 13 }}>Trang {pagination.currentPage || 1} / {totalPages}</div>
               <div style={{ display: "flex", gap: 8 }}>

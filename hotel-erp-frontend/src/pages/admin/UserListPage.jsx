@@ -13,6 +13,7 @@ import {
 import { getRoles } from "../../api/rolesApi";
 import { useAdminAuthStore } from "../../store/adminAuthStore";
 import { useNavigate } from "react-router-dom";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const PROTECTED_ASSIGN_ROLES = new Set(["Guest"]);
 const ROLE_LEVELS = {
@@ -799,7 +800,9 @@ export default function UserListPage() {
                   placeholder="09xxxxxxxx"
                   value={fPhone}
                   onChange={(e) => setFPhone(e.target.value)}
-                  className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm text-stone-700 placeholder:text-stone-400 focus:border-[#4f645b] focus:ring-2 focus:ring-[#4f645b]/20 focus:outline-none transition"
+                  style={INPUT_STYLE}
+                  onFocus={(e) => { e.target.style.borderColor = "#4f645b"; e.target.style.boxShadow = "0 0 0 2px rgba(79,100,91,0.1)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "#e2e8e1"; e.target.style.boxShadow = "none"; }}
                 />
               </div>
               <div className="mb-4">
@@ -1214,6 +1217,7 @@ export function UserListTable({
   ROLE_BADGE,
   SkeletonRows,
 }) {
+  const { isMobile } = useResponsiveAdmin();
   return (
     <div
       style={{
@@ -1224,6 +1228,58 @@ export function UserListTable({
         overflow: "hidden",
       }}
     >
+      {isMobile ? (
+        <div style={{ display: "grid", gap: 12, padding: 14 }}>
+          {loading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="skeleton" style={{ height: 132, borderRadius: 16 }} />
+            ))
+          ) : paginatedUsers.length === 0 ? null : (
+            paginatedUsers.map((u) => {
+              const active = u.status === true || u.status === 1;
+              const initial = (u.fullName || "?")[0].toUpperCase();
+              const roleClass = ROLE_BADGE[u.roleName] || "bg-stone-100 text-stone-500";
+              return (
+                <article key={u.id} className="fade-row" style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    {u.avatarUrl ? (
+                      <img alt="" src={u.avatarUrl} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(79,100,91,.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f645b", fontWeight: 900, fontSize: 15, flexShrink: 0 }}>
+                        {initial}
+                      </div>
+                    )}
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: 900, color: "#292524", fontSize: 16 }}>{u.fullName || "-"}</div>
+                      <div style={{ fontSize: 12, color: "#9ca3af" }}>#{u.id}</div>
+                      <div style={{ marginTop: 6, overflowWrap: "anywhere", fontSize: 13, color: "#4b5563" }}>{u.email || "-"}</div>
+                      <div style={{ fontSize: 13, color: "#6b7280" }}>{u.phone || "-"}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                    <span className={`px-3 py-1 ${roleClass} text-[10px] font-extrabold rounded-full uppercase`}>
+                      {u.roleName || "-"}
+                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: active ? "#059669" : "#9ca3af" }}>
+                        {active ? "Hoạt động" : "Đã khóa"}
+                      </span>
+                      <label className="toggle-switch">
+                        <input type="checkbox" checked={active} disabled={togglingIds.has(u.id)} onChange={() => handleToggle(u.id)} />
+                        <span className="slider" />
+                      </label>
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => openDetail(u.id)} style={{ height: 40, borderRadius: 12, border: "none", background: "#4f645b", color: "#fff", fontWeight: 900, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>visibility</span>
+                    Xem chi tiết
+                  </button>
+                </article>
+              );
+            })
+          )}
+        </div>
+      ) : (
       <div style={{ overflowX: "auto" }}>
         <table
           style={{
@@ -1384,6 +1440,7 @@ export function UserListTable({
           </tbody>
         </table>
       </div>
+      )}
 
       {!loading && paginatedUsers.length === 0 && (
         <div style={{ padding: "64px 0", textAlign: "center" }}>
@@ -1409,6 +1466,8 @@ export function UserListTable({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

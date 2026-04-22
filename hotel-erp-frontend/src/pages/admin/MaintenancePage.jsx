@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createMaintenanceTicket, getMaintenanceTickets, updateMaintenanceTicketStatus } from "../../api/maintenanceApi";
 import { getRooms } from "../../api/roomsApi";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import { getUsers } from "../../api/userManagementApi";
 
 const cardStyle = {
@@ -73,6 +74,7 @@ const fmtDateTime = (value) =>
     : "—";
 
 export default function MaintenancePage() {
+  const { isMobile } = useResponsiveAdmin();
   const [rooms, setRooms] = useState([]);
   const [staff, setStaff] = useState([]);
   const [rows, setRows] = useState([]);
@@ -254,7 +256,7 @@ export default function MaintenancePage() {
       <section className="primary-card-p" style={{ ...cardStyle, overflow: "hidden" }}>
         <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1ece2", display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <strong style={{ color: "#1c1917", fontSize: 18 }}>Danh sách ticket bảo trì</strong>
-          <select value={filters.status} onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))} style={{ ...inputStyle, width: 180 }}>
+          <select value={filters.status} onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))} style={{ ...inputStyle, width: isMobile ? "100%" : 180 }}>
             <option value="">Tất cả trạng thái</option>
             <option value="Open">Open</option>
             <option value="InProgress">InProgress</option>
@@ -263,6 +265,45 @@ export default function MaintenancePage() {
             <option value="Cancelled">Cancelled</option>
           </select>
         </div>
+        {isMobile ? (
+          <div style={{ display: "grid", gap: 12, padding: 14 }}>
+            {rows.length === 0 ? (
+              <div style={{ padding: 24, textAlign: "center", color: "#9ca3af" }}>Chua co ticket bao tri nao.</div>
+            ) : rows.map((ticket) => {
+              const meta = statusMeta[ticket.status] || statusMeta.Open;
+              return (
+                <article key={ticket.id} style={{ border: "1px solid #f1ece2", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ color: "#1c1917", fontWeight: 900, fontSize: 16 }}>Phong {ticket.roomNumber}</div>
+                      <div style={{ color: "#6b7280", fontSize: 13 }}>{ticket.roomTypeName || "-"}</div>
+                    </div>
+                    <span style={{ padding: "6px 10px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 11, fontWeight: 900 }}>{ticket.status}</span>
+                  </div>
+                  <div>
+                    <div style={{ color: "#1c1917", fontWeight: 900 }}>{ticket.title}</div>
+                    <div style={{ color: "#6b7280", fontSize: 13, marginTop: 4 }}>{ticket.reason}</div>
+                    <div style={{ marginTop: 6, color: "#57534e", fontSize: 12, fontWeight: 800 }}>{ticket.category || "-"} - {ticket.priority}</div>
+                  </div>
+                  <div style={{ display: "grid", gap: 5, color: "#57534e", fontSize: 12 }}>
+                    <div>Mở: {fmtDateTime(ticket.openedAt)}</div>
+                    <div>ETA: {fmtDateTime(ticket.expectedDoneAt)}</div>
+                    <div>Báo cáo: {ticket.reportedBy?.fullName || "-"}</div>
+                    <div>Xử lý: {ticket.assignedTo?.fullName || "Chưa gán"}</div>
+                  </div>
+                  <textarea value={statusNotes[ticket.id] || ticket.resolutionNote || ""} onChange={(e) => setStatusNotes((prev) => ({ ...prev, [ticket.id]: e.target.value }))} placeholder="Ghi chú khi xử lý / đóng ticket" style={{ ...inputStyle, minHeight: 78, resize: "vertical" }} />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {["InProgress", "Resolved", "Closed", "Cancelled"].map((status) => (
+                      <button key={status} type="button" onClick={() => handleStatusUpdate(ticket.id, status)} disabled={saving || ticket.status === status} style={{ height: 36, borderRadius: 10, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 800, opacity: ticket.status === status ? 0.5 : 1 }}>
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", minWidth: 1100, borderCollapse: "collapse" }}>
             <thead>
@@ -340,6 +381,7 @@ export default function MaintenancePage() {
             </tbody>
           </table>
         </div>
+        )}
       </section>
     </div>
   );

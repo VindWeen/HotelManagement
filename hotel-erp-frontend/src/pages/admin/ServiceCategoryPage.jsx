@@ -23,8 +23,10 @@ import {
   primaryButton,
   statusFilterOptions,
 } from "./ServiceAdminShared";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 export default function ServiceCategoryPage() {
+  const { isMobile } = useResponsiveAdmin();
   const [categoryRows, setCategoryRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState("");
@@ -311,6 +313,32 @@ export default function ServiceCategoryPage() {
             </div>
           </div>
 
+          {isMobile ? (
+            <div style={{ display: "grid", gap: 12, padding: 14 }}>
+              {loading ? (
+                <EmptyState label="Đang tải nhóm dịch vụ..." icon="hourglass_top" />
+              ) : categoryRows.length === 0 ? (
+                <EmptyState label="Chưa có nhóm dịch vụ phù hợp bộ lọc." icon="search_off" />
+              ) : categoryRows.map((category) => (
+                <article key={category.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ fontWeight: 900, color: "#1c1917", fontSize: 16 }}>{category.name}</div>
+                      <div style={{ fontSize: 12, color: "#78716c", marginTop: 4 }}>{category.serviceCount ?? 0} dịch vụ</div>
+                    </div>
+                    <StatusChip active={category.isActive} />
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                    <VisibilitySwitch checked={category.isActive} disabled={togglingIds.includes(category.id)} onChange={() => handleToggle(category.id)} />
+                    <div style={{ display: "inline-flex", gap: 8 }}>
+                      <IconButton icon="edit" title="Sửa" onClick={() => openModal(category)} />
+                      <IconButton icon="delete" title="Xóa mềm" danger onClick={() => handleDelete(category)} />
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -404,6 +432,7 @@ export default function ServiceCategoryPage() {
               </tbody>
             </table>
           </div>
+          )}
           <ServicePagination
             page={page}
             pageSize={pageSize}

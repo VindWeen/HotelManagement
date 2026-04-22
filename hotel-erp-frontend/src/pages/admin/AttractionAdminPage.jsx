@@ -406,7 +406,7 @@ export default function AttractionAdminPage() {
                   <strong style={{ color: "#1c1917" }}>Danh sách địa điểm</strong>
                   <p style={{ margin: "4px 0 0", color: "#78716c", fontSize: 13 }}>Tổng cộng {items.length} địa điểm.</p>
                 </div>
-                <div style={{ display: "flex", gap: 2, background: "#f1f0ea", padding: 4, borderRadius: 12 }}>
+                {!isMobile && <div style={{ display: "flex", gap: 2, background: "#f1f0ea", padding: 4, borderRadius: 12 }}>
                   {["table", "grid"].map((mode) => (
                     <button
                       key={mode}
@@ -435,7 +435,7 @@ export default function AttractionAdminPage() {
                       {mode === "table" ? "Bảng" : "Lưới"}
                     </button>
                   ))}
-                </div>
+                </div>}
               </div>
 
               {viewMode === "table" && !isMobile ? (

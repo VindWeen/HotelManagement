@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { addInvoiceAdjustment, finalizeInvoice, getInvoiceDetail, removeInvoiceAdjustment } from "../../api/invoicesApi";
 import { recordPayment } from "../../api/paymentsApi";
 import { formatCurrency, formatDate } from "../../utils";
+import { clampMoneyInput, formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
 import { getInvoiceStatusLabel, getPaymentTypeLabel } from "../../utils/statusLabels";
 
 // ─── Thông báo ────────────────────────────────────────────────────────────────────
@@ -102,7 +103,7 @@ export default function InvoiceDetailPage() {
 
   const submitPayment = async (e) => {
     e.preventDefault();
-    const amountPaid = Number(form.amountPaid);
+    const amountPaid = parseMoneyInput(form.amountPaid);
     if (amountPaid <= 0) {
       showToast("Vui lòng nhập số tiền hợp lệ", "error");
       return;
@@ -140,7 +141,7 @@ export default function InvoiceDetailPage() {
 
   const submitAdjustment = async (e) => {
     e.preventDefault();
-    if (Number(adjustmentForm.amount) <= 0 || !adjustmentForm.reason.trim()) {
+    if (parseMoneyInput(adjustmentForm.amount) <= 0 || !adjustmentForm.reason.trim()) {
       showToast("Vui lòng nhập số tiền và lý do điều chỉnh hợp lệ.", "error");
       return;
     }
@@ -148,7 +149,7 @@ export default function InvoiceDetailPage() {
     try {
       await addInvoiceAdjustment(id, {
         adjustmentType: adjustmentForm.adjustmentType,
-        amount: Number(adjustmentForm.amount),
+        amount: parseMoneyInput(adjustmentForm.amount),
         reason: adjustmentForm.reason,
         note: adjustmentForm.note || null,
       });
@@ -453,12 +454,11 @@ export default function InvoiceDetailPage() {
                     style={inputStyle}
                   />
                   <input
-                    type="number"
-                    min="0"
-                    step="1000"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="Số tiền"
                     value={adjustmentForm.amount}
-                    onChange={(e) => setAdjustmentForm((prev) => ({ ...prev, amount: e.target.value }))}
+                    onChange={(e) => setAdjustmentForm((prev) => ({ ...prev, amount: formatMoneyInput(e.target.value) }))}
                     style={inputStyle}
                   />
                 </div>
@@ -493,20 +493,13 @@ export default function InvoiceDetailPage() {
                     <div>
                       <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 6 }}>Số tiền (Dư nợ: {formatCurrency(outstanding)})</label>
                       <input
-                        type="number"
-                        min="0"
-                        max={Math.max(0, outstanding)}
-                        step="1000"
-                        placeholder="VD: 1000000"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="VD: 1.000.000"
                         value={form.amountPaid}
                         onChange={(e) => {
-                          const nextValue = e.target.value;
-                          if (nextValue === "") {
-                            setForm({ ...form, amountPaid: "" });
-                            return;
-                          }
-                          const normalizedValue = Math.min(Number(nextValue), Math.max(0, outstanding));
-                          setForm({ ...form, amountPaid: String(normalizedValue) });
+                          const clampedValue = clampMoneyInput(e.target.value, { max: Math.max(0, outstanding) });
+                          setForm({ ...form, amountPaid: formatMoneyInput(clampedValue) });
                         }}
                         required
                         style={inputStyle}

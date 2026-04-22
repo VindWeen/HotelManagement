@@ -13,6 +13,8 @@ import {
     syncInventoryStock,
 } from "../../api/roomInventoriesApi";
 import { getEquipments } from "../../api/equipmentsApi";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
+import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
 
 // ??? Toast ????????????????????????????????????????????????????????????????????
 const TOAST_CFG = {
@@ -394,6 +396,7 @@ export function RoomInventoryTab({
   onPageChange,
   Skel,
 }) {
+  const { isMobile } = useResponsiveAdmin();
   const allOnPageSelected =
     paginatedInv.length > 0 && paginatedInv.every((item) => selectedItemIds.includes(item.id));
 
@@ -489,6 +492,56 @@ export function RoomInventoryTab({
       </div>
 
       <div style={{ ...cardStyle, overflow: "hidden" }}>
+        {isMobile ? (
+          <div style={{ display: "grid", gap: 12, padding: 14 }}>
+            {loadingInv ? (
+              Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton" style={{ height: 126, borderRadius: 16 }} />)
+            ) : paginatedInv.length === 0 ? (
+              <div style={{ padding: "34px 10px", textAlign: "center" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 44, color: "#d1d5db", display: "block", marginBottom: 10 }}>inventory_2</span>
+                <p style={{ color: "#9ca3af", fontWeight: 600, fontSize: 14, margin: 0 }}>Chua co vat tu nao trong phong nay</p>
+                <button onClick={onAdd} style={{ marginTop: 14, padding: "9px 18px", borderRadius: 10, fontSize: 13, fontWeight: 800, background: "#4f645b", color: "#e7fef3", border: "none" }}>+ Them vat tu dau tien</button>
+              </div>
+            ) : paginatedInv.map((item) => {
+              const code = `VT-${String(item.id).padStart(4, "0")}`;
+              const selected = selectedItemIds.includes(item.id);
+              return (
+                <article key={item.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 900, color: "#4f645b", letterSpacing: ".05em" }}>{code}</div>
+                      <div style={{ marginTop: 4, fontSize: 16, fontWeight: 900, color: "#1c1917" }}>{item.equipmentName}</div>
+                    </div>
+                    {bulkDeleteMode ? (
+                      <button type="button" onClick={() => onToggleSelectItem(item.id)} style={{ width: 34, height: 34, borderRadius: 10, border: "1.5px solid #94a3b8", background: selected ? "#4f645b" : "#fff", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                        {selected && <span className="material-symbols-outlined" style={{ fontSize: 16 }}>check</span>}
+                      </button>
+                    ) : null}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 11, fontWeight: 900, padding: "4px 10px", borderRadius: 999, background: item.itemType === "Asset" ? "#dbeafe" : "#fef3c7", color: item.itemType === "Asset" ? "#1d4ed8" : "#92400e" }}>{item.itemType}</span>
+                    <span style={{ fontSize: 11, fontWeight: 900, padding: "4px 10px", borderRadius: 999, background: "#e8f0ee", color: "#4f645b" }}>SL: {item.quantity ?? 0}</span>
+                  </div>
+                  <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                    <div style={{ fontSize: 11, color: "#78716c", fontWeight: 900 }}>Gia den bu</div>
+                    <div style={{ fontSize: 14, color: "#1c1917", fontWeight: 900 }}>{fmtCurrency(item.priceIfLost)}</div>
+                  </div>
+                  <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.45 }}>{item.note || "-"}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: bulkDeleteMode ? "1fr" : "1fr 1fr", gap: 8 }}>
+                    <button className="action-btn" onClick={() => onEdit(item)} style={{ width: "100%", height: 38, border: "1px solid #e2e8e1", borderRadius: 10, color: "#4f645b", justifyContent: "center" }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
+                    </button>
+                    {!bulkDeleteMode && (
+                      <button className="action-btn" onClick={() => onDelete(item.id, item.equipmentName)} disabled={deletingId === item.id} style={{ width: "100%", height: 38, border: "1px solid #fee2e2", borderRadius: 10, color: deletingId === item.id ? "#d1d5db" : "#ef4444", justifyContent: "center" }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{deletingId === item.id ? "hourglass_empty" : "delete"}</span>
+                      </button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: bulkDeleteMode ? 920 : 860 }}>
             <thead>
@@ -627,6 +680,7 @@ export function RoomInventoryTab({
             </tbody>
           </table>
         </div>
+        )}
 
         {!loadingInv && inventory.length > pageSize && (
           <div style={{ padding: "14px 20px", borderTop: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -656,6 +710,7 @@ export function RoomInventoryTab({
 
 
 export function InventoryModal({ open, onClose, onSave, editItem, roomId, equipments }) {
+  const { isMobile } = useResponsiveAdmin();
   const [form, setForm] = useState({ equipmentId: "", itemType: "Asset", quantity: 1, priceIfLost: "", note: "" });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -666,7 +721,7 @@ export function InventoryModal({ open, onClose, onSave, editItem, roomId, equipm
         equipmentId: editItem.equipmentId || "",
         itemType: editItem.itemType || "Asset",
         quantity: editItem.quantity ?? 1,
-        priceIfLost: editItem.priceIfLost ?? "",
+        priceIfLost: formatMoneyInput(editItem.priceIfLost ?? ""),
         note: editItem.note || "",
       });
     } else {
@@ -690,7 +745,7 @@ export function InventoryModal({ open, onClose, onSave, editItem, roomId, equipm
         equipmentId: Number(form.equipmentId),
         itemType: form.itemType,
         quantity: Number(form.quantity),
-        priceIfLost: form.priceIfLost ? Number(form.priceIfLost) : null,
+        priceIfLost: form.priceIfLost ? parseMoneyInput(form.priceIfLost) : null,
         note: form.note?.trim() || null,
       };
       if (editItem) await updateInventory(editItem.id, payload);
@@ -704,8 +759,8 @@ export function InventoryModal({ open, onClose, onSave, editItem, roomId, equipm
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: "white", borderRadius: 20, width: "100%", maxWidth: 480, boxShadow: "0 24px 64px rgba(0,0,0,.2)", animation: "modalIn .25s cubic-bezier(.22,1,.36,1)" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", backdropFilter: "blur(4px)", display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center", zIndex: 200, padding: isMobile ? 0 : 20 }} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: "white", borderRadius: isMobile ? "22px 22px 0 0" : 20, width: "100%", maxWidth: 480, maxHeight: isMobile ? "92vh" : "90vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,.2)", animation: "modalIn .25s cubic-bezier(.22,1,.36,1)" }}>
         <div style={{ padding: "24px 28px 18px", borderBottom: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: 0 }}>{editItem ? "Chỉnh sửa vật tư" : "Thêm vật tư mới"}</h3>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 6, borderRadius: 8, color: "#9ca3af", display: "flex" }}>
@@ -720,7 +775,7 @@ export function InventoryModal({ open, onClose, onSave, editItem, roomId, equipm
               onChange={(e) => {
                 const equipmentId = e.target.value;
                 const selectedEquipment = equipments.find((x) => String(x.id) === equipmentId);
-                setForm((f) => ({ ...f, equipmentId, priceIfLost: f.priceIfLost || selectedEquipment?.defaultPriceIfLost || "" }));
+                setForm((f) => ({ ...f, equipmentId, priceIfLost: f.priceIfLost || formatMoneyInput(selectedEquipment?.defaultPriceIfLost || "") }));
               }}
               style={{ width: "100%", border: "none", borderRadius: 12, padding: "12px 16px", fontSize: 14, background: "rgba(227,227,219,.5)", color: "#31332e", outline: "none", boxSizing: "border-box" }}
             >
@@ -747,7 +802,7 @@ export function InventoryModal({ open, onClose, onSave, editItem, roomId, equipm
           </div>
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#5e6059", marginBottom: 6 }}>Giá đền bù (VND)</label>
-            <input type="number" min="0" value={form.priceIfLost} onChange={(e) => setForm((f) => ({ ...f, priceIfLost: e.target.value }))} placeholder="5000000" style={{ width: "100%", border: "none", borderRadius: 12, padding: "12px 16px", fontSize: 14, background: "rgba(227,227,219,.5)", color: "#31332e", outline: "none", boxSizing: "border-box" }} />
+            <input type="text" inputMode="numeric" value={form.priceIfLost} onChange={(e) => setForm((f) => ({ ...f, priceIfLost: formatMoneyInput(e.target.value) }))} placeholder="5.000.000" style={{ width: "100%", border: "none", borderRadius: 12, padding: "12px 16px", fontSize: 14, background: "rgba(227,227,219,.5)", color: "#31332e", outline: "none", boxSizing: "border-box" }} />
           </div>
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#5e6059", marginBottom: 6 }}>Ghi chú</label>

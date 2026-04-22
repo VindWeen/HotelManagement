@@ -5,6 +5,7 @@ import {
   getAuditLogFilterOptions,
   getAuditLogHistory,
 } from "../../api/auditLogsApi";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import { useAdminAuthStore } from "../../store/adminAuthStore";
 
 const panelStyle = {
@@ -112,6 +113,7 @@ function downloadBlob(blob, fileName) {
 }
 
 export default function AuditLogsPage() {
+  const { isMobile } = useResponsiveAdmin();
   const currentUserRole = useAdminAuthStore((s) => s.user?.role);
   const canViewAll = currentUserRole === "Admin" || currentUserRole === "Manager";
   const [filters, setFilters] = useState({
@@ -217,7 +219,7 @@ export default function AuditLogsPage() {
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
         * { font-family: 'Manrope', sans-serif; }
       `}</style>
-      <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1400, margin: "0 auto", paddingInline: isMobile ? 4 : 0 }}>
       <div
         style={{
           display: "flex",
@@ -237,12 +239,14 @@ export default function AuditLogsPage() {
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
           <button
             onClick={handleExportFiltered}
             disabled={exporting}
             style={{
               padding: "8px 20px",
+              width: isMobile ? "100%" : "auto",
+              justifyContent: "center",
               borderRadius: 12,
               fontSize: 14,
               fontWeight: 800,
@@ -261,6 +265,8 @@ export default function AuditLogsPage() {
             disabled={exporting}
             style={{
               padding: "8px 20px",
+              width: isMobile ? "100%" : "auto",
+              justifyContent: "center",
               borderRadius: 12,
               fontSize: 14,
               fontWeight: 800,
@@ -278,9 +284,9 @@ export default function AuditLogsPage() {
       </div>
 
       <section style={{ ...panelStyle, padding: 24, marginBottom: 24 }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end" }}>
-          <div style={{ flex: 1, minWidth: 260 }}>
-            <label style={fieldLabelStyle}>Nhan vien</label>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "minmax(260px,1fr) 220px 180px 180px auto", gap: 16, alignItems: "flex-end" }}>
+          <div>
+            <label style={fieldLabelStyle}>Nhân viên</label>
             <select value={filters.userId} onChange={(e) => handleFilterChange("userId", e.target.value)} style={inputStyle}>
             <option value="">Lọc theo nhân viên</option>
             {employees.map((employee) => (
@@ -291,8 +297,8 @@ export default function AuditLogsPage() {
             </select>
           </div>
 
-          <div style={{ width: 220 }}>
-            <label style={fieldLabelStyle}>Ngay</label>
+          <div>
+            <label style={fieldLabelStyle}>Ngày</label>
             <input
             type="date"
             value={filters.date}
@@ -301,8 +307,8 @@ export default function AuditLogsPage() {
             />
           </div>
 
-          <div style={{ width: 180 }}>
-            <label style={fieldLabelStyle}>Thang</label>
+          <div>
+            <label style={fieldLabelStyle}>Tháng</label>
             <select value={filters.month} onChange={(e) => handleFilterChange("month", e.target.value)} style={inputStyle}>
             <option value="">Lọc theo tháng</option>
             {Array.from({ length: 12 }, (_, index) => (
@@ -313,8 +319,8 @@ export default function AuditLogsPage() {
             </select>
           </div>
 
-          <div style={{ width: 180 }}>
-            <label style={fieldLabelStyle}>Nam</label>
+          <div>
+            <label style={fieldLabelStyle}>Năm</label>
             <select value={filters.year} onChange={(e) => handleFilterChange("year", e.target.value)} style={inputStyle}>
             <option value="">Lọc theo năm</option>
             {yearOptions.map((year) => (
@@ -334,8 +340,12 @@ export default function AuditLogsPage() {
               borderRadius: 12,
               cursor: "pointer",
               minHeight: 42,
+              width: isMobile ? "100%" : "auto",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
-            title="Xoa bo loc"
+            title="Xóa bộ lọc"
           >
             <span className="material-symbols-outlined">tune</span>
           </button>
@@ -343,6 +353,47 @@ export default function AuditLogsPage() {
       </section>
 
       <section style={{ ...panelStyle, overflow: "hidden" }}>
+        {isMobile ? (
+          <div style={{ display: "grid", gap: 12, padding: 14 }}>
+            {loading ? (
+              <div style={{ padding: 24, textAlign: "center", color: "#6b7280" }}>Dang tai du lieu...</div>
+            ) : rows.length === 0 ? (
+              <div style={{ padding: 24, textAlign: "center", color: "#6b7280" }}>Khong co log phu hop bo loc hien tai.</div>
+            ) : rows.map((row) => {
+              const badge = roleBadgeStyle(row.roleName);
+              const expanded = !!expandedIds[row.id];
+              return (
+                <article key={row.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, background: expanded ? "#fcfcfa" : "white", boxShadow: "0 1px 3px rgba(0,0,0,.04)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 12, color: "#78716c", fontWeight: 800, marginBottom: 4 }}>{row.logDate}</div>
+                      <div style={{ fontSize: 15, color: "#1c1917", fontWeight: 800 }}>{row.userName}</div>
+                      <span style={{ display: "inline-flex", marginTop: 6, padding: "4px 9px", borderRadius: 999, fontSize: 10, fontWeight: 800, textTransform: "uppercase", ...badge }}>{row.roleName}</span>
+                    </div>
+                    <button onClick={() => toggleExpanded(row.id)} style={{ width: 36, height: 36, borderRadius: 12, border: "1px solid #d6d3d1", background: "#fff", color: "#4f645b", fontWeight: 900 }}>
+                      {expanded ? "-" : "+"}
+                    </button>
+                  </div>
+                  <p style={{ margin: "12px 0 0", color: "#4b5563", fontSize: 13, lineHeight: 1.55 }}>{row.summary}</p>
+                  {expanded ? (
+                    <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+                      {(row.events || []).map((event, index) => (
+                        <div key={event.eventId || `${row.id}-${index}`} style={{ border: "1px solid #e2e8e1", borderRadius: 12, padding: 10, background: "#f8fafc" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+                            <span style={{ fontSize: 12, color: "#44403c", fontWeight: 800 }}>{event.time}</span>
+                            <span style={{ fontSize: 12, fontWeight: 900, ...actionTextStyle(event.actionType) }}>{event.actionType}</span>
+                          </div>
+                          <div style={{ fontSize: 12, color: "#78716c", fontWeight: 700, marginBottom: 4 }}>{event.entityType}</div>
+                          <div style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.45 }}>{event.message}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        ) : (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
@@ -468,8 +519,9 @@ export default function AuditLogsPage() {
             </tbody>
           </table>
         </div>
+        )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderTop: "1px solid #f1f0ea", flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: isMobile ? "14px" : "16px 24px", borderTop: "1px solid #f1f0ea", flexWrap: "wrap", gap: 12 }}>
           <span style={{ color: "#6b7280", fontSize: 14 }}>
             Tổng {pagination.total || 0} nhóm log
           </span>

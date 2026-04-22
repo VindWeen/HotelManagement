@@ -4,6 +4,7 @@ import { cancelBooking, checkIn, checkOut, createBooking, getBookings, getRecept
 import { createInvoiceFromBooking, getInvoiceByBookingId } from "../../api/invoicesApi";
 import { recordPayment } from "../../api/paymentsApi";
 import { getVouchers } from "../../api/vouchersApi";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import { formatDate, formatCurrency } from "../../utils";
 import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
 import { getBookingSourceLabel, getBookingStatusLabel } from "../../utils/statusLabels";
@@ -114,11 +115,16 @@ const toInputDate = (date) => {
   const day = `${date.getDate()}`.padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
+const startOfToday = () => {
+  const today = new Date();
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+};
 
 function ReceptionDateRangePicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => startOfMonth(new Date()));
   const [draftStart, setDraftStart] = useState(value.checkInDate ? new Date(value.checkInDate) : null);
+  const today = startOfToday();
 
   useEffect(() => {
     setDraftStart(value.checkInDate ? new Date(value.checkInDate) : null);
@@ -140,6 +146,10 @@ function ReceptionDateRangePicker({ value, onChange }) {
   };
 
   const handlePick = (day) => {
+    if (!day || day < today) {
+      return;
+    }
+
     if (!draftStart || (value.checkInDate && value.checkOutDate)) {
       setDraftStart(day);
       onChange({ checkInDate: toInputDate(day), checkOutDate: "" });
@@ -186,18 +196,22 @@ function ReceptionDateRangePicker({ value, onChange }) {
             }
             const selectedStart = value.checkInDate && sameDate(day, new Date(value.checkInDate));
             const selectedEnd = value.checkOutDate && sameDate(day, new Date(value.checkOutDate));
+            const isPast = day < today;
             return (
               <button
                 key={day.toISOString()}
                 onClick={() => handlePick(day)}
+                disabled={isPast}
+                title={isPast ? "Không thể chọn ngày trong quá khứ" : undefined}
                 style={{
                   height: 36,
                   borderRadius: 10,
                   border: selectedStart || selectedEnd ? "1.5px solid #4f645b" : "1px solid #e5e7eb",
-                  background: selectedStart || selectedEnd ? "#4f645b" : isInRange(day) ? "#dcfce7" : "white",
-                  color: selectedStart || selectedEnd ? "white" : "#1c1917",
-                  cursor: "pointer",
+                  background: isPast ? "#f3f4f6" : selectedStart || selectedEnd ? "#4f645b" : isInRange(day) ? "#dcfce7" : "white",
+                  color: isPast ? "#cbd5e1" : selectedStart || selectedEnd ? "white" : "#1c1917",
+                  cursor: isPast ? "not-allowed" : "pointer",
                   fontWeight: 700,
+                  opacity: isPast ? 0.55 : 1,
                 }}
               >
                 {day.getDate()}
@@ -369,6 +383,7 @@ function BookingPaymentModal({ open, booking, mode, loading, onConfirm, onCancel
 }
 
 export default function BookingListPage() {
+  const { isMobile } = useResponsiveAdmin();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState([]);
@@ -403,6 +418,8 @@ export default function BookingListPage() {
     toDate: "",
   });
 
+  const dashboardDate = filters.toDate || filters.fromDate || toInputDate(new Date());
+
   const [bookingForm, setBookingForm] = useState({
     customerType: "walk_in",
     userId: null,
@@ -433,7 +450,7 @@ export default function BookingListPage() {
     try {
       const [bookingRes, dashboardRes, voucherRes] = await Promise.all([
         getBookings({ page: 1, pageSize: 200 }),
-        getReceptionDashboard({ date: new Date().toISOString().slice(0, 10) }),
+        getReceptionDashboard({ date: dashboardDate }),
         getVouchers({ page: 1, pageSize: 100, status: "active" }),
       ]);
 
@@ -453,7 +470,7 @@ export default function BookingListPage() {
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [dashboardDate, showToast]);
 
   useEffect(() => {
     load();
@@ -474,7 +491,10 @@ export default function BookingListPage() {
       const guestName = (item.guestName || "").toLowerCase();
       const guestPhone = (item.guestPhone || "").toLowerCase();
       const status = item.status || "";
-      const checkInDate = item.bookingDetails?.[0]?.checkInDate ? new Date(item.bookingDetails[0].checkInDate) : null;
+      const dateField = activeTab === "checkout" ? "checkOutDate" : "checkInDate";
+      const filterDates = (item.bookingDetails || [])
+        .map((detail) => detail?.[dateField] ? toInputDate(new Date(detail[dateField])) : "")
+        .filter(Boolean);
 
       if (filters.bookingCode && !code.includes(filters.bookingCode.toLowerCase())) return false;
       if (filters.guest) {
@@ -482,8 +502,13 @@ export default function BookingListPage() {
         if (!guestName.includes(keyword) && !guestPhone.includes(keyword)) return false;
       }
       if (filters.status && status !== filters.status) return false;
-      if (filters.fromDate && checkInDate && checkInDate < new Date(filters.fromDate)) return false;
-      if (filters.toDate && checkInDate && checkInDate > new Date(filters.toDate)) return false;
+      if ((filters.fromDate || filters.toDate) && filterDates.length) {
+        const hasDateInRange = filterDates.some((date) =>
+          (!filters.fromDate || date >= filters.fromDate) &&
+          (!filters.toDate || date <= filters.toDate)
+        );
+        if (!hasDateInRange) return false;
+      }
       return true;
     });
   }, [rows, filters, activeTab, dashboard]);
@@ -498,6 +523,26 @@ export default function BookingListPage() {
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setFilters((prev) => prev.status ? ({ ...prev, status: "" }) : prev);
+  };
+
+  const activeFilterChips = [
+    filters.bookingCode && { key: "bookingCode", label: `Mã: ${filters.bookingCode}` },
+    filters.guest && { key: "guest", label: `Khách: ${filters.guest}` },
+    filters.status && { key: "status", label: `Trạng thái: ${getBookingStatusLabel(filters.status)}` },
+    (filters.fromDate || filters.toDate) && {
+      key: "date",
+      label: `Đang áp dụng bộ lọc ngày: ${filters.fromDate || "..."} - ${filters.toDate || "..."}`,
+    },
+  ].filter(Boolean);
+
+  const hasActiveFilters = activeFilterChips.length > 0;
+  const clearFilters = () => {
+    setFilters({ bookingCode: "", guest: "", status: "", fromDate: "", toDate: "" });
+  };
 
   const estimatedBookingAmount = useMemo(() => {
     if (!bookingForm.selectedRooms?.length) {
@@ -971,7 +1016,7 @@ export default function BookingListPage() {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             style={{
               borderRadius: 16,
               padding: "16px 18px",
@@ -1293,24 +1338,110 @@ export default function BookingListPage() {
           <div style={{ position: "absolute", top: -8, left: 10, background: "white", padding: "0 4px", fontSize: 10, fontWeight: 700, color: "#9ca3af" }}>Đến ngày</div>
         </div>
         <button
-          onClick={() => { setFilters({ bookingCode: "", guest: "", status: "", fromDate: "", toDate: "" }); load(); }}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, border: "1.5px solid #e2e8e1", background: "white", color: "#6b7280", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 1px 3px rgba(0,0,0,.04)", fontFamily: "Manrope, sans-serif" }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#4f645b"; e.currentTarget.style.color = "#4f645b"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e2e8e1"; e.currentTarget.style.color = "#6b7280"; }}
+          onClick={clearFilters}
+          disabled={!hasActiveFilters}
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 18px", borderRadius: 12, border: hasActiveFilters ? "1.5px solid #f59e0b" : "1.5px solid #e2e8e1", background: hasActiveFilters ? "#fff7ed" : "white", color: hasActiveFilters ? "#b45309" : "#9ca3af", fontSize: 13, fontWeight: 800, cursor: hasActiveFilters ? "pointer" : "not-allowed", boxShadow: hasActiveFilters ? "0 8px 20px rgba(245,158,11,.16)" : "0 1px 3px rgba(0,0,0,.04)", fontFamily: "Manrope, sans-serif", whiteSpace: "nowrap", opacity: hasActiveFilters ? 1 : 0.65 }}
+          onMouseEnter={(e) => { if (!hasActiveFilters) return; e.currentTarget.style.borderColor = "#d97706"; e.currentTarget.style.background = "#ffedd5"; }}
+          onMouseLeave={(e) => { if (!hasActiveFilters) return; e.currentTarget.style.borderColor = "#f59e0b"; e.currentTarget.style.background = "#fff7ed"; }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 16 }}>filter_alt_off</span> Xóa lọc
         </button>
       </div>
 
+      {hasActiveFilters && (
+        <div style={{ margin: "-12px 0 18px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          {activeFilterChips.map((chip) => (
+            <span
+              key={chip.key}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "7px 11px",
+                borderRadius: 999,
+                background: chip.key === "date" ? "#ecfdf5" : "#f8fafc",
+                border: chip.key === "date" ? "1px solid #bbf7d0" : "1px solid #e5e7eb",
+                color: chip.key === "date" ? "#047857" : "#475569",
+                fontSize: 12,
+                fontWeight: 800,
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 15 }}>
+                {chip.key === "date" ? "event" : "filter_alt"}
+              </span>
+              {chip.label}
+            </span>
+          ))}
+        </div>
+      )}
+
       {activeTab !== "manage" && (
         <div style={{ marginBottom: 18, padding: "12px 14px", borderRadius: 12, border: "1px solid #d1fae5", background: "#ecfdf5", color: "#065f46", fontSize: 13, fontWeight: 700 }}>
           {activeTab === "arrivals" && "Danh sách này chỉ hiển thị các booking dự kiến check-in trong ngày."}
           {activeTab === "staying" && "Danh sách này chỉ hiển thị các booking đang lưu trú để lễ tân theo dõi nhanh."}
-          {activeTab === "checkout" && "Danh sách này ưu tiên các booking cần làm thủ tục trả phòng trong ngày."}
+          {activeTab === "checkout" && "Mặc định hiển thị booking checkout hôm nay; chọn Từ ngày/Đến ngày để xem booking checkout của ngày khác."}
         </div>
       )}
 
       <div className="bg-white rounded-2xl border border-[#f1f0ea] shadow-sm mb-6">
+        {isMobile ? (
+          <div style={{ display: "grid", gap: 12, padding: 14 }}>
+            {!loading && filteredRows.length === 0 ? (
+              <div style={{ padding: "28px 12px", textAlign: "center", color: "#9ca3af", fontSize: 14 }}>
+                <span className="material-symbols-outlined mx-auto text-center" style={{ fontSize: 44, marginBottom: 10, opacity: 0.5, display: "block" }}>search_off</span>
+                Khong tim thay booking nao
+              </div>
+            ) : paginatedRows.map((item) => (
+              <article key={item.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white", boxShadow: "0 1px 3px rgba(0,0,0,.04)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 16, fontWeight: 900, color: "#1c1917" }}>{item.bookingCode}</span>
+                      <button className="btn-icon-p" title="Sao chep ma booking" onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(item.bookingCode || "");
+                          showToast("Da sao chep ma booking.");
+                        } catch {
+                          showToast("Khong the sao chep ma booking.", "error");
+                        }
+                      }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>content_copy</span>
+                      </button>
+                    </div>
+                    <div style={{ marginTop: 6, fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{item.guestName || "-"}</div>
+                    <div style={{ fontSize: 12, color: "#6b7280" }}>{item.guestPhone || "-"}</div>
+                  </div>
+                  <BookingStatusBadge status={item.status} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                    <div style={{ fontSize: 11, color: "#78716c", fontWeight: 800 }}>Check-in</div>
+                    <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 800 }}>{formatDate(item.bookingDetails?.[0]?.checkInDate).split(' ')[0]}</div>
+                  </div>
+                  <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                    <div style={{ fontSize: 11, color: "#78716c", fontWeight: 800 }}>Nguồn</div>
+                    <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 800 }}>{getBookingSourceLabel(item.source)}</div>
+                  </div>
+                </div>
+                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: 10 }}>
+                  <div style={{ fontSize: 11, color: "#166534", fontWeight: 800 }}>Tổng tiền</div>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: "#16a34a" }}>{formatCurrency(item.totalEstimatedAmount)}</div>
+                  <div style={{ fontSize: 11, color: "#166534", marginTop: 4 }}>Đã thu trước lưu trú: {formatCurrency(item.depositAmount || 0)}</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8 }}>
+                  <button className="btn-icon-p" title="Chi tiết" onClick={() => navigate(`/admin/bookings/${item.id}`)} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>visibility</span></button>
+                  <button className="btn-icon-p" title="Thu cọc" disabled={!canRun(item, "collect_deposit") || busyId === item.id} onClick={() => runAction(item, "collect_deposit")} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>payments</span></button>
+                  <button className="btn-icon-p" title="Check-in" disabled={!canRun(item, "checkin") || busyId === item.id} onClick={() => runAction(item, "checkin")} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>login</span></button>
+                  <button className="btn-icon-p" title="Check-out" disabled={!canRun(item, "checkout") || busyId === item.id} onClick={() => runAction(item, "checkout")} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>logout</span></button>
+                  <button className="btn-icon-p" title="Mở hóa đơn" disabled={!canRun(item, "open_invoice") || busyId === item.id} onClick={() => runAction(item, "open_invoice")} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>receipt_long</span></button>
+                  <button className="btn-icon-p" title="Thu thêm để nhận phòng" disabled={!canRun(item, "collect_checkin") || busyId === item.id} onClick={() => runAction(item, "collect_checkin")} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>account_balance_wallet</span></button>
+                  <button className="btn-icon-p" title="Hoàn tiền" disabled={!canRun(item, "refund") || busyId === item.id} onClick={() => runAction(item, "refund")} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>reply</span></button>
+                  <button className="btn-icon-p" title="Hủy" disabled={!canRun(item, "cancel") || busyId === item.id} onClick={() => runAction(item, "cancel")} style={{ width: "100%", color: canRun(item, "cancel") ? "#dc2626" : "#cbd5e1", borderColor: canRun(item, "cancel") ? "#fecaca" : "#f1f0ea" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>cancel</span></button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
@@ -1396,6 +1527,7 @@ export default function BookingListPage() {
           </tbody>
         </table>
         </div>
+        )}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18, padding: "0 18px 18px", gap: 16, flexWrap: "wrap" }}>
           <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
             Trang <strong style={{ color: "#1c1917" }}>{page}</strong> / {totalPages}

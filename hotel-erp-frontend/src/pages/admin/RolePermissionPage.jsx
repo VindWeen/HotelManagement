@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { getRoles, getRoleById, assignPermission } from "../../api/rolesApi";
 import { getPermissions } from "../../api/permissionsApi";
 import { useAdminAuthStore } from "../../store/adminAuthStore";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const inferModuleName = (permissionCode) => {
   if (permissionCode.includes("ROLE")) return "Role";
@@ -737,6 +738,7 @@ function PermissionModal({
 
 // â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function RolePermissionPage() {
+  const { isMobile } = useResponsiveAdmin();
   const { permissions } = useAdminAuthStore();
 
   const [roles, setRoles] = useState([]);
@@ -916,7 +918,7 @@ export default function RolePermissionPage() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            style={{ ...SECONDARY_BUTTON, height: 42, gap: 8 }}
+            style={{ ...SECONDARY_BUTTON, height: 42, gap: 8, width: isMobile ? "100%" : "auto", justifyContent: "center", whiteSpace: "nowrap" }}
           >
             <span
               className="material-symbols-outlined"
@@ -971,6 +973,40 @@ export default function RolePermissionPage() {
           </div>
 
           {/* Table */}
+          {isMobile ? (
+            <div style={{ display: "grid", gap: 12, padding: 14 }}>
+              {loading ? (
+                Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="skeleton" style={{ height: 104, borderRadius: 16 }} />
+                ))
+              ) : paginatedRoles.length === 0 ? (
+                <div style={{ padding: "36px 0", textAlign: "center", color: "#9ca3af" }}>Chua co vai tro nao</div>
+              ) : paginatedRoles.map((role, i) => {
+                const dotColor = getRoleColor(role.name);
+                const roleNum = (page - 1) * pageSize + i + 1;
+                return (
+                  <article key={role.id} className="fade-row" style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                      <div>
+                        <div style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 900, color: "#9ca3af" }}>ROLE-{String(roleNum).padStart(3, "0")}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                          <span style={{ width: 10, height: 10, borderRadius: "50%", background: dotColor, boxShadow: `0 0 0 2px ${dotColor}22` }} />
+                          <span style={{ fontSize: 16, fontWeight: 900, color: "#1c1917" }}>{role.name}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.45 }}>{role.description || "Chưa có mô tả"}</div>
+                    {hasPermission("EDIT_ROLES") && (
+                      <button className="perm-btn" onClick={() => openPermission(role)} disabled={isProtectedRole(role.name)} style={{ opacity: isProtectedRole(role.name) ? 0.55 : 1, cursor: isProtectedRole(role.name) ? "not-allowed" : "pointer", width: "100%", justifyContent: "center" }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>shield_lock</span>
+                        {isProtectedRole(role.name) ? "Đã khóa" : "Phân quyền"}
+                      </button>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead className="table-head">
@@ -1131,6 +1167,7 @@ export default function RolePermissionPage() {
               </tbody>
             </table>
           </div>
+          )}
 
           {/* Pagination */}
           {!loading && roles.length > 0 && (

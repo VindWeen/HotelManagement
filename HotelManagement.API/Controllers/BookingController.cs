@@ -594,8 +594,6 @@ public class BookingsController : ControllerBase
         }
 
         var normalizedEmail = booking.GuestEmail!;
-        var trimmedNationalId = normalizedNationalId;
-
         var existingUser = await _context.Users
             .FirstOrDefaultAsync(u => u.Email == normalizedEmail, cancellationToken);
 
