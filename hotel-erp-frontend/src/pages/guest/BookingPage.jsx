@@ -931,15 +931,23 @@ export default function BookingPage() {
         showClose={false}
         width={500}
         footer={
-          <div style={{ display: "flex", gap: 10, width: "100%", justifyContent: "center" }}>
-            <button className="g-btn-outline" onClick={handleSuccessClose}>
-              Đặt phòng khác
+          <div style={{ display: "flex", gap: 10, width: "100%", justifyContent: "center", flexWrap: "wrap" }}>
+            <button className="g-btn-outline" onClick={() => { handleSuccessClose(); navigate("/guest/my-bookings"); }}>
+              Xem danh sách booking
             </button>
             <button
               className="g-btn-primary"
-              onClick={() => { handleSuccessClose(); navigate("/guest/my-bookings"); }}
+              onClick={() => { 
+                const bookingId = successBooking?.id;
+                handleSuccessClose(); 
+                if (bookingId) {
+                  navigate(`/guest/payment/deposit/${bookingId}`);
+                } else {
+                  navigate("/guest/my-bookings");
+                }
+              }}
             >
-              Xem lịch sử đặt phòng
+              Thanh toán cọc ngay
             </button>
           </div>
         }

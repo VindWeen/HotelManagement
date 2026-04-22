@@ -3,8 +3,10 @@ using HotelManagement.Core.Authorization;
 using HotelManagement.Core.Constants;
 using HotelManagement.Core.Entities;
 using HotelManagement.Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace HotelManagement.API.Controllers;
 
@@ -19,6 +21,29 @@ public class RecordPaymentRequest
     public string? Note { get; set; }
 }
 
+public class GuestDepositRequest
+{
+    public int BookingId { get; set; }
+}
+
+public class MomoIpnRequest
+{
+    public string? PartnerCode { get; set; }
+    public string? AccessKey { get; set; }
+    public string? RequestId { get; set; }
+    public long Amount { get; set; }
+    public string? OrderId { get; set; }
+    public string? OrderInfo { get; set; }
+    public string? OrderType { get; set; }
+    public long TransId { get; set; }
+    public int ResultCode { get; set; }
+    public string? Message { get; set; }
+    public string? PayType { get; set; }
+    public long ResponseTime { get; set; }
+    public string? ExtraData { get; set; }
+    public string? Signature { get; set; }
+}
+
 [ApiController]
 [Route("api/[controller]")]
 public class PaymentsController : ControllerBase
@@ -26,12 +51,190 @@ public class PaymentsController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IPaymentService _paymentService;
     private readonly IInvoiceService _invoiceService;
+    private readonly IMomoService _momoService;
 
-    public PaymentsController(AppDbContext db, IPaymentService paymentService, IInvoiceService invoiceService)
+    public PaymentsController(AppDbContext db, IPaymentService paymentService, IInvoiceService invoiceService, IMomoService momoService)
     {
         _db = db;
         _paymentService = paymentService;
         _invoiceService = invoiceService;
+        _momoService = momoService;
+    }
+
+    // ─── GUEST ENDPOINTS ──────────────────────────────────────────────────
+
+    /// <summary>Guest: Tạo yêu cầu thanh toán cọc qua MoMo</summary>
+    [Authorize]
+    [HttpPost("guest/deposit")]
+    public async Task<IActionResult> GuestCreateDeposit([FromBody] GuestDepositRequest request)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                  ?? User.FindFirstValue("sub")
+                  ?? User.FindFirstValue("id");
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { success = false, message = "Không xác định được tài khoản." });
+
+        var booking = await _db.Bookings
+            .FirstOrDefaultAsync(b => b.Id == request.BookingId);
+
+        if (booking == null)
+            return NotFound(new { success = false, message = "Không tìm thấy booking." });
+
+        // Check booking belongs to current user
+        if (booking.UserId == null || booking.UserId.ToString() != userId)
+            return Forbid();
+
+        if (booking.Status != BookingStatuses.Pending)
+            return BadRequest(new { success = false, message = $"Booking đang ở trạng thái '{booking.Status}', không cần thanh toán cọc." });
+
+        var required = booking.RequiredBookingDepositAmount;
+        var paid = booking.DepositAmount ?? 0m;
+        var remaining = Math.Max(0m, required - paid);
+
+        if (remaining <= 0)
+            return BadRequest(new { success = false, message = "Booking đã được thanh toán đủ cọc." });
+
+        var orderInfo = $"Dat coc booking {booking.BookingCode} - {remaining:N0}đ";
+        var result = await _momoService.CreatePaymentAsync(booking.Id, remaining, orderInfo);
+
+        if (!result.Success)
+            return BadRequest(new { success = false, message = result.Message ?? "Tạo thanh toán MoMo thất bại." });
+
+        return Ok(new
+        {
+            success = true,
+            data = new
+            {
+                payUrl = result.PayUrl,
+                qrCodeUrl = result.QrCodeUrl,
+                orderId = result.OrderId,
+                amount = remaining,
+                bookingCode = booking.BookingCode,
+                bookingId = booking.Id
+            }
+        });
+    }
+
+    /// <summary>MoMo IPN callback — cập nhật trạng thái booking sau khi thanh toán</summary>
+    [AllowAnonymous]
+    [HttpPost("momo/ipn")]
+    public async Task<IActionResult> MomoIpn([FromBody] MomoIpnRequest ipn)
+    {
+        var fields = new Dictionary<string, string>
+        {
+            ["accessKey"] = ipn.AccessKey ?? "",
+            ["amount"] = ipn.Amount.ToString(),
+            ["extraData"] = ipn.ExtraData ?? "",
+            ["message"] = ipn.Message ?? "",
+            ["orderId"] = ipn.OrderId ?? "",
+            ["orderInfo"] = ipn.OrderInfo ?? "",
+            ["orderType"] = ipn.OrderType ?? "",
+            ["partnerCode"] = ipn.PartnerCode ?? "",
+            ["payType"] = ipn.PayType ?? "",
+            ["requestId"] = ipn.RequestId ?? "",
+            ["responseTime"] = ipn.ResponseTime.ToString(),
+            ["resultCode"] = ipn.ResultCode.ToString(),
+            ["transId"] = ipn.TransId.ToString()
+        };
+
+        if (!_momoService.VerifyIpnSignature(fields, ipn.Signature ?? ""))
+            return BadRequest(new { message = "Invalid signature" });
+
+        if (ipn.ResultCode != 0)
+            return Ok(new { message = "Payment not successful." });
+
+        // Extract bookingId from orderId format: BOOKING_{id}_{timestamp}
+        var parts = (ipn.OrderId ?? "").Split('_');
+        if (parts.Length >= 2 && int.TryParse(parts[1], out var bookingId))
+        {
+            var booking = await _db.Bookings.FirstOrDefaultAsync(b => b.Id == bookingId);
+            if (booking != null)
+            {
+                var payment = new Payment
+                {
+                    BookingId = bookingId,
+                    PaymentType = PaymentTypes.BookingDeposit,
+                    PaymentMethod = "MoMo",
+                    AmountPaid = ipn.Amount,
+                    TransactionCode = ipn.TransId.ToString(),
+                    Status = PaymentStatuses.Success,
+                    PaymentDate = DateTime.UtcNow,
+                    Note = $"MoMo IPN - OrderId: {ipn.OrderId}"
+                };
+
+                _db.Payments.Add(payment);
+
+                var totalPaid = await _db.Payments
+                    .Where(p => p.BookingId == bookingId && p.Status == PaymentStatuses.Success)
+                    .SumAsync(p => p.PaymentType == PaymentTypes.Refund ? -p.AmountPaid : p.AmountPaid);
+
+                totalPaid += ipn.Amount;
+                booking.DepositAmount = Math.Max(0m, totalPaid);
+
+                if (booking.Status == BookingStatuses.Pending &&
+                    (booking.DepositAmount ?? 0m) >= booking.RequiredBookingDepositAmount)
+                {
+                    booking.Status = BookingStatuses.Confirmed;
+                }
+
+                await _db.SaveChangesAsync();
+                await _invoiceService.CreateFromBookingAsync(booking.Id);
+            }
+        }
+
+        return Ok(new { message = "IPN received." });
+    }
+
+    /// <summary>Guest: Xem trạng thái thanh toán booking</summary>
+    [Authorize]
+    [HttpGet("guest/booking/{bookingId:int}")]
+    public async Task<IActionResult> GuestGetPaymentStatus(int bookingId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                  ?? User.FindFirstValue("sub")
+                  ?? User.FindFirstValue("id");
+
+        var booking = await _db.Bookings
+            .Include(b => b.Payments)
+            .Include(b => b.BookingDetails)
+            .FirstOrDefaultAsync(b => b.Id == bookingId);
+
+        if (booking == null)
+            return NotFound(new { success = false, message = "Không tìm thấy booking." });
+
+        if (booking.UserId == null || booking.UserId.ToString() != userId)
+            return Forbid();
+
+        var payments = booking.Payments
+            .Where(p => p.Status == PaymentStatuses.Success)
+            .OrderByDescending(p => p.PaymentDate)
+            .Select(p => new
+            {
+                p.Id,
+                p.AmountPaid,
+                p.PaymentMethod,
+                p.PaymentType,
+                p.TransactionCode,
+                p.PaymentDate
+            }).ToList();
+
+        return Ok(new
+        {
+            success = true,
+            data = new
+            {
+                bookingId = booking.Id,
+                bookingCode = booking.BookingCode,
+                status = booking.Status,
+                totalEstimatedAmount = booking.TotalEstimatedAmount,
+                depositRequired = booking.RequiredBookingDepositAmount,
+                depositPaid = booking.DepositAmount ?? 0m,
+                remaining = Math.Max(0m, booking.RequiredBookingDepositAmount - (booking.DepositAmount ?? 0m)),
+                isFullyDeposited = (booking.DepositAmount ?? 0m) >= booking.RequiredBookingDepositAmount,
+                payments
+            }
+        });
     }
 
     [RequirePermission(PermissionCodes.ManageInvoices)]
