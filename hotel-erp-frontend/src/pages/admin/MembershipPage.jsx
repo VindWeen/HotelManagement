@@ -733,7 +733,26 @@ export default function MembershipPage() {
                 <h3 style={{ margin: "8px 0 0", fontSize: 24, color: "#1c1917" }}>{member?.fullName || "Đang tải..."}</h3>
                 <p style={{ margin: "6px 0 0", fontSize: 13, color: "#78716c" }}>Hồ sơ loyalty và lịch sử cộng trừ điểm của khách hàng.</p>
               </div>
-              <button type="button" onClick={() => setDetailOpen(false)} style={ghostBtn}>Đóng</button>
+              <button
+                type="button"
+                onClick={() => setDetailOpen(false)}
+                aria-label="Đóng chi tiết khách hàng"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 12,
+                  border: "1px solid #efe7dc",
+                  background: "white",
+                  color: "#78716c",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
+              </button>
             </div>
 
             {detailLoading ? <div style={{ padding: 40, color: "#9ca3af", textAlign: "center" }}>Đang tải chi tiết loyalty member...</div> : null}

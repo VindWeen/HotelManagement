@@ -247,14 +247,12 @@ export default function ArticleAdminPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiFeedback, setAiFeedback] = useState("");
   const [activeTab, setActiveTab] = useState("articles");
+  const viewMode = "grid";
+  const setViewMode = () => {};
   const [visibilityFilter, setVisibilityFilter] = useState("all");
   const [articleSearch, setArticleSearch] = useState("");
   const [categoryVisibilityFilter, setCategoryVisibilityFilter] = useState("all");
   const [categorySearch, setCategorySearch] = useState("");
-  const [viewMode, setViewMode] = useState(() => {
-    const saved = sessionStorage.getItem(ARTICLE_VIEW_MODE_STORAGE_KEY);
-    return saved === "grid" ? "grid" : "table";
-  });
   const [page, setPage] = useState(1);
   const [categoryName, setCategoryName] = useState("");
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
@@ -340,7 +338,7 @@ export default function ArticleAdminPage() {
     const start = (page - 1) * ARTICLES_PER_PAGE;
     return filteredArticles.slice(start, start + ARTICLES_PER_PAGE);
   }, [filteredArticles, page]);
-  const effectiveViewMode = isMobile ? "grid" : viewMode;
+  const effectiveViewMode = "grid";
 
   const paginationPages = useMemo(() => {
     const visible = Math.min(totalPages, 5);
@@ -370,10 +368,6 @@ export default function ArticleAdminPage() {
   useEffect(() => {
     loadData();
   }, []);
-
-  useEffect(() => {
-    sessionStorage.setItem(ARTICLE_VIEW_MODE_STORAGE_KEY, viewMode);
-  }, [viewMode]);
 
   useEffect(() => {
     setPage(1);
@@ -909,7 +903,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                   <option value="inactive">Đang ẩn</option>
                 </select>
               </div>
-              <div>
+              <div style={{ display: "none" }}>
                 <label style={labelStyle}>Chế độ xem</label>
                 <div style={{ display: "flex", gap: 2, background: "#f1f0ea", padding: 4, borderRadius: 12 }}>
                   {["table", "grid"].map((mode) => (

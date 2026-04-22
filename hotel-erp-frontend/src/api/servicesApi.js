@@ -38,6 +38,14 @@ export const createService = (data) => axiosClient.post("/Services", data);
 export const updateService = (id, data) =>
   axiosClient.put(`/Services/${id}`, data);
 
+export const uploadServiceImage = (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return axiosClient.post("/Services/upload-image", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+};
+
 export const deleteService = (id) => axiosClient.delete(`/Services/${id}`);
 
 export const toggleService = (id) =>

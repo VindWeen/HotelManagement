@@ -5,6 +5,7 @@ import { recordPayment } from "../../api/paymentsApi";
 import { formatCurrency, formatDate } from "../../utils";
 import { clampMoneyInput, formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
 import { getInvoiceStatusLabel, getPaymentTypeLabel } from "../../utils/statusLabels";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 // ─── Thông báo ────────────────────────────────────────────────────────────────────
 const TOAST_STYLES = {
@@ -58,6 +59,7 @@ const InvoiceStatusBadge = ({ status }) => {
 export default function InvoiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isMobile } = useResponsiveAdmin();
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [invoice, setInvoice] = useState(null);
@@ -548,7 +550,32 @@ export default function InvoiceDetailPage() {
               <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Danh sách điều chỉnh</h3>
               </div>
-              <div className="overflow-x-auto">
+              {isMobile && (
+                <div style={{ display: "grid", gap: 12, padding: 14 }}>
+                  {(invoice.adjustments || []).length === 0 ? (
+                    <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>Chưa có phụ phí hoặc giảm trừ thủ công.</div>
+                  ) : (invoice.adjustments || []).map((item) => (
+                    <article key={item.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                        <div>
+                          <div style={{ fontWeight: 900, color: "#1c1917" }}>{item.reason}</div>
+                          <div style={{ fontSize: 12, color: "#78716c", marginTop: 4 }}>{formatDate(item.createdAt)}</div>
+                        </div>
+                        <div style={{ fontWeight: 900, color: item.adjustmentType === "Discount" ? "#d97706" : "#b91c1c" }}>
+                          {item.adjustmentType === "Discount" ? "-" : "+"}{formatCurrency(item.amount)}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 12, color: item.adjustmentType === "Discount" ? "#b45309" : "#6b7280" }}>
+                        {item.adjustmentType === "Discount" ? "Giảm trừ thủ công" : "Phụ phí"}{item.note ? ` • ${item.note}` : ""}
+                      </div>
+                      <button type="button" className="action-btn" style={{ justifyContent: "center", padding: "9px 12px", fontSize: 12 }} onClick={() => handleRemoveAdjustment(item.id)}>
+                        Xóa
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              )}
+              <div data-invoice-list="adjustments" className="overflow-x-auto" style={{ display: isMobile ? "none" : "block" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "white" }}>
@@ -600,7 +627,28 @@ export default function InvoiceDetailPage() {
               <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Dịch vụ đã sử dụng</h3>
               </div>
-              <div className="overflow-x-auto">
+              {isMobile && (
+                <div style={{ display: "grid", gap: 12, padding: 14 }}>
+                  {(invoice.serviceItems || []).length === 0 ? (
+                    <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>Không có dịch vụ phát sinh.</div>
+                  ) : (invoice.serviceItems || []).map((item, index) => (
+                    <article key={`${item.orderServiceId}-${item.serviceId}-${index}`} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                        <div>
+                          <div style={{ fontWeight: 900, color: "#1c1917" }}>{item.serviceName || "-"}</div>
+                          <div style={{ fontSize: 12, color: "#78716c", marginTop: 4 }}>Phòng {item.roomNumber || "-"} • {item.orderDate ? formatDate(item.orderDate) : "Chưa có thời gian"}</div>
+                        </div>
+                        <div style={{ fontWeight: 900, color: "#1c1917" }}>{formatCurrency(item.totalAmount || 0)}</div>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 12, color: "#57534e" }}>
+                        <div>SL: <strong>{item.quantity || 0}</strong></div>
+                        <div>Đơn giá: <strong>{formatCurrency(item.unitPrice || 0)}</strong></div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+              <div data-invoice-list="services" className="overflow-x-auto" style={{ display: isMobile ? "none" : "block" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "white" }}>
@@ -640,7 +688,28 @@ export default function InvoiceDetailPage() {
               <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Thiết bị / thất thoát</h3>
               </div>
-              <div className="overflow-x-auto">
+              {isMobile && (
+                <div style={{ display: "grid", gap: 12, padding: 14 }}>
+                  {(invoice.damageItems || []).length === 0 ? (
+                    <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>Không có thất thoát hoặc thiết bị hư.</div>
+                  ) : (invoice.damageItems || []).map((item) => (
+                    <article key={item.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                        <div>
+                          <div style={{ fontWeight: 900, color: "#1c1917" }}>{item.itemName || "-"}</div>
+                          <div style={{ fontSize: 12, color: "#78716c", marginTop: 4 }}>Phòng {item.roomNumber || "-"} • SL {item.quantity || 0}</div>
+                        </div>
+                        <div style={{ fontWeight: 900, color: "#b91c1c" }}>{formatCurrency(item.totalAmount || 0)}</div>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#57534e" }}>{item.description || "Không có ghi chú"}</div>
+                      <span className="badge-p" style={{ width: "fit-content", background: item.remainingToReplenish > 0 ? "#fff7ed" : "#ecfdf5", color: item.remainingToReplenish > 0 ? "#c2410c" : "#15803d" }}>
+                        {item.remainingToReplenish > 0 ? `Còn thiếu ${item.remainingToReplenish}` : "Đã bổ sung đủ"}
+                      </span>
+                    </article>
+                  ))}
+                </div>
+              )}
+              <div data-invoice-list="damages" className="overflow-x-auto" style={{ display: isMobile ? "none" : "block" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "white" }}>
@@ -692,7 +761,25 @@ export default function InvoiceDetailPage() {
               <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Lịch sử thanh toán</h3>
               </div>
-              <div className="overflow-x-auto">
+              {isMobile && (
+                <div style={{ display: "grid", gap: 12, padding: 14 }}>
+                  {(invoice.payments || []).length === 0 ? (
+                    <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>Chưa có lịch sử giao dịch.</div>
+                  ) : (invoice.payments || []).map((p) => (
+                    <article key={p.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                        <div>
+                          <div style={{ fontWeight: 900, color: "#1c1917" }}>{getPaymentTypeLabel(p.paymentType)}</div>
+                          <div style={{ fontSize: 12, color: "#78716c", marginTop: 4 }}>{formatDate(p.paymentDate)} • {p.paymentMethod}</div>
+                        </div>
+                        <div style={{ fontWeight: 900, color: p.paymentType === "Refund" ? "#dc2626" : "#16a34a" }}>{formatCurrency(p.amountPaid)}</div>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "monospace" }}>Mã GD: {p.transactionCode || "-"}</div>
+                    </article>
+                  ))}
+                </div>
+              )}
+              <div data-invoice-list="payments" className="overflow-x-auto" style={{ display: isMobile ? "none" : "block" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "white" }}>

@@ -1016,12 +1016,16 @@ export function UserListHeader({
   onExportCSV,
   onOpenAdd,
 }) {
+  const { isMobile } = useResponsiveAdmin();
+
   return (
     <div
       style={{
         display: "flex",
+        flexDirection: isMobile ? "column" : "row",
         justifyContent: "space-between",
-        alignItems: "center",
+        alignItems: isMobile ? "stretch" : "center",
+        gap: isMobile ? 16 : 24,
         marginBottom: 32,
       }}
     >
@@ -1046,10 +1050,15 @@ export function UserListHeader({
           )}
         </p>
       </div>
-      <div style={{ display: "flex", gap: 12 }}>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
         <button
           onClick={onExportCSV}
-          style={SECONDARY_BUTTON}
+          style={{
+            ...SECONDARY_BUTTON,
+            flex: isMobile ? "1 1 0" : "0 0 auto",
+            minWidth: isMobile ? 0 : "auto",
+            justifyContent: "center",
+          }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
             file_download
@@ -1058,7 +1067,12 @@ export function UserListHeader({
         </button>
         <button
           onClick={onOpenAdd}
-          style={PRIMARY_BUTTON}
+          style={{
+            ...PRIMARY_BUTTON,
+            flex: isMobile ? "1 1 0" : "0 0 auto",
+            minWidth: isMobile ? 0 : "auto",
+            justifyContent: "center",
+          }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
             person_add

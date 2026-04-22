@@ -491,7 +491,7 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
     return (
         <div style={{ background: "#f9f8f3", display: "flex", flexDirection: "column", borderRadius: 20, border: "1px solid #e2e8e1", overflow: "hidden", minHeight: "calc(100vh - 120px)", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
             {/* Header */}
-            <div style={{ padding: "20px 40px", background: "white", borderBottom: "1px solid #e2e8e1", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+            <div style={{ padding: isMobile ? "18px 20px" : "20px 40px", background: "white", borderBottom: "1px solid #e2e8e1", display: "flex", flexDirection: "column", alignItems: "stretch", gap: 14 }}>
                 <button
                     onClick={() => {
                         if (step > 1) {
@@ -500,13 +500,13 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
                         }
                         onClose();
                     }}
-                    style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", color: "#4b5563", fontSize: 16, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}
+                    style={{ display: "inline-flex", alignItems: "center", alignSelf: "flex-start", gap: 8, background: "none", border: "none", cursor: "pointer", color: "#4b5563", fontSize: isMobile ? 14 : 16, fontWeight: 700, fontFamily: "Manrope, sans-serif", padding: 0 }}
                 >
                     <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_back</span>
                     Quy trình thiết lập phòng trọn gói
                 </button>
 
-                <label style={{ display: "inline-flex", alignItems: "center", gap: 12, background: isBulkMode ? "linear-gradient(135deg, #dff3e7 0%, #cce8d8 100%)" : "linear-gradient(135deg, #eef7f1 0%, #ddeee4 100%)", border: isBulkMode ? "1.5px solid #4f645b" : "1.5px solid #a7c4b2", borderRadius: 9999, padding: "10px 16px", boxShadow: isBulkMode ? "0 6px 16px rgba(79,100,91,0.22)" : "0 6px 16px rgba(79,100,91,0.10)", cursor: "pointer", flexShrink: 0, transition: "all .2s ease" }}>
+                <label style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 12, width: isMobile ? "100%" : "fit-content", background: isBulkMode ? "linear-gradient(135deg, #dff3e7 0%, #cce8d8 100%)" : "linear-gradient(135deg, #eef7f1 0%, #ddeee4 100%)", border: isBulkMode ? "1.5px solid #4f645b" : "1.5px solid #a7c4b2", borderRadius: 9999, padding: "10px 16px", boxShadow: isBulkMode ? "0 6px 16px rgba(79,100,91,0.22)" : "0 6px 16px rgba(79,100,91,0.10)", cursor: "pointer", flexShrink: 0, transition: "all .2s ease" }}>
                     <input
                         type="checkbox"
                         checked={isBulkMode}
@@ -542,11 +542,11 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
             </div>
 
             {/* Stepper */}
-            <div style={{ padding: isMobile ? "20px 12px" : "40px 20px", display: "flex", justifyContent: isMobile ? "flex-start" : "center", alignItems: isMobile ? "stretch" : "center", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0 }}>
+            <div style={{ padding: isMobile ? "18px 12px" : "40px 20px", display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "row", gap: isMobile ? 8 : 0 }}>
                 <StepItem active={step >= 1} current={step === 1} icon="home" label={isBulkMode ? "Thông tin chung" : "Thông tin chính"} color={activeColor} />
-                {!isMobile && <div style={{ height: 2, width: 100, background: step >= 2 ? activeColor : "#e5e7eb", margin: "0 16px" }} />}
+                <div style={{ height: 2, width: isMobile ? 28 : 100, background: step >= 2 ? activeColor : "#e5e7eb", margin: isMobile ? "0 2px" : "0 16px" }} />
                 <StepItem active={step >= 2} current={step === 2} icon={isBulkMode ? "format_list_numbered" : "local_cafe"} label={isBulkMode ? "Danh sách phòng" : "Tiện ích"} color={activeColor} />
-                {!isMobile && <div style={{ height: 2, width: 100, background: step >= 3 ? activeColor : "#e5e7eb", margin: "0 16px" }} />}
+                <div style={{ height: 2, width: isMobile ? 28 : 100, background: step >= 3 ? activeColor : "#e5e7eb", margin: isMobile ? "0 2px" : "0 16px" }} />
                 <StepItem active={canManageInventory && step >= 3} current={step === 3} icon="key" label="Vật tư & Minibar" color={activeColor} />
             </div>
 
@@ -765,16 +765,16 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
                 )}
 
                 {canManageInventory && step === 3 && (
-                    <div style={{ maxWidth: 900, margin: "0 auto" }}>
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: 24, marginBottom: 32 }}>
-                            <div style={{ background: "white", padding: 20, borderRadius: 12, border: "1px solid #e2e8e1", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
+                    <div style={{ maxWidth: 900, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 24, marginBottom: 32, width: "100%", minWidth: 0 }}>
+                            <div style={{ background: "white", padding: isMobile ? 16 : 20, borderRadius: 12, border: "1px solid #e2e8e1", boxShadow: "0 2px 8px rgba(0,0,0,0.03)", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
                                 <label style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#4b5563", marginBottom: 16 }}>Thiết lập nhanh vật tư</label>
-                                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                                <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 10 : 16, minWidth: 0 }}>
                                     <span style={{ fontSize: 14, color: "#6b7280", fontWeight: 500 }}>Sao chép định mức từ phòng mẫu:</span>
                                     <select
                                         value={cloneFromRoomId}
                                         onChange={e => handleClone(e.target.value)}
-                                        style={{ width: 280, padding: "10px 16px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, outline: "none", background: "#f9f8f3", cursor: "pointer", fontFamily: "Manrope, sans-serif", fontWeight: 600 }}
+                                        style={{ width: isMobile ? "100%" : 280, maxWidth: "100%", boxSizing: "border-box", padding: "10px 16px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 14, outline: "none", background: "#f9f8f3", cursor: "pointer", fontFamily: "Manrope, sans-serif", fontWeight: 600 }}
                                     >
                                         <option value="">Chọn một phòng có sẵn</option>
                                         {allRooms.map(r => (
@@ -783,7 +783,7 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
                                             </option>
                                         ))}
                                     </select>
-                                    <span style={{ fontSize: 13, color: "#9ca3af", fontStyle: "italic" }}>
+                                    <span style={{ fontSize: 13, color: "#9ca3af", fontStyle: "italic", minWidth: 0, overflowWrap: "anywhere" }}>
                                         {isBulkMode ? "(Áp dụng cùng một phòng mẫu cho toàn bộ batch)" : "(Tự động thêm Tivi, Tủ lạnh, đồ Minibar...)"}
                                     </span>
                                 </div>
@@ -794,8 +794,47 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
                             <p style={{ fontSize: 15, fontWeight: 800, color: "#4b5563", marginBottom: 16 }}>
                                 {isBulkMode ? "Danh sách vật tư sẽ được clone cho tất cả phòng mới" : "Danh sách vật tư sẽ được clone từ phòng mẫu"}
                             </p>
-                            <div style={{ background: "white", borderRadius: 12, border: "1px solid #e2e8e1", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
-                                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                            {isMobile && (
+                                <div style={{ display: "grid", gap: 12 }}>
+                                    {loadingInv ? (
+                                        <div style={{ background: "white", borderRadius: 14, border: "1px solid #e2e8e1", padding: 24, textAlign: "center", color: "#6b7280" }}>Đang tải danh sách vật tư...</div>
+                                    ) : inventories.length === 0 ? (
+                                        <div style={{ background: "white", borderRadius: 14, border: "1px solid #e2e8e1", padding: 28, textAlign: "center", color: "#9ca3af" }}>
+                                            <span className="material-symbols-outlined" style={{ fontSize: 36, opacity: 0.55, marginBottom: 8, display: "block" }}>inventory_2</span>
+                                            Chưa chọn phòng mẫu. Hãy chọn một phòng để xem trước vật tư sẽ được clone.
+                                        </div>
+                                    ) : inventories.map((inv, idx) => {
+                                        const code = inv.id ? `VT-${String(inv.id).padStart(4, "0")}` : (inv.itemCode || "N/A");
+                                        return (
+                                            <article key={`${code}-${idx}`} style={{ background: "white", borderRadius: 16, border: "1px solid #e2e8e1", padding: 14, display: "grid", gap: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
+                                                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                                                    <div style={{ minWidth: 0 }}>
+                                                        <div style={{ fontSize: 11, fontWeight: 900, color: "#4f645b", letterSpacing: ".08em" }}>{code}</div>
+                                                        <div style={{ marginTop: 4, fontSize: 15, fontWeight: 900, color: "#1c1917", overflowWrap: "anywhere" }}>{inv.equipmentName || "N/A"}</div>
+                                                    </div>
+                                                    <span style={{ padding: "5px 10px", borderRadius: 999, background: "#f0faf5", color: "#1a3826", fontSize: 12, fontWeight: 900, flexShrink: 0 }}>
+                                                        SL {inv.quantity || 0}
+                                                    </span>
+                                                </div>
+                                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                                                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                                                        <div style={{ fontSize: 10, color: "#78716c", fontWeight: 900 }}>Loại</div>
+                                                        <div style={{ marginTop: 3, fontSize: 13, color: "#1c1917", fontWeight: 800 }}>{inv.itemType === "Asset" ? "Tài sản" : (inv.itemType || "N/A")}</div>
+                                                    </div>
+                                                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
+                                                        <div style={{ fontSize: 10, color: "#78716c", fontWeight: 900 }}>Giá đền bù</div>
+                                                        <div style={{ marginTop: 3, fontSize: 13, color: "#1c1917", fontWeight: 800 }}>
+                                                            {inv.priceIfLost != null ? new Intl.NumberFormat("vi-VN").format(inv.priceIfLost) + " đ" : "—"}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </article>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                            <div style={{ display: isMobile ? "none" : "block", background: "white", borderRadius: 12, border: "1px solid #e2e8e1", overflowX: "auto", overflowY: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.03)", maxWidth: "100%" }}>
+                                <table style={{ width: "100%", minWidth: isMobile ? 620 : "100%", borderCollapse: "collapse" }}>
                                     <thead>
                                         <tr style={{ background: "#f9f8f3", borderBottom: "1px solid #e2e8e1" }}>
                                             <th style={{ padding: "16px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Mã VT</th>
@@ -863,9 +902,9 @@ function CreateRoomWizard({ roomTypes, allRooms, onClose, onCreated, showToast, 
 
 function StepItem({ active, current, icon, label, color }) {
     return (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, color: current ? color : active ? color : "#9ca3af", opacity: current ? 1 : active ? 0.8 : 0.6, fontWeight: current ? 800 : 700 }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 24 }}>{icon}</span>
-            <span style={{ fontSize: 16 }}>{label}</span>
+        <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: current ? 8 : 0, minWidth: current ? "auto" : 40, height: 40, padding: current ? "0 14px" : 0, borderRadius: 999, border: `1.5px solid ${current ? color : active ? "rgba(79,100,91,.35)" : "#e5e7eb"}`, background: current ? "rgba(79,100,91,.12)" : active ? "#f5f8f6" : "white", color: current ? color : active ? color : "#9ca3af", opacity: current ? 1 : active ? 0.9 : 0.65, fontWeight: current ? 800 : 700, transition: "all .2s ease" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: current ? 22 : 21 }}>{icon}</span>
+            {current && <span style={{ fontSize: 14, whiteSpace: "nowrap" }}>{label}</span>}
         </div>
     );
 }

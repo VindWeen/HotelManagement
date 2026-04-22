@@ -760,14 +760,14 @@ export function InventoryModal({ open, onClose, onSave, editItem, roomId, equipm
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", backdropFilter: "blur(4px)", display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center", zIndex: 200, padding: isMobile ? 0 : 20 }} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: "white", borderRadius: isMobile ? "22px 22px 0 0" : 20, width: "100%", maxWidth: 480, maxHeight: isMobile ? "92vh" : "90vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,.2)", animation: "modalIn .25s cubic-bezier(.22,1,.36,1)" }}>
-        <div style={{ padding: "24px 28px 18px", borderBottom: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ background: "white", borderRadius: isMobile ? "22px 22px 0 0" : 20, width: "100%", maxWidth: 480, maxHeight: isMobile ? "92vh" : "90vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 24px 64px rgba(0,0,0,.2)", animation: "modalIn .25s cubic-bezier(.22,1,.36,1)" }}>
+        <div style={{ padding: "24px 28px 18px", borderBottom: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: 0 }}>{editItem ? "Chỉnh sửa vật tư" : "Thêm vật tư mới"}</h3>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 6, borderRadius: 8, color: "#9ca3af", display: "flex" }}>
             <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
           </button>
         </div>
-        <form onSubmit={handleSubmit} style={{ padding: "20px 28px 24px" }}>
+        <form onSubmit={handleSubmit} style={{ padding: "20px 28px 24px", overflowY: "auto", flex: 1, minHeight: 0 }}>
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#5e6059", marginBottom: 6 }}>Chọn vật tư *</label>
             <select

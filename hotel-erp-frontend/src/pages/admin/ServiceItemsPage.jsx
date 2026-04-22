@@ -6,6 +6,7 @@ import {
   getServices,
   toggleService,
   updateService,
+  uploadServiceImage,
 } from "../../api/servicesApi";
 import { formatCurrency } from "../../utils";
 import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
@@ -48,6 +49,8 @@ export default function ServiceItemsPage() {
   });
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [serviceImageFile, setServiceImageFile] = useState(null);
+  const [serviceImagePreview, setServiceImagePreview] = useState("");
   const [togglingIds, setTogglingIds] = useState([]);
   const [toasts, setToasts] = useState([]);
   const [page, setPage] = useState(1);
@@ -185,6 +188,8 @@ export default function ServiceItemsPage() {
 
   const resetServiceForm = () => {
     setEditingService(null);
+    setServiceImageFile(null);
+    setServiceImagePreview("");
     setServiceForm({
       categoryId: "",
       name: "",
@@ -206,8 +211,21 @@ export default function ServiceItemsPage() {
       unit: service?.unit || "",
       imageUrl: service?.imageUrl || "",
     });
+    setServiceImageFile(null);
+    setServiceImagePreview(service?.imageUrl || "");
     setErrorMessage("");
     setServiceModalOpen(true);
+  };
+
+  const handleServiceImageChange = (file) => {
+    setServiceImageFile(file || null);
+    setServiceImagePreview(file ? URL.createObjectURL(file) : serviceForm.imageUrl || "");
+  };
+
+  const removeServiceImage = () => {
+    setServiceImageFile(null);
+    setServiceImagePreview("");
+    setServiceForm((prev) => ({ ...prev, imageUrl: "" }));
   };
 
   const submitService = async (e) => {
@@ -215,13 +233,25 @@ export default function ServiceItemsPage() {
     setSubmitting(true);
     setErrorMessage("");
 
+    let imageUrl = serviceForm.imageUrl || null;
+    try {
+      if (serviceImageFile) {
+        const uploadRes = await uploadServiceImage(serviceImageFile);
+        imageUrl = uploadRes.data?.url || null;
+      }
+    } catch (error) {
+      setSubmitting(false);
+      setErrorMessage(error?.response?.data?.message || "Không thể upload ảnh dịch vụ.");
+      return;
+    }
+
     const payload = {
       categoryId: serviceForm.categoryId ? Number(serviceForm.categoryId) : null,
       name: serviceForm.name,
       description: serviceForm.description || null,
       price: parseMoneyInput(serviceForm.price),
       unit: serviceForm.unit || null,
-      imageUrl: serviceForm.imageUrl || null,
+      imageUrl,
     };
 
     try {
@@ -384,6 +414,7 @@ export default function ServiceItemsPage() {
                 <EmptyState label="Chưa có dịch vụ phù hợp bộ lọc." icon="search_off" />
               ) : serviceRows.map((service) => (
                 <article key={service.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12 }}>
+                  <ServiceImage imageUrl={service.imageUrl} name={service.name} height={150} />
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontWeight: 900, color: "#1c1917", fontSize: 16 }}>{service.name}</div>
@@ -631,16 +662,11 @@ export default function ServiceItemsPage() {
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={labelStyle}>Ảnh dịch vụ</label>
-              <input
-                value={serviceForm.imageUrl}
-                onChange={(e) =>
-                  setServiceForm((prev) => ({
-                    ...prev,
-                    imageUrl: e.target.value,
-                  }))
-                }
-                style={inputStyle}
-                placeholder="https://..."
+              <ImagePicker
+                preview={serviceImagePreview || serviceForm.imageUrl}
+                fileName={serviceImageFile?.name}
+                onPick={handleServiceImageChange}
+                onRemove={removeServiceImage}
               />
             </div>
           </div>
@@ -654,5 +680,38 @@ export default function ServiceItemsPage() {
         </form>
       </Modal>
     </>
+  );
+}
+
+function ServiceImage({ imageUrl, name, height = 120, width = "100%" }) {
+  return (
+    <div style={{ width, height, borderRadius: 14, overflow: "hidden", background: "linear-gradient(135deg,#eef7f1,#f7efe3)", border: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f645b", flexShrink: 0 }}>
+      {imageUrl ? (
+        <img src={imageUrl} alt={name || "Dịch vụ"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      ) : (
+        <span className="material-symbols-outlined" style={{ fontSize: 34 }}>room_service</span>
+      )}
+    </div>
+  );
+}
+
+function ImagePicker({ preview, fileName, onPick, onRemove }) {
+  return (
+    <div style={{ display: "grid", gap: 12 }}>
+      <ServiceImage imageUrl={preview} name="Preview dịch vụ" height={160} />
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <label style={{ ...primaryButton(true), justifyContent: "center" }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>upload</span>
+          {preview ? "Đổi ảnh dịch vụ" : "Chọn ảnh dịch vụ"}
+          <input type="file" accept="image/*" onChange={(e) => onPick(e.target.files?.[0] || null)} style={{ display: "none" }} />
+        </label>
+        {preview ? (
+          <button type="button" onClick={onRemove} style={{ padding: "10px 14px", borderRadius: 12, border: "1px solid #fecaca", background: "#fff7f7", color: "#dc2626", fontWeight: 800, cursor: "pointer" }}>
+            Gỡ ảnh
+          </button>
+        ) : null}
+      </div>
+      {fileName ? <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 700, wordBreak: "break-word" }}>{fileName}</div> : null}
+    </div>
   );
 }

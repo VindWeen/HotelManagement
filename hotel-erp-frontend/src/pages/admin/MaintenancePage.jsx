@@ -62,6 +62,42 @@ const statusMeta = {
   Cancelled: { bg: "#fee2e2", color: "#991b1b" },
 };
 
+const statusLabels = {
+  Open: "Mới mở",
+  InProgress: "Đang xử lý",
+  Resolved: "Đã sửa xong",
+  Closed: "Hoàn tất",
+  Cancelled: "Đã hủy",
+};
+
+const statusActionLabels = {
+  InProgress: "Bắt đầu xử lý",
+  Resolved: "Báo đã sửa xong",
+  Closed: "Xác nhận hoàn tất",
+  Cancelled: "Hủy ticket",
+};
+
+const categoryLabels = {
+  Repair: "Sửa chữa",
+  Inspection: "Kiểm tra",
+  Preventive: "Bảo trì định kỳ",
+};
+
+const priorityLabels = {
+  Low: "Thấp",
+  Medium: "Trung bình",
+  High: "Cao",
+  Critical: "Khẩn cấp",
+};
+
+const workflowNotes = [
+  { status: "Open", text: "Ghi nhận sự cố, có thể chưa block phòng." },
+  { status: "InProgress", text: "Kỹ thuật bắt đầu xử lý; nếu ticket block phòng thì phòng sẽ ở trạng thái Ngưng phục vụ." },
+  { status: "Resolved", text: "Kỹ thuật báo đã sửa xong, phòng chưa mở bán lại ngay." },
+  { status: "Closed", text: "Vận hành xác nhận hoàn tất, hệ thống bỏ Ngưng phục vụ và đưa phòng về Trống + Cần dọn." },
+  { status: "Cancelled", text: "Ticket tạo nhầm hoặc không còn cần xử lý." },
+];
+
 const fmtDateTime = (value) =>
   value
     ? new Date(value).toLocaleString("vi-VN", {
@@ -205,15 +241,15 @@ export default function MaintenancePage() {
             <textarea value={form.reason} onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))} placeholder="Mô tả / nguyên nhân" style={{ ...inputStyle, minHeight: 84, resize: "vertical" }} required />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <select value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))} style={inputStyle}>
-                <option value="Repair">Repair</option>
-                <option value="Inspection">Inspection</option>
-                <option value="Preventive">Preventive</option>
+                <option value="Repair">{categoryLabels.Repair}</option>
+                <option value="Inspection">{categoryLabels.Inspection}</option>
+                <option value="Preventive">{categoryLabels.Preventive}</option>
               </select>
               <select value={form.priority} onChange={(e) => setForm((prev) => ({ ...prev, priority: e.target.value }))} style={inputStyle}>
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-                <option value="Critical">Critical</option>
+                <option value="Low">{priorityLabels.Low}</option>
+                <option value="Medium">{priorityLabels.Medium}</option>
+                <option value="High">{priorityLabels.High}</option>
+                <option value="Critical">{priorityLabels.Critical}</option>
               </select>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -238,7 +274,12 @@ export default function MaintenancePage() {
         <article style={{ ...cardStyle, padding: 22 }}>
           <h3 style={{ margin: "0 0 18px", fontSize: 18, color: "#1c1917", fontWeight: 800 }}>Quy trình đề xuất</h3>
           <div style={{ display: "grid", gap: 12 }}>
-            {[
+            {workflowNotes.map((item) => (
+              <div key={item.status} className="sub-card-p" style={{ background: "#faf8f3", borderRadius: 14, padding: 14, color: "#44403c", lineHeight: 1.6 }}>
+                <strong style={{ color: statusMeta[item.status]?.color || "#1c1917" }}>{statusLabels[item.status] || item.status}:</strong> {item.text}
+              </div>
+            ))}
+            {false && [
               "Open: ghi nhận sự cố, có thể chưa block phòng.",
               "InProgress: kỹ thuật bắt đầu xử lý, nếu ticket block phòng thì phòng phải ở Disabled.",
               "Resolved: kỹ thuật báo sửa xong, chưa mở bán lại ngay.",
@@ -258,11 +299,11 @@ export default function MaintenancePage() {
           <strong style={{ color: "#1c1917", fontSize: 18 }}>Danh sách ticket bảo trì</strong>
           <select value={filters.status} onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))} style={{ ...inputStyle, width: isMobile ? "100%" : 180 }}>
             <option value="">Tất cả trạng thái</option>
-            <option value="Open">Open</option>
-            <option value="InProgress">InProgress</option>
-            <option value="Resolved">Resolved</option>
-            <option value="Closed">Closed</option>
-            <option value="Cancelled">Cancelled</option>
+            <option value="Open">{statusLabels.Open}</option>
+            <option value="InProgress">{statusLabels.InProgress}</option>
+            <option value="Resolved">{statusLabels.Resolved}</option>
+            <option value="Closed">{statusLabels.Closed}</option>
+            <option value="Cancelled">{statusLabels.Cancelled}</option>
           </select>
         </div>
         {isMobile ? (
@@ -278,12 +319,12 @@ export default function MaintenancePage() {
                       <div style={{ color: "#1c1917", fontWeight: 900, fontSize: 16 }}>Phong {ticket.roomNumber}</div>
                       <div style={{ color: "#6b7280", fontSize: 13 }}>{ticket.roomTypeName || "-"}</div>
                     </div>
-                    <span style={{ padding: "6px 10px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 11, fontWeight: 900 }}>{ticket.status}</span>
+                    <span style={{ padding: "6px 10px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 11, fontWeight: 900 }}>{statusLabels[ticket.status] || ticket.status}</span>
                   </div>
                   <div>
                     <div style={{ color: "#1c1917", fontWeight: 900 }}>{ticket.title}</div>
                     <div style={{ color: "#6b7280", fontSize: 13, marginTop: 4 }}>{ticket.reason}</div>
-                    <div style={{ marginTop: 6, color: "#57534e", fontSize: 12, fontWeight: 800 }}>{ticket.category || "-"} - {ticket.priority}</div>
+                    <div style={{ marginTop: 6, color: "#57534e", fontSize: 12, fontWeight: 800 }}>{categoryLabels[ticket.category] || ticket.category || "-"} - {priorityLabels[ticket.priority] || ticket.priority}</div>
                   </div>
                   <div style={{ display: "grid", gap: 5, color: "#57534e", fontSize: 12 }}>
                     <div>Mở: {fmtDateTime(ticket.openedAt)}</div>
@@ -295,7 +336,7 @@ export default function MaintenancePage() {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                     {["InProgress", "Resolved", "Closed", "Cancelled"].map((status) => (
                       <button key={status} type="button" onClick={() => handleStatusUpdate(ticket.id, status)} disabled={saving || ticket.status === status} style={{ height: 36, borderRadius: 10, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 800, opacity: ticket.status === status ? 0.5 : 1 }}>
-                        {status}
+                        {statusActionLabels[status] || status}
                       </button>
                     ))}
                   </div>
@@ -330,7 +371,7 @@ export default function MaintenancePage() {
                     <td style={{ padding: "16px 18px" }}>
                       <div style={{ color: "#1c1917", fontWeight: 800 }}>{ticket.title}</div>
                       <div style={{ color: "#6b7280", fontSize: 13 }}>{ticket.reason}</div>
-                      <div style={{ marginTop: 6, color: "#57534e", fontSize: 12, fontWeight: 700 }}>{ticket.category || "—"} • {ticket.priority}</div>
+                      <div style={{ marginTop: 6, color: "#57534e", fontSize: 12, fontWeight: 700 }}>{categoryLabels[ticket.category] || ticket.category || "—"} • {priorityLabels[ticket.priority] || ticket.priority}</div>
                     </td>
                     <td style={{ padding: "16px 18px", color: "#57534e" }}>
                       <div>Báo cáo: {ticket.reportedBy?.fullName || "—"}</div>
@@ -342,7 +383,7 @@ export default function MaintenancePage() {
                       <div style={{ marginTop: 6 }}>Resolved: {fmtDateTime(ticket.resolvedAt)}</div>
                     </td>
                     <td style={{ padding: "16px 18px" }}>
-                      <span style={{ padding: "6px 10px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 11, fontWeight: 800 }}>{ticket.status}</span>
+                      <span style={{ padding: "6px 10px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 11, fontWeight: 800 }}>{statusLabels[ticket.status] || ticket.status}</span>
                     </td>
                     <td style={{ padding: "16px 18px" }}>
                       <textarea
@@ -370,7 +411,7 @@ export default function MaintenancePage() {
                               opacity: ticket.status === status ? 0.5 : 1,
                             }}
                           >
-                            {status}
+                            {statusActionLabels[status] || status}
                           </button>
                         ))}
                       </div>

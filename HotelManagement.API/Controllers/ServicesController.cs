@@ -3,6 +3,8 @@ using HotelManagement.Core.Authorization;
 using HotelManagement.Core.DTOs;
 using HotelManagement.Core.Entities;
 using HotelManagement.Infrastructure.Data;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,11 +18,13 @@ public class ServicesController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IAuditTrailService _auditTrail;
+    private readonly Cloudinary _cloudinary;
 
-    public ServicesController(AppDbContext db, IAuditTrailService auditTrail)
+    public ServicesController(AppDbContext db, IAuditTrailService auditTrail, Cloudinary cloudinary)
     {
         _db = db;
         _auditTrail = auditTrail;
+        _cloudinary = cloudinary;
     }
 
     [HttpGet("categories")]
@@ -380,6 +384,44 @@ public class ServicesController : ControllerBase
         return Ok(service);
     }
 
+    [HttpPost("upload-image")]
+    [RequirePermission(PermissionCodes.ManageServices)]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadServiceImage(IFormFile? file)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest(new { message = "Vui lòng chọn ảnh dịch vụ cần upload." });
+
+        var validationError = ValidateServiceImage(file);
+        if (validationError is not null)
+            return BadRequest(new { message = validationError });
+
+        await using var stream = file.OpenReadStream();
+        var uploadParams = new ImageUploadParams
+        {
+            File = new FileDescription(file.FileName, stream),
+            Folder = "hotel/services",
+            Transformation = new Transformation()
+                .Width(900)
+                .Height(620)
+                .Crop("fill")
+                .Gravity("auto")
+                .Quality("auto")
+                .FetchFormat("auto")
+        };
+
+        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+        if (uploadResult.Error is not null)
+            return StatusCode(502, new { message = $"Upload ảnh dịch vụ thất bại: {uploadResult.Error.Message}" });
+
+        return Ok(new
+        {
+            message = "Upload ảnh dịch vụ thành công.",
+            url = uploadResult.SecureUrl?.ToString(),
+            publicId = uploadResult.PublicId
+        });
+    }
+
     [HttpPost]
     [RequirePermission(PermissionCodes.ManageServices)]
     public async Task<IActionResult> CreateService([FromBody] CreateServiceRequest request)
@@ -541,6 +583,26 @@ public class ServicesController : ControllerBase
 
         if (!category.IsActive)
             return Conflict(new { message = "Không thể gán dịch vụ vào nhóm dịch vụ đang bị vô hiệu hóa." });
+
+        return null;
+    }
+
+    private static string? ValidateServiceImage(IFormFile file)
+    {
+        var allowedTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/gif"
+        };
+
+        if (!allowedTypes.Contains(file.ContentType))
+            return "Chỉ hỗ trợ ảnh JPG, PNG, WEBP hoặc GIF.";
+
+        const long maxSize = 5 * 1024 * 1024;
+        if (file.Length > maxSize)
+            return "Ảnh dịch vụ không được vượt quá 5MB.";
 
         return null;
     }

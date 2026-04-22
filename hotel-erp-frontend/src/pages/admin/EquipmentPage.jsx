@@ -102,7 +102,8 @@ function EquipmentModal({ open, mode, form, setForm, loading, error, onClose, on
           width: "100%",
           maxWidth: 680,
           maxHeight: isMobile ? "92vh" : "90vh",
-          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
           background: "white",
           borderRadius: isMobile ? "22px 22px 0 0" : 18,
           boxShadow: "0 24px 64px rgba(0,0,0,.2)",
@@ -117,6 +118,7 @@ function EquipmentModal({ open, mode, form, setForm, loading, error, onClose, on
             alignItems: "center",
             padding: "18px 22px",
             borderBottom: "1px solid #f1f0ea",
+            flexShrink: 0,
           }}
         >
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#1c1917" }}>{title}</h3>
@@ -129,7 +131,7 @@ function EquipmentModal({ open, mode, form, setForm, loading, error, onClose, on
           </button>
         </div>
 
-        <form onSubmit={onSubmit} style={{ padding: 22 }}>
+        <form onSubmit={onSubmit} style={{ padding: 22, overflowY: "auto", flex: 1, minHeight: 0 }}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6 }}>Mã VT *</label>

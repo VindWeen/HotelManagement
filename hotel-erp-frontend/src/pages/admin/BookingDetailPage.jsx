@@ -7,6 +7,7 @@ import { getAdminRoomTypes } from "../../api/roomTypesApi";
 import { formatCurrency, formatDate } from "../../utils";
 import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
 import { getBookingSourceLabel, getBookingStatusLabel } from "../../utils/statusLabels";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const ALLOWED_ACTIONS = {
   Pending: ["cancel", "collect_deposit"],
@@ -484,6 +485,7 @@ const isTransferExtensionDetail = (detail) =>
 export default function BookingDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isMobile } = useResponsiveAdmin();
   const [loading, setLoading] = useState(false);
   const [booking, setBooking] = useState(null);
   const [timeline, setTimeline] = useState([]);
@@ -1039,7 +1041,52 @@ export default function BookingDetailPage() {
               <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Danh sách hạng phòng booking</h3>
               </div>
-              <div className="overflow-x-auto">
+              {isMobile && (
+                <div style={{ display: "grid", gap: 12, padding: 14 }}>
+                  {(booking.bookingDetails || []).map((detail) => (
+                    <article key={detail.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+                        <div>
+                          <div style={{ fontSize: 16, fontWeight: 900, color: "#1c1917" }}>{detail.roomTypeName || "-"}</div>
+                          <div style={{ marginTop: 6, display: "inline-flex", padding: "4px 10px", borderRadius: 999, background: "#f0faf5", color: "#1a3826", fontWeight: 900, fontSize: 12, border: "1px solid #a7f3d0" }}>
+                            Phòng {detail.roomName || "N/A"}
+                          </div>
+                        </div>
+                        <div style={{ color: "#4f645b", fontWeight: 900 }}>{formatCurrency(detail.pricePerNight)}</div>
+                      </div>
+                      {isTransferExtensionDetail(detail) && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, width: "fit-content", padding: "4px 10px", borderRadius: 999, background: "#eff6ff", color: "#1d4ed8", fontSize: 11, fontWeight: 800, border: "1px solid #bfdbfe" }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 14 }}>swap_horiz</span>
+                          Chặng chuyển phòng
+                        </span>
+                      )}
+                      <div style={{ display: "grid", gap: 4, fontSize: 13, color: "#57534e" }}>
+                        <div><strong>In:</strong> {formatDate(detail.checkInDate)}</div>
+                        <div><strong>Out:</strong> {formatDate(detail.checkOutDate)}</div>
+                        {detail.note && <div style={{ color: "#6b7280", lineHeight: 1.45 }}>{detail.note}</div>}
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        {!detail.roomId && (booking.status === "Confirmed" || booking.status === "Checked_in") && (
+                          <button className="action-btn" style={{ justifyContent: "center", padding: "9px 12px", fontSize: 12, gridColumn: "1 / -1" }} onClick={() => handleCheckInDetail(detail.id)} disabled={!booking.userId}>
+                            Check-in phòng
+                          </button>
+                        )}
+                        {(booking.status === "Confirmed" || booking.status === "Checked_in") && (
+                          <>
+                            <button className="action-btn" style={{ justifyContent: "center", padding: "9px 12px", fontSize: 12 }} onClick={() => openExtendStayModal(detail)}>
+                              Ở thêm
+                            </button>
+                            <button className="action-btn" style={{ justifyContent: "center", padding: "9px 12px", fontSize: 12 }} onClick={() => openEarlyCheckOutModal(detail)}>
+                              Out sớm
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+              <div className="overflow-x-auto" style={{ display: isMobile ? "none" : "block" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "white" }}>
