@@ -14,20 +14,20 @@ const SIDEBAR_WIDTH = 256;
 function getPalette(mode) {
   if (mode === "dark") {
     return {
-      pageBg: "#000000",
-      shellBg: "#000000",
-      headerBg: "rgba(0, 0, 0, 0.9)",
-      panelBg: "#000000",
-      panelMuted: "#050505",
-      panelBorder: "rgba(255,255,255,0.1)",
-      textMain: "#ffffff",
-      textSub: "#d1d5db",
-      brand: "#ffffff",
-      brandStrong: "#ffffff",
-      activeBg: "#333333",
-      activeText: "#ffffff",
-      overlay: "rgba(0,0,0,0.85)",
-      divider: "rgba(255,255,255,0.08)",
+      pageBg: "#111411",
+      shellBg: "#111411",
+      headerBg: "rgba(17, 20, 17, 0.88)",
+      panelBg: "#1a1c19",
+      panelMuted: "#232623",
+      panelBorder: "rgba(225,227,222,0.12)",
+      textMain: "#E1E3DE",
+      textSub: "#A0A39D",
+      brand: "#A5D6A7",
+      brandStrong: "#A5D6A7",
+      activeBg: "rgba(165,214,167,0.14)",
+      activeText: "#E1E3DE",
+      overlay: "rgba(5,8,5,0.78)",
+      divider: "rgba(225,227,222,0.08)",
     };
   }
 
@@ -191,12 +191,12 @@ export default function AdminLayout() {
         .dark [style*="background:#ecfdf5"], .dark [style*="background: #ecfdf5"],
         .dark [style*="background:#fef3c7"], .dark [style*="background: #fef3c7"],
         .dark [style*="background:#edf2f7"], .dark [style*="background: #edf2f7"] {
-           background-color: #000000 !important;
+           background-color: #111411 !important;
            box-shadow: none !important;
         }
 
         .dark [style*="background:linear-gradient(135deg,#d1e8dd,#c3dacf)"] {
-           background: #1a1a1a !important;
+           background: #232623 !important;
         }
 
         /* Status Badge Overrides (make them outlines or transparent in dark mode) */
@@ -227,7 +227,7 @@ export default function AdminLayout() {
         .dark [style*="color:#44403c"], .dark [style*="color: #44403c"],
         .dark [style*="color:#78716c"], .dark [style*="color: #78716c"],
         .dark [style*="color:#57534e"], .dark [style*="color: #57534e"] {
-          color: #ffffff !important;
+          color: #E1E3DE !important;
         }
 
         .dark [style*="color:#5e6059"], .dark [style*="color: #5e6059"],
@@ -247,7 +247,7 @@ export default function AdminLayout() {
         .dark [style*="color:#1f2937"], .dark [style*="color: #1f2937"],
         .dark [style*="color:#111827"], .dark [style*="color: #111827"],
         .dark [style*="color:#292524"], .dark [style*="color: #292524"] {
-          color: #ffffff !important;
+          color: #E1E3DE !important;
         }
 
         .dark [style*="color:#6b7280"], .dark [style*="color: #6b7280"],
@@ -255,7 +255,7 @@ export default function AdminLayout() {
         .dark [style*="color:#9ca3af"], .dark [style*="color: #9ca3af"],
         .dark [style*="color:rgb(156, 163, 175)"], .dark [style*="color: rgb(156, 163, 175)"],
         .dark [style*="color:rgba(0, 0, 0, 0.5)"], .dark [style*="color: rgba(0, 0, 0, 0.5)"] {
-          color: #d1d5db !important;
+          color: #A0A39D !important;
         }
 
         .dark [style*="border-color:#e2e8e1"], .dark [style*="border-color: #e2e8e1"],
@@ -287,13 +287,13 @@ export default function AdminLayout() {
           background-color: rgba(255,255,255,0.03) !important;
         }
 
-        .dark .modal-content, .dark .drawer-content { background: #000000 !important; }
+        .dark .modal-content, .dark .drawer-content { background: #1a1c19 !important; }
         .dark [style*="boxShadow"], .dark [style*="box-shadow"] {
           box-shadow: 0 4px 24px rgba(0,0,0,0.4) !important;
         }
 
         .dark .room-card { 
-            background: #000000 !important; 
+            background: #111411 !important; 
             border-color: rgba(255,255,255,0.12) !important;
         }
         .dark .status-badge { 
@@ -313,7 +313,7 @@ export default function AdminLayout() {
         .dark [style*="background-color: #ffffff"],
         .dark [style*="background: rgb(255, 255, 255)"],
         .dark [style*="background-color: rgb(255, 255, 255)"] {
-          background-color: #000000 !important;
+          background-color: #111411 !important;
           border-color: rgba(255,255,255,0.12) !important;
         }
 
@@ -344,7 +344,7 @@ export default function AdminLayout() {
         /* Catch dark brand colors used as text and make them bright */
         .dark [style*="color:#4f645b"], .dark [style*="color: #4f645b"],
         .dark [style*="color:#1a3826"], .dark [style*="color: #1a3826"] {
-          color: #ffffff !important;
+          color: #E1E3DE !important;
         }
 
         /* Catch error/warning/info light backgrounds */
@@ -356,7 +356,7 @@ export default function AdminLayout() {
         .dark [style*="background: #fee2e2"],
         .dark [style*="background-color: #fee2e2"] {
           background-color: rgba(255,255,255,0.06) !important;
-          color: #ffffff !important;
+          color: #E1E3DE !important;
         }
 
         /* Text colors */
@@ -366,7 +366,7 @@ export default function AdminLayout() {
         .dark [style*="color: #1c1917"], .dark [style*="color: #0f172a"],
         .dark [style*="color: #1e293b"], .dark [style*="color: #374151"], 
         .dark [style*="color: #334155"] {
-          color: #ffffff !important;
+          color: #E1E3DE !important;
         }
 
         .dark .text-stone-400, .dark .text-stone-500, .dark .text-stone-600,
@@ -375,7 +375,7 @@ export default function AdminLayout() {
         .dark [style*="color: #6b7280"], .dark [style*="color: #94a3b8"],
         .dark [style*="color: #64748b"], .dark [style*="color: #9ca3af"],
         .dark [style*="color: #78716c"] {
-          color: #d1d5db !important;
+          color: #A0A39D !important;
         }
 
         /* Borders */
@@ -403,33 +403,33 @@ export default function AdminLayout() {
         .dark [style*="background: white"][style*="borderRadius: 24"],
         .dark [style*="background: white"][style*="border-radius: 20"],
         .dark div[class*="modal"] div[class*="bg-white"] {
-           background-color: #000000 !important;
+           background-color: #111411 !important;
            border: 1px solid rgba(255,255,255,0.2) !important;
-           color: #ffffff !important;
+           color: #E1E3DE !important;
         }
 
         /* Buttons and Interactive */
         .dark .pg-btn:hover:not(.active) { background: rgba(255,255,255,0.1) !important; }
         .dark .pg-btn.active, .dark .tab-btn.active, .dark .active-filter {
-          background-color: #333333 !important;
-          color: #ffffff !important;
-          border-color: #555555 !important;
+          background-color: rgba(165,214,167,0.14) !important;
+          color: #E1E3DE !important;
+          border-color: rgba(165,214,167,0.26) !important;
         }
 
         .dark button:not(.pg-btn):not(.action-btn):not([style*="background:none"]),
         .dark .pg-btn:not(.active),
         .dark .btn-icon-p { 
-          background: #262626 !important;
-          color: #ffffff !important;
-          border: 1px solid rgba(255,255,255,0.3) !important;
+          background: #232623 !important;
+          color: #E1E3DE !important;
+          border: 1px solid rgba(225,227,222,0.16) !important;
         }
 
         .dark button[style*="background:linear-gradient"],
         .dark button[style*="background-color:linear-gradient"],
         .dark button[style*="background:#4f645b"],
         .dark button[style*="background: #4f645b"] {
-          background: #ffffff !important;
-          color: #000000 !important;
+          background: #A5D6A7 !important;
+          color: #111411 !important;
           border: none !important;
           font-weight: 800 !important;
         }
@@ -440,20 +440,20 @@ export default function AdminLayout() {
         .dark [style*="border-color:#1a3826"], .dark [style*="border-color: #1a3826"],
         .dark [style*="border-color:#4f645b"], .dark [style*="border-color: #4f645b"],
         .dark [style*="solid #059669"], .dark [style*="solid #6b7280"], .dark [style*="solid #1a3826"] {
-           background-color: #333333 !important;
-           border-color: #555555 !important;
-           color: #ffffff !important;
+           background-color: rgba(165,214,167,0.14) !important;
+           border-color: rgba(165,214,167,0.26) !important;
+           color: #E1E3DE !important;
         }
 
         .dark .status-badge { 
             background: rgba(255,255,255,0.08) !important; 
-            color: #ffffff !important;
+            color: #E1E3DE !important;
             border: 1px solid rgba(255,255,255,0.15) !important; 
         }
         
         /* Tooltips/Popovers if any */
         .dark [style*="box-shadow: 0 20px 40px rgba(15,23,42,.14)"] {
-           background-color: #000000 !important;
+           background-color: #1a1c19 !important;
            border-color: rgba(255,255,255,0.2) !important;
            box-shadow: 0 10px 40px rgba(0,0,0,0.85) !important;
         }
@@ -463,27 +463,27 @@ export default function AdminLayout() {
             background-color: #4b5563 !important; 
         }
         .dark input:checked + .slider { 
-            background-color: #10b981 !important; 
+            background-color: #A5D6A7 !important; 
         }
         .dark .slider:before {
-            background-color: #ffffff !important;
+            background-color: #E1E3DE !important;
         }
         .dark .toggle-switch span[style*="background:#4f645b"] {
-            background-color: #10b981 !important;
+            background-color: #A5D6A7 !important;
         }
         .dark .toggle-switch span[style*="background:#d1d5db"] {
             background-color: #4b5563 !important;
         }
         .dark .primary-card-p {
-           background-color: #000000 !important;
+           background-color: #111411 !important;
            border-color: rgba(255,255,255,0.1) !important;
-           color: #ffffff !important;
+           color: #E1E3DE !important;
         }
 
         .dark .sub-card-p {
-           background-color: #121212 !important;
+           background-color: #1a1c19 !important;
            border-color: rgba(255,255,255,0.12) !important;
-           color: #ffffff !important;
+           color: #E1E3DE !important;
         }
 
         /* Membership Badge Text - Force black for visibility on light rank backgrounds */
@@ -491,30 +491,30 @@ export default function AdminLayout() {
         .dark .tier-badge-text-p div, 
         .dark .tier-badge-text-p span,
         .dark .tier-badge-text-p p {
-           color: #000000 !important;
+           color: #111411 !important;
         }
 
         /* Quill Editor Dark Mode */
         .dark .ql-toolbar.ql-snow, 
         .dark .ql-container.ql-snow {
           border-color: rgba(255,255,255,0.1) !important;
-          background-color: #000000 !important;
-          color: #ffffff !important;
+          background-color: #111411 !important;
+          color: #E1E3DE !important;
         }
         .dark .ql-editor {
-          color: #ffffff !important;
+          color: #E1E3DE !important;
         }
         .dark .ql-snow .ql-stroke {
-          stroke: #d1d5db !important;
+          stroke: #A0A39D !important;
         }
         .dark .ql-snow .ql-fill {
-          fill: #d1d5db !important;
+          fill: #A0A39D !important;
         }
         .dark .ql-snow .ql-picker {
-          color: #d1d5db !important;
+          color: #A0A39D !important;
         }
         .dark .ql-toolbar.ql-snow {
-          background-color: #121212 !important;
+          background-color: #1a1c19 !important;
         }
         .dark .ql-editor.ql-blank::before {
           color: rgba(255,255,255,0.4) !important;
@@ -522,26 +522,26 @@ export default function AdminLayout() {
         
         /* Combobox / Select / Input Dark Mode */
         .dark select option {
-          background-color: #121212 !important;
-          color: #ffffff !important;
+          background-color: #1a1c19 !important;
+          color: #E1E3DE !important;
         }
         .dark input, .dark select, .dark textarea {
-          background-color: #1a1a1a !important;
+          background-color: #1a1c19 !important;
           border-color: rgba(255,255,255,0.15) !important;
-          color: #ffffff !important;
+          color: #E1E3DE !important;
         }
         /* Specific treatment for date/time inputs to make them 'bright' as requested */
         .dark input[type="date"], 
         .dark input[type="datetime-local"],
         .dark input[type="time"] {
-          background-color: #262626 !important;
+          background-color: #232623 !important;
           border-color: rgba(255,255,255,0.3) !important;
           color-scheme: dark !important;
         }
         
         /* Checkbox / Radio Dark Mode */
         .dark input[type="checkbox"], .dark input[type="radio"] {
-          accent-color: #10b981 !important;
+          accent-color: #A5D6A7 !important;
           cursor: pointer;
         }
         /* Optional: improve visibility of unchecked state */
@@ -557,7 +557,7 @@ export default function AdminLayout() {
         /* Toggle Switch (On state) */
         .dark .toggle-track-p[style*="background:#4f645b"],
         .dark .toggle-track-p[style*="background: #4f645b"] {
-          background-color: #10b981 !important;
+          background-color: #A5D6A7 !important;
         }
         /* Ensure toggle outer button stays transparent to avoid 'square' artifact */
         .dark .btn-reset-p,

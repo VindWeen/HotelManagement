@@ -52,7 +52,7 @@ const inputStyle = {
   padding: "13px 14px",
   borderRadius: "var(--g-radius-md)",
   border: "1px solid var(--g-border)",
-  background: "#fff",
+  background: "var(--g-bg-card)",
   color: "var(--g-text)",
   fontSize: "var(--g-text-base)",
   lineHeight: 1.4,
@@ -400,7 +400,7 @@ export default function GuestProfilePage() {
                   />
                 </Field>
                 <Field label="Email" hint="Email hiện chưa hỗ trợ thay đổi trong portal khách hàng.">
-                  <input value={profile?.email || ""} disabled style={{ ...inputStyle, background: "#f8fafc", color: "var(--g-text-muted)" }} />
+                  <input value={profile?.email || ""} disabled style={{ ...inputStyle, background: "var(--g-surface-raised)", color: "var(--g-text-muted)" }} />
                 </Field>
                 <Field label="Số điện thoại">
                   <input
@@ -433,7 +433,7 @@ export default function GuestProfilePage() {
                   <input
                     value={profile?.membershipTier || "Chưa có hạng"}
                     disabled
-                    style={{ ...inputStyle, background: "#f8fafc", color: "var(--g-text-muted)" }}
+                    style={{ ...inputStyle, background: "var(--g-surface-raised)", color: "var(--g-text-muted)" }}
                   />
                 </Field>
               </div>

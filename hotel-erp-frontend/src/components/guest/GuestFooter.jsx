@@ -30,9 +30,10 @@ const SOCIAL = [
 export default function GuestFooter() {
   return (
     <footer style={{
-      background: '#0f1a14',
-      color: 'rgba(255,255,255,0.75)',
+      background: 'var(--g-bg-card)',
+      color: 'var(--g-text-secondary)',
       fontFamily: 'var(--g-font-body)',
+      borderTop: '1px solid var(--g-border)',
     }}>
       <style>{`
         .gf-inner {
@@ -45,13 +46,13 @@ export default function GuestFooter() {
           grid-template-columns: 1.6fr 1fr 1fr 1fr;
           gap: 48px;
           padding: 64px 0 48px;
-          border-bottom: 1px solid rgba(255,255,255,0.08);
+          border-bottom: 1px solid var(--g-border-light);
         }
         .gf-brand-name {
           font-family: var(--g-font-heading);
           font-size: 1.5rem;
           font-weight: 700;
-          color: #fff;
+          color: var(--g-text);
           letter-spacing: 0.06em;
           line-height: 1;
         }
@@ -59,7 +60,7 @@ export default function GuestFooter() {
           margin-top: 12px;
           font-size: 0.875rem;
           line-height: 1.7;
-          color: rgba(255,255,255,0.5);
+          color: var(--g-text-muted);
           max-width: 260px;
         }
         .gf-contact {
@@ -73,12 +74,12 @@ export default function GuestFooter() {
           align-items: flex-start;
           gap: 8px;
           font-size: 0.8125rem;
-          color: rgba(255,255,255,0.55);
+          color: var(--g-text-secondary);
         }
         .gf-contact-icon {
           width: 18px;
           flex-shrink: 0;
-          color: var(--g-gold, #b8962e);
+          color: var(--g-primary);
           font-size: 0.9rem;
           margin-top: 1px;
         }
@@ -87,7 +88,7 @@ export default function GuestFooter() {
           font-weight: 700;
           letter-spacing: 0.2em;
           text-transform: uppercase;
-          color: rgba(255,255,255,0.35);
+          color: var(--g-text-faint);
           margin-bottom: 20px;
         }
         .gf-col-links {
@@ -100,11 +101,11 @@ export default function GuestFooter() {
         }
         .gf-col-links a {
           font-size: 0.875rem;
-          color: rgba(255,255,255,0.6);
+          color: var(--g-text-secondary);
           text-decoration: none;
           transition: color 0.2s;
         }
-        .gf-col-links a:hover { color: #fff; }
+        .gf-col-links a:hover { color: var(--g-primary); }
 
         .gf-bottom {
           display: flex;
@@ -116,7 +117,7 @@ export default function GuestFooter() {
         }
         .gf-copy {
           font-size: 0.8125rem;
-          color: rgba(255,255,255,0.35);
+          color: var(--g-text-faint);
         }
         .gf-socials {
           display: flex;
@@ -126,9 +127,9 @@ export default function GuestFooter() {
           width: 36px;
           height: 36px;
           border-radius: 50%;
-          border: 1px solid rgba(255,255,255,0.12);
-          background: rgba(255,255,255,0.06);
-          color: rgba(255,255,255,0.55);
+          border: 1px solid var(--g-border);
+          background: var(--g-surface-raised);
+          color: var(--g-text-secondary);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -137,13 +138,13 @@ export default function GuestFooter() {
           transition: all 0.2s;
         }
         .gf-social-btn:hover {
-          background: rgba(255,255,255,0.12);
-          color: #fff;
-          border-color: rgba(255,255,255,0.3);
+          background: var(--g-primary-muted);
+          color: var(--g-primary);
+          border-color: var(--g-border-strong);
         }
         .gf-gold-line {
-          height: 3px;
-          background: linear-gradient(90deg, var(--g-gold, #b8962e), transparent);
+          height: 2px;
+          background: linear-gradient(90deg, var(--g-primary), transparent);
         }
 
         @media (max-width: 1023px) {

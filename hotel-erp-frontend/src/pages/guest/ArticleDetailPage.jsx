@@ -115,14 +115,14 @@ export default function ArticleDetailPage() {
         .g-article-body {
           font-size: 18px;
           line-height: 1.9;
-          color: #374151;
+          color: var(--g-text-secondary);
           word-break: break-word;
         }
         .g-article-body h1,
         .g-article-body h2,
         .g-article-body h3,
         .g-article-body h4 {
-          color: #111827;
+          color: var(--g-text);
           line-height: 1.2;
           margin: 1.8em 0 0.75em;
           letter-spacing: -0.03em;
@@ -137,7 +137,7 @@ export default function ArticleDetailPage() {
           display: block;
           margin: 1.5em auto;
           border-radius: 18px;
-          box-shadow: 0 10px 30px rgba(17,24,39,.10);
+          box-shadow: var(--g-shadow-md);
         }
         .g-article-body ul,
         .g-article-body ol {
@@ -148,17 +148,17 @@ export default function ArticleDetailPage() {
           margin: 1.6em 0;
           padding: 0.8em 1.2em;
           border-left: 4px solid var(--g-primary);
-          background: #f7faf8;
-          color: #4b5563;
+          background: var(--g-surface-raised);
+          color: var(--g-text-secondary);
         }
         .g-article-body a {
-          color: #0f766e;
+          color: var(--g-primary);
           text-decoration: underline;
         }
       `}</style>
       
       {/* Nền cover full page */}
-      <div style={{ background: "linear-gradient(180deg, #f5efe4 0%, #f9f7f1 220px, #fbf9f4 220px, #fbf9f4 100%)", minHeight: "100vh" }}>
+      <div style={{ background: "linear-gradient(180deg, var(--g-surface-raised) 0%, var(--g-bg) 220px, var(--g-bg) 100%)", minHeight: "100vh" }}>
         <header
           style={{
             maxWidth: 980,
@@ -171,7 +171,7 @@ export default function ArticleDetailPage() {
           </Link>
 
           <div style={{ marginTop: 22 }}>
-            <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 14 }}>
+            <div style={{ fontSize: 13, color: "var(--g-text-muted)", marginBottom: 14 }}>
               {article.category?.name || "Chưa phân loại"} • {publishedDate || "Mới nhất"}
             </div>
             <h1
@@ -180,7 +180,7 @@ export default function ArticleDetailPage() {
                 fontSize: "clamp(34px, 5vw, 56px)",
                 lineHeight: 1.05,
                 letterSpacing: "-0.04em",
-                color: "#111827",
+                color: "var(--g-text)",
                 fontFamily: "var(--g-font-heading)"
               }}
             >
@@ -193,7 +193,7 @@ export default function ArticleDetailPage() {
                   maxWidth: 720,
                   fontSize: 18,
                   lineHeight: 1.7,
-                  color: "#4b5563",
+                  color: "var(--g-text-secondary)",
                 }}
               >
                 {article.metaDescription}
@@ -212,10 +212,10 @@ export default function ArticleDetailPage() {
             <article
               className="w-full"
               style={{
-                background: "white",
+                background: "var(--g-bg-card)",
                 borderRadius: 28,
-                border: "1px solid #ede7dd",
-                boxShadow: "0 20px 60px rgba(17,24,39,.06)",
+                border: "1px solid var(--g-border)",
+                boxShadow: "var(--g-shadow-lg)",
                 overflow: "hidden",
               }}
             >
@@ -257,24 +257,24 @@ export default function ArticleDetailPage() {
                       <section
                         key={attraction.id}
                         style={{
-                          background: "white",
+                          background: "var(--g-bg-card)",
                           borderRadius: 24,
-                          border: "1px solid #ede7dd",
-                          boxShadow: "0 20px 60px rgba(17,24,39,.06)",
+                          border: "1px solid var(--g-border)",
+                          boxShadow: "var(--g-shadow-lg)",
                           overflow: "hidden",
                           position: "sticky",
                           top: 100,
                         }}
                       >
-                        <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1ede6", background: "#fbfaf7" }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#4f645b" }}>
+                        <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--g-border-light)", background: "var(--g-surface-raised)" }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--g-primary)" }}>
                             Địa điểm liên kết
                           </div>
-                          <h3 style={{ margin: "10px 0 0", fontSize: 24, lineHeight: 1.2, color: "#111827", fontFamily: 'var(--g-font-heading)' }}>
+                          <h3 style={{ margin: "10px 0 0", fontSize: 24, lineHeight: 1.2, color: "var(--g-text)", fontFamily: 'var(--g-font-heading)' }}>
                             {attraction.name}
                           </h3>
                           {attraction.category && (
-                            <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: 14 }}>{attraction.category}</p>
+                            <p style={{ margin: "8px 0 0", color: "var(--g-text-muted)", fontSize: 14 }}>{attraction.category}</p>
                           )}
                         </div>
                         <div style={{ padding: 20, display: "grid", gap: 16 }}>
@@ -282,15 +282,15 @@ export default function ArticleDetailPage() {
                             <img
                               src={getFullImageUrl(attraction.imageUrl)}
                               alt={attraction.name}
-                              style={{ width: "100%", height: 200, objectFit: "cover", borderRadius: 18, border: "1px solid #ede7dd" }}
+                              style={{ width: "100%", height: 200, objectFit: "cover", borderRadius: 18, border: "1px solid var(--g-border)" }}
                             />
                           )}
                           {attraction.address && (
                             <div>
-                              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#6b7280" }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--g-text-muted)" }}>
                                 Địa chỉ
                               </div>
-                              <div style={{ marginTop: 6, color: "#374151", lineHeight: 1.7 }}>{attraction.address}</div>
+                              <div style={{ marginTop: 6, color: "var(--g-text-secondary)", lineHeight: 1.7 }}>{attraction.address}</div>
                             </div>
                           )}
                           {mapEmbedUrl ? (
@@ -298,10 +298,10 @@ export default function ArticleDetailPage() {
                               title={`attraction-map-${attraction.id}`}
                               src={mapEmbedUrl}
                               loading="lazy"
-                              style={{ width: "100%", height: 260, border: "1px solid #ede7dd", borderRadius: 18 }}
+                              style={{ width: "100%", height: 260, border: "1px solid var(--g-border)", borderRadius: 18 }}
                             />
                           ) : (
-                            <div style={{ padding: 18, borderRadius: 16, background: "#f8fafc", color: "#94a3b8", textAlign: "center" }}>
+                            <div style={{ padding: 18, borderRadius: 16, background: "var(--g-surface-raised)", color: "var(--g-text-muted)", textAlign: "center" }}>
                               Địa điểm này chưa có tọa độ để hiển thị bản đồ.
                             </div>
                           )}

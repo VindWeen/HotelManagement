@@ -14,7 +14,7 @@ export default function HomePage() {
           justify-content: center;
           background: #111;
           overflow: hidden;
-          margin-top: calc(-1 * var(--g-header-h)); /* Pull up under transparent header */
+          margin-top: calc(-1 * var(--g-header-h));
         }
         .hero-bg {
           position: absolute;
@@ -31,7 +31,7 @@ export default function HomePage() {
           position: relative;
           z-index: 10;
           text-align: center;
-          color: #fff;
+          color: var(--g-text-inverse);
           padding: 0 24px;
         }
         .hero-eyebrow {
@@ -64,10 +64,10 @@ export default function HomePage() {
           display: flex;
           gap: 16px;
           justify-content: center;
+          flex-wrap: wrap;
         }
       `}</style>
 
-      {/* Hero Section */}
       <section className="hero">
         <div className="hero-bg" />
         <div className="hero-content">
@@ -77,15 +77,44 @@ export default function HomePage() {
             Nơi thời gian dừng lại, không gian mở ra. Tận hưởng kỳ nghỉ dưỡng sang trọng giữa không gian thiên nhiên hùng vĩ.
           </p>
           <div className="hero-actions">
-            <Link to="/booking" className="g-btn-lg" style={{ background: '#ffffff', color: 'var(--g-primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', fontWeight: 700 }}>Đặt phòng ngay</Link>
-            <Link to="/attractions" className="g-btn-lg" style={{ background: 'rgba(255,255,255,0.15)', color: '#ffffff', backdropFilter: 'blur(8px)', borderColor: 'rgba(255,255,255,0.3)', border: '1px solid', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', fontWeight: 600 }}>
+            <Link
+              to="/booking"
+              className="g-btn-lg"
+              style={{
+                background: 'var(--g-bg-card)',
+                color: 'var(--g-primary)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '9999px',
+                fontWeight: 700,
+                boxShadow: 'var(--g-shadow-md)',
+              }}
+            >
+              Đặt phòng ngay
+            </Link>
+            <Link
+              to="/attractions"
+              className="g-btn-lg"
+              style={{
+                background: 'var(--g-hero-panel)',
+                color: 'var(--g-text-inverse)',
+                backdropFilter: 'blur(8px)',
+                borderColor: 'var(--g-hero-border)',
+                border: '1px solid',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '9999px',
+                fontWeight: 600,
+              }}
+            >
               Khám phá
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Featured Rooms Placeholder */}
       <PageContainer as="section" className="g-section-lg">
         <SectionTitle
           eyebrow="Phòng & Suite"
@@ -94,8 +123,7 @@ export default function HomePage() {
           className="g-animate-up"
         />
         <div style={{ marginTop: 48, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 32 }}>
-          {/* Team sẽ thay bằng component RoomList thực tế */}
-          {[1, 2, 3].map(i => (
+          {[1, 2, 3].map((i) => (
             <div key={i} className="g-skeleton" style={{ height: 400, borderRadius: 'var(--g-radius-lg)' }} />
           ))}
         </div>
@@ -104,7 +132,6 @@ export default function HomePage() {
         </div>
       </PageContainer>
 
-      {/* Amenities Placeholder */}
       <section style={{ background: 'var(--g-surface-raised)', padding: 'var(--g-space-32) 0' }}>
         <PageContainer>
           <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
@@ -116,7 +143,7 @@ export default function HomePage() {
                 subtitle="Tại The Ethereal, chúng tôi mang đến những dịch vụ đạt chuẩn 5 sao, từ ẩm thực tinh tế đến spa chăm sóc sức khỏe toàn diện."
               />
               <ul style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 16, listStyle: 'none', padding: 0 }}>
-                {['Mộc Spa & Wellness', 'Nhà hàng Ẩm thực Á-Âu', 'Hồ bơi vô cực view núi', 'Phòng tập Gym hiện đại'].map(item => (
+                {['Mộc Spa & Wellness', 'Nhà hàng Ẩm thực Á-Âu', 'Hồ bơi vô cực view núi', 'Phòng tập Gym hiện đại'].map((item) => (
                   <li key={item} style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '1.125rem' }}>
                     <span style={{ color: 'var(--g-gold)' }}>✦</span> {item}
                   </li>
@@ -131,15 +158,28 @@ export default function HomePage() {
         </PageContainer>
       </section>
 
-      {/* CTA Section */}
       <section style={{ background: 'var(--g-primary)', color: 'var(--g-text-on-primary)', padding: 'var(--g-space-32) 0', textAlign: 'center' }}>
         <PageContainer size="md">
           <SectionTitle
-            title={<span style={{ color: '#fff' }}>Sẵn Sàng Cho Kỳ Nghỉ Của Bạn?</span>}
-            subtitle={<span style={{ color: 'rgba(255,255,255,0.7)' }}>Liên hệ với chúng tôi để nhận ưu đãi tốt nhất cho chuyến đi sắp tới.</span>}
+            title={<span style={{ color: 'var(--g-text-on-primary)' }}>Sẵn Sàng Cho Kỳ Nghỉ Của Bạn?</span>}
+            subtitle={<span style={{ color: 'var(--g-hero-text-muted)' }}>Liên hệ với chúng tôi để nhận ưu đãi tốt nhất cho chuyến đi sắp tới.</span>}
           />
           <div style={{ marginTop: 40 }}>
-            <Link to="/booking" className="g-btn-lg" style={{ background: '#ffffff', color: 'var(--g-primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '9999px', fontWeight: 700 }}>Bắt Đầu Đặt Phòng</Link>
+            <Link
+              to="/booking"
+              className="g-btn-lg"
+              style={{
+                background: 'var(--g-bg-card)',
+                color: 'var(--g-primary)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '9999px',
+                fontWeight: 700,
+              }}
+            >
+              Bắt Đầu Đặt Phòng
+            </Link>
           </div>
         </PageContainer>
       </section>

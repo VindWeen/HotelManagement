@@ -111,7 +111,7 @@ const styles = `
   }
   .mb-tab:hover {
     color: var(--g-text);
-    background: rgba(255,255,255,0.8);
+    background: var(--g-bg-card);
   }
   .mb-tab.active {
     background: var(--g-bg-card);
@@ -277,7 +277,7 @@ const styles = `
     flex-wrap: wrap;
     padding: 14px 22px;
     border-top: 1px solid var(--g-border-light);
-    background: rgba(248, 249, 250, 0.5);
+    background: var(--g-surface-raised);
   }
   .mb-total {
     font-size: var(--g-text-sm);
@@ -560,7 +560,7 @@ export default function MyBookingPage() {
             {selectedBooking.refundPolicy && (
               <div style={{ display: "grid", gap: 8 }}>
                 <div className="mb-detail-label">Chính sách & Hết hạn</div>
-                <div style={{ padding: 12, background: "rgba(0,0,0,0.03)", borderRadius: "var(--g-radius-md)", fontSize: "var(--g-text-xs)", color: "var(--g-text-muted)", lineHeight: 1.5 }}>
+                <div style={{ padding: 12, background: "var(--g-surface-raised)", borderRadius: "var(--g-radius-md)", fontSize: "var(--g-text-xs)", color: "var(--g-text-muted)", lineHeight: 1.5, border: "1px solid var(--g-border-light)" }}>
                   <div>• {selectedBooking.refundPolicy}</div>
                   {selectedBooking.refundableUntil && (
                     <div style={{ marginTop: 4 }}>• Hủy trước <strong>{new Date(selectedBooking.refundableUntil).toLocaleString("vi-VN")}</strong> để nhận hoàn tiền.</div>

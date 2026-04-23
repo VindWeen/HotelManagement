@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { to: '/reviews',     label: 'Đánh giá',        exact: false },
 ];
 
-export default function GuestHeader() {
+export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
   const [scrolled,    setScrolled]    = useState(false);
   const [menuOpen,    setMenuOpen]    = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -92,16 +92,16 @@ export default function GuestHeader() {
           font-family: var(--g-font-body);
         }
         .gh-header.scrolled {
-          background: rgba(251, 249, 244, 0.92);
+          background: var(--g-header-glass);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          box-shadow: 0 1px 0 var(--g-border), 0 4px 20px rgba(0,0,0,0.06);
+          box-shadow: var(--g-header-shadow);
         }
         .gh-header.at-top.hero-page {
           background: transparent;
         }
         .gh-header.at-top {
-          background: rgba(251, 249, 244, 0.92);
+          background: var(--g-header-glass-soft);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
         }
@@ -177,6 +177,33 @@ export default function GuestHeader() {
         /* Actions */
         .gh-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
+        .gh-theme-toggle {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          border: 1px solid var(--g-border);
+          background: var(--g-bg-card);
+          color: var(--g-text-secondary);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s var(--g-ease);
+          box-shadow: var(--g-shadow-sm);
+        }
+        .gh-theme-toggle:hover {
+          color: var(--g-primary);
+          border-color: var(--g-border-strong);
+          background: var(--g-primary-muted);
+          transform: translateY(-1px);
+        }
+        .gh-header.at-top.hero-page .gh-theme-toggle {
+          background: var(--g-hero-panel);
+          border-color: var(--g-hero-border);
+          color: #fff;
+          box-shadow: none;
+        }
+
         .gh-account {
           position: relative;
           display: none;
@@ -187,16 +214,16 @@ export default function GuestHeader() {
           gap: 10px;
           padding: 7px 10px 7px 12px;
           border-radius: var(--g-radius-full);
-          border: 1px solid rgba(26,56,38,0.12);
-          background: rgba(255,255,255,0.9);
+          border: 1px solid var(--g-border);
+          background: var(--g-bg-card);
           color: var(--g-text);
           cursor: pointer;
           font-family: var(--g-font-body);
           transition: all 0.2s var(--g-ease);
-          box-shadow: 0 8px 22px rgba(15,23,42,0.06);
+          box-shadow: var(--g-shadow-sm);
         }
         .gh-account-trigger:hover {
-          border-color: rgba(26,56,38,0.22);
+          border-color: var(--g-border-strong);
           transform: translateY(-1px);
         }
         .gh-account-name {
@@ -243,10 +270,10 @@ export default function GuestHeader() {
           top: calc(100% + 10px);
           right: 0;
           width: 240px;
-          background: rgba(255,255,255,0.98);
+          background: var(--g-bg-card);
           border: 1px solid var(--g-border);
           border-radius: 18px;
-          box-shadow: 0 24px 48px rgba(15,23,42,0.16);
+          box-shadow: var(--g-shadow-xl);
           padding: 10px;
           display: grid;
           gap: 4px;
@@ -296,8 +323,8 @@ export default function GuestHeader() {
           color: #b91c1c;
         }
         .gh-account-link.danger:hover {
-          background: #fef2f2;
-          color: #991b1b;
+          background: var(--g-error-bg);
+          color: var(--g-error);
         }
 
         .gh-cta {
@@ -306,7 +333,7 @@ export default function GuestHeader() {
           gap: 6px;
           padding: 10px 22px;
           background: var(--g-primary);
-          color: #ffffff !important;
+          color: var(--g-text-on-primary) !important;
           font-size: 0.8125rem;
           font-weight: 700;
           letter-spacing: 0.04em;
@@ -321,7 +348,7 @@ export default function GuestHeader() {
         .gh-cta:hover {
           background: var(--g-primary-hover);
           transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(26,56,38,0.2);
+          box-shadow: 0 8px 22px rgba(0,0,0,0.18);
         }
 
         /* Hamburger */
@@ -367,7 +394,7 @@ export default function GuestHeader() {
         .gh-overlay {
           position: absolute;
           inset: 0;
-          background: rgba(28, 25, 23, 0.6);
+          background: var(--g-overlay);
           backdrop-filter: blur(4px);
           opacity: 0;
           transition: opacity 0.3s;
@@ -420,7 +447,7 @@ export default function GuestHeader() {
           justify-content: center;
           padding: 14px;
           background: var(--g-gold);
-          color: #ffffff !important;
+          color: var(--g-text-on-primary) !important;
           font-weight: 700;
           font-size: 0.9375rem;
           border-radius: var(--g-radius-full);
@@ -525,6 +552,17 @@ export default function GuestHeader() {
                 Đăng nhập
               </Link>
             )}
+            <button
+              type="button"
+              className="gh-theme-toggle"
+              onClick={onToggleTheme}
+              title={themeMode === 'dark' ? 'Chuyển sang light mode' : 'Chuyển sang dark mode'}
+              aria-label={themeMode === 'dark' ? 'Chuyển sang light mode' : 'Chuyển sang dark mode'}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
+                {themeMode === 'dark' ? 'light_mode' : 'dark_mode'}
+              </span>
+            </button>
             <Link to="/booking" className="gh-cta" onClick={closeMenu}>
               Đặt phòng
             </Link>
@@ -752,6 +790,18 @@ export default function GuestHeader() {
               Đăng nhập
             </Link>
           )}
+          <button
+            type="button"
+            className="gh-panel-link"
+            onClick={() => onToggleTheme?.()}
+            tabIndex={menuOpen ? 0 : -1}
+            style={{ background: 'transparent', border: 'none', width: '100%', textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
+              {themeMode === 'dark' ? 'light_mode' : 'dark_mode'}
+            </span>
+            {themeMode === 'dark' ? 'Light mode' : 'Dark mode'}
+          </button>
           <Link to="/booking" className="gh-panel-cta" onClick={closeMenu} tabIndex={menuOpen ? 0 : -1}>
             🗓 Đặt phòng ngay
           </Link>
