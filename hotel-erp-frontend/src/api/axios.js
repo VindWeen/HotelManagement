@@ -60,13 +60,16 @@ axiosClient.interceptors.response.use(
         const status = error.response?.status;
 
         if (status === 401) {
-            // Token hết hạn hoặc không hợp lệ
-            // → Xóa hết auth data, chuyển về /login
-            import('../store/adminAuthStore').then(({ useAdminAuthStore }) => {
-                useAdminAuthStore.getState().clearAuth();
-            });
-            // Chuyển hướng về login (không dùng useNavigate vì ngoài component)
-            window.location.href = '/login';
+            // Chỉ redirect về /login nếu user đang có token (token hết hạn / không hợp lệ)
+            // Nếu không có token (public API), không redirect — để component tự xử lý
+            const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+            if (token) {
+                import('../store/adminAuthStore').then(({ useAdminAuthStore }) => {
+                    useAdminAuthStore.getState().clearAuth();
+                });
+                window.location.href = '/login';
+            }
+            // Public API call without token → silently reject, caller uses .catch(() => {})
         }
 
         if (status === 403) {

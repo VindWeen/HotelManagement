@@ -5,10 +5,11 @@ import { isGuestRole } from '../../routes/permissionRouting';
 
 const NAV_LINKS = [
   { to: '/',            label: 'Trang chủ',      exact: true },
-  { to: '/attractions', label: 'Khám phá',        exact: false },
+  { to: '/rooms',       label: 'Hạng phòng',     exact: true },
+  { to: '/services',    label: 'Dịch vụ',        exact: true },
+  { to: '/attractions', label: 'Khám phá',        exact: true },
   { to: '/articles',    label: 'Bài viết',        exact: false },
-  { to: '/reviews',     label: 'Đánh giá',        exact: false },
-  { to: '/guest/services', label: 'Dịch vụ',      exact: false },
+  { to: '/reviews',     label: 'Đánh giá',        exact: true },
 ];
 
 export default function GuestHeader() {

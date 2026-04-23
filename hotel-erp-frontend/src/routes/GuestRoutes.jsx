@@ -26,7 +26,14 @@ const GuestProfilePage = lazyWithMinDelay(() => import("../pages/guest/ProfilePa
 const MyBookingPage = lazyWithMinDelay(() => import("../pages/guest/MyBookingPage"));
 const BookingPage = lazyWithMinDelay(() => import("../pages/guest/BookingPage"));
 
-// New pages for Payment and Services
+// Public pages (no auth required)
+const RoomsPage = lazyWithMinDelay(() => import("../pages/guest/RoomsPage"));
+const RoomDetailPage = lazyWithMinDelay(() => import("../pages/guest/RoomDetailPage"));
+const PublicServicesPage = lazyWithMinDelay(() => import("../pages/guest/PublicServicesPage"));
+const PolicyPage = lazyWithMinDelay(() => import("../pages/guest/PolicyPage"));
+const FAQPage = lazyWithMinDelay(() => import("../pages/guest/FAQPage"));
+
+// Authenticated guest pages
 const DepositPaymentPage = lazyWithMinDelay(() => import("../pages/guest/payment/DepositPaymentPage"));
 const PaymentResultPage = lazyWithMinDelay(() => import("../pages/guest/payment/PaymentResultPage"));
 const GuestServicesPage = lazyWithMinDelay(() => import("../pages/guest/services/GuestServicesPage"));
@@ -47,6 +54,14 @@ export default function GuestRoutes() {
     <Route element={<GuestLayout />}>
       <Route path="/" element={withSuspense(<HomePage />)} />
       <Route path="/booking" element={withSuspense(<BookingPage />)} />
+      {/* Public room pages */}
+      <Route path="/rooms" element={withSuspense(<RoomsPage />)} />
+      <Route path="/rooms/:id" element={withSuspense(<RoomDetailPage />)} />
+      {/* Public service/info pages */}
+      <Route path="/services" element={withSuspense(<PublicServicesPage />)} />
+      <Route path="/policy" element={withSuspense(<PolicyPage />)} />
+      <Route path="/faq" element={withSuspense(<FAQPage />)} />
+      {/* Content pages */}
       <Route path="/articles" element={withSuspense(<ArticlesPage />)} />
       <Route path="/articles/:slug" element={withSuspense(<ArticleDetailPage />)} />
       <Route path="/attractions" element={withSuspense(<AttractionsPage />)} />
