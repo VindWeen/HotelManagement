@@ -54,6 +54,7 @@ public class AppDbContext : DbContext
     public DbSet<Shift> Shifts => Set<Shift>();
     public DbSet<LoyaltyTransaction> LoyaltyTransactions => Set<LoyaltyTransaction>();
     public DbSet<VoucherUsage> VoucherUsages => Set<VoucherUsage>();
+    public DbSet<VoucherTargetUser> VoucherTargetUsers => Set<VoucherTargetUser>();
 
     public override int SaveChanges()
     {
@@ -110,6 +111,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ArticleCategory>().ToTable("Article_Categories");
         modelBuilder.Entity<LoyaltyTransaction>().ToTable("Loyalty_Transactions");
         modelBuilder.Entity<VoucherUsage>().ToTable("Voucher_Usage");
+        modelBuilder.Entity<VoucherTargetUser>().ToTable("Voucher_Target_Users");
         modelBuilder.Entity<ActivityLog>().ToTable("Activity_Logs");
         modelBuilder.Entity<ActivityLog>()
             .HasIndex(a => new { a.UserId, a.CreatedAt });
@@ -156,12 +158,33 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<RoomTypeAmenity>()
             .HasKey(rta => new { rta.RoomTypeId, rta.AmenityId });
 
+        modelBuilder.Entity<VoucherTargetUser>()
+            .HasKey(vtu => new { vtu.VoucherId, vtu.UserId });
+
         // ── 3. Unique Indexes ─────────────────────────────────────
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email).IsUnique();
 
         modelBuilder.Entity<Voucher>()
             .HasIndex(v => v.Code).IsUnique();
+
+        modelBuilder.Entity<Voucher>()
+            .HasOne(v => v.TargetMembership)
+            .WithMany()
+            .HasForeignKey(v => v.TargetMembershipId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<VoucherTargetUser>()
+            .HasOne(vtu => vtu.Voucher)
+            .WithMany(v => v.TargetUsers)
+            .HasForeignKey(vtu => vtu.VoucherId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<VoucherTargetUser>()
+            .HasOne(vtu => vtu.User)
+            .WithMany(u => u.VoucherTargets)
+            .HasForeignKey(vtu => vtu.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Booking>()
             .HasIndex(b => b.BookingCode).IsUnique();

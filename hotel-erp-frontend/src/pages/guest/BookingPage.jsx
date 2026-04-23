@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { getGuestAvailability, createBooking, getMyBookings, cancelBooking } from "../../api/bookingsApi";
-import { validateVoucher } from "../../api/vouchersApi";
+import { getAvailableVouchers, validateVoucher } from "../../api/vouchersApi";
+import { getMyProfile } from "../../api/userProfileApi";
 import {
   PageContainer,
   SectionTitle,
@@ -19,6 +20,14 @@ import { useAdminAuthStore } from "../../store/adminAuthStore";
 ───────────────────────────────────────────── */
 const MAX_PENDING = 3; // giới hạn booking pending mỗi tài khoản
 const DEPOSIT_RATE = 0.3; // 30%
+
+const getVoucherAudienceLabel = (voucher) => {
+  if (voucher?.audienceType === "USER") return "Riêng cho bạn";
+  if (voucher?.audienceType === "BIRTHDAY_MONTH") return "Sinh nhật";
+  if (voucher?.audienceType === "MEMBERSHIP") return voucher.targetMembershipName || "Hạng thành viên";
+  if (voucher?.audienceType === "HOLIDAY") return voucher.occasionName || "Dịp lễ";
+  return "Công khai";
+};
 
 const today = () => {
   const d = new Date();
@@ -659,9 +668,15 @@ const PAGE_CSS = `
 ───────────────────────────────────────────── */
 export default function BookingPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const user = useAdminAuthStore((s) => s.user);
   const token = useAdminAuthStore((s) => s.token);
   const isGuest = !!token;
+  const initialVoucherCode = useMemo(
+    () => searchParams.get("voucher")?.trim().toUpperCase() || "",
+    [searchParams]
+  );
+  const autoAppliedVoucherRef = useRef("");
 
   /* ── Step state ── */
   const [step, setStep] = useState(1); // 1: dates+guests, 2: room type, 3: guest info, 4: review
@@ -688,6 +703,10 @@ export default function BookingPage() {
   const [voucherInfo, setVoucherInfo] = useState(null); // { voucherId, discountAmount, finalAmount }
   const [voucherError, setVoucherError] = useState("");
   const [voucherLoading, setVoucherLoading] = useState(false);
+  const [availableVouchers, setAvailableVouchers] = useState([]);
+  const [loadingVouchers, setLoadingVouchers] = useState(false);
+  const [loyaltyPointsUsable, setLoyaltyPointsUsable] = useState(0);
+  const [loyaltyPointsToRedeem, setLoyaltyPointsToRedeem] = useState(0);
 
   /* ── Validation errors ── */
   const [dateError, setDateError] = useState("");
@@ -724,8 +743,28 @@ export default function BookingPage() {
   }, [nights, selectedRoomType]);
 
   const discountAmount = voucherInfo?.discountAmount || 0;
-  const totalAmount = Math.max(0, subtotal - discountAmount);
+  const amountAfterVoucher = Math.max(0, subtotal - discountAmount);
+  const maxRedeemByPoints = Math.floor(Math.max(0, loyaltyPointsUsable) / 100) * 100;
+  const maxRedeemByAmount = Math.floor(amountAfterVoucher / 10000) * 100;
+  const maxRedeemPoints = Math.min(maxRedeemByPoints, maxRedeemByAmount);
+  const normalizedRedeemPoints = Math.min(
+    maxRedeemPoints,
+    Math.floor(Math.max(0, Number(loyaltyPointsToRedeem) || 0) / 100) * 100
+  );
+  const loyaltyDiscountAmount = normalizedRedeemPoints * 100;
+  const totalAmount = Math.max(0, amountAfterVoucher - loyaltyDiscountAmount);
   const depositRequired = Math.round(totalAmount * DEPOSIT_RATE * 100) / 100;
+  const getVoucherDisabledReason = useCallback((voucher) => {
+    if (!voucher) return "";
+    if (voucher.isUsable === false) return voucher.unusableReason || "Voucher hiện chưa thể sử dụng.";
+    if (voucher.applicableRoomTypeId && voucher.applicableRoomTypeId !== selectedRoomTypeId) {
+      return "Không áp dụng cho hạng phòng này.";
+    }
+    if (voucher.minBookingValue && subtotal < voucher.minBookingValue) {
+      return `Cần đơn tối thiểu ${formatCurrency(voucher.minBookingValue)}.`;
+    }
+    return "";
+  }, [selectedRoomTypeId, subtotal]);
 
   const pendingCount = pendingBookings.filter((b) => b.status === "Pending").length;
   const spamBlocked = isGuest && pendingCount >= MAX_PENDING;
@@ -773,6 +812,64 @@ export default function BookingPage() {
     if (isGuest) loadPendingBookings();
   }, [loadPendingBookings, isGuest]);
 
+  useEffect(() => {
+    if (!isGuest) return;
+
+    let cancelled = false;
+    const loadProfile = async () => {
+      try {
+        const res = await getMyProfile();
+        if (!cancelled) {
+          const profile = res.data?.data || res.data || {};
+          setLoyaltyPointsUsable(profile.loyaltyPointsUsable ?? profile.loyaltyPoints ?? 0);
+          setGuestName((current) => current || profile.fullName || profile.name || "");
+          setGuestPhone((current) => current || profile.phone || profile.phoneNumber || "");
+          setGuestEmail((current) => current || profile.email || "");
+        }
+      } catch {
+        if (!cancelled) setLoyaltyPointsUsable(0);
+      }
+    };
+
+    loadProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [isGuest]);
+
+  useEffect(() => {
+    if (!isGuest) return;
+
+    let cancelled = false;
+    const loadVouchers = async () => {
+      setLoadingVouchers(true);
+      try {
+        const res = await getAvailableVouchers();
+        if (!cancelled) setAvailableVouchers(res.data?.data || []);
+      } catch {
+        if (!cancelled) setAvailableVouchers([]);
+      } finally {
+        if (!cancelled) setLoadingVouchers(false);
+      }
+    };
+
+    loadVouchers();
+    return () => {
+      cancelled = true;
+    };
+  }, [isGuest]);
+
+  useEffect(() => {
+    if (!initialVoucherCode) return;
+    setVoucherCode((current) => current || initialVoucherCode);
+  }, [initialVoucherCode]);
+
+  useEffect(() => {
+    if (loyaltyPointsToRedeem > maxRedeemPoints) {
+      setLoyaltyPointsToRedeem(maxRedeemPoints);
+    }
+  }, [loyaltyPointsToRedeem, maxRedeemPoints]);
+
   /* ─── Step 1: validate dates ─── */
   const validateDates = () => {
     const today0 = new Date();
@@ -803,15 +900,17 @@ export default function BookingPage() {
   };
 
   /* ─── Voucher ─── */
-  const handleApplyVoucher = async () => {
-    if (!voucherCode.trim()) return;
+  const handleApplyVoucher = useCallback(async (codeOverride = null) => {
+    const code = (codeOverride || voucherCode).trim().toUpperCase();
+    if (!code) return;
     setVoucherLoading(true);
     setVoucherError("");
     setVoucherInfo(null);
     try {
-      const res = await validateVoucher(voucherCode.trim().toUpperCase(), subtotal);
+      const res = await validateVoucher(code, subtotal);
       const d = res.data?.data || res.data;
       if (d?.valid) {
+        setVoucherCode(code);
         setVoucherInfo(d);
       } else {
         setVoucherError(d?.message || "Voucher không hợp lệ hoặc đã hết hạn.");
@@ -823,7 +922,17 @@ export default function BookingPage() {
     } finally {
       setVoucherLoading(false);
     }
-  };
+  }, [subtotal, voucherCode]);
+
+  useEffect(() => {
+    if (!initialVoucherCode || !isGuest || !selectedRoomTypeId || subtotal <= 0) return;
+
+    const autoKey = `${initialVoucherCode}:${selectedRoomTypeId}:${subtotal}`;
+    if (autoAppliedVoucherRef.current === autoKey) return;
+
+    autoAppliedVoucherRef.current = autoKey;
+    handleApplyVoucher(initialVoucherCode);
+  }, [handleApplyVoucher, initialVoucherCode, isGuest, selectedRoomTypeId, subtotal]);
 
   /* ─── Navigation ─── */
   const goToStep = (n) => {
@@ -858,6 +967,7 @@ export default function BookingPage() {
         source: "online",
         note: note.trim() || undefined,
         voucherId: voucherInfo?.voucherId || undefined,
+        loyaltyPointsToRedeem: normalizedRedeemPoints,
         details: [
           {
             roomTypeId: selectedRoomTypeId,
@@ -906,6 +1016,7 @@ export default function BookingPage() {
     setSelectedRoomTypeId(null);
     setVoucherCode("");
     setVoucherInfo(null);
+    setLoyaltyPointsToRedeem(0);
     setNote("");
     setSuccessBooking(null);
     setShowPendingSection(true);
@@ -974,6 +1085,14 @@ export default function BookingPage() {
                 <span className="bp-success-row-label">Tổng tiền dự kiến</span>
                 <span className="bp-success-row-value">{formatCurrency(successBooking.totalEstimatedAmount)}</span>
               </div>
+              {successBooking.loyaltyPointsRedeemed > 0 && (
+                <div className="bp-success-row">
+                  <span className="bp-success-row-label">Điểm đã dùng</span>
+                  <span className="bp-success-row-value" style={{ color: "var(--g-success)" }}>
+                    {successBooking.loyaltyPointsRedeemed} điểm (-{formatCurrency(successBooking.loyaltyDiscountAmount || 0)})
+                  </span>
+                </div>
+              )}
               <div className="bp-success-row">
                 <span className="bp-success-row-label">Trạng thái</span>
                 <span className="bp-success-row-value">
@@ -1203,11 +1322,21 @@ export default function BookingPage() {
                           <div
                             key={rt.id}
                             className={`bp-rt-card${isSelected ? " selected" : ""}${!selectable ? " unavailable" : ""}`}
-                            onClick={() => selectable && setSelectedRoomTypeId(rt.id)}
+                            onClick={() => {
+                              if (!selectable) return;
+                              setSelectedRoomTypeId(rt.id);
+                              setVoucherInfo(null);
+                              setVoucherError("");
+                            }}
                             role="radio"
                             aria-checked={isSelected}
                             tabIndex={selectable ? 0 : -1}
-                            onKeyDown={(e) => e.key === "Enter" && selectable && setSelectedRoomTypeId(rt.id)}
+                            onKeyDown={(e) => {
+                              if (e.key !== "Enter" || !selectable) return;
+                              setSelectedRoomTypeId(rt.id);
+                              setVoucherInfo(null);
+                              setVoucherError("");
+                            }}
                           >
                             {rt.primaryImageUrl ? (
                               <img src={rt.primaryImageUrl} alt={rt.name} className="bp-rt-img" />
@@ -1345,7 +1474,113 @@ export default function BookingPage() {
                   </div>
                 </div>
 
+                {/*
+                  <div className="bp-form-row single" style={{ marginTop: 4 }}>
+                    <div className="bp-field">
+                      <label className="bp-label">Dùng điểm tích lũy</label>
+                      <div style={{ display: "grid", gap: 10, padding: 14, border: "1px solid var(--g-border-light)", borderRadius: "var(--g-radius-md)", background: "var(--g-surface-raised)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", color: "var(--g-text-secondary)", fontSize: "var(--g-text-sm)" }}>
+                          <span>Điểm khả dụng: <strong>{loyaltyPointsUsable}</strong></span>
+                          <span>Quy đổi: <strong>100 điểm = {formatCurrency(10000)}</strong></span>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <input
+                            type="number"
+                            className="bp-input"
+                            min="0"
+                            step="100"
+                            max={maxRedeemPoints}
+                            value={loyaltyPointsToRedeem}
+                            onChange={(e) => setLoyaltyPointsToRedeem(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                            onBlur={() => setLoyaltyPointsToRedeem(normalizedRedeemPoints)}
+                            disabled={maxRedeemPoints <= 0}
+                            style={{ flex: "1 1 180px" }}
+                          />
+                          <button
+                            type="button"
+                            className="bp-voucher-btn"
+                            onClick={() => setLoyaltyPointsToRedeem(maxRedeemPoints)}
+                            disabled={maxRedeemPoints <= 0}
+                          >
+                            Dùng tối đa
+                          </button>
+                          <button
+                            type="button"
+                            className="bp-voucher-btn"
+                            onClick={() => setLoyaltyPointsToRedeem(0)}
+                            disabled={normalizedRedeemPoints <= 0}
+                          >
+                            Bỏ điểm
+                          </button>
+                        </div>
+                        {normalizedRedeemPoints > 0 ? (
+                          <div className="bp-voucher-info">
+                            ✓ Dùng {normalizedRedeemPoints} điểm, giảm {formatCurrency(loyaltyDiscountAmount)}
+                          </div>
+                        ) : (
+                          <div style={{ color: "var(--g-text-muted)", fontSize: "var(--g-text-xs)" }}>
+                            Chỉ có thể đổi theo bội số 100 điểm và không vượt quá số tiền còn lại sau voucher.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                */}
+
                 {/* Voucher */}
+                {isGuest && (
+                  <div className="bp-form-row single" style={{ marginTop: 4 }}>
+                    <div className="bp-field">
+                      <label className="bp-label">Dùng điểm tích lũy</label>
+                      <div style={{ display: "grid", gap: 10, padding: 14, border: "1px solid var(--g-border-light)", borderRadius: "var(--g-radius-md)", background: "var(--g-surface-raised)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", color: "var(--g-text-secondary)", fontSize: "var(--g-text-sm)" }}>
+                          <span>Điểm khả dụng: <strong>{loyaltyPointsUsable}</strong></span>
+                          <span>Quy đổi: <strong>100 điểm = {formatCurrency(10000)}</strong></span>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <input
+                            type="number"
+                            className="bp-input"
+                            min="0"
+                            step="100"
+                            max={maxRedeemPoints}
+                            value={loyaltyPointsToRedeem}
+                            onChange={(e) => setLoyaltyPointsToRedeem(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                            onBlur={() => setLoyaltyPointsToRedeem(normalizedRedeemPoints)}
+                            disabled={maxRedeemPoints <= 0}
+                            style={{ flex: "1 1 180px" }}
+                          />
+                          <button
+                            type="button"
+                            className="bp-voucher-btn"
+                            onClick={() => setLoyaltyPointsToRedeem(maxRedeemPoints)}
+                            disabled={maxRedeemPoints <= 0}
+                          >
+                            Dùng tối đa
+                          </button>
+                          <button
+                            type="button"
+                            className="bp-voucher-btn"
+                            onClick={() => setLoyaltyPointsToRedeem(0)}
+                            disabled={normalizedRedeemPoints <= 0}
+                          >
+                            Bỏ điểm
+                          </button>
+                        </div>
+                        {normalizedRedeemPoints > 0 ? (
+                          <div className="bp-voucher-info">
+                            ✓ Dùng {normalizedRedeemPoints} điểm, giảm {formatCurrency(loyaltyDiscountAmount)}
+                          </div>
+                        ) : (
+                          <div style={{ color: "var(--g-text-muted)", fontSize: "var(--g-text-xs)" }}>
+                            Chỉ có thể đổi theo bội số 100 điểm và không vượt quá số tiền còn lại sau voucher.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {isGuest && (
                   <div className="bp-form-row single" style={{ marginTop: 4 }}>
                     <div className="bp-field">
@@ -1360,7 +1595,7 @@ export default function BookingPage() {
                         />
                         <button
                           className="bp-voucher-btn"
-                          onClick={handleApplyVoucher}
+                          onClick={() => handleApplyVoucher()}
                           disabled={voucherLoading || !voucherCode.trim()}
                         >
                           {voucherLoading ? "..." : "Áp dụng"}
@@ -1371,9 +1606,110 @@ export default function BookingPage() {
                           ✓ Giảm {formatCurrency(voucherInfo.discountAmount)} — Còn {formatCurrency(voucherInfo.finalAmount)}</div>
                       )}
                       {voucherError && <div className="bp-voucher-error">✗ {voucherError}</div>}
+                      {loadingVouchers ? (
+                        <div style={{ marginTop: 10, color: "var(--g-text-muted)", fontSize: "var(--g-text-xs)" }}>
+                          Đang tải ưu đãi...
+                        </div>
+                      ) : availableVouchers.length > 0 ? (
+                        <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+                          <div className="bp-label">Ưu đãi có thể chọn</div>
+                          <div style={{ display: "grid", gap: 8, maxHeight: 306, overflowY: "auto", paddingRight: 4 }}>
+                          {availableVouchers.map((voucher) => {
+                            const disabledReason = getVoucherDisabledReason(voucher);
+                            const disabled = Boolean(disabledReason) || voucherLoading;
+                            return (
+                              <button
+                                key={voucher.id}
+                                type="button"
+                                onClick={() => handleApplyVoucher(voucher.code)}
+                                disabled={disabled}
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  gap: 12,
+                                  padding: "10px 12px",
+                                  minHeight: 54,
+                                  borderRadius: "var(--g-radius-md)",
+                                  border: "1px solid var(--g-border-light)",
+                                  background: voucherInfo?.voucherId === voucher.id ? "var(--g-success-bg)" : "var(--g-bg-card)",
+                                  color: disabled ? "var(--g-text-muted)" : "var(--g-text)",
+                                  cursor: disabled ? "not-allowed" : "pointer",
+                                  textAlign: "left",
+                                  fontFamily: "var(--g-font-body)",
+                                }}
+                              >
+                                <span>
+                                  <strong>{voucher.code}</strong>
+                                  <span style={{ display: "block", fontSize: "var(--g-text-xs)", color: "var(--g-text-muted)", marginTop: 2 }}>
+                                    {getVoucherAudienceLabel(voucher)} - {voucher.discountType === "PERCENT" ? `Giảm ${voucher.discountValue}%` : `Giảm ${formatCurrency(voucher.discountValue)}`}
+                                    {disabledReason ? ` - ${disabledReason}` : ""}
+                                  </span>
+                                </span>
+                                <span style={{ fontSize: "var(--g-text-xs)", color: "var(--g-primary)", fontWeight: 700 }}>
+                                  {disabledReason ? "Chưa đủ" : "Chọn"}
+                                </span>
+                              </button>
+                            );
+                          })}
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 )}
+
+                {/*
+                  <div className="bp-form-row single" style={{ marginTop: 4 }}>
+                    <div className="bp-field">
+                      <label className="bp-label">Dùng điểm tích lũy</label>
+                      <div style={{ display: "grid", gap: 10, padding: 14, border: "1px solid var(--g-border-light)", borderRadius: "var(--g-radius-md)", background: "var(--g-surface-raised)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", color: "var(--g-text-secondary)", fontSize: "var(--g-text-sm)" }}>
+                          <span>Điểm khả dụng: <strong>{loyaltyPointsUsable}</strong></span>
+                          <span>Quy đổi: <strong>100 điểm = {formatCurrency(10000)}</strong></span>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <input
+                            type="number"
+                            className="bp-input"
+                            min="0"
+                            step="100"
+                            max={maxRedeemPoints}
+                            value={loyaltyPointsToRedeem}
+                            onChange={(e) => setLoyaltyPointsToRedeem(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                            onBlur={() => setLoyaltyPointsToRedeem(normalizedRedeemPoints)}
+                            disabled={maxRedeemPoints <= 0}
+                            style={{ flex: "1 1 180px" }}
+                          />
+                          <button
+                            type="button"
+                            className="bp-voucher-btn"
+                            onClick={() => setLoyaltyPointsToRedeem(maxRedeemPoints)}
+                            disabled={maxRedeemPoints <= 0}
+                          >
+                            Dùng tối đa
+                          </button>
+                          <button
+                            type="button"
+                            className="bp-voucher-btn"
+                            onClick={() => setLoyaltyPointsToRedeem(0)}
+                            disabled={normalizedRedeemPoints <= 0}
+                          >
+                            Bỏ điểm
+                          </button>
+                        </div>
+                        {normalizedRedeemPoints > 0 ? (
+                          <div className="bp-voucher-info">
+                            ✓ Dùng {normalizedRedeemPoints} điểm, giảm {formatCurrency(loyaltyDiscountAmount)}
+                          </div>
+                        ) : (
+                          <div style={{ color: "var(--g-text-muted)", fontSize: "var(--g-text-xs)" }}>
+                            Chỉ có thể đổi theo bội số 100 điểm và không vượt quá số tiền còn lại sau voucher.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                */}
 
                 <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
                   <button className="g-btn-outline" onClick={() => setStep(2)}>← Quay lại</button>
@@ -1438,6 +1774,14 @@ export default function BookingPage() {
                       <strong style={{ color: "var(--g-success)" }}>-{formatCurrency(discountAmount)}</strong>
                     </div>
                   )}
+                  {normalizedRedeemPoints > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--g-text-sm)", flexWrap: "wrap", gap: 8 }}>
+                      <span style={{ color: "var(--g-text-muted)" }}>Điểm tích lũy</span>
+                      <strong style={{ color: "var(--g-success)" }}>
+                        -{formatCurrency(loyaltyDiscountAmount)} ({normalizedRedeemPoints} điểm)
+                      </strong>
+                    </div>
+                  )}
                 </div>
 
                 {submitError && <div className="bp-banner error">{submitError}</div>}
@@ -1497,6 +1841,12 @@ export default function BookingPage() {
                       <div className="bp-sum-row">
                         <span className="bp-sum-label" style={{ color: "var(--g-success)" }}>Giảm giá</span>
                         <span className="bp-sum-value" style={{ color: "var(--g-success)" }}>-{formatCurrency(discountAmount)}</span>
+                      </div>
+                    )}
+                    {normalizedRedeemPoints > 0 && (
+                      <div className="bp-sum-row">
+                        <span className="bp-sum-label" style={{ color: "var(--g-success)" }}>Đổi điểm</span>
+                        <span className="bp-sum-value" style={{ color: "var(--g-success)" }}>-{formatCurrency(loyaltyDiscountAmount)}</span>
                       </div>
                     )}
                     <div className="bp-sum-divider" />

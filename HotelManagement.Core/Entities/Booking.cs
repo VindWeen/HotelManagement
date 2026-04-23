@@ -21,6 +21,8 @@ public class Booking
     public decimal? DepositAmount { get; set; }
     public decimal RequiredBookingDepositAmount { get; set; } = 0;
     public decimal RequiredCheckInAmount { get; set; } = 0;
+    public int LoyaltyPointsRedeemed { get; set; } = 0;
+    public decimal LoyaltyDiscountAmount { get; set; } = 0;
 
     // Check-in/out thực tế
     public DateTime? CheckInTime { get; set; }

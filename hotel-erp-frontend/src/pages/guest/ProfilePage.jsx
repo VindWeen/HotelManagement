@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getMyProfile, updateProfile, changePassword, uploadAvatar } from "../../api/userProfileApi";
 import { PageContainer, SectionTitle, LoadingSpinner, StatusBadge } from "../../components/guest";
 import { useAdminAuthStore } from "../../store/adminAuthStore";
+import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import { getFullImageUrl } from "../../utils/imageUtils";
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -44,17 +45,23 @@ function Field({ label, children, hint }) {
 }
 
 const inputStyle = {
+  display: "block",
   width: "100%",
+  boxSizing: "border-box",
+  minHeight: 48,
   padding: "13px 14px",
   borderRadius: "var(--g-radius-md)",
   border: "1px solid var(--g-border)",
   background: "#fff",
   color: "var(--g-text)",
   fontSize: "var(--g-text-base)",
+  lineHeight: 1.4,
+  fontFamily: "inherit",
   outline: "none",
 };
 
 export default function GuestProfilePage() {
+  const { isMobile, isTablet } = useResponsiveAdmin();
   const updateUser = useAdminAuthStore((s) => s.updateUser);
   const authUser = useAdminAuthStore((s) => s.user);
   const [loading, setLoading] = useState(true);
@@ -248,7 +255,7 @@ export default function GuestProfilePage() {
       <section
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          gridTemplateColumns: isMobile || isTablet ? "1fr" : "minmax(320px, 420px) minmax(0, 1fr)",
           gap: 24,
           alignItems: "start",
         }}
@@ -383,9 +390,10 @@ export default function GuestProfilePage() {
             <FeedbackBanner feedback={profileFeedback} />
 
             <form onSubmit={handleProfileSubmit} style={{ display: "grid", gap: 18 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 16 }}>
                 <Field label="Họ và tên">
                   <input
+                    type="text"
                     value={form.fullName}
                     onChange={(event) => setForm((prev) => ({ ...prev, fullName: event.target.value }))}
                     style={inputStyle}
@@ -457,7 +465,7 @@ export default function GuestProfilePage() {
             <FeedbackBanner feedback={passwordFeedback} />
 
             <form onSubmit={handlePasswordSubmit} style={{ display: "grid", gap: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 16 }}>
                 <Field label="Mật khẩu hiện tại">
                   <input
                     type="password"

@@ -19,6 +19,9 @@ export const getVouchers = (params = {}) => {
 export const getVoucherById = (id) =>
     axiosClient.get(`/Vouchers/${id}`);
 
+export const getAvailableVouchers = () =>
+    axiosClient.get('/Vouchers/available');
+
 /**
  * POST /api/Vouchers  [MANAGE_BOOKINGS]
  * Body: {

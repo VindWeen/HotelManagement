@@ -11,3 +11,9 @@ export const getLoyaltyMemberById = (id) =>
 
 export const getLoyaltyMemberTransactions = (id) =>
   axiosClient.get(`/LoyaltyMembers/${id}/transactions`);
+
+export const getMyLoyalty = () =>
+  axiosClient.get("/LoyaltyMembers/me");
+
+export const getMyLoyaltyTransactions = () =>
+  axiosClient.get("/LoyaltyMembers/me/transactions");

@@ -214,9 +214,20 @@ CREATE TABLE [dbo].[Vouchers](
     [usage_limit]               [int]            NULL,          -- tổng lượt dùng toàn hệ thống
     [used_count]                [int]            NOT NULL DEFAULT 0,  -- đếm lượt đã dùng
     [max_uses_per_user]         [int]            NOT NULL DEFAULT 1,  -- giới hạn mỗi user
+    [audience_type]             [nvarchar](50)   NOT NULL DEFAULT 'PUBLIC',
+    [target_membership_id]      [int]            NULL,
+    [occasion_name]             [nvarchar](255)  NULL,
     [is_active]                 [bit]            NOT NULL DEFAULT 1,
     [created_at]                [datetime]       NOT NULL DEFAULT GETDATE(),
 PRIMARY KEY CLUSTERED ([id] ASC)
+) ON [PRIMARY]
+GO
+
+CREATE TABLE [dbo].[Voucher_Target_Users](
+    [voucher_id] [int] NOT NULL,
+    [user_id]    [int] NOT NULL,
+    [created_at] [datetime] NOT NULL DEFAULT GETDATE(),
+PRIMARY KEY CLUSTERED ([voucher_id] ASC, [user_id] ASC)
 ) ON [PRIMARY]
 GO
 
@@ -234,6 +245,8 @@ CREATE TABLE [dbo].[Bookings](
     [voucher_id]             [int]            NULL,
     -- Tiền
     [total_estimated_amount] [decimal](18, 2) NOT NULL DEFAULT 0,  -- tổng tiền dự kiến
+    [loyalty_points_redeemed] [int]           NOT NULL DEFAULT 0,
+    [loyalty_discount_amount] [decimal](18, 2) NOT NULL DEFAULT 0,
     [deposit_amount]         [decimal](18, 2) NULL    DEFAULT 0,   -- tổng tiền đã thu trước check-out
     [required_booking_deposit_amount] [decimal](18, 2) NOT NULL DEFAULT 0,
     [required_check_in_amount] [decimal](18, 2) NOT NULL DEFAULT 0,
@@ -622,6 +635,7 @@ ALTER TABLE [dbo].[Booking_Details]     WITH CHECK ADD FOREIGN KEY([room_type_id
 ALTER TABLE [dbo].[Bookings]            WITH CHECK ADD FOREIGN KEY([user_id])               REFERENCES [dbo].[Users]             ([id])
 ALTER TABLE [dbo].[Bookings]            WITH CHECK ADD FOREIGN KEY([voucher_id])            REFERENCES [dbo].[Vouchers]          ([id])
 ALTER TABLE [dbo].[Vouchers]            WITH CHECK ADD FOREIGN KEY([applicable_room_type_id]) REFERENCES [dbo].[Room_Types]      ([id])
+ALTER TABLE [dbo].[Vouchers]            WITH CHECK ADD FOREIGN KEY([target_membership_id])  REFERENCES [dbo].[Memberships]       ([id])
 -- Cluster 4
 ALTER TABLE [dbo].[Invoices]            WITH CHECK ADD FOREIGN KEY([booking_id])            REFERENCES [dbo].[Bookings]          ([id])
 ALTER TABLE [dbo].[Loss_And_Damages]    WITH CHECK ADD FOREIGN KEY([booking_detail_id])     REFERENCES [dbo].[Booking_Details]   ([id])
@@ -652,6 +666,8 @@ ALTER TABLE [dbo].[Maintenance_Tickets] WITH CHECK ADD FOREIGN KEY([assigned_to_
 ALTER TABLE [dbo].[Voucher_Usage]       WITH CHECK ADD FOREIGN KEY([voucher_id])            REFERENCES [dbo].[Vouchers]          ([id])
 ALTER TABLE [dbo].[Voucher_Usage]       WITH CHECK ADD FOREIGN KEY([user_id])               REFERENCES [dbo].[Users]             ([id])
 ALTER TABLE [dbo].[Voucher_Usage]       WITH CHECK ADD FOREIGN KEY([booking_id])            REFERENCES [dbo].[Bookings]          ([id])
+ALTER TABLE [dbo].[Voucher_Target_Users] WITH CHECK ADD FOREIGN KEY([voucher_id])           REFERENCES [dbo].[Vouchers]          ([id])
+ALTER TABLE [dbo].[Voucher_Target_Users] WITH CHECK ADD FOREIGN KEY([user_id])              REFERENCES [dbo].[Users]             ([id])
 GO
 
 CREATE INDEX [IX_Maintenance_Tickets_RoomId]

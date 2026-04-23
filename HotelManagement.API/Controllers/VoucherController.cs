@@ -25,6 +25,10 @@ public class CreateVoucherRequest
     public DateTime? ValidTo { get; set; }
     public int? UsageLimit { get; set; }
     public int MaxUsesPerUser { get; set; } = 1;
+    public string AudienceType { get; set; } = VoucherAudienceTypes.Public;
+    public int? TargetMembershipId { get; set; }
+    public string? OccasionName { get; set; }
+    public List<int> TargetUserIds { get; set; } = new();
 }
 
 public class UpdateVoucherRequest
@@ -38,6 +42,10 @@ public class UpdateVoucherRequest
     public DateTime? ValidTo { get; set; }
     public int? UsageLimit { get; set; }
     public int? MaxUsesPerUser { get; set; }
+    public string? AudienceType { get; set; }
+    public int? TargetMembershipId { get; set; }
+    public string? OccasionName { get; set; }
+    public List<int>? TargetUserIds { get; set; }
     public bool? IsActive { get; set; }
 }
 
@@ -55,15 +63,182 @@ public class VouchersController : ControllerBase
     private readonly AppDbContext _context;
     private readonly IActivityLogService _activityLog;
     private readonly IVoucherValidationService _voucherValidationService;
+    private readonly IVoucherAudienceService _voucherAudienceService;
 
     public VouchersController(
         AppDbContext context,
         IActivityLogService activityLog,
-        IVoucherValidationService voucherValidationService)
+        IVoucherValidationService voucherValidationService,
+        IVoucherAudienceService voucherAudienceService)
     {
         _context = context;
         _activityLog = activityLog;
         _voucherValidationService = voucherValidationService;
+        _voucherAudienceService = voucherAudienceService;
+    }
+
+    private static string NormalizeAudienceType(string? value)
+        => string.IsNullOrWhiteSpace(value) ? VoucherAudienceTypes.Public : value.Trim().ToUpperInvariant();
+
+    private async Task<string?> ValidateAudienceDefinitionAsync(
+        string audienceType,
+        int? targetMembershipId,
+        string? occasionName,
+        IReadOnlyCollection<int>? targetUserIds)
+    {
+        if (!VoucherAudienceTypes.All.Contains(audienceType))
+            return "Phân loại voucher không hợp lệ.";
+
+        if (audienceType == VoucherAudienceTypes.User)
+        {
+            if (targetUserIds == null || targetUserIds.Count == 0)
+                return "Voucher riêng khách hàng cần chọn ít nhất một khách.";
+
+            var validGuestCount = await _context.Users
+                .Include(u => u.Role)
+                .CountAsync(u => targetUserIds.Contains(u.Id)
+                    && u.Status != false
+                    && u.Role != null
+                    && u.Role.Name == "Guest");
+
+            if (validGuestCount != targetUserIds.Distinct().Count())
+                return "Danh sách khách được chọn không hợp lệ hoặc không phải tài khoản Guest.";
+        }
+
+        if (audienceType == VoucherAudienceTypes.Membership)
+        {
+            if (!targetMembershipId.HasValue)
+                return "Voucher hạng thành viên cần chọn hạng áp dụng.";
+
+            var membershipExists = await _context.Memberships
+                .AnyAsync(m => m.Id == targetMembershipId.Value && m.IsActive);
+
+            if (!membershipExists)
+                return "Hạng thành viên áp dụng không hợp lệ hoặc đã tắt.";
+        }
+
+        if (audienceType == VoucherAudienceTypes.Holiday && string.IsNullOrWhiteSpace(occasionName))
+            return "Voucher dịp lễ cần nhập tên dịp.";
+
+        return null;
+    }
+
+    private async Task SyncTargetUsersAsync(Voucher voucher, IEnumerable<int> targetUserIds)
+    {
+        var existing = await _context.VoucherTargetUsers
+            .Where(x => x.VoucherId == voucher.Id)
+            .ToListAsync();
+
+        _context.VoucherTargetUsers.RemoveRange(existing);
+
+        foreach (var userId in targetUserIds.Distinct())
+        {
+            _context.VoucherTargetUsers.Add(new VoucherTargetUser
+            {
+                VoucherId = voucher.Id,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+    }
+
+    // ================= GET AVAILABLE FOR GUEST =================
+    [Authorize]
+    [HttpGet("available")]
+    public async Task<IActionResult> GetAvailable()
+    {
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var now = DateTime.Now;
+
+        var userUsageCounts = await _context.VoucherUsages
+            .AsNoTracking()
+            .Where(vu => vu.UserId == userId)
+            .GroupBy(vu => vu.VoucherId)
+            .Select(g => new { VoucherId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.VoucherId, x => x.Count);
+
+        var vouchers = await _context.Vouchers
+            .AsNoTracking()
+            .Where(v => v.IsActive
+                && (!v.ValidFrom.HasValue || v.ValidFrom <= now)
+                && (!v.ValidTo.HasValue || v.ValidTo >= now)
+                && (!v.UsageLimit.HasValue || v.UsedCount < v.UsageLimit.Value))
+            .OrderBy(v => v.ValidTo ?? DateTime.MaxValue)
+            .ThenByDescending(v => v.DiscountValue)
+            .Select(v => new
+            {
+                v.Id,
+                v.Code,
+                v.DiscountType,
+                v.DiscountValue,
+                v.MaxDiscountAmount,
+                v.MinBookingValue,
+                v.ApplicableRoomTypeId,
+                ApplicableRoomTypeName = v.ApplicableRoomType != null ? v.ApplicableRoomType.Name : null,
+                v.ValidFrom,
+                v.ValidTo,
+                v.UsageLimit,
+                v.UsedCount,
+                v.MaxUsesPerUser,
+                v.AudienceType,
+                v.TargetMembershipId,
+                TargetMembershipName = v.TargetMembership != null ? v.TargetMembership.TierName : null,
+                v.OccasionName
+            })
+            .ToListAsync();
+
+        var data = new List<object>();
+        foreach (var v in vouchers)
+        {
+            userUsageCounts.TryGetValue(v.Id, out var userUsedCount);
+            var remainingForUser = Math.Max(0, v.MaxUsesPerUser - userUsedCount);
+            var remainingGlobal = v.UsageLimit.HasValue
+                ? Math.Max(0, v.UsageLimit.Value - v.UsedCount)
+                : (int?)null;
+            var audienceUnavailableReason = await _voucherAudienceService.GetUnavailableReasonAsync(
+                new Voucher
+                {
+                    Id = v.Id,
+                    AudienceType = v.AudienceType,
+                    TargetMembershipId = v.TargetMembershipId
+                },
+                userId);
+
+            if (audienceUnavailableReason != null)
+                continue;
+
+            data.Add(new
+            {
+                v.Id,
+                v.Code,
+                v.DiscountType,
+                v.DiscountValue,
+                v.MaxDiscountAmount,
+                v.MinBookingValue,
+                v.ApplicableRoomTypeId,
+                v.ApplicableRoomTypeName,
+                v.ValidFrom,
+                v.ValidTo,
+                v.UsageLimit,
+                v.UsedCount,
+                v.MaxUsesPerUser,
+                v.AudienceType,
+                v.TargetMembershipId,
+                v.TargetMembershipName,
+                v.OccasionName,
+                UserUsedCount = userUsedCount,
+                RemainingForUser = remainingForUser,
+                UsageRemaining = remainingGlobal,
+                IsUsable = remainingForUser > 0,
+                UnavailableReason = remainingForUser <= 0 ? $"Bạn đã dùng voucher này tối đa {v.MaxUsesPerUser} lần." : null
+            });
+        }
+
+        return Ok(new
+        {
+            data,
+            message = "Lấy danh sách voucher khả dụng thành công."
+        });
     }
 
     // ================= GET ALL =================
@@ -71,7 +246,8 @@ public class VouchersController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] ListQueryRequest queryRequest,
-        [FromQuery] bool? isActive)
+        [FromQuery] bool? isActive,
+        [FromQuery] string? audienceType)
     {
         var page = Math.Max(1, queryRequest.Page);
         var pageSize = Math.Clamp(queryRequest.PageSize <= 0 ? 10 : queryRequest.PageSize, 1, 100);
@@ -80,6 +256,10 @@ public class VouchersController : ControllerBase
 
         if (isActive.HasValue)
             query = query.Where(v => v.IsActive == isActive.Value);
+
+        var normalizedAudienceType = NormalizeAudienceType(audienceType);
+        if (!string.IsNullOrWhiteSpace(audienceType))
+            query = query.Where(v => v.AudienceType == normalizedAudienceType);
 
         if (!string.IsNullOrWhiteSpace(queryRequest.Status))
         {
@@ -128,6 +308,16 @@ public class VouchersController : ControllerBase
                 v.UsageLimit,
                 v.UsedCount,          // used_count / usage_limit
                 v.MaxUsesPerUser,
+                v.AudienceType,
+                v.TargetMembershipId,
+                TargetMembershipName = v.TargetMembership != null ? v.TargetMembership.TierName : null,
+                v.OccasionName,
+                TargetUsers = v.TargetUsers.Select(t => new
+                {
+                    t.UserId,
+                    FullName = t.User.FullName,
+                    t.User.Email
+                }).ToList(),
                 v.IsActive,
                 v.CreatedAt
             })
@@ -156,9 +346,34 @@ public class VouchersController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var v = await _context.Vouchers.FindAsync(id);
+        var v = await _context.Vouchers
+            .Include(x => x.TargetMembership)
+            .Include(x => x.TargetUsers)
+                .ThenInclude(x => x.User)
+            .FirstOrDefaultAsync(x => x.Id == id);
         if (v == null) return NotFound();
-        return Ok(v);
+        return Ok(new
+        {
+            v.Id,
+            v.Code,
+            v.DiscountType,
+            v.DiscountValue,
+            v.MaxDiscountAmount,
+            v.MinBookingValue,
+            v.ApplicableRoomTypeId,
+            v.ValidFrom,
+            v.ValidTo,
+            v.UsageLimit,
+            v.UsedCount,
+            v.MaxUsesPerUser,
+            v.AudienceType,
+            v.TargetMembershipId,
+            TargetMembershipName = v.TargetMembership?.TierName,
+            v.OccasionName,
+            TargetUsers = v.TargetUsers.Select(t => new { t.UserId, t.User.FullName, t.User.Email }),
+            v.IsActive,
+            v.CreatedAt
+        });
     }
 
     // ================= CREATE =================
@@ -179,6 +394,16 @@ public class VouchersController : ControllerBase
             && request.ValidFrom >= request.ValidTo)
             return BadRequest("ValidFrom phải trước ValidTo");
 
+        var audienceType = NormalizeAudienceType(request.AudienceType);
+        var audienceError = await ValidateAudienceDefinitionAsync(
+            audienceType,
+            request.TargetMembershipId,
+            request.OccasionName,
+            request.TargetUserIds);
+
+        if (audienceError != null)
+            return BadRequest(audienceError);
+
         // Kiểm tra code trùng
         var exists = await _context.Vouchers.AnyAsync(v => v.Code == request.Code);
         if (exists)
@@ -196,6 +421,9 @@ public class VouchersController : ControllerBase
             ValidTo              = request.ValidTo,
             UsageLimit           = request.UsageLimit,
             MaxUsesPerUser       = request.MaxUsesPerUser,
+            AudienceType         = audienceType,
+            TargetMembershipId   = audienceType == VoucherAudienceTypes.Membership ? request.TargetMembershipId : null,
+            OccasionName         = audienceType == VoucherAudienceTypes.Holiday ? request.OccasionName?.Trim() : null,
             UsedCount            = 0,
             IsActive             = true,
             CreatedAt            = DateTime.UtcNow
@@ -203,6 +431,12 @@ public class VouchersController : ControllerBase
 
         _context.Vouchers.Add(voucher);
         await _context.SaveChangesAsync();
+
+        if (audienceType == VoucherAudienceTypes.User)
+        {
+            await SyncTargetUsersAsync(voucher, request.TargetUserIds);
+            await _context.SaveChangesAsync();
+        }
 
         var currentUserId = JwtHelper.GetUserId(User);
         // Ghi Activity Log
@@ -240,7 +474,9 @@ public class VouchersController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, UpdateVoucherRequest request)
     {
-        var v = await _context.Vouchers.FindAsync(id);
+        var v = await _context.Vouchers
+            .Include(x => x.TargetUsers)
+            .FirstOrDefaultAsync(x => x.Id == id);
         if (v == null) return NotFound();
 
         // Validate discount type nếu có thay đổi
@@ -260,6 +496,19 @@ public class VouchersController : ControllerBase
         if (newFrom.HasValue && newTo.HasValue && newFrom >= newTo)
             return BadRequest("ValidFrom phải trước ValidTo");
 
+        var nextAudienceType = NormalizeAudienceType(request.AudienceType ?? v.AudienceType);
+        var nextTargetMembershipId = request.TargetMembershipId ?? v.TargetMembershipId;
+        var nextOccasionName = request.OccasionName ?? v.OccasionName;
+        var nextTargetUserIds = request.TargetUserIds ?? v.TargetUsers.Select(x => x.UserId).ToList();
+        var audienceError = await ValidateAudienceDefinitionAsync(
+            nextAudienceType,
+            nextTargetMembershipId,
+            nextOccasionName,
+            nextTargetUserIds);
+
+        if (audienceError != null)
+            return BadRequest(audienceError);
+
         // Cập nhật các field nếu có giá trị mới
         if (request.DiscountType     != null) v.DiscountType         = request.DiscountType;
         if (request.DiscountValue    .HasValue) v.DiscountValue      = request.DiscountValue.Value;
@@ -270,6 +519,15 @@ public class VouchersController : ControllerBase
         if (request.ValidTo          .HasValue) v.ValidTo            = request.ValidTo;
         if (request.UsageLimit       .HasValue) v.UsageLimit         = request.UsageLimit;
         if (request.MaxUsesPerUser   .HasValue) v.MaxUsesPerUser     = request.MaxUsesPerUser.Value;
+        if (request.AudienceType     != null) v.AudienceType         = nextAudienceType;
+        if (request.AudienceType     != null || request.TargetMembershipId.HasValue)
+            v.TargetMembershipId = nextAudienceType == VoucherAudienceTypes.Membership ? nextTargetMembershipId : null;
+        if (request.AudienceType     != null || request.OccasionName != null)
+            v.OccasionName = nextAudienceType == VoucherAudienceTypes.Holiday ? nextOccasionName?.Trim() : null;
+        if ((request.AudienceType != null || request.TargetUserIds != null) && nextAudienceType != VoucherAudienceTypes.User)
+            _context.VoucherTargetUsers.RemoveRange(v.TargetUsers);
+        if (nextAudienceType == VoucherAudienceTypes.User && request.TargetUserIds != null)
+            await SyncTargetUsersAsync(v, nextTargetUserIds);
         if (request.IsActive         .HasValue) v.IsActive           = request.IsActive.Value;
 
         var currentUserId = JwtHelper.GetUserId(User);
@@ -365,6 +623,10 @@ public class VouchersController : ControllerBase
         if (!_voucherValidationService.ValidateUsage(v, request.BookingAmount, DateTime.Now, out var voucherRuleError))
             return BadRequest(new { valid = false, message = voucherRuleError });
 
+        var audienceUnavailableReason = await _voucherAudienceService.GetUnavailableReasonAsync(v, userId);
+        if (audienceUnavailableReason != null)
+            return BadRequest(new { valid = false, message = audienceUnavailableReason });
+
         // Kiểm tra thời hạn
         if (v.ValidFrom.HasValue && DateTime.Now < v.ValidFrom)
             return BadRequest(new { valid = false, message = "Voucher chưa đến ngày sử dụng" });
@@ -413,6 +675,9 @@ public class VouchersController : ControllerBase
             code            = v.Code,
             discountType    = v.DiscountType,
             discountValue   = v.DiscountValue,
+            audienceType    = NormalizeAudienceType(v.AudienceType),
+            targetMembershipId = v.TargetMembershipId,
+            occasionName    = v.OccasionName,
             discountAmount  = discount,
             finalAmount     = request.BookingAmount - discount,
             usageRemaining  = v.UsageLimit.HasValue ? v.UsageLimit - v.UsedCount : (int?)null

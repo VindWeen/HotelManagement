@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { getMyBookings } from "../../api/bookingsApi";
+import { getMyReviewStatus } from "../../api/reviewsApi";
 import {
   EmptyState,
   LoadingSpinner,
@@ -316,6 +318,7 @@ export default function MyBookingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [bookings, setBookings] = useState([]);
+  const [pendingReviewIds, setPendingReviewIds] = useState(new Set());
   const [activeTab, setActiveTab] = useState("all");
   const [selectedBooking, setSelectedBooking] = useState(null);
 
@@ -326,7 +329,10 @@ export default function MyBookingPage() {
       setLoading(true);
       setError("");
       try {
-        const res = await getMyBookings();
+        const [res, reviewRes] = await Promise.all([
+          getMyBookings(),
+          getMyReviewStatus(),
+        ]);
         if (cancelled) return;
 
         const data = res.data?.data || res.data || [];
@@ -343,6 +349,7 @@ export default function MyBookingPage() {
         });
 
         setBookings(list);
+        setPendingReviewIds(new Set((reviewRes.data?.pendingReviewBookings || []).map((item) => item.id)));
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -459,7 +466,12 @@ export default function MyBookingPage() {
         ) : (
           <div className="mb-list">
             {filtered.map((booking) => (
-              <BookingItem key={booking.id} booking={booking} onViewDetail={setSelectedBooking} />
+              <BookingItem
+                key={booking.id}
+                booking={booking}
+                onViewDetail={setSelectedBooking}
+                canReview={pendingReviewIds.has(booking.id)}
+              />
             ))}
           </div>
         )}
@@ -580,7 +592,7 @@ export default function MyBookingPage() {
 }
 
 /* ──────────── Booking Item Card ──────────── */
-function BookingItem({ booking, onViewDetail }) {
+function BookingItem({ booking, onViewDetail, canReview }) {
   const details = booking.bookingDetails || [];
 
   return (
@@ -672,6 +684,11 @@ function BookingItem({ booking, onViewDetail }) {
             {formatCurrency(booking.totalEstimatedAmount || 0)}
           </span>
         </div>
+        {canReview ? (
+          <Link to="/guest/reviews" className="g-btn-primary g-btn-sm">
+            Đánh giá
+          </Link>
+        ) : null}
         {booking.source && (
           <div style={{ fontSize: "var(--g-text-xs)", color: "var(--g-text-muted)" }}>
             Nguồn: {booking.source === "online" ? "Trực tuyến" : booking.source === "walk_in" ? "Tại quầy" : booking.source}

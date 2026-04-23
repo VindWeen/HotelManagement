@@ -269,12 +269,13 @@ export default function GuestDashboardPage() {
               ? `Ưu đãi hiện tại: giảm ${profile.membershipDiscount}%.`
               : "Khi tích lũy đủ điểm, hạng thành viên sẽ được nâng tự động."
           }
+          action={<Link to="/guest/loyalty" className="g-btn-ghost">Xem loyalty</Link>}
         />
         <SummaryCard
           label="Điểm Loyalty"
           value={`${profile?.loyaltyPointsUsable ?? profile?.loyaltyPoints ?? 0} điểm`}
           hint={`Tổng điểm tích lũy: ${profile?.loyaltyPoints ?? 0}.`}
-          action={<Link to="/reviews" className="g-btn-ghost">Xem trang đánh giá</Link>}
+          action={<Link to="/guest/vouchers" className="g-btn-ghost">Xem ưu đãi</Link>}
         />
       </section>
 
@@ -365,7 +366,7 @@ export default function GuestDashboardPage() {
                     <div style={{ color: "var(--g-text-muted)", fontSize: "var(--g-text-sm)" }}>
                       Tổng booking: {formatCurrency(item.totalEstimatedAmount)}
                     </div>
-                    <Link to="/reviews" className="g-btn-primary g-btn-sm">Đi tới trang đánh giá</Link>
+                    <Link to="/guest/reviews" className="g-btn-primary g-btn-sm">Đi tới trang đánh giá</Link>
                   </div>
                 </article>
               ))}

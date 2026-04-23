@@ -12,6 +12,7 @@ public class CreateBookingRequest
     public int NumAdults { get; set; }
     public int NumChildren { get; set; }
     public int? VoucherId { get; set; }
+    public int LoyaltyPointsToRedeem { get; set; } = 0;
     public string? Source { get; set; }
     public string? Note { get; set; }
     public List<CreateBookingDetailRequest> Details { get; set; } = new();
@@ -115,6 +116,8 @@ public class BookingResponse
     public int? VoucherId { get; set; }
     public decimal TotalEstimatedAmount { get; set; }
     public decimal? DepositAmount { get; set; }
+    public int LoyaltyPointsRedeemed { get; set; }
+    public decimal LoyaltyDiscountAmount { get; set; }
     public DateTime? CheckInTime { get; set; }
     public DateTime? CheckOutTime { get; set; }
     public string? Status { get; set; }

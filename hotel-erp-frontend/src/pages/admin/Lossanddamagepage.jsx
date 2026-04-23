@@ -1799,8 +1799,8 @@ export function LossAndDamageTable({
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8 }}>
                   <button className="btn-icon-p" onClick={() => onView(rec)} title="Xem chi tiet" style={{ width: "100%" }}><span className="material-symbols-outlined">visibility</span></button>
                   <button className="btn-icon-p" onClick={() => onEdit(rec)} title="Chinh sua" style={{ width: "100%" }}><span className="material-symbols-outlined">edit_square</span></button>
-                  <button className="btn-icon-p" onClick={() => onReplenish(rec)} title="Bo sung lai vao phong" disabled={!canReplenishRecord(rec)} style={{ width: "100%", ...(!canReplenishRecord(rec) ? { opacity: 0.4, cursor: "not-allowed" } : { color: "#166534" }) }}><span className="material-symbols-outlined">inventory_2</span></button>
-                  <button className="btn-icon-p" onClick={() => onBatchReplenish(rec)} title="Bo sung hang loat" disabled={!canBatchReplenish} style={{ width: "100%", ...(!canBatchReplenish ? { opacity: 0.4, cursor: "not-allowed" } : { color: "#1d4ed8" }) }}><span className="material-symbols-outlined">playlist_add_check</span></button>
+                  <button className="btn-icon-p" onClick={() => onReplenish(rec)} title="Bổ sung lại vào phòng" disabled={!canReplenishRecord(rec)} style={{ width: "100%", ...(!canReplenishRecord(rec) ? { opacity: 0.4, cursor: "not-allowed" } : { color: "#166534" }) }}><span className="material-symbols-outlined">inventory_2</span></button>
+                  <button className="btn-icon-p" onClick={() => onBatchReplenish(rec)} title="Bổ sung hàng loạt" disabled={!canBatchReplenish} style={{ width: "100%", ...(!canBatchReplenish ? { opacity: 0.4, cursor: "not-allowed" } : { color: "#1d4ed8" }) }}><span className="material-symbols-outlined">playlist_add_check</span></button>
                 </div>
               </article>
             );
@@ -2339,8 +2339,8 @@ function LossAndDamageTableUnified({
                           }}
                         >
                           {rec.remainingToReplenish > 0
-                            ? `CĂ²n thiáº¿u ${rec.remainingToReplenish}`
-                            : "ÄĂ£ bá»• sung Ä‘á»§"}
+                            ? `Cần bổ sung ${rec.remainingToReplenish}`
+                            : "Đã bổ sung đủ"}
                         </div>
                       ) : null}
                     </td>

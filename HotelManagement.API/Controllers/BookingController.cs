@@ -30,6 +30,7 @@ public class BookingsController : ControllerBase
     private readonly IBookingService _bookingService;
     private readonly IBookingStatusFlowService _statusFlowService;
     private readonly IVoucherValidationService _voucherValidationService;
+    private readonly IVoucherAudienceService _voucherAudienceService;
     private readonly IPaymentService _paymentService;
     private readonly IInvoiceService _invoiceService;
     private readonly IAuditTrailService _auditTrail;
@@ -42,6 +43,7 @@ public class BookingsController : ControllerBase
         IBookingService bookingService,
         IBookingStatusFlowService statusFlowService,
         IVoucherValidationService voucherValidationService,
+        IVoucherAudienceService voucherAudienceService,
         IPaymentService paymentService,
         IInvoiceService invoiceService,
         IAuditTrailService auditTrail,
@@ -53,6 +55,7 @@ public class BookingsController : ControllerBase
         _bookingService = bookingService;
         _statusFlowService = statusFlowService;
         _voucherValidationService = voucherValidationService;
+        _voucherAudienceService = voucherAudienceService;
         _paymentService = paymentService;
         _invoiceService = invoiceService;
         _auditTrail = auditTrail;
@@ -171,6 +174,8 @@ public class BookingsController : ControllerBase
         VoucherId = b.VoucherId,
         TotalEstimatedAmount = b.TotalEstimatedAmount,
         DepositAmount = b.DepositAmount,
+        LoyaltyPointsRedeemed = b.LoyaltyPointsRedeemed,
+        LoyaltyDiscountAmount = b.LoyaltyDiscountAmount,
         CheckInTime = b.CheckInTime,
         CheckOutTime = b.CheckOutTime,
         Status = b.Status,
@@ -311,6 +316,7 @@ public class BookingsController : ControllerBase
             }
         }
 
+        finalTotal -= Math.Max(0m, booking.LoyaltyDiscountAmount);
         booking.TotalEstimatedAmount = Math.Max(0m, finalTotal);
         ApplyBookingFinancialTargets(booking);
         ApplyBookingStatusFromDeposit(booking);
@@ -938,6 +944,10 @@ public class BookingsController : ControllerBase
             if (!BookingSources.All.Contains(normalizedSource))
                 return BookingActionError(StatusCodes.Status400BadRequest, "Nguồn booking không hợp lệ.");
 
+            int? currentUserId = null;
+            if (User.Identity?.IsAuthenticated == true)
+                currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
             foreach (var d in request.Details)
             {
                 var normalized = NormalizeStayDates(d.CheckInDate, d.CheckOutDate);
@@ -962,7 +972,7 @@ public class BookingsController : ControllerBase
 
             var booking = new Booking
             {
-                UserId = request.UserId,
+                UserId = request.UserId ?? currentUserId,
                 GuestName = request.GuestName,
                 GuestPhone = request.GuestPhone,
                 GuestEmail = request.GuestEmail,
@@ -1004,6 +1014,7 @@ public class BookingsController : ControllerBase
                 : null;
 
             decimal subtotal = 0m;
+            decimal voucherDiscount = 0m;
 
             foreach (var d in request.Details)
             {
@@ -1055,6 +1066,13 @@ public class BookingsController : ControllerBase
                 if (voucher == null)
                     return BookingActionError(StatusCodes.Status400BadRequest, "Voucher không hợp lệ.");
 
+                if (!booking.UserId.HasValue)
+                    return BookingActionError(StatusCodes.Status401Unauthorized, "Vui lòng đăng nhập để sử dụng voucher.");
+
+                var audienceUnavailableReason = await _voucherAudienceService.GetUnavailableReasonAsync(voucher, booking.UserId.Value);
+                if (audienceUnavailableReason != null)
+                    return BookingActionError(StatusCodes.Status400BadRequest, audienceUnavailableReason);
+
                 if (voucher.ApplicableRoomTypeId.HasValue
                     && !request.Details.Any(d => d.RoomTypeId == voucher.ApplicableRoomTypeId.Value))
                 {
@@ -1064,20 +1082,72 @@ public class BookingsController : ControllerBase
                 if (!_voucherValidationService.ValidateUsage(voucher, subtotal, DateTime.Now, out var voucherError))
                     return BookingActionError(StatusCodes.Status400BadRequest, voucherError);
 
+                var userUsedCount = await _context.VoucherUsages
+                    .CountAsync(vu => vu.VoucherId == voucher.Id && vu.UserId == booking.UserId.Value);
+
+                if (userUsedCount >= voucher.MaxUsesPerUser)
+                    return BookingActionError(StatusCodes.Status400BadRequest, $"Bạn đã dùng voucher này tối đa {voucher.MaxUsesPerUser} lần.");
+
                 var discount = _voucherValidationService.CalculateDiscount(voucher, subtotal);
+                voucherDiscount = discount;
                 booking.VoucherId = voucher.Id;
-                booking.TotalEstimatedAmount = subtotal - discount;
                 voucher.UsedCount += 1;
             }
-            else
+
+            var redeemPoints = request.LoyaltyPointsToRedeem;
+            if (redeemPoints > 0)
             {
-                booking.TotalEstimatedAmount = subtotal;
+                if (!booking.UserId.HasValue)
+                    return BookingActionError(StatusCodes.Status401Unauthorized, "Vui lòng đăng nhập để dùng điểm tích lũy.");
+
+                if (redeemPoints % 100 != 0)
+                    return BookingActionError(StatusCodes.Status400BadRequest, "Số điểm quy đổi phải là bội số của 100.");
+
+                var userForRedeem = await _context.Users.FirstOrDefaultAsync(u => u.Id == booking.UserId.Value);
+                if (userForRedeem == null)
+                    return BookingActionError(StatusCodes.Status400BadRequest, "Không tìm thấy tài khoản khách hàng để dùng điểm.");
+
+                if (redeemPoints > userForRedeem.LoyaltyPointsUsable)
+                    return BookingActionError(StatusCodes.Status400BadRequest, "Số điểm dùng vượt quá điểm khả dụng.");
+
+                var remainingAfterVoucher = Math.Max(0m, subtotal - voucherDiscount);
+                var loyaltyDiscount = redeemPoints * 100m;
+                if (loyaltyDiscount > remainingAfterVoucher)
+                    return BookingActionError(StatusCodes.Status400BadRequest, "Số điểm dùng vượt quá giá trị còn lại của booking.");
+
+                userForRedeem.LoyaltyPointsUsable -= redeemPoints;
+                userForRedeem.UpdatedAt = DateTime.UtcNow;
+                booking.LoyaltyPointsRedeemed = redeemPoints;
+                booking.LoyaltyDiscountAmount = loyaltyDiscount;
+
+                _context.LoyaltyTransactions.Add(new LoyaltyTransaction
+                {
+                    UserId = userForRedeem.Id,
+                    Booking = booking,
+                    TransactionType = "redeemed",
+                    Points = -redeemPoints,
+                    BalanceAfter = userForRedeem.LoyaltyPointsUsable,
+                    Note = $"Đổi {redeemPoints} điểm giảm {loyaltyDiscount:N0}đ cho booking {booking.BookingCode}.",
+                    CreatedAt = DateTime.UtcNow
+                });
             }
+
+            booking.TotalEstimatedAmount = Math.Max(0m, subtotal - voucherDiscount - booking.LoyaltyDiscountAmount);
 
             booking.DepositAmount = 0m;
             ApplyBookingFinancialTargets(booking);
 
             _context.Bookings.Add(booking);
+            if (booking.VoucherId.HasValue && booking.UserId.HasValue)
+            {
+                _context.VoucherUsages.Add(new VoucherUsage
+                {
+                    VoucherId = booking.VoucherId.Value,
+                    UserId = booking.UserId.Value,
+                    Booking = booking,
+                    UsedAt = DateTime.UtcNow
+                });
+            }
             await _context.SaveChangesAsync();
 
             await _auditTrail.WriteAsync(_context, User, Request, new AuditTrailEntry

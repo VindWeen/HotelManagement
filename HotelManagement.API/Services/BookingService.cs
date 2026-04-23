@@ -133,6 +133,8 @@ public class BookingService : IBookingService
         VoucherId = b.VoucherId,
         TotalEstimatedAmount = b.TotalEstimatedAmount,
         DepositAmount = b.DepositAmount,
+        LoyaltyPointsRedeemed = b.LoyaltyPointsRedeemed,
+        LoyaltyDiscountAmount = b.LoyaltyDiscountAmount,
         CheckInTime = b.CheckInTime,
         CheckOutTime = b.CheckOutTime,
         Status = b.Status,

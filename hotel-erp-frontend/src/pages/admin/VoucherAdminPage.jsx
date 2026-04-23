@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createVoucher, getVouchers, updateVoucher } from "../../api/vouchersApi";
 import { getAdminRoomTypes } from "../../api/roomTypesApi";
+import { getUsers } from "../../api/userManagementApi";
+import { getMemberships } from "../../api/membershipsApi";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const pageCard = {
@@ -54,6 +56,17 @@ const secondaryButton = {
   fontFamily: "'Manrope', sans-serif",
 };
 
+const AUDIENCE_OPTIONS = [
+  { value: "PUBLIC", label: "Công khai" },
+  { value: "USER", label: "Khách cụ thể" },
+  { value: "BIRTHDAY_MONTH", label: "Sinh nhật" },
+  { value: "MEMBERSHIP", label: "Hạng thành viên" },
+  { value: "HOLIDAY", label: "Dịp lễ" },
+];
+
+const audienceLabel = (value) =>
+  AUDIENCE_OPTIONS.find((item) => item.value === (value || "PUBLIC"))?.label || "Công khai";
+
 const defaultForm = {
   code: "",
   discountType: "PERCENT",
@@ -65,6 +78,10 @@ const defaultForm = {
   validTo: "",
   usageLimit: "",
   maxUsesPerUser: "1",
+  audienceType: "PUBLIC",
+  targetMembershipId: "",
+  occasionName: "",
+  targetUserIds: [],
   isActive: true,
 };
 
@@ -118,6 +135,65 @@ function StatusChip({ active }) {
   );
 }
 
+function StatusSwitch({ active, onToggle, disabled = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={disabled}
+      aria-pressed={active}
+      aria-label={active ? "Tắt voucher" : "Bật voucher"}
+      style={{
+        position: "relative",
+        display: "inline-flex",
+        alignItems: "center",
+        width: 76,
+        height: 30,
+        padding: 3,
+        borderRadius: 999,
+        border: active ? "1px solid #86efac" : "1px solid #d1d5db",
+        background: active ? "#dcfce7" : "#f3f4f6",
+        cursor: disabled ? "wait" : "pointer",
+        transition: "all 0.2s ease",
+        fontFamily: "'Manrope', sans-serif",
+        boxShadow: active ? "0 4px 10px rgba(34,197,94,.12)" : "none",
+        opacity: disabled ? 0.72 : 1,
+      }}
+    >
+      <span
+        style={{
+          position: "absolute",
+          left: active ? 12 : "auto",
+          right: active ? "auto" : 12,
+          fontSize: 10,
+          fontWeight: 900,
+          color: active ? "#15803d" : "#6b7280",
+          pointerEvents: "none",
+          transition: "all 0.2s ease",
+        }}
+      >
+        {active ? "Bật" : "Tắt"}
+      </span>
+      <span
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: 3,
+          top: 2,
+          width: 24,
+          height: 24,
+          borderRadius: 999,
+          background: "#fff",
+          border: active ? "1px solid #bbf7d0" : "1px solid #d1d5db",
+          boxShadow: "0 1px 3px rgba(15,23,42,.18)",
+          transform: active ? "translateX(46px)" : "translateX(0)",
+          transition: "transform 0.22s ease, border-color 0.2s ease",
+        }}
+      />
+    </button>
+  );
+}
+
 function Modal({ open, title, onClose, children }) {
   const { isMobile } = useResponsiveAdmin();
   if (!open) return null;
@@ -157,21 +233,26 @@ export default function VoucherAdminPage() {
   const { isMobile, isTablet } = useResponsiveAdmin();
   const [rows, setRows] = useState([]);
   const [roomTypes, setRoomTypes] = useState([]);
+  const [guests, setGuests] = useState([]);
+  const [memberships, setMemberships] = useState([]);
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState("");
+  const [audienceType, setAudienceType] = useState("");
   const [loading, setLoading] = useState(false);
+  const [togglingIds, setTogglingIds] = useState({});
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [form, setForm] = useState(defaultForm);
+  const [guestSearch, setGuestSearch] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setErrorMessage("");
     try {
       const [voucherRes, roomTypeRes] = await Promise.all([
-        getVouchers({ page: 1, pageSize: 200, keyword, status: status || undefined }),
+        getVouchers({ page: 1, pageSize: 200, keyword, status: status || undefined, audienceType: audienceType || undefined }),
         getAdminRoomTypes(),
       ]);
       setRows(voucherRes.data?.data || []);
@@ -182,16 +263,45 @@ export default function VoucherAdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [keyword, status]);
+  }, [keyword, status, audienceType]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const loadTargets = async () => {
+      try {
+        const [usersRes, membershipRes] = await Promise.all([
+          getUsers({ page: 1, pageSize: 500 }),
+          getMemberships({ page: 1, pageSize: 200 }),
+        ]);
+
+        if (cancelled) return;
+
+        const userList = usersRes.data?.data || [];
+        setGuests(Array.isArray(userList) ? userList : []);
+        setMemberships(membershipRes.data?.data || membershipRes.data || []);
+      } catch {
+        if (!cancelled) {
+          setGuests([]);
+          setMemberships([]);
+        }
+      }
+    };
+
+    loadTargets();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const stats = useMemo(() => {
     const activeCount = rows.filter((item) => item.isActive).length;
     const expiredCount = rows.filter((item) => item.validTo && new Date(item.validTo) < new Date()).length;
-    return { total: rows.length, activeCount, expiredCount };
+    const privateCount = rows.filter((item) => item.audienceType === "USER").length;
+    return { total: rows.length, activeCount, expiredCount, privateCount };
   }, [rows]);
 
   const roomTypeMap = useMemo(
@@ -205,9 +315,20 @@ export default function VoucherAdminPage() {
     [roomTypes],
   );
 
+  const filteredGuests = useMemo(() => {
+    const keyword = guestSearch.trim().toLowerCase();
+    if (!keyword) return guests;
+    return guests.filter((guest) =>
+      [guest.fullName, guest.email, guest.phone, guest.roleName]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword))
+    );
+  }, [guestSearch, guests]);
+
   const openCreateModal = () => {
     setEditingItem(null);
     setForm(defaultForm);
+    setGuestSearch("");
     setErrorMessage("");
     setModalOpen(true);
   };
@@ -225,8 +346,13 @@ export default function VoucherAdminPage() {
       validTo: toDateTimeLocalValue(item.validTo),
       usageLimit: item.usageLimit?.toString() || "",
       maxUsesPerUser: item.maxUsesPerUser?.toString() || "1",
+      audienceType: item.audienceType || "PUBLIC",
+      targetMembershipId: item.targetMembershipId?.toString() || "",
+      occasionName: item.occasionName || "",
+      targetUserIds: (item.targetUsers || []).map((target) => Number(target.userId)),
       isActive: item.isActive !== false,
     });
+    setGuestSearch("");
     setErrorMessage("");
     setModalOpen(true);
   };
@@ -242,6 +368,10 @@ export default function VoucherAdminPage() {
     validTo: form.validTo || null,
     usageLimit: form.usageLimit === "" ? null : Number(form.usageLimit),
     maxUsesPerUser: Number(form.maxUsesPerUser || 1),
+    audienceType: form.audienceType,
+    targetMembershipId: form.audienceType === "MEMBERSHIP" && form.targetMembershipId !== "" ? Number(form.targetMembershipId) : null,
+    occasionName: form.audienceType === "HOLIDAY" ? form.occasionName.trim() : null,
+    targetUserIds: form.audienceType === "USER" ? form.targetUserIds.map(Number) : [],
     isActive: form.isActive,
   });
 
@@ -253,6 +383,22 @@ export default function VoucherAdminPage() {
     }
     if (Number(form.discountValue) <= 0) {
       setErrorMessage("Giá trị giảm phải lớn hơn 0.");
+      return;
+    }
+    if (form.discountType === "PERCENT" && (Number(form.discountValue) < 1 || Number(form.discountValue) > 100)) {
+      setErrorMessage("Voucher phần trăm chỉ được nhập từ 1 đến 100.");
+      return;
+    }
+    if (form.audienceType === "USER" && form.targetUserIds.length === 0) {
+      setErrorMessage("Vui lòng chọn ít nhất một khách cho voucher riêng.");
+      return;
+    }
+    if (form.audienceType === "MEMBERSHIP" && !form.targetMembershipId) {
+      setErrorMessage("Vui lòng chọn hạng thành viên áp dụng.");
+      return;
+    }
+    if (form.audienceType === "HOLIDAY" && !form.occasionName.trim()) {
+      setErrorMessage("Vui lòng nhập tên dịp lễ.");
       return;
     }
 
@@ -275,12 +421,57 @@ export default function VoucherAdminPage() {
   };
 
   const handleToggleActive = async (item) => {
+    const nextActive = item.isActive === false;
+    setTogglingIds((prev) => ({ ...prev, [item.id]: true }));
+    setRows((prev) =>
+      prev.map((row) =>
+        row.id === item.id
+          ? { ...row, isActive: nextActive }
+          : row
+      ),
+    );
     try {
-      await updateVoucher(item.id, { isActive: !item.isActive });
-      await loadData();
+      await updateVoucher(item.id, { isActive: nextActive });
     } catch (error) {
+      setRows((prev) =>
+        prev.map((row) =>
+          row.id === item.id
+            ? { ...row, isActive: item.isActive }
+            : row
+        ),
+      );
       setErrorMessage(error?.response?.data?.message || "Không thể cập nhật trạng thái voucher.");
+    } finally {
+      setTogglingIds((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
     }
+  };
+
+  const toggleTargetUser = (userId) => {
+    setForm((prev) => {
+      const id = Number(userId);
+      const exists = prev.targetUserIds.includes(id);
+      return {
+        ...prev,
+        targetUserIds: exists
+          ? prev.targetUserIds.filter((item) => item !== id)
+          : [...prev.targetUserIds, id],
+      };
+    });
+  };
+
+  const selectAllFilteredGuests = () => {
+    setForm((prev) => ({
+      ...prev,
+      targetUserIds: Array.from(new Set([...prev.targetUserIds, ...filteredGuests.map((guest) => Number(guest.id))])),
+    }));
+  };
+
+  const clearTargetUsers = () => {
+    setForm((prev) => ({ ...prev, targetUserIds: [] }));
   };
 
   return (
@@ -308,10 +499,11 @@ export default function VoucherAdminPage() {
         </div>
       ) : null}
 
-      <section style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))", gap: 16, marginBottom: 22 }}>
+      <section style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))", gap: 16, marginBottom: 22 }}>
         {[
           { label: "Tổng voucher", value: stats.total, sub: "Tất cả mã đã tạo" },
           { label: "Đang bật", value: stats.activeCount, sub: "Voucher còn hiệu lực sử dụng" },
+          { label: "Riêng khách", value: stats.privateCount, sub: "Voucher gắn với khách cụ thể" },
           { label: "Đã quá hạn", value: stats.expiredCount, sub: "Cần rà soát lại thời hạn" },
         ].map((item) => (
           <div key={item.label} style={{ ...pageCard, padding: 18 }}>
@@ -323,7 +515,7 @@ export default function VoucherAdminPage() {
       </section>
 
       <section style={{ ...pageCard, padding: isMobile ? 16 : 20, marginBottom: 20 }}>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.5fr 0.8fr auto", gap: 14, alignItems: "end" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.5fr 0.8fr 0.9fr auto", gap: 14, alignItems: "end" }}>
           <div>
             <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Tìm mã voucher</label>
             <input value={keyword} onChange={(e) => setKeyword(e.target.value)} style={inputStyle} placeholder="Ví dụ: SUMMER, VIP..." />
@@ -334,6 +526,15 @@ export default function VoucherAdminPage() {
               <option value="">Tất cả</option>
               <option value="active">Đang bật</option>
               <option value="inactive">Đang tắt</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Phân loại voucher</label>
+            <select value={audienceType} onChange={(e) => setAudienceType(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+              <option value="">Tất cả</option>
+              {AUDIENCE_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>{item.label}</option>
+              ))}
             </select>
           </div>
           <button type="button" onClick={loadData} style={{ ...secondaryButton, width: isMobile ? "100%" : "auto", justifyContent: "center" }}>Làm mới</button>
@@ -359,17 +560,17 @@ export default function VoucherAdminPage() {
                       <div style={{ color: "#1c1917", fontWeight: 800 }}>{item.code}</div>
                       <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>#{item.id}</div>
                     </div>
-                    <StatusChip active={item.isActive !== false} />
+                    <StatusSwitch active={item.isActive !== false} onToggle={() => handleToggleActive(item)} disabled={Boolean(togglingIds[item.id])} />
                   </div>
                   <div style={{ display: "grid", gap: 6, fontSize: 13, color: "#57534e" }}>
                     <div>Giảm giá: <strong style={{ color: "#1f2937" }}>{item.discountType === "PERCENT" ? `${item.discountValue}%` : fmtCurrency(item.discountValue)}</strong></div>
+                    <div>Phân loại: <strong style={{ color: "#1f2937" }}>{audienceLabel(item.audienceType)}</strong></div>
                     <div>Giảm tối đa: {item.maxDiscountAmount != null ? fmtCurrency(item.maxDiscountAmount) : "Không giới hạn"}</div>
                     <div>Tối thiểu: {item.minBookingValue != null ? fmtCurrency(item.minBookingValue) : "Không yêu cầu"}</div>
                     <div>Hạng phòng: {item.applicableRoomTypeId ? roomTypeMap.get(String(item.applicableRoomTypeId)) || `#${item.applicableRoomTypeId}` : "Tất cả"}</div>
                     <div>Hiệu lực: {fmtDateTime(item.validFrom)} - {fmtDateTime(item.validTo)}</div>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <button type="button" onClick={() => handleToggleActive(item)} style={{ ...secondaryButton, width: "100%", justifyContent: "center" }}>{item.isActive !== false ? "Tắt voucher" : "Bật voucher"}</button>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
                     <button type="button" onClick={() => openEditModal(item)} style={{ ...primaryButton, width: "100%", justifyContent: "center" }}>Sửa</button>
                   </div>
                 </article>
@@ -381,8 +582,8 @@ export default function VoucherAdminPage() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#faf8f3", borderBottom: "1px solid #f1f0ea" }}>
-                {["Mã voucher", "Giảm giá", "Điều kiện", "Thời gian", "Trạng thái", "Thao tác"].map((heading, idx) => (
-                  <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 5 ? "right" : "left", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>
+                {["Mã voucher", "Phân loại", "Giảm giá", "Điều kiện", "Thời gian", "Trạng thái", "Thao tác"].map((heading, idx) => (
+                  <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 6 ? "right" : "left", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>
                     {heading}
                   </th>
                 ))}
@@ -390,15 +591,29 @@ export default function VoucherAdminPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} style={{ padding: 48, textAlign: "center", color: "#9ca3af" }}>Đang tải dữ liệu...</td></tr>
+                <tr><td colSpan={7} style={{ padding: 48, textAlign: "center", color: "#9ca3af" }}>Đang tải dữ liệu...</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={6} style={{ padding: 48, textAlign: "center", color: "#9ca3af" }}>Chưa có voucher nào.</td></tr>
+                <tr><td colSpan={7} style={{ padding: 48, textAlign: "center", color: "#9ca3af" }}>Chưa có voucher nào.</td></tr>
               ) : (
                 rows.map((item) => (
                   <tr key={item.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
                     <td style={{ padding: "16px 18px" }}>
                       <div style={{ color: "#1c1917", fontWeight: 800 }}>{item.code}</div>
                       <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>#{item.id}</div>
+                    </td>
+                    <td style={{ padding: "16px 18px", color: "#57534e" }}>
+                      <div style={{ fontWeight: 800, color: "#1f2937" }}>{audienceLabel(item.audienceType)}</div>
+                      <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>
+                        {item.audienceType === "USER"
+                          ? `${item.targetUsers?.length || 0} khách`
+                          : item.audienceType === "MEMBERSHIP"
+                            ? item.targetMembershipName || `#${item.targetMembershipId}`
+                            : item.audienceType === "HOLIDAY"
+                              ? item.occasionName || "Dịp lễ"
+                              : item.audienceType === "BIRTHDAY_MONTH"
+                                ? "Theo tháng sinh"
+                                : "Mọi khách"}
+                      </div>
                     </td>
                     <td style={{ padding: "16px 18px", color: "#57534e" }}>
                       <div style={{ fontWeight: 800, color: "#1f2937" }}>
@@ -422,14 +637,10 @@ export default function VoucherAdminPage() {
                       <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>Đến: {fmtDateTime(item.validTo)}</div>
                     </td>
                     <td style={{ padding: "16px 18px" }}>
-                      <StatusChip active={item.isActive !== false} />
+                      <StatusSwitch active={item.isActive !== false} onToggle={() => handleToggleActive(item)} disabled={Boolean(togglingIds[item.id])} />
                     </td>
                     <td style={{ padding: "16px 18px", textAlign: "right" }}>
                       <div style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-                        <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", color: "#57534e", fontSize: 13, fontWeight: 800 }}>
-                          <input type="checkbox" checked={item.isActive !== false} onChange={() => handleToggleActive(item)} />
-                          {item.isActive !== false ? "Bật" : "Tắt"}
-                        </label>
                         <button type="button" onClick={() => openEditModal(item)} style={{ ...secondaryButton, fontWeight: 800 }}>Sửa</button>
                       </div>
                     </td>
@@ -465,10 +676,139 @@ export default function VoucherAdminPage() {
             </div>
           </div>
 
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Đối tượng áp dụng</label>
+              <select value={form.audienceType} onChange={(e) => setForm((prev) => ({ ...prev, audienceType: e.target.value, targetMembershipId: "", occasionName: "", targetUserIds: [] }))} style={{ ...inputStyle, cursor: "pointer" }}>
+                {AUDIENCE_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
+              </select>
+            </div>
+            {form.audienceType === "MEMBERSHIP" ? (
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Hạng thành viên</label>
+                <select value={form.targetMembershipId} onChange={(e) => setForm((prev) => ({ ...prev, targetMembershipId: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
+                  <option value="">Chọn hạng</option>
+                  {memberships.map((item) => (
+                    <option key={item.id} value={item.id}>{item.tierName}</option>
+                  ))}
+                </select>
+              </div>
+            ) : form.audienceType === "HOLIDAY" ? (
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Tên dịp lễ</label>
+                <input value={form.occasionName} onChange={(e) => setForm((prev) => ({ ...prev, occasionName: e.target.value }))} style={inputStyle} placeholder="Tết 2026, 30/4..." />
+              </div>
+            ) : (
+              <div style={{ color: "#78716c", fontSize: 13, alignSelf: "end", lineHeight: 1.5 }}>
+                {form.audienceType === "USER"
+                  ? "Chọn khách cụ thể ở danh sách bên dưới."
+                  : form.audienceType === "BIRTHDAY_MONTH"
+                    ? "Áp dụng cho guest có tháng sinh trùng tháng hiện tại."
+                    : "Áp dụng cho mọi guest đăng nhập."}
+              </div>
+            )}
+          </div>
+
+          {form.audienceType === "USER" ? (
+            <div style={{ display: "grid", gap: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280" }}>
+                  Khách được áp dụng <span style={{ color: "#1f2937" }}>({form.targetUserIds.length} đã chọn)</span>
+                </label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button type="button" onClick={selectAllFilteredGuests} style={{ ...secondaryButton, height: 34 }}>Chọn tất cả đang lọc</button>
+                  <button type="button" onClick={clearTargetUsers} style={{ ...secondaryButton, height: 34 }}>Bỏ chọn hết</button>
+                </div>
+              </div>
+              <input
+                value={guestSearch}
+                onChange={(e) => setGuestSearch(e.target.value)}
+                style={inputStyle}
+                placeholder="Tìm theo tên, email, số điện thoại..."
+              />
+              <div style={{ display: "grid", gap: 8, maxHeight: 220, overflowY: "auto", border: "1px solid #e2e8e1", borderRadius: 12, padding: 10, background: "#fff" }}>
+                {guests.length === 0 ? (
+                  <div style={{ color: "#9ca3af", fontSize: 13 }}>Chưa tải được danh sách khách.</div>
+                ) : filteredGuests.length === 0 ? (
+                  <div style={{ color: "#9ca3af", fontSize: 13 }}>Không có khách nào khớp từ khóa.</div>
+                ) : filteredGuests.map((guest) => {
+                  const isSelectedGuest = form.targetUserIds.includes(Number(guest.id));
+                  return (
+                    <label
+                      key={guest.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        color: "#57534e",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        border: isSelectedGuest ? "1px solid #14b8a6" : "1px solid #d6d3d1",
+                        borderRadius: 10,
+                        padding: "10px 12px",
+                        background: isSelectedGuest ? "#f0fdfa" : "#ffffff",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelectedGuest}
+                        onChange={() => toggleTargetUser(guest.id)}
+                        style={{
+                          position: "absolute",
+                          opacity: 0,
+                          pointerEvents: "none",
+                        }}
+                      />
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: 18,
+                          height: 18,
+                          flex: "0 0 18px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderRadius: 5,
+                          border: isSelectedGuest ? "1.5px solid #0f766e" : "1.5px solid #94a3b8",
+                          background: isSelectedGuest ? "#0f766e" : "#ffffff",
+                          color: "#ffffff",
+                          fontSize: 12,
+                          lineHeight: 1,
+                          boxShadow: isSelectedGuest ? "0 0 0 3px rgba(20, 184, 166, 0.12)" : "none",
+                        }}
+                      >
+                        {isSelectedGuest ? "✓" : ""}
+                      </span>
+                      <span>
+                        {guest.fullName || guest.email}
+                        <span style={{ color: "#9ca3af", fontWeight: 600 }}> {guest.email}</span>
+                        {guest.phone ? <span style={{ color: "#9ca3af", fontWeight: 600 }}> • {guest.phone}</span> : null}
+                        {guest.roleName ? <span style={{ color: "#94a3b8", fontWeight: 700, textTransform: "uppercase" }}> • {guest.roleName}</span> : null}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Giá trị giảm</label>
-              <input type="number" min="0" step="1000" value={form.discountValue} onChange={(e) => setForm((prev) => ({ ...prev, discountValue: e.target.value }))} style={inputStyle} required />
+              <input
+                type="number"
+                min={form.discountType === "PERCENT" ? "1" : "0"}
+                max={form.discountType === "PERCENT" ? "100" : undefined}
+                step={form.discountType === "PERCENT" ? "1" : "1000"}
+                value={form.discountValue}
+                onChange={(e) => setForm((prev) => ({ ...prev, discountValue: e.target.value }))}
+                style={inputStyle}
+                required
+              />
             </div>
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Giảm tối đa</label>
@@ -531,3 +871,4 @@ export default function VoucherAdminPage() {
     </div>
   );
 }
+

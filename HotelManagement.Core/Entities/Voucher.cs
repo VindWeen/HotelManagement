@@ -14,11 +14,16 @@ public class Voucher
     public int? UsageLimit { get; set; }
     public int UsedCount { get; set; } = 0;
     public int MaxUsesPerUser { get; set; } = 1;
+    public string AudienceType { get; set; } = "PUBLIC";
+    public int? TargetMembershipId { get; set; }
+    public string? OccasionName { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
 
     // Navigation
     public RoomType? ApplicableRoomType { get; set; }
+    public Membership? TargetMembership { get; set; }
     public ICollection<Booking> Bookings { get; set; } = [];
     public ICollection<VoucherUsage> VoucherUsages { get; set; } = [];
+    public ICollection<VoucherTargetUser> TargetUsers { get; set; } = [];
 }

@@ -565,6 +565,73 @@ public class InvoiceService : IInvoiceService
         };
     }
 
+    private async Task<int?> ResolveMembershipForPointsAsync(int points, CancellationToken cancellationToken = default)
+    {
+        var tiers = await _db.Memberships
+            .AsNoTracking()
+            .Where(m => m.IsActive && (m.MinPoints ?? 0) <= points)
+            .OrderByDescending(m => m.MinPoints ?? 0)
+            .ThenByDescending(m => m.Id)
+            .ToListAsync(cancellationToken);
+
+        return tiers
+            .FirstOrDefault(m => !m.MaxPoints.HasValue || points <= m.MaxPoints.Value)
+            ?.Id
+            ?? tiers.FirstOrDefault()?.Id;
+    }
+
+    private static decimal CalculateLoyaltyEligibleAmount(Invoice invoice)
+    {
+        var roomAmount = Math.Max(0m, invoice.TotalRoomAmount ?? 0m);
+        var serviceAmount = Math.Max(0m, invoice.TotalServiceAmount ?? 0m);
+        var bookingDiscountAmount = Math.Max(0m, invoice.DiscountAmount ?? 0m);
+        var manualDiscountAmount = invoice.Adjustments
+            .Where(a => string.Equals(a.AdjustmentType, "Discount", StringComparison.OrdinalIgnoreCase))
+            .Sum(a => Math.Max(0m, a.Amount));
+
+        return Math.Max(0m, roomAmount + serviceAmount - bookingDiscountAmount - manualDiscountAmount);
+    }
+
+    private async Task AwardLoyaltyPointsForCompletedBookingAsync(Booking booking, Invoice invoice, CancellationToken cancellationToken = default)
+    {
+        if (!booking.UserId.HasValue)
+            return;
+
+        var alreadyAwarded = await _db.LoyaltyTransactions
+            .AnyAsync(t => t.BookingId == booking.Id && t.TransactionType == "earned", cancellationToken);
+
+        if (alreadyAwarded)
+            return;
+
+        var loyaltyEligibleAmount = CalculateLoyaltyEligibleAmount(invoice);
+        if (loyaltyEligibleAmount <= 0m)
+            return;
+
+        var earnedPoints = (int)Math.Floor(loyaltyEligibleAmount / 10000m);
+        if (earnedPoints <= 0)
+            return;
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == booking.UserId.Value, cancellationToken);
+        if (user == null)
+            return;
+
+        user.LoyaltyPoints += earnedPoints;
+        user.LoyaltyPointsUsable += earnedPoints;
+        user.MembershipId = await ResolveMembershipForPointsAsync(user.LoyaltyPoints, cancellationToken);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        _db.LoyaltyTransactions.Add(new LoyaltyTransaction
+        {
+            UserId = user.Id,
+            BookingId = booking.Id,
+            TransactionType = "earned",
+            Points = earnedPoints,
+            BalanceAfter = user.LoyaltyPointsUsable,
+            Note = $"Cộng {earnedPoints} điểm từ booking {booking.BookingCode} trên giá trị lưu trú {loyaltyEligibleAmount:N0}đ.",
+            CreatedAt = DateTime.UtcNow
+        });
+    }
+
     public async Task<object?> FinalizeAsync(int id, CancellationToken cancellationToken = default)
     {
         var invoice = await _db.Invoices
@@ -601,6 +668,7 @@ public class InvoiceService : IInvoiceService
                     booking.Status = BookingStatuses.Completed;
                     await AutoDeliverOrderServicesForPaidInvoiceAsync(booking.Id, cancellationToken);
                     await AutoProcessLossAndDamagesForPaidInvoiceAsync(booking.Id, cancellationToken);
+                    await AwardLoyaltyPointsForCompletedBookingAsync(booking, invoice, cancellationToken);
                 }
                 else if (string.Equals(booking.Status, BookingStatuses.Completed, StringComparison.OrdinalIgnoreCase))
                 {

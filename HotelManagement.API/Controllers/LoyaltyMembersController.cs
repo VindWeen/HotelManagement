@@ -1,5 +1,6 @@
 ﻿using HotelManagement.Core.Authorization;
 using HotelManagement.Core.DTOs;
+using HotelManagement.Core.Helpers;
 using HotelManagement.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +18,125 @@ public class LoyaltyMembersController : ControllerBase
     public LoyaltyMembersController(AppDbContext db)
     {
         _db = db;
+    }
+
+    [HttpGet("me")]
+    public async Task<IActionResult> GetMe()
+    {
+        var userId = JwtHelper.GetUserId(User);
+
+        var memberships = await _db.Memberships
+            .AsNoTracking()
+            .Where(m => m.IsActive)
+            .OrderBy(m => m.MinPoints ?? 0)
+            .Select(m => new
+            {
+                m.Id,
+                m.TierName,
+                m.MinPoints,
+                m.MaxPoints,
+                m.DiscountPercent,
+                m.ColorHex
+            })
+            .ToListAsync();
+
+        var member = await _db.Users
+            .AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => new
+            {
+                u.Id,
+                u.FullName,
+                u.Email,
+                u.Phone,
+                u.AvatarUrl,
+                u.LoyaltyPoints,
+                u.LoyaltyPointsUsable,
+                MembershipId = u.MembershipId,
+                MembershipTier = u.Membership != null ? u.Membership.TierName : null,
+                MembershipColor = u.Membership != null ? u.Membership.ColorHex : null,
+                MembershipDiscount = u.Membership != null ? u.Membership.DiscountPercent : null,
+                MembershipMinPoints = u.Membership != null ? u.Membership.MinPoints : null,
+                MembershipMaxPoints = u.Membership != null ? u.Membership.MaxPoints : null,
+                TransactionCount = u.LoyaltyTransactions.Count()
+            })
+            .FirstOrDefaultAsync();
+
+        if (member is null)
+            return NotFound(new { message = "Không tìm thấy thông tin thành viên." });
+
+        var nextTier = memberships
+            .Where(m => (m.MinPoints ?? 0) > member.LoyaltyPoints)
+            .OrderBy(m => m.MinPoints ?? 0)
+            .FirstOrDefault();
+
+        var currentMin = member.MembershipMinPoints ?? 0;
+        var nextMin = nextTier?.MinPoints;
+        var pointsToNextTier = nextMin.HasValue
+            ? Math.Max(0, nextMin.Value - member.LoyaltyPoints)
+            : 0;
+        var progressPercent = nextMin.HasValue && nextMin.Value > currentMin
+            ? Math.Clamp((member.LoyaltyPoints - currentMin) * 100m / (nextMin.Value - currentMin), 0m, 100m)
+            : 100m;
+
+        return Ok(new
+        {
+            member,
+            currentTier = new
+            {
+                id = member.MembershipId,
+                tierName = member.MembershipTier,
+                colorHex = member.MembershipColor,
+                discountPercent = member.MembershipDiscount,
+                minPoints = member.MembershipMinPoints,
+                maxPoints = member.MembershipMaxPoints
+            },
+            nextTier,
+            progress = new
+            {
+                currentPoints = member.LoyaltyPoints,
+                currentTierMinPoints = currentMin,
+                nextTierMinPoints = nextMin,
+                pointsToNextTier,
+                progressPercent = Math.Round(progressPercent, 1)
+            },
+            tiers = memberships,
+            message = "Lấy thông tin loyalty thành công."
+        });
+    }
+
+    [HttpGet("me/transactions")]
+    public async Task<IActionResult> GetMyTransactions()
+    {
+        var userId = JwtHelper.GetUserId(User);
+
+        var transactions = await _db.LoyaltyTransactions
+            .AsNoTracking()
+            .Where(t => t.UserId == userId)
+            .OrderByDescending(t => t.CreatedAt)
+            .Select(t => new LoyaltyTransactionResponse(
+                t.Id,
+                t.TransactionType,
+                t.Points,
+                t.BalanceAfter,
+                t.Note,
+                t.BookingId,
+                t.Booking != null ? t.Booking.BookingCode : null,
+                t.CreatedAt
+            ))
+            .ToListAsync();
+
+        return Ok(new
+        {
+            data = transactions,
+            summary = new
+            {
+                totalTransactions = transactions.Count,
+                earnedPoints = transactions.Where(t => t.Points > 0).Sum(t => t.Points),
+                spentPoints = transactions.Where(t => t.Points < 0).Sum(t => Math.Abs(t.Points))
+            },
+            message = "Lấy lịch sử tích điểm thành công."
+        });
     }
 
     [HttpGet]

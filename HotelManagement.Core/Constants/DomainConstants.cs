@@ -81,3 +81,14 @@ public static class VoucherDiscountTypes
     public const string Percent = "PERCENT";
     public const string FixedAmount = "FIXED_AMOUNT";
 }
+
+public static class VoucherAudienceTypes
+{
+    public const string Public = "PUBLIC";
+    public const string User = "USER";
+    public const string BirthdayMonth = "BIRTHDAY_MONTH";
+    public const string Membership = "MEMBERSHIP";
+    public const string Holiday = "HOLIDAY";
+
+    public static readonly string[] All = [Public, User, BirthdayMonth, Membership, Holiday];
+}

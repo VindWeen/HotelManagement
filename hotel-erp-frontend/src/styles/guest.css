@@ -355,6 +355,14 @@
   text-decoration: none;
   white-space: nowrap;
 }
+.guest-portal a.g-btn-primary,
+.guest-portal a.g-btn-primary:hover,
+.guest-portal a.g-btn-primary:focus,
+.guest-portal button.g-btn-primary,
+.guest-portal button.g-btn-primary:hover,
+.guest-portal button.g-btn-primary:focus {
+  color: var(--g-text-on-primary);
+}
 .g-btn-primary:hover {
   background: var(--g-primary-hover);
   transform: translateY(-1px);
@@ -389,6 +397,14 @@
   background: var(--g-gold-hover);
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(184, 150, 46, 0.3);
+}
+.guest-portal a.g-btn-gold,
+.guest-portal a.g-btn-gold:hover,
+.guest-portal a.g-btn-gold:focus,
+.guest-portal button.g-btn-gold,
+.guest-portal button.g-btn-gold:hover,
+.guest-portal button.g-btn-gold:focus {
+  color: #fff;
 }
 
 /* Outlined */

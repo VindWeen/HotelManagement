@@ -25,6 +25,10 @@ public class CreateBookingRequestValidator : AbstractValidator<CreateBookingRequ
         RuleFor(x => x.NumChildren)
             .GreaterThanOrEqualTo(0).WithMessage("Số trẻ em không được âm.");
 
+        RuleFor(x => x.LoyaltyPointsToRedeem)
+            .GreaterThanOrEqualTo(0).WithMessage("Số điểm quy đổi không được âm.")
+            .Must(points => points % 100 == 0).WithMessage("Số điểm quy đổi phải là bội số của 100.");
+
         RuleFor(x => x.Details)
             .NotNull().WithMessage("Danh sách phòng không được để trống.")
             .Must(x => x.Count > 0).WithMessage("Danh sách phòng không được để trống.");

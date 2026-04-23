@@ -574,6 +574,33 @@ export default function GuestHeader() {
                       My Booking
                     </Link>
                     <Link
+                      to="/guest/loyalty"
+                      className="gh-account-link"
+                      onClick={() => setAccountMenuOpen(false)}
+                      role="menuitem"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>workspace_premium</span>
+                      Loyalty
+                    </Link>
+                    <Link
+                      to="/guest/vouchers"
+                      className="gh-account-link"
+                      onClick={() => setAccountMenuOpen(false)}
+                      role="menuitem"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>local_offer</span>
+                      Voucher
+                    </Link>
+                    <Link
+                      to="/guest/reviews"
+                      className="gh-account-link"
+                      onClick={() => setAccountMenuOpen(false)}
+                      role="menuitem"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>rate_review</span>
+                      Review của tôi
+                    </Link>
+                    <Link
                       to="/guest/profile"
                       className="gh-account-link"
                       onClick={() => setAccountMenuOpen(false)}
@@ -665,6 +692,33 @@ export default function GuestHeader() {
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>book_online</span>
                 My Booking
+              </Link>
+              <Link
+                to="/guest/loyalty"
+                className="gh-panel-link"
+                onClick={closeMenu}
+                tabIndex={menuOpen ? 0 : -1}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>workspace_premium</span>
+                Loyalty
+              </Link>
+              <Link
+                to="/guest/vouchers"
+                className="gh-panel-link"
+                onClick={closeMenu}
+                tabIndex={menuOpen ? 0 : -1}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>local_offer</span>
+                Voucher
+              </Link>
+              <Link
+                to="/guest/reviews"
+                className="gh-panel-link"
+                onClick={closeMenu}
+                tabIndex={menuOpen ? 0 : -1}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>rate_review</span>
+                Review của tôi
               </Link>
               <Link
                 to="/guest/profile"

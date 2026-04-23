@@ -25,6 +25,9 @@ const GuestDashboardPage = lazyWithMinDelay(() => import("../pages/guest/Dashboa
 const GuestProfilePage = lazyWithMinDelay(() => import("../pages/guest/ProfilePage"));
 const MyBookingPage = lazyWithMinDelay(() => import("../pages/guest/MyBookingPage"));
 const BookingPage = lazyWithMinDelay(() => import("../pages/guest/BookingPage"));
+const LoyaltyPage = lazyWithMinDelay(() => import("../pages/guest/LoyaltyPage"));
+const VouchersPage = lazyWithMinDelay(() => import("../pages/guest/VouchersPage"));
+const MyReviewsPage = lazyWithMinDelay(() => import("../pages/guest/MyReviewsPage"));
 
 function RouteFallback() {
   return <FullscreenLoader />;
@@ -73,6 +76,30 @@ export default function GuestRoutes() {
         element={
           <GuestProtectedRoute>
             {withSuspense(<MyBookingPage />)}
+          </GuestProtectedRoute>
+        }
+      />
+      <Route
+        path="/guest/loyalty"
+        element={
+          <GuestProtectedRoute>
+            {withSuspense(<LoyaltyPage />)}
+          </GuestProtectedRoute>
+        }
+      />
+      <Route
+        path="/guest/vouchers"
+        element={
+          <GuestProtectedRoute>
+            {withSuspense(<VouchersPage />)}
+          </GuestProtectedRoute>
+        }
+      />
+      <Route
+        path="/guest/reviews"
+        element={
+          <GuestProtectedRoute>
+            {withSuspense(<MyReviewsPage />)}
           </GuestProtectedRoute>
         }
       />
