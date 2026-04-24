@@ -7,6 +7,7 @@ using HotelManagement.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace HotelManagement.API.Controllers;
 
@@ -22,6 +23,130 @@ public class OrderServicesController : ControllerBase
     {
         _db = db;
         _auditTrail = auditTrail;
+    }
+
+    // ─── GUEST ENDPOINTS ──────────────────────────────────────────────
+
+    /// <summary>Guest: Tạo đơn gọi dịch vụ (chỉ khi đang Checked_in)</summary>
+    [HttpPost("guest")]
+    public async Task<IActionResult> GuestCreateOrder([FromBody] GuestCreateOrderServiceRequest request)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                  ?? User.FindFirstValue("sub")
+                  ?? User.FindFirstValue("id");
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { success = false, message = "Không xác định được tài khoản." });
+
+        if (request.Items == null || request.Items.Count == 0)
+            return BadRequest(new { success = false, message = "Đơn dịch vụ phải có ít nhất 1 dòng dịch vụ." });
+
+        // Xác minh bookingDetail thuộc booking của user
+        var bookingDetail = await _db.BookingDetails
+            .Include(x => x.Booking)
+            .FirstOrDefaultAsync(x => x.Id == request.BookingDetailId);
+
+        if (bookingDetail?.Booking == null)
+            return NotFound(new { success = false, message = $"Không tìm thấy booking detail #{request.BookingDetailId}." });
+
+        if (bookingDetail.Booking.UserId == null || bookingDetail.Booking.UserId.ToString() != userId)
+            return Forbid();
+
+        if (bookingDetail.Booking.Status != BookingStatuses.CheckedIn)
+            return BadRequest(new { success = false, message = "Chỉ có thể gọi dịch vụ khi đang lưu trú (Checked In)." });
+
+        var serviceMapResult = await BuildOrderItemsAsync(request.Items);
+        if (!serviceMapResult.Success)
+            return BadRequest(new { success = false, message = serviceMapResult.ErrorMessage });
+
+        var order = new OrderService
+        {
+            BookingDetailId = request.BookingDetailId,
+            OrderDate = DateTime.UtcNow,
+            Status = "Pending",
+            Note = request.Note?.Trim(),
+            TotalAmount = serviceMapResult.TotalAmount,
+            IsActive = true,
+            OrderServiceDetails = serviceMapResult.Items.Select(x => new OrderServiceDetail
+            {
+                ServiceId = x.Service.Id,
+                Quantity = x.Quantity,
+                UnitPrice = x.UnitPrice
+            }).ToList()
+        };
+
+        _db.OrderServices.Add(order);
+        await _db.SaveChangesAsync();
+
+        return StatusCode(201, new
+        {
+            success = true,
+            message = "Đặt dịch vụ thành công.",
+            data = new { order.Id, order.TotalAmount, order.Status }
+        });
+    }
+
+    /// <summary>Guest: Xem tất cả đơn dịch vụ của mình</summary>
+    [HttpGet("guest/my-orders")]
+    public async Task<IActionResult> GuestGetMyOrders()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                  ?? User.FindFirstValue("sub")
+                  ?? User.FindFirstValue("id");
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { success = false, message = "Không xác định được tài khoản." });
+
+        var orders = await _db.OrderServices
+            .AsNoTracking()
+            .Include(x => x.BookingDetail)
+                .ThenInclude(d => d!.Booking)
+            .Include(x => x.BookingDetail)
+                .ThenInclude(d => d!.Room)
+            .Include(x => x.OrderServiceDetails)
+                .ThenInclude(d => d.Service)
+            .Where(x => x.IsActive &&
+                        x.BookingDetail != null &&
+                        x.BookingDetail.Booking != null &&
+                        x.BookingDetail.Booking.UserId != null &&
+                        x.BookingDetail.Booking.UserId.ToString() == userId)
+            .OrderByDescending(x => x.OrderDate)
+            .Select(x => new
+            {
+                x.Id,
+                x.BookingDetailId,
+                BookingCode = x.BookingDetail != null && x.BookingDetail.Booking != null
+                    ? x.BookingDetail.Booking.BookingCode : null,
+                BookingStatus = x.BookingDetail != null && x.BookingDetail.Booking != null
+                    ? x.BookingDetail.Booking.Status : null,
+                RoomNumber = x.BookingDetail != null && x.BookingDetail.Room != null
+                    ? x.BookingDetail.Room.RoomNumber : null,
+                x.OrderDate,
+                x.TotalAmount,
+                x.Status,
+                x.Note,
+                x.CompletedAt,
+                Details = x.OrderServiceDetails.Select(d => new
+                {
+                    d.Id,
+                    d.ServiceId,
+                    ServiceName = d.Service != null ? d.Service.Name : null,
+                    d.Quantity,
+                    d.UnitPrice,
+                    LineTotal = d.Quantity * d.UnitPrice
+                })
+            })
+            .ToListAsync();
+
+        var totalIncurred = orders.Sum(o => o.TotalAmount);
+
+        return Ok(new
+        {
+            success = true,
+            data = orders,
+            totalIncurred,
+            total = orders.Count
+        });
     }
 
     [HttpGet]

@@ -18,3 +18,9 @@ public record UpdateOrderServiceRequest(
 );
 
 public record UpdateOrderServiceStatusRequest(string Status);
+
+public record GuestCreateOrderServiceRequest(
+    int BookingDetailId,
+    string? Note,
+    List<OrderServiceItemRequest> Items
+);

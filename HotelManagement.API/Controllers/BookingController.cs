@@ -983,7 +983,7 @@ public class BookingsController : ControllerBase
                 Note = request.Note,
                 BookingCode = await GenerateBookingCodeAsync()
             };
-            if (!booking.UserId.HasValue && normalizedSource == BookingSources.WalkIn)
+            if (!booking.UserId.HasValue && (normalizedSource == BookingSources.WalkIn || normalizedSource == BookingSources.Online))
             {
                 await EnsureGuestAccountLinkedAsync(
                     booking,
@@ -1001,8 +1001,7 @@ public class BookingsController : ControllerBase
             }
             if (request.Details.Any())
             {
-                var earliestCheckIn = request.Details.Min(d => NormalizeStayDates(d.CheckInDate, d.CheckOutDate).CheckInDate);
-                booking.RefundableUntil = earliestCheckIn.AddHours(-48);
+                booking.RefundableUntil = DateTime.UtcNow.AddHours(12);
             }
 
             var roomTypeIds = request.Details.Select(d => d.RoomTypeId).Distinct().ToList();
@@ -1165,7 +1164,7 @@ public class BookingsController : ControllerBase
                 NewValue = $"{{\"bookingCode\": \"{booking.BookingCode}\", \"total\": {booking.TotalEstimatedAmount}}}"
             });
 
-            if (normalizedSource == BookingSources.WalkIn)
+            if (normalizedSource == BookingSources.WalkIn || normalizedSource == BookingSources.Online)
             {
                 var toEmail = booking.GuestEmail ?? request.GuestEmail;
                 var firstDetail = booking.BookingDetails.OrderBy(d => d.CheckInDate).FirstOrDefault();
@@ -1308,6 +1307,14 @@ public class BookingsController : ControllerBase
         if (b == null)
             return BookingActionError(StatusCodes.Status404NotFound, $"Không tìm thấy booking #{id}.");
 
+        var currentUserId = JwtHelper.GetUserId(User);
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value;
+
+        if (role != "Admin" && role != "Manager" && role != "Receptionist" && b.UserId != currentUserId)
+        {
+            return BookingActionError(StatusCodes.Status403Forbidden, "Bạn không có quyền hủy booking của người khác.");
+        }
+
         if (!_statusFlowService.CanTransition(b.Status, BookingStatuses.Cancelled, out var cancelError))
             return BookingActionError(StatusCodes.Status400BadRequest, cancelError);
 
@@ -1325,11 +1332,11 @@ public class BookingsController : ControllerBase
         {
             if (b.RefundPolicy == "refundable" && b.RefundableUntil.HasValue && DateTime.UtcNow <= b.RefundableUntil.Value)
             {
-                b.RefundAmount = (b.DepositAmount ?? 0m) * 0.5m; // Hủy trước 48h -> hoàn 50%
+                b.RefundAmount = b.DepositAmount ?? 0m; // Hủy trong vòng 12h sau khi đặt -> hoàn 100%
             }
             else
             {
-                b.RefundAmount = 0m; // Hủy sát giờ hoặc non_refundable -> mất cọc
+                b.RefundAmount = 0m; // Quá hạn 12h -> mất cọc
             }
         }
 
@@ -1726,6 +1733,7 @@ public class BookingsController : ControllerBase
             return BookingActionError(StatusCodes.Status400BadRequest, "Ngày trả phòng phải sau ngày nhận phòng.");
 
         var roomTypes = await _context.RoomTypes
+            .Include(rt => rt.RoomImages)
             .AsNoTracking()
             .Where(rt => rt.IsActive)
             .OrderBy(rt => rt.BasePrice)
@@ -1741,6 +1749,12 @@ public class BookingsController : ControllerBase
             var availableRooms = Math.Max(0, totalRooms - bookedRooms);
             var meetsCapacity = roomType.CapacityAdults >= numAdults && (roomType.CapacityAdults + roomType.CapacityChildren >= numAdults + numChildren);
 
+            var primaryImage = roomType.RoomImages
+                .Where(img => img.IsActive)
+                .OrderByDescending(img => img.IsPrimary)
+                .ThenBy(img => img.SortOrder)
+                .FirstOrDefault()?.ImageUrl;
+
             result.Add(new
             {
                 roomType.Id,
@@ -1752,6 +1766,7 @@ public class BookingsController : ControllerBase
                 roomType.AreaSqm,
                 roomType.Description,
                 roomType.IsActive,
+                PrimaryImageUrl = primaryImage,
                 TotalRooms = totalRooms,
                 AvailableRooms = availableRooms,
                 IsAvailable = availableRooms > 0,

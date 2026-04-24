@@ -54,10 +54,15 @@ export default function GuestModal({
 
   useEffect(() => {
     if (open) {
-      document.addEventListener('keydown', handleKeyDown);
       dialogRef.current?.focus();
     }
-    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
   }, [open, handleKeyDown]);
 
   if (!open) return null;

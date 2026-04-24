@@ -60,7 +60,9 @@ public class JwtHelper
         var sub = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        return int.Parse(sub!);
+        if (string.IsNullOrEmpty(sub)) return 0;
+        
+        return int.TryParse(sub, out var id) ? id : 0;
     }
 
     public static string? GetEmail(ClaimsPrincipal principal)

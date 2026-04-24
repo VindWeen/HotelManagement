@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using HotelManagement.API.Hubs;           // ← THÊM MỚI
 using HotelManagement.API.Middleware;
 using HotelManagement.API.Services;       // ← THÊM MỚI
@@ -122,6 +122,8 @@ builder.Services.AddScoped<IBookingStatusFlowService, BookingStatusFlowService>(
 builder.Services.AddScoped<IVoucherValidationService, VoucherValidationService>();
 builder.Services.AddScoped<IVoucherAudienceService, VoucherAudienceService>();
 builder.Services.AddScoped<IDashboardAggregationService, DashboardAggregationService>();
+builder.Services.AddScoped<IMomoService, MomoService>();
+builder.Services.AddHttpClient();
 builder.Services.AddHostedService<RoomStatusSchedulerService>();
 // ── 4.5 Cloudinary ──────────────────────────────────────────────────
 var cloudCfg     = builder.Configuration.GetSection("Cloudinary");

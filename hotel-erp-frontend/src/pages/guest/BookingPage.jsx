@@ -893,8 +893,12 @@ export default function BookingPage() {
     if (!guestName.trim()) errs.guestName = "Vui lòng nhập họ tên.";
     if (!/^\d{9,12}$/.test(guestPhone.replace(/\s+/g, "")))
       errs.guestPhone = "Số điện thoại không hợp lệ (9–12 chữ số).";
-    if (guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail))
+    
+    if (!isGuest && !guestEmail.trim()) {
+      errs.guestEmail = "Vui lòng nhập email để nhận thông tin đặt phòng.";
+    } else if (guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
       errs.guestEmail = "Email không hợp lệ.";
+    }
     setGuestErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -1042,15 +1046,23 @@ export default function BookingPage() {
         showClose={false}
         width={500}
         footer={
-          <div style={{ display: "flex", gap: 10, width: "100%", justifyContent: "center" }}>
-            <button className="g-btn-outline" onClick={handleSuccessClose}>
-              Đặt phòng khác
+          <div style={{ display: "flex", gap: 10, width: "100%", justifyContent: "center", flexWrap: "wrap" }}>
+            <button className="g-btn-outline" onClick={() => { handleSuccessClose(); navigate("/guest/my-bookings"); }}>
+              Xem danh sách booking
             </button>
             <button
               className="g-btn-primary"
-              onClick={() => { handleSuccessClose(); navigate("/guest/my-bookings"); }}
+              onClick={() => { 
+                const bookingId = successBooking?.id;
+                handleSuccessClose(); 
+                if (bookingId) {
+                  navigate(`/guest/payment/deposit/${bookingId}`);
+                } else {
+                  navigate("/guest/my-bookings");
+                }
+              }}
             >
-              Xem lịch sử đặt phòng
+              Thanh toán cọc ngay
             </button>
           </div>
         }
@@ -1448,7 +1460,7 @@ export default function BookingPage() {
                     {guestErrors.guestPhone && <span className="bp-field-error">{guestErrors.guestPhone}</span>}
                   </div>
                   <div className="bp-field">
-                    <label className="bp-label">Email</label>
+                    <label className="bp-label">Email {!isGuest && <span className="bp-required">*</span>}</label>
                     <input
                       type="email"
                       className={`bp-input${guestErrors.guestEmail ? " error" : ""}`}

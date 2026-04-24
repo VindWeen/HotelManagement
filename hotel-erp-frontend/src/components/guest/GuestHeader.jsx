@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { to: '/attractions', label: 'Khám phá',        exact: false },
   { to: '/articles',    label: 'Bài viết',        exact: false },
   { to: '/reviews',     label: 'Đánh giá',        exact: false },
+  { to: '/guest/services', label: 'Dịch vụ',      exact: false },
 ];
 
 export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
@@ -612,6 +613,15 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
                       My Booking
                     </Link>
                     <Link
+                      to="/guest/my-orders"
+                      className="gh-account-link"
+                      onClick={() => setAccountMenuOpen(false)}
+                      role="menuitem"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>room_service</span>
+                      My Service
+                    </Link>
+                    <Link
                       to="/guest/loyalty"
                       className="gh-account-link"
                       onClick={() => setAccountMenuOpen(false)}
@@ -636,7 +646,7 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
                       role="menuitem"
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>rate_review</span>
-                      Review của tôi
+                      Review c???a t??i
                     </Link>
                     <Link
                       to="/guest/profile"
@@ -732,6 +742,15 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
                 My Booking
               </Link>
               <Link
+                to="/guest/my-orders"
+                className="gh-panel-link"
+                onClick={closeMenu}
+                tabIndex={menuOpen ? 0 : -1}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>room_service</span>
+                My Service
+              </Link>
+              <Link
                 to="/guest/loyalty"
                 className="gh-panel-link"
                 onClick={closeMenu}
@@ -756,7 +775,7 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
                 tabIndex={menuOpen ? 0 : -1}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>rate_review</span>
-                Review của tôi
+                Review c???a t??i
               </Link>
               <Link
                 to="/guest/profile"

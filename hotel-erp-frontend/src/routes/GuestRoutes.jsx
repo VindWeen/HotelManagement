@@ -29,6 +29,14 @@ const LoyaltyPage = lazyWithMinDelay(() => import("../pages/guest/LoyaltyPage"))
 const VouchersPage = lazyWithMinDelay(() => import("../pages/guest/VouchersPage"));
 const MyReviewsPage = lazyWithMinDelay(() => import("../pages/guest/MyReviewsPage"));
 
+// New pages for Payment and Services
+const DepositPaymentPage = lazyWithMinDelay(() => import("../pages/guest/payment/DepositPaymentPage"));
+const PaymentResultPage = lazyWithMinDelay(() => import("../pages/guest/payment/PaymentResultPage"));
+const GuestServicesPage = lazyWithMinDelay(() => import("../pages/guest/services/GuestServicesPage"));
+const GuestOrderServicePage = lazyWithMinDelay(() => import("../pages/guest/services/GuestOrderServicePage"));
+const GuestMyOrdersPage = lazyWithMinDelay(() => import("../pages/guest/services/GuestMyOrdersPage"));
+
+
 function RouteFallback() {
   return <FullscreenLoader />;
 }
@@ -100,6 +108,42 @@ export default function GuestRoutes() {
         element={
           <GuestProtectedRoute>
             {withSuspense(<MyReviewsPage />)}
+          </GuestProtectedRoute>
+        }
+      />
+      <Route
+        path="/guest/payment/deposit/:bookingId"
+        element={
+          <GuestProtectedRoute>
+            {withSuspense(<DepositPaymentPage />)}
+          </GuestProtectedRoute>
+        }
+      />
+      <Route
+        path="/guest/payment/result"
+        element={withSuspense(<PaymentResultPage />)}
+      />
+      <Route
+        path="/guest/services"
+        element={
+          <GuestProtectedRoute>
+            {withSuspense(<GuestServicesPage />)}
+          </GuestProtectedRoute>
+        }
+      />
+      <Route
+        path="/guest/services/order"
+        element={
+          <GuestProtectedRoute>
+            {withSuspense(<GuestOrderServicePage />)}
+          </GuestProtectedRoute>
+        }
+      />
+      <Route
+        path="/guest/my-orders"
+        element={
+          <GuestProtectedRoute>
+            {withSuspense(<GuestMyOrdersPage />)}
           </GuestProtectedRoute>
         }
       />
