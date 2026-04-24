@@ -1,4 +1,4 @@
-﻿using HotelManagement.Infrastructure.Data;
+using HotelManagement.Infrastructure.Data;
 using System.Security.Claims;
 using HotelManagement.Core.Helpers;
 
@@ -48,7 +48,11 @@ public class AuditTrailService : IAuditTrailService
         AuditTrailEntry entry,
         CancellationToken cancellationToken = default)
     {
-        var userId = JwtHelper.GetUserId(user);
+        int? userId = null;
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            try { userId = JwtHelper.GetUserId(user); } catch { }
+        }
         var roleName = user.FindFirst(ClaimTypes.Role)?.Value ?? user.FindFirst("role")?.Value;
 
         await _activityLog.LogAsync(

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMyBookings } from "../../api/bookingsApi";
+import { getMyBookings, cancelBooking } from "../../api/bookingsApi";
 import {
   EmptyState,
   LoadingSpinner,
@@ -321,6 +321,44 @@ export default function MyBookingPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [selectedBooking, setSelectedBooking] = useState(null);
 
+  // Custom cancel modal state
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelError, setCancelError] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+
+  const openCancelModal = () => {
+    setCancelReason("");
+    setCancelError("");
+    setCancelModalOpen(true);
+  };
+
+  const submitCancel = async () => {
+    if (!cancelReason.trim()) {
+      setCancelError("Vui lòng nhập lý do hủy booking.");
+      return;
+    }
+    setCancelError("");
+    setCancelling(true);
+
+    try {
+      await cancelBooking(selectedBooking.id, cancelReason);
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === selectedBooking.id
+            ? { ...b, status: "Cancelled", cancellationReason: cancelReason }
+            : b
+        )
+      );
+      setCancelModalOpen(false);
+      setSelectedBooking(null);
+    } catch (err) {
+      setCancelError(err?.response?.data?.message || "Lỗi khi hủy booking.");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -573,8 +611,8 @@ export default function MyBookingPage() {
 
             {selectedBooking.status === "Pending" ? (
               <div style={{ display: "flex", gap: 10, width: "100%" }}>
-                <button className="g-btn-outline" style={{ flex: 1, justifyContent: "center" }} onClick={() => setSelectedBooking(null)}>
-                  Đóng
+                <button className="g-btn-outline" style={{ flex: 1, justifyContent: "center", color: "var(--g-error)", borderColor: "var(--g-error)" }} onClick={openCancelModal}>
+                  Hủy booking
                 </button>
                 <button 
                   className="g-btn-primary" 
@@ -582,6 +620,15 @@ export default function MyBookingPage() {
                   onClick={() => navigate(`/guest/payment/deposit/${selectedBooking.id}`)}
                 >
                   Thanh toán cọc ngay
+                </button>
+              </div>
+            ) : selectedBooking.status === "Confirmed" ? (
+              <div style={{ display: "flex", gap: 10, width: "100%" }}>
+                <button className="g-btn-outline" style={{ flex: 1, justifyContent: "center", color: "var(--g-error)", borderColor: "var(--g-error)" }} onClick={openCancelModal}>
+                  Hủy booking
+                </button>
+                <button className="g-btn-primary" style={{ flex: 1, justifyContent: "center" }} onClick={() => setSelectedBooking(null)}>
+                  Đóng
                 </button>
               </div>
             ) : (
@@ -592,6 +639,68 @@ export default function MyBookingPage() {
           </div>
         </GuestModal>
       )}
+
+      {/* Cancel Modal */}
+      <GuestModal
+        open={cancelModalOpen}
+        onClose={() => !cancelling && setCancelModalOpen(false)}
+        title="Xác nhận hủy booking"
+        width={480}
+        footer={
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", width: "100%" }}>
+            <button
+              className="g-btn-outline"
+              onClick={() => setCancelModalOpen(false)}
+              disabled={cancelling}
+            >
+              Đóng
+            </button>
+            <button
+              className="g-btn-primary"
+              style={{ background: "var(--g-error)", color: "#fff", borderColor: "var(--g-error)" }}
+              onClick={submitCancel}
+              disabled={cancelling}
+            >
+              {cancelling ? "Đang xử lý..." : "Xác nhận hủy"}
+            </button>
+          </div>
+        }
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ fontSize: "var(--g-text-sm)", color: "var(--g-text-secondary)", lineHeight: 1.5 }}>
+            Bạn có chắc chắn muốn hủy booking <strong style={{ color: "var(--g-text)" }}>{selectedBooking?.bookingCode}</strong>?
+            Vui lòng cho chúng tôi biết lý do bạn muốn hủy.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: "var(--g-text-xs)", fontWeight: 700, color: "var(--g-text)", textTransform: "uppercase", letterSpacing: "var(--g-tracking-widest)" }}>
+              Lý do hủy <span style={{ color: "var(--g-error)" }}>*</span>
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Ví dụ: Thay đổi kế hoạch,..."
+              value={cancelReason}
+              onChange={(e) => {
+                setCancelReason(e.target.value);
+                if (e.target.value.trim()) setCancelError("");
+              }}
+              style={{
+                width: "100%",
+                padding: "12px 14px",
+                borderRadius: "var(--g-radius-md)",
+                border: `1px solid ${cancelError ? "var(--g-error)" : "var(--g-border)"}`,
+                outline: "none",
+                fontFamily: "inherit",
+                fontSize: "var(--g-text-sm)",
+                resize: "vertical",
+                transition: "border-color 0.2s"
+              }}
+              onFocus={(e) => e.target.style.borderColor = cancelError ? "var(--g-error)" : "var(--g-primary)"}
+              onBlur={(e) => e.target.style.borderColor = cancelError ? "var(--g-error)" : "var(--g-border)"}
+            />
+            {cancelError && <span style={{ fontSize: "var(--g-text-xs)", color: "var(--g-error)", fontWeight: 500 }}>{cancelError}</span>}
+          </div>
+        </div>
+      </GuestModal>
     </>
   );
 }
