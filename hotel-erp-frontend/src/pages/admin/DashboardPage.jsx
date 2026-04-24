@@ -39,7 +39,7 @@ const isSameDay = (date, target) =>
   date.getMonth() === target.getMonth() &&
   date.getDate() === target.getDate();
 
-const getBookingRevenueDate = (booking) => {
+const _getBookingRevenueDate = (booking) => {
   if (booking?.checkOutTime) return new Date(booking.checkOutTime);
   const fallback = booking?.bookingDetails?.[0]?.checkOutDate;
   return fallback ? new Date(fallback) : null;
@@ -91,7 +91,7 @@ const STATUS_CFG = {
   Cancelled: { label: "Đã huỷ", bg: "#fee2e2", color: "#991b1b", dot: "#ef4444" },
 };
 
-// â”€â”€â”€ Room Business Status Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Room Business Status Config 
 const getRoomStatusKey = (rm) => {
   if (rm.businessStatus === "Disabled") return "Maintenance";
   if (rm.businessStatus === "Occupied") return "Occupied";
@@ -124,20 +124,57 @@ const ROOM_BS_CFG = {
 };
 
 // ─── Skeleton ────────────────────────────────────────────────────────────────
+const DASH_STATUS_CFG = {
+  Pending: { label: "Chờ xử lý", bg: "var(--a-warning-bg)", color: "var(--a-warning)", dot: "var(--a-warning)" },
+  Confirmed: { label: "Đã xác nhận", bg: "var(--a-info-bg)", color: "var(--a-info)", dot: "var(--a-info)" },
+  Checked_in: { label: "Đang ở", bg: "var(--a-success-bg)", color: "var(--a-success)", dot: "var(--a-success)" },
+  Checked_out_pending_settlement: { label: "Chờ thanh toán", bg: "var(--a-warning-bg)", color: "var(--a-warning)", dot: "var(--a-warning)" },
+  Completed: { label: "Hoàn thành", bg: "var(--a-surface-bright)", color: "var(--a-text-muted)", dot: "var(--a-text-soft)" },
+  Cancelled: { label: "Đã huỷ", bg: "var(--a-error-bg)", color: "var(--a-error)", dot: "var(--a-error)" },
+};
+
+const DASH_ROOM_BS_CFG = {
+  Ready: {
+    bg: "var(--a-success-bg)", border: "var(--a-success-border)", dot: "var(--a-success)", label: "Sẵn sàng",
+    badge_bg: "var(--a-success-bg)", badge_color: "var(--a-success)",
+  },
+  Occupied: {
+    bg: "var(--a-warning-bg)", border: "var(--a-warning-border)", dot: "var(--a-warning)", label: "Đang có khách",
+    badge_bg: "var(--a-warning-bg)", badge_color: "var(--a-warning)",
+  },
+  Cleaning: {
+    bg: "var(--a-error-bg)", border: "var(--a-error-border)", dot: "var(--a-error)", label: "Cần dọn dẹp",
+    badge_bg: "var(--a-error-bg)", badge_color: "var(--a-error)",
+  },
+  PendingLoss: {
+    bg: "color-mix(in srgb, var(--a-error-bg) 68%, var(--a-warning-bg))", border: "color-mix(in srgb, var(--a-error-border) 72%, var(--a-warning-border))", dot: "var(--a-error)", label: "Chờ xử lý thất thoát",
+    badge_bg: "color-mix(in srgb, var(--a-error-bg) 72%, var(--a-warning-bg))", badge_color: "var(--a-error)",
+  },
+  Maintenance: {
+    bg: "var(--a-surface-bright)", border: "var(--a-border-strong)", dot: "var(--a-text-muted)", label: "Bảo trì",
+    badge_bg: "var(--a-surface-bright)", badge_color: "var(--a-text-muted)",
+  },
+};
+
+const DASH_KPI_CARDS = [
+  { icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Tổng doanh thu", subTone: "var(--a-brand-ink)", delay: 0 },
+  { icon: "confirmation_number", intent: "info", iconColor: "var(--a-info)", label: "Booking đang hoạt động", subTone: "var(--a-warning)", delay: 60 },
+  { icon: "meeting_room", intent: "error", iconColor: "var(--a-error)", label: "Tỷ lệ lấp đầy", subTone: "var(--a-success)", delay: 120 },
+  { icon: "group", intent: "warning", iconColor: "var(--a-warning)", label: "Tài khoản hệ thống", subTone: "var(--a-text-muted)", delay: 180 },
+];
+
 const Skel = ({ w = "100%", h = 16, r = 8, style = {} }) => (
   <div
+    className="admin-skeleton"
     style={{
       width: w, height: h, borderRadius: r,
-      background: "linear-gradient(90deg,#e8e8e0 25%,#f2f2ea 50%,#e8e8e0 75%)",
-      backgroundSize: "600px",
-      animation: "shimmer 1.4s infinite",
       ...style,
     }}
   />
 );
 
 // ─── Mini Bar Chart ──────────────────────────────────────────────────────────
-function MiniBar({ data, labels, color = "#4f645b" }) {
+function MiniBar({ data, labels, color = "var(--a-primary)" }) {
   if (!data?.length) return null;
   const max = Math.max(...data, 1);
   return (
@@ -158,7 +195,7 @@ function MiniBar({ data, labels, color = "#4f645b" }) {
             />
           </div>
           {labels?.[i] && (
-            <span style={{ fontSize: 9, color: "#9ca3af", fontWeight: 600, whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 9, color: "var(--a-text-soft)", fontWeight: 600, whiteSpace: "nowrap" }}>
               {labels[i]}
             </span>
           )}
@@ -178,7 +215,7 @@ function Stars({ rating }) {
           className="material-symbols-outlined"
           style={{
             fontSize: 13,
-            color: s <= rating ? "#f59e0b" : "#d1d5db",
+            color: s <= rating ? "var(--a-warning)" : "var(--a-border-strong)",
             fontVariationSettings: "'FILL' 1",
           }}
         >star</span>
@@ -196,9 +233,9 @@ export default function DashboardPage() {
   const [rooms, setRooms] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [vouchers, setVouchers] = useState([]);
-  const [roomTypes, setRoomTypes] = useState([]);
+  const [_roomTypes, setRoomTypes] = useState([]);
   const [lossAndDamages, setLossAndDamages] = useState([]);
-  const [equipments, setEquipments] = useState([]);
+  const [_equipments, setEquipments] = useState([]);
 
   const [stats, setStats] = useState({
     totalRevenue: 0,
@@ -380,6 +417,29 @@ export default function DashboardPage() {
     Maintenance: rooms.filter(r => r.businessStatus === "Disabled").length,
   };
 
+  const _kpiCards = DASH_KPI_CARDS.map((card, index) => ({
+    ...card,
+    value: [
+      fmtCurrency(stats.totalRevenue),
+      fmt(stats.activeBookings),
+      `${stats.occupancyRate}%`,
+      fmt(stats.totalUsers),
+    ][index],
+    sub: [
+      `Hôm nay: ${fmtCurrency(stats.todayRevenue)}`,
+      `${stats.pendingBookings} booking chờ cọc`,
+      `${stats.availableRooms} phòng sẵn sàng`,
+      `+${stats.newUsersThisMonth} tài khoản mới tháng này`,
+    ][index],
+  }));
+
+  const _quickStats = [
+    { ...DASH_KPI_CARDS[1], icon: "local_offer", value: fmt(stats.activeVouchers), sub: `${fmt(vouchers.length)} tổng cộng`, label: "Voucher đang hoạt động", intent: "info" },
+    { ...DASH_KPI_CARDS[0], icon: "bed", value: fmt(stats.availableRooms), sub: `${fmt(rooms.length)} phòng tổng`, label: "Phòng sãn sàng", intent: "success", iconColor: "var(--a-success)" },
+    { ...DASH_KPI_CARDS[0], icon: "category", value: fmt(stats.activeRoomTypes), sub: "Loại phòng đang hoạt động", label: "Loại phòng", intent: "brand" },
+    { ...DASH_KPI_CARDS[3], icon: "people", value: fmt(stats.totalUsers), sub: `+${fmt(stats.newUsersThisMonth)} tháng này`, label: "Tài khoản hệ thống", intent: "warning", iconColor: "var(--a-warning)" },
+  ];
+
   return (
     <>
       <style>{`
@@ -387,88 +447,42 @@ export default function DashboardPage() {
         * { font-family: 'Manrope', sans-serif; }
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
         .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align: middle; }
-        @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
-        .skeleton { background:linear-gradient(90deg,rgba(0,0,0,0.05) 25%,rgba(0,0,0,0.1) 50%,rgba(0,0,0,0.05) 75%); background-size:600px; animation:shimmer 1.4s infinite; border-radius:6px; }
         @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         @keyframes countUp { from{opacity:0;transform:scale(.85)} to{opacity:1;transform:scale(1)} }
         .card-in { animation: fadeUp .35s ease forwards; }
         .kpi-val { animation: countUp .45s cubic-bezier(.22,1,.36,1) forwards; }
-        .refresh-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:10px; font-size:13px; font-weight:800; background:white; color:#1c1917; border:1.5px solid #e2e8e1; cursor:pointer; font-family:'Manrope',sans-serif; transition:background .15s; }
-        .refresh-btn:hover { background:#f9f8f3; border-color:#4f645b; color:#4f645b; }
+        .refresh-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:12px; font-size:13px; font-weight:800; background:var(--a-surface); color:var(--a-text); border:1px solid var(--a-border); cursor:pointer; font-family:'Manrope',sans-serif; box-shadow:var(--a-shadow-sm); }
+        .refresh-btn:hover { background:var(--a-primary-muted); border-color:var(--a-brand-border); color:var(--a-brand-ink); }
         .refresh-btn:active { transform:scale(.97); }
         @keyframes spin { to { transform:rotate(360deg) } }
         .spin { animation:spin .7s linear infinite; }
         .scroll-x { overflow-x:auto; }
         .scroll-x::-webkit-scrollbar { height: 4px; }
         .scroll-x::-webkit-scrollbar-track { background: transparent; }
-        .scroll-x::-webkit-scrollbar-thumb { background: #e2e8e1; border-radius:9999px; }
-        .progress-bar { height:6px; border-radius:9999px; background:#efeee7; overflow:hidden; }
+        .scroll-x::-webkit-scrollbar-thumb { background: var(--a-border-strong); border-radius:9999px; }
+        .progress-bar { height:6px; border-radius:9999px; background:var(--a-rail); overflow:hidden; }
         .progress-bar-inner { height:100%; border-radius:9999px; transition: width .6s ease; }
-        tr.hover-row:hover td { background:rgba(249,248,243,.6); }
+        tr.hover-row:hover td { background:color-mix(in srgb, var(--a-primary) 6%, var(--a-surface)); }
         .room-card { transition: transform .15s, box-shadow .15s; }
-        .room-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
-
-        /* --- DARK MODE DASHBOARD OVERRIDES --- */
-        .dark .db-title { color: #e8edea !important; }
-        .dark .db-subtitle { color: #9ca6a0 !important; }
-        .dark .db-subtitle-highlight { color: #a2c4b2 !important; }
-        
-        .dark .card-in { 
-          background: #141514 !important; 
-          border-color: rgba(255,255,255,0.06) !important;
-          box-shadow: none !important;
-        }
-        .dark .card-in > div > div[style*="border-radius: 12px"],
-        .dark .card-in > div > div {
-          /* Mute the bright icon backgrounds in KPI cards */
-          background: rgba(255,255,255,0.06) !important; 
-        }
-        
-        .dark .card-in p[style*="rgba(0,0,0,.5)"],
-        .dark .card-in p[style*="#9ca3af"],
-        .dark .card-in p { 
-           color: #9ca6a0 !important; 
-        }
-        
-        .dark .card-in h3[style*="#1c1917"], 
-        .dark .card-in h4[style*="#1c1917"] { color: #e8edea !important; }
-        
-        .dark .card-in span[style*="#374151"] { color: #e8edea !important; }
-        .dark .card-in span[style*="#1c1917"] { color: #e8edea !important; }
-        .dark .card-in th, .dark .card-in td { color: #c8dfd3 !important; }
-        
-        .dark .refresh-btn {
-          background: #1a1c1a !important;
-          color: #e8edea !important;
-          border-color: rgba(255,255,255,0.12) !important;
-        }
-        .dark .refresh-btn:hover { background: #242624 !important; }
-        .dark tr.hover-row:hover td { background: rgba(255,255,255,0.03) !important; }
-        .dark .progress-bar { background: #2a2c2a !important; }
-        .dark .room-card { 
-            background: #141514 !important; 
-            border-color: rgba(255,255,255,0.06) !important;
-        }
-        .dark .room-card h4 { color: #e8edea !important; }
-        .dark .room-card p { color: #9ca6a0 !important; }
-        .dark .status-badge { 
-            background: rgba(255,255,255,0.08) !important; 
-            color: #d1e1d9 !important;
-            border: 1px solid rgba(255,255,255,0.12) !important; 
-        }
+        .room-card:hover { transform: translateY(-2px); box-shadow: var(--a-shadow-sm); }
+        .db-title { color:var(--a-text); }
+        .db-subtitle { color:var(--a-text-muted); }
+        .db-subtitle-highlight { color:var(--a-brand-ink); }
+        .db-table-head { background:color-mix(in srgb, var(--a-surface-raised) 92%, transparent); }
+        .db-border { border-color:var(--a-divider) !important; }
       `}</style>
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", fontFamily: "Manrope, sans-serif" }}>
+      <div className="admin-page" style={{ maxWidth: 1400, margin: "0 auto", fontFamily: "Manrope, sans-serif" }}>
 
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
           <div>
-            <h2 className="db-title" style={{ fontSize: 28, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.03em", margin: "0 0 5px" }}>
+            <h2 className="db-title" style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 5px" }}>
               Tổng quan hoạt động
             </h2>
-            <p className="db-subtitle" style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+            <p className="db-subtitle" style={{ fontSize: 13, margin: 0 }}>
               Dữ liệu thực tế · Cập nhật lần cuối:{" "}
-              <span className="db-subtitle-highlight" style={{ fontWeight: 600, color: "#4f645b" }}>
+              <span className="db-subtitle-highlight" style={{ fontWeight: 600 }}>
                 {new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
               </span>
             </p>
@@ -485,50 +499,51 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-5">
           {[
             {
-              icon: "payments", bg: "#d1e8dd", iconBg: "rgba(47,67,60,.1)", iconColor: "#2f433c",
+              icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)",
               label: "Tổng doanh thu", value: loading ? null : fmtCurrency(stats.totalRevenue),
               sub: loading ? null : `Hôm nay: ${fmtCurrency(stats.todayRevenue)}`,
-              subColor: "#4f645b", delay: 0,
+              subColor: "var(--a-brand-ink)", delay: 0,
             },
             {
-              icon: "confirmation_number", bg: "#dbeafe", iconBg: "rgba(30,64,175,.1)", iconColor: "#1e40af",
+              icon: "confirmation_number", intent: "info", iconColor: "var(--a-info)",
               label: "Booking đang hoạt động", value: loading ? null : fmt(stats.activeBookings),
               sub: loading ? null : `${stats.pendingBookings} booking chờ cọc`,
-              subColor: "#f59e0b", delay: 60,
+              subColor: "var(--a-warning)", delay: 60,
             },
             {
-              icon: "meeting_room", bg: "#ffdad9", iconBg: "rgba(109,72,73,.1)", iconColor: "#6d4849",
+              icon: "meeting_room", intent: "error", iconColor: "var(--a-error)",
               label: "Tỷ lệ lấp đầy", value: loading ? null : `${stats.occupancyRate}%`,
               sub: loading ? null : `${stats.availableRooms} phòng sẵn sàng`,
-              subColor: "#16a34a", delay: 120,
+              subColor: "var(--a-success)", delay: 120,
             },
             {
-              icon: "group", bg: "#f7e8dd", iconBg: "rgba(95,85,77,.1)", iconColor: "#5f554d",
+              icon: "group", intent: "warning", iconColor: "var(--a-warning)",
               label: "Tài khoản hệ thống", value: loading ? null : fmt(stats.totalUsers),
               sub: loading ? null : `+${stats.newUsersThisMonth} tài khoản mới tháng này`,
-              subColor: "#6b7280", delay: 180,
+              subColor: "var(--a-text-muted)", delay: 180,
             },
           ].map((kpi, idx) => (
             <div
               key={idx}
-              className="card-in"
-              style={{ background: kpi.bg, borderRadius: 18, padding: 22, animationDelay: `${kpi.delay}ms`, animationFillMode: "both" }}
+              className="card-in admin-stat-card"
+              data-intent={kpi.intent}
+              style={{ padding: 22, animationDelay: `${kpi.delay}ms`, animationFillMode: "both" }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-                <div style={{ padding: 9, background: kpi.iconBg, borderRadius: 12 }}>
+                <div className="admin-stat-icon">
                   <span className="material-symbols-outlined" style={{ color: kpi.iconColor, fontSize: 22, fontVariationSettings: "'FILL' 1" }}>
                     {kpi.icon}
                   </span>
                 </div>
               </div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(0,0,0,.5)", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              <p className="admin-overline" style={{ margin: "0 0 4px" }}>
                 {kpi.label}
               </p>
               {loading ? (
                 <Skel h={28} w={120} style={{ marginBottom: 6 }} />
               ) : (
                 <div className="kpi-val" style={{ animationDelay: `${kpi.delay + 80}ms`, animationFillMode: "both" }}>
-                  <h3 style={{ fontSize: 24, fontWeight: 800, color: "#1c1917", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
+                  <h3 className="admin-kpi-value" style={{ fontSize: 24, fontWeight: 800, margin: "0 0 4px" }}>
                     {kpi.value}
                   </h3>
                 </div>
@@ -543,13 +558,13 @@ export default function DashboardPage() {
         {/* REVENUE CHART & QUICK ACTIONS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-7">
           {/* Thất thoát hư hỏng */}
-          <div className="card-in" style={{ background: "linear-gradient(135deg,#fff1f2 0%,#ffe4e6 100%)", borderRadius: 18, padding: 22, border: "1.5px solid #fecdd3", animationDelay: "220ms", animationFillMode: "both" }}>
+          <div className="card-in admin-stat-card" data-intent="error" style={{ borderRadius: 18, padding: 22, animationDelay: "220ms", animationFillMode: "both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-              <div style={{ padding: 9, background: "rgba(220,38,38,.1)", borderRadius: 12 }}>
-                <span className="material-symbols-outlined" style={{ color: "#dc2626", fontSize: 22, fontVariationSettings: "'FILL' 1" }}>report</span>
+              <div className="admin-stat-icon">
+                <span className="material-symbols-outlined" style={{ color: "var(--a-error)", fontSize: 22, fontVariationSettings: "'FILL' 1" }}>report</span>
               </div>
               {!loading && stats.pendingLoss > 0 && (
-                <span style={{ fontSize: 10, fontWeight: 700, background: "#fef3c7", color: "#92400e", padding: "3px 8px", borderRadius: 9999 }}>
+                <span className="admin-status-badge" data-intent="warning" style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px" }}>
                   {stats.pendingLoss} chờ xử lý
                 </span>
               )}
@@ -557,14 +572,14 @@ export default function DashboardPage() {
             <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(0,0,0,.5)", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Tổng tiền đền bù ghi nhận</p>
             {loading ? <Skel h={28} w={140} style={{ marginBottom: 6 }} /> : (
               <div className="kpi-val" style={{ animationFillMode: "both" }}>
-                <h3 style={{ fontSize: 24, fontWeight: 800, color: "#dc2626", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
+                <h3 style={{ fontSize: 24, fontWeight: 800, color: "var(--a-error)", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
                   {fmtCurrency(stats.totalLossValue)}
                 </h3>
               </div>
             )}
             {loading ? <Skel h={12} w={160} /> : (
               <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#dc2626" }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "var(--a-error)" }}>
                   {lossAndDamages.length} biên bản · {stats.confirmedLoss} đã xác nhận
                 </span>
               </div>
@@ -572,22 +587,22 @@ export default function DashboardPage() {
           </div>
 
           {/* Tổng quan vật tư */}
-          <div className="card-in" style={{ background: "linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%)", borderRadius: 18, padding: 22, border: "1.5px solid #bae6fd", animationDelay: "280ms", animationFillMode: "both" }}>
+          <div className="card-in admin-stat-card" data-intent="info" style={{ borderRadius: 18, padding: 22, animationDelay: "280ms", animationFillMode: "both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-              <div style={{ padding: 9, background: "rgba(2,132,199,.1)", borderRadius: 12 }}>
-                <span className="material-symbols-outlined" style={{ color: "#0284c7", fontSize: 22, fontVariationSettings: "'FILL' 1" }}>inventory_2</span>
+              <div className="admin-stat-icon">
+                <span className="material-symbols-outlined" style={{ color: "var(--a-info)", fontSize: 22, fontVariationSettings: "'FILL' 1" }}>inventory_2</span>
               </div>
             </div>
             <p style={{ fontSize: 12, fontWeight: 600, color: "rgba(0,0,0,.5)", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Tổng số lượng vật tư</p>
             {loading ? <Skel h={28} w={80} style={{ marginBottom: 6 }} /> : (
               <div className="kpi-val" style={{ animationFillMode: "both" }}>
-                <h3 style={{ fontSize: 24, fontWeight: 800, color: "#0284c7", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
+                <h3 style={{ fontSize: 24, fontWeight: 800, color: "var(--a-info)", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
                   {fmt(stats.totalEquipmentUnits)}
                 </h3>
               </div>
             )}
             {loading ? <Skel h={12} w={160} /> : (
-              <p style={{ fontSize: 11, fontWeight: 800, color: "#0369a1", margin: 0, opacity: 0.8 }}>
+              <p style={{ fontSize: 11, fontWeight: 800, color: "var(--a-info)", margin: 0, opacity: 0.82 }}>
                 {fmt(stats.inUseEquipmentUnits)} đang dùng · {fmt(stats.damagedEquipmentUnits)} hư hỏng
               </p>
             )}
@@ -596,14 +611,14 @@ export default function DashboardPage() {
 
         {/* Row 2: Revenue + Room Type Occupancy */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
-          <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "200ms", animationFillMode: "both" }}>
+          <div className="card-in admin-card" style={{ padding: 24, animationDelay: "200ms", animationFillMode: "both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
               <div>
                 <h4 style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", margin: "0 0 2px" }}>Doanh thu 7 ngày qua</h4>
                 <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>Chỉ tính hóa đơn đã thanh toán</p>
               </div>
               {!loading && (
-                <span style={{ fontSize: 11, fontWeight: 700, background: "#d1fae5", color: "#065f46", padding: "4px 10px", borderRadius: 9999 }}>
+                <span className="admin-status-badge" data-intent="success" style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px" }}>
                   {fmtCurrency(stats.revenueByDay.reduce((s, v) => s + v, 0))}
                 </span>
               )}
@@ -615,11 +630,11 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <MiniBar data={stats.revenueByDay} labels={dayLabels} color="#4f645b" />
+              <MiniBar data={stats.revenueByDay} labels={dayLabels} color="var(--a-brand-ink)" />
             )}
           </div>
 
-          <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "260ms", animationFillMode: "both" }}>
+          <div className="card-in admin-card" style={{ padding: 24, animationDelay: "260ms", animationFillMode: "both" }}>
             <div style={{ marginBottom: 18 }}>
               <h4 style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", margin: "0 0 2px" }}>Tình trạng loại phòng</h4>
               <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>Tỷ lệ lấp đầy theo loại</p>
@@ -640,15 +655,15 @@ export default function DashboardPage() {
                 {stats.roomTypeOccupancy.map((rt, i) => (
                   <div key={i}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{rt.name}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: rt.rate > 70 ? "#065f46" : rt.rate > 40 ? "#1e40af" : "#6b7280" }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--a-text)" }}>{rt.name}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: rt.rate > 70 ? "var(--a-success)" : rt.rate > 40 ? "var(--a-info)" : "var(--a-text-muted)" }}>
                         {rt.occupied}/{rt.total} ({rt.rate}%)
                       </span>
                     </div>
                     <div className="progress-bar">
                       <div
                         className="progress-bar-inner"
-                        style={{ width: `${rt.rate}%`, background: rt.rate > 70 ? "#4f645b" : rt.rate > 40 ? "#3b82f6" : "#cbd5e1" }}
+                        style={{ width: `${rt.rate}%`, background: rt.rate > 70 ? "var(--a-success)" : rt.rate > 40 ? "var(--a-info)" : "var(--a-border-strong)" }}
                       />
                     </div>
                   </div>
@@ -660,7 +675,7 @@ export default function DashboardPage() {
 
         {/* Row 3: Booking Status + Reviews + Quick Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
-          <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "300ms", animationFillMode: "both" }}>
+          <div className="card-in admin-card" style={{ padding: 24, animationDelay: "300ms", animationFillMode: "both" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: "0 0 18px" }}>Phân loại booking</h4>
             {loading ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -671,7 +686,7 @@ export default function DashboardPage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {statusEntries.map(([status, count]) => {
-                  const cfg = STATUS_CFG[status] || STATUS_CFG.Cancelled;
+                  const cfg = DASH_STATUS_CFG[status] || DASH_STATUS_CFG.Cancelled;
                   const pct = Math.round((count / totalBk) * 100);
                   return (
                     <div key={status}>
@@ -692,7 +707,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "360ms", animationFillMode: "both" }}>
+          <div className="card-in admin-card" style={{ padding: 24, animationDelay: "360ms", animationFillMode: "both" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: "0 0 4px" }}>Đánh giá khách hàng</h4>
             <p style={{ fontSize: 12, color: "#9ca3af", margin: "0 0 18px" }}>Đã duyệt</p>
             {loading ? (
@@ -703,12 +718,12 @@ export default function DashboardPage() {
               </div>
             ) : (
               <>
-                <div style={{ background: "linear-gradient(135deg, #4f645b 0%, #2f433c 100%)", borderRadius: 14, padding: "16px 20px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div className="admin-emphasis-card" style={{ borderRadius: 14, padding: "16px 20px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
                     <p style={{ fontSize: 11, color: "rgba(231,254,243,.6)", fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Điểm trung bình</p>
                     <p style={{ fontSize: 32, fontWeight: 800, color: "#e7fef3", margin: 0, lineHeight: 1 }}>
                       {stats.avgRating.toFixed(1)}
-                      <span style={{ fontSize: 14, color: "rgba(231,254,243,.6)", fontWeight: 500 }}>/5</span>
+                      <span style={{ fontSize: 14, color: "var(--a-emphasis-muted)", fontWeight: 500 }}>/5</span>
                     </p>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
@@ -717,8 +732,8 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 {stats.pendingReviews > 0 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fef3c7", borderRadius: 10, padding: "8px 12px" }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 16, color: "#f59e0b" }}>schedule</span>
+                  <div className="admin-status-badge" data-intent="warning" style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 10, padding: "8px 12px" }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--a-warning)" }}>schedule</span>
                     <span style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>{stats.pendingReviews} đánh giá chờ duyệt</span>
                   </div>
                 )}
@@ -728,12 +743,12 @@ export default function DashboardPage() {
                     const pct = reviews.length > 0 ? Math.round((cnt / reviews.length) * 100) : 0;
                     return (
                       <div key={star} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", width: 8, textAlign: "right" }}>{star}</span>
-                        <span className="material-symbols-outlined" style={{ fontSize: 12, color: "#f59e0b", fontVariationSettings: "'FILL' 1" }}>star</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--a-text-muted)", width: 8, textAlign: "right" }}>{star}</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: 12, color: "var(--a-warning)", fontVariationSettings: "'FILL' 1" }}>star</span>
                         <div className="progress-bar" style={{ flex: 1 }}>
-                          <div className="progress-bar-inner" style={{ width: `${pct}%`, background: "#f59e0b" }} />
+                          <div className="progress-bar-inner" style={{ width: `${pct}%`, background: "var(--a-warning)" }} />
                         </div>
-                        <span style={{ fontSize: 11, color: "#9ca3af", width: 22, textAlign: "right" }}>{cnt}</span>
+                        <span style={{ fontSize: 11, color: "var(--a-text-soft)", width: 22, textAlign: "right" }}>{cnt}</span>
                       </div>
                     );
                   })}
@@ -742,7 +757,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="card-in" style={{ background: "white", borderRadius: 18, padding: 24, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", animationDelay: "420ms", animationFillMode: "both", display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="card-in admin-card" style={{ padding: 24, animationDelay: "420ms", animationFillMode: "both", display: "flex", flexDirection: "column", gap: 16 }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: 0 }}>Thống kê nhanh</h4>
             {loading ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -773,7 +788,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Bookings Table */}
-        <div className="card-in" style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", overflow: "hidden", animationDelay: "460ms", animationFillMode: "both", marginBottom: 20 }}>
+        <div className="card-in admin-card" style={{ overflow: "hidden", animationDelay: "460ms", animationFillMode: "both", marginBottom: 20 }}>
           <div style={{ padding: "20px 28px", borderBottom: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1c1917", margin: 0 }}>Booking gần đây</h4>
             <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 500 }}>
@@ -787,7 +802,7 @@ export default function DashboardPage() {
               ) : recentBookings.length === 0 ? (
                 <div style={{ padding: "28px 0", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>Chua co booking nao</div>
               ) : recentBookings.map((b) => {
-                const cfg = STATUS_CFG[b.status] || STATUS_CFG.Cancelled;
+                const cfg = DASH_STATUS_CFG[b.status] || DASH_STATUS_CFG.Cancelled;
                 const initial = (b.guestName || "?")[0].toUpperCase();
                 return (
                   <article key={b.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 10 }}>
@@ -842,7 +857,7 @@ export default function DashboardPage() {
                   </tr>
                 ) : (
                   recentBookings.map((b) => {
-                    const cfg = STATUS_CFG[b.status] || STATUS_CFG.Cancelled;
+                    const cfg = DASH_STATUS_CFG[b.status] || DASH_STATUS_CFG.Cancelled;
                     const initial = (b.guestName || "?")[0].toUpperCase();
                     return (
                       <tr key={b.id} className="hover-row" style={{ borderBottom: "1px solid #fafaf8" }}>
@@ -881,14 +896,14 @@ export default function DashboardPage() {
         </div>
 
         {/* Room Status Grid */}
-        <div className="card-in" style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.05)", overflow: "hidden", animationDelay: "500ms", animationFillMode: "both" }}>
+        <div className="card-in admin-card" style={{ overflow: "hidden", animationDelay: "500ms", animationFillMode: "both" }}>
           <div style={{ padding: "20px 28px", borderBottom: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
             <h4 style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", margin: 0 }}>Trạng thái phòng</h4>
 
             {/* Legend badges */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {(["Ready", "Occupied", "Cleaning", "PendingLoss", "Maintenance"]).map(status => {
-                const cfg = ROOM_BS_CFG[status];
+                const cfg = DASH_ROOM_BS_CFG[status];
                 const cnt = roomCountByStatus[status] || 0;
                 return (
                   <span
@@ -920,7 +935,7 @@ export default function DashboardPage() {
                 {(["Occupied", "Cleaning", "PendingLoss", "Maintenance", "Ready"]).map(statusKey => {
                   const groupRooms = roomPreview.filter(r => getRoomStatusKey(r) === statusKey);
                   if (groupRooms.length === 0) return null;
-                  const cfg = ROOM_BS_CFG[statusKey];
+                const cfg = DASH_ROOM_BS_CFG[statusKey];
                   return (
                     <div key={statusKey}>
                       {/* Section header */}

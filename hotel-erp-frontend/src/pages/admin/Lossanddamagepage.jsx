@@ -7,13 +7,13 @@ const fmtCurrency = (n) =>
 
 const inputStyle = {
   width: "100%",
-  background: "#f9f8f3",
-  border: "1.5px solid #e2e8e1",
+  background: "var(--a-surface-raised)",
+  border: "1.5px solid var(--a-border-strong)",
   borderRadius: 12,
   padding: "10px 14px",
   fontSize: 14,
   fontWeight: 600,
-  color: "#1c1917",
+  color: "var(--a-text)",
   outline: "none",
   transition: "all 0.2s",
 };
@@ -21,9 +21,9 @@ const inputStyle = {
 const secondaryButton = {
   padding: "10px 22px",
   borderRadius: 12,
-  border: "1.5px solid #e2e8e1",
-  background: "white",
-  color: "#57534e",
+  border: "1.5px solid var(--a-border-strong)",
+  background: "var(--a-surface)",
+  color: "var(--a-text-muted)",
   fontSize: 14,
   fontWeight: 700,
   cursor: "pointer",
@@ -31,7 +31,7 @@ const secondaryButton = {
   display: "inline-flex",
   alignItems: "center",
   gap: 8,
-  boxShadow: "0 1px 4px rgba(0,0,0,.06)",
+  boxShadow: "var(--a-shadow-sm)",
 };
 
 const fmtDateTime = (d) => {
@@ -112,52 +112,52 @@ const getBulkReplenishCandidates = (records, seedItem) => {
 const STATUS_CFG = {
   Pending: {
     label: "Chờ xử lý",
-    bg: "#fff7ed",
-    color: "#c2410c",
-    dot: "#f97316",
+    bg: "var(--a-warning-bg)",
+    color: "var(--a-warning)",
+    dot: "var(--a-warning)",
   },
   Confirmed: {
     label: "Đã xác nhận",
-    bg: "#f0fdf4",
-    color: "#15803d",
-    dot: "#22c55e",
+    bg: "var(--a-success-bg)",
+    color: "var(--a-success)",
+    dot: "var(--a-success)",
   },
   Waived: {
     label: "Miễn trừ",
-    bg: "#f8fafc",
-    color: "#475569",
-    dot: "#94a3b8",
+    bg: "var(--a-surface-bright)",
+    color: "var(--a-text-muted)",
+    dot: "var(--a-text-soft)",
   },
 };
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 const TOAST_STYLES = {
   success: {
-    bg: "#1e3a2f",
-    border: "#2d5a45",
-    text: "#a7f3d0",
-    prog: "#34d399",
+    bg: "var(--a-success-bg)",
+    border: "var(--a-success-border)",
+    text: "var(--a-success)",
+    prog: "var(--a-success)",
     icon: "check_circle",
   },
   error: {
-    bg: "#3a1e1e",
-    border: "#5a2d2d",
-    text: "#fca5a5",
-    prog: "#f87171",
+    bg: "var(--a-error-bg)",
+    border: "var(--a-error-border)",
+    text: "var(--a-error)",
+    prog: "var(--a-error)",
     icon: "error",
   },
   warning: {
-    bg: "#3a2e1a",
-    border: "#5a4820",
-    text: "#fcd34d",
-    prog: "#fbbf24",
+    bg: "var(--a-warning-bg)",
+    border: "var(--a-warning-border)",
+    text: "var(--a-warning)",
+    prog: "var(--a-warning)",
     icon: "warning",
   },
   info: {
-    bg: "#1e2f3a",
-    border: "#2d4a5a",
-    text: "#93c5fd",
-    prog: "#60a5fa",
+    bg: "var(--a-info-bg)",
+    border: "var(--a-info-border)",
+    text: "var(--a-info)",
+    prog: "var(--a-info)",
     icon: "info",
   },
 };
@@ -258,7 +258,7 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel, loading }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(15, 23, 42, 0.45)",
+        background: "var(--a-overlay)",
         backdropFilter: "blur(6px)",
         display: "flex",
         alignItems: "center",
@@ -270,14 +270,15 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel, loading }) {
     >
       <div
         style={{
-          background: "white",
+          background: "var(--a-surface)",
           borderRadius: 24,
           width: "100%",
           maxWidth: 400,
-          boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)",
+          boxShadow: "var(--a-shadow-lg)",
           animation: "modalSlideUp .3s ease-out",
           padding: 32,
           textAlign: "center",
+          border: "1px solid var(--a-border)",
         }}
       >
         <div
@@ -285,8 +286,8 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel, loading }) {
             width: 56,
             height: 56,
             borderRadius: "50%",
-            background: "#fef2f2",
-            color: "#f87171",
+            background: "var(--a-error-bg)",
+            color: "var(--a-error)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -301,7 +302,7 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel, loading }) {
           style={{
             fontSize: 18,
             fontWeight: 800,
-            color: "#0f172a",
+            color: "var(--a-text)",
             margin: "0 0 8px",
           }}
         >
@@ -310,7 +311,7 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel, loading }) {
         <p
           style={{
             fontSize: 14,
-            color: "#64748b",
+            color: "var(--a-text-muted)",
             lineHeight: 1.6,
             margin: "0 0 24px",
           }}
@@ -376,7 +377,7 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel, loading }) {
 const modalOverlayStyle = {
   position: "fixed",
   inset: 0,
-  background: "rgba(15, 23, 42, 0.45)",
+  background: "var(--a-overlay)",
   backdropFilter: "blur(6px)",
   display: "flex",
   alignItems: "center",
@@ -386,13 +387,14 @@ const modalOverlayStyle = {
 };
 
 const modalContentStyle = {
-  background: "white",
+  background: "var(--a-surface)",
   borderRadius: 28,
-  boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)",
+  boxShadow: "var(--a-shadow-lg)",
   animation: "modalSlideUp .3s ease-out",
   overflow: "hidden",
   display: "flex",
   flexDirection: "column",
+  border: "1px solid var(--a-border)",
 };
 
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
@@ -418,7 +420,7 @@ function DetailModal({ open, item, onClose }) {
         <div
           style={{
             padding: "28px 32px",
-            borderBottom: "1px solid #f1f5f9",
+            borderBottom: "1px solid var(--a-divider)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -429,7 +431,7 @@ function DetailModal({ open, item, onClose }) {
               style={{
                 fontSize: 11,
                 fontWeight: 800,
-                color: "#64748b",
+                color: "var(--a-text-muted)",
                 textTransform: "uppercase",
                 letterSpacing: "0.1em",
               }}
@@ -440,7 +442,7 @@ function DetailModal({ open, item, onClose }) {
               style={{
                 fontSize: 20,
                 fontWeight: 800,
-                color: "#0f172a",
+                color: "var(--a-text)",
                 margin: "4px 0 0",
               }}
             >
@@ -453,10 +455,10 @@ function DetailModal({ open, item, onClose }) {
               width: 40,
               height: 40,
               borderRadius: 12,
-              border: "1px solid #f1f5f9",
-              background: "white",
+              border: "1px solid var(--a-border)",
+              background: "var(--a-surface)",
               cursor: "pointer",
-              color: "#64748b",
+              color: "var(--a-text-muted)",
             }}
           >
             <span className="material-symbols-outlined">close</span>
@@ -468,7 +470,7 @@ function DetailModal({ open, item, onClose }) {
               style={{
                 fontSize: 12,
                 fontWeight: 700,
-                color: "#94a3b8",
+                color: "var(--a-text-soft)",
                 textTransform: "uppercase",
                 marginBottom: 16,
               }}
@@ -483,8 +485,8 @@ function DetailModal({ open, item, onClose }) {
                     style={{
                       borderRadius: 16,
                       overflow: "hidden",
-                      border: "1px solid #e2e8f0",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                      border: "1px solid var(--a-border)",
+                      boxShadow: "var(--a-shadow-sm)",
                       cursor: "zoom-in",
                     }}
                     onClick={() => window.open(img.url, "_blank")}
@@ -508,18 +510,18 @@ function DetailModal({ open, item, onClose }) {
                 style={{
                   padding: "50px 0",
                   textAlign: "center",
-                  background: "#f8fafc",
+                  background: "var(--a-surface-raised)",
                   borderRadius: 20,
-                  border: "2px dashed #e2e8f0",
+                  border: "2px dashed var(--a-border)",
                 }}
               >
                 <span
                   className="material-symbols-outlined"
-                  style={{ fontSize: 36, color: "#cbd5e1" }}
+                  style={{ fontSize: 36, color: "var(--a-text-soft)" }}
                 >
                   no_photography
                 </span>
-                <p style={{ fontSize: 13, color: "#94a3b8", marginTop: 8 }}>
+                <p style={{ fontSize: 13, color: "var(--a-text-soft)", marginTop: 8 }}>
                   Không có ảnh chứng cứ
                 </p>
               </div>
@@ -541,18 +543,18 @@ function DetailModal({ open, item, onClose }) {
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 16 }}
               >
-                <div
-                  style={{
-                    background: "#f1f5f9",
-                    padding: "16px 20px",
-                    borderRadius: 16,
-                  }}
-                >
+                  <div
+                    style={{
+                      background: "var(--a-surface-raised)",
+                      padding: "16px 20px",
+                      borderRadius: 16,
+                    }}
+                  >
                   <p
                     style={{
                       fontSize: 11,
                       fontWeight: 700,
-                      color: "#64748b",
+                      color: "var(--a-text-muted)",
                       textTransform: "uppercase",
                       margin: "0 0 6px",
                     }}
@@ -563,7 +565,7 @@ function DetailModal({ open, item, onClose }) {
                     style={{
                       fontSize: 16,
                       fontWeight: 800,
-                      color: "#0f172a",
+                      color: "var(--a-text)",
                       margin: 0,
                     }}
                   >
@@ -574,7 +576,7 @@ function DetailModal({ open, item, onClose }) {
                   <div
                     style={{
                       flex: 1,
-                      background: "#f8fafc",
+                      background: "var(--a-surface-raised)",
                       padding: "14px 18px",
                       borderRadius: 16,
                     }}
@@ -583,7 +585,7 @@ function DetailModal({ open, item, onClose }) {
                       style={{
                         fontSize: 11,
                         fontWeight: 700,
-                        color: "#64748b",
+                        color: "var(--a-text-muted)",
                         margin: "0 0 4px",
                       }}
                     >
@@ -593,7 +595,7 @@ function DetailModal({ open, item, onClose }) {
                       style={{
                         fontSize: 18,
                         fontWeight: 800,
-                        color: "#0f172a",
+                        color: "var(--a-text)",
                         margin: 0,
                       }}
                     >
@@ -603,7 +605,7 @@ function DetailModal({ open, item, onClose }) {
                   <div
                     style={{
                       flex: 1,
-                      background: "#fff1f2",
+                      background: "var(--a-error-bg)",
                       padding: "14px 18px",
                       borderRadius: 16,
                     }}
@@ -612,7 +614,7 @@ function DetailModal({ open, item, onClose }) {
                       style={{
                         fontSize: 11,
                         fontWeight: 700,
-                        color: "#e11d48",
+                        color: "var(--a-error)",
                         margin: "0 0 4px",
                       }}
                     >
@@ -622,7 +624,7 @@ function DetailModal({ open, item, onClose }) {
                       style={{
                         fontSize: 18,
                         fontWeight: 800,
-                        color: "#e11d48",
+                        color: "var(--a-error)",
                         margin: 0,
                       }}
                     >
@@ -634,30 +636,30 @@ function DetailModal({ open, item, onClose }) {
                   <div
                     style={{
                       flex: 1,
-                      background: "#eff6ff",
+                      background: "var(--a-info-bg)",
                       padding: "14px 18px",
                       borderRadius: 16,
                     }}
                   >
-                    <p style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", margin: "0 0 4px" }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "var(--a-info)", margin: "0 0 4px" }}>
                       ĐÃ BỔ SUNG
                     </p>
-                    <p style={{ fontSize: 18, fontWeight: 800, color: "#1d4ed8", margin: 0 }}>
+                    <p style={{ fontSize: 18, fontWeight: 800, color: "var(--a-info)", margin: 0 }}>
                       {item.replenishedQuantity || 0}
                     </p>
                   </div>
                   <div
                     style={{
                       flex: 1,
-                      background: "#fff7ed",
+                      background: "var(--a-warning-bg)",
                       padding: "14px 18px",
                       borderRadius: 16,
                     }}
                   >
-                    <p style={{ fontSize: 11, fontWeight: 700, color: "#c2410c", margin: "0 0 4px" }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "var(--a-warning)", margin: "0 0 4px" }}>
                       CÒN THIẾU
                     </p>
-                    <p style={{ fontSize: 18, fontWeight: 800, color: "#c2410c", margin: 0 }}>
+                    <p style={{ fontSize: 18, fontWeight: 800, color: "var(--a-warning)", margin: 0 }}>
                       {item.remainingToReplenish || 0}
                     </p>
                   </div>
@@ -693,17 +695,17 @@ function DetailModal({ open, item, onClose }) {
                 </div>
                 <div
                   style={{
-                    background: "white",
+                    background: "var(--a-surface)",
                     padding: "16px 20px",
                     borderRadius: 16,
-                    border: "1px solid #f1f5f9",
+                    border: "1px solid var(--a-border)",
                   }}
                 >
                   <p
                     style={{
                       fontSize: 11,
                       fontWeight: 700,
-                      color: "#94a3b8",
+                      color: "var(--a-text-soft)",
                       textTransform: "uppercase",
                       marginBottom: 8,
                     }}
@@ -713,7 +715,7 @@ function DetailModal({ open, item, onClose }) {
                   <p
                     style={{
                       fontSize: 14,
-                      color: "#475569",
+                      color: "var(--a-text-muted)",
                       lineHeight: 1.6,
                       margin: 0,
                     }}
@@ -724,7 +726,7 @@ function DetailModal({ open, item, onClose }) {
                 <p
                   style={{
                     fontSize: 12,
-                    color: "#94a3b8",
+                    color: "var(--a-text-soft)",
                     textAlign: "right",
                     margin: 0,
                   }}
@@ -2424,11 +2426,11 @@ function LossAndDamageTableUnified({
           flexWrap: "wrap",
         }}
       >
-        <div style={{ color: "#78716c", fontSize: 13 }}>
+        <div style={{ color: "var(--a-text-muted)", fontSize: 13 }}>
           {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, recordsCount)} / {recordsCount} biên bản
         </div>
         {renderPagination()}
-        <div style={{ display: "flex", gap: 8, display: "none" }}>
+        <div style={{ display: "none", gap: 8 }}>
           <button
             type="button"
             disabled={page <= 1}

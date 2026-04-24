@@ -20,21 +20,21 @@ import { getAttractions } from "../../api/attractionsApi";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const cardStyle = {
-  background: "white",
+  background: "var(--a-surface)",
   borderRadius: 18,
-  border: "1px solid #f1f0ea",
-  boxShadow: "0 1px 3px rgba(0,0,0,.06)",
+  border: "1px solid var(--a-border)",
+  boxShadow: "var(--a-shadow-sm)",
 };
 
 const inputStyle = {
   width: "100%",
-  background: "#f9f8f3",
-  border: "1.5px solid #e2e8e1",
+  background: "var(--a-surface-raised)",
+  border: "1.5px solid var(--a-border-strong)",
   borderRadius: 12,
   padding: "10px 14px",
   fontSize: 14,
   fontWeight: 600,
-  color: "#1c1917",
+  color: "var(--a-text)",
   outline: "none",
   boxSizing: "border-box",
   fontFamily: "'Manrope', sans-serif",
@@ -46,7 +46,7 @@ const labelStyle = {
   fontWeight: 700,
   letterSpacing: "0.12em",
   textTransform: "uppercase",
-  color: "#6b7280",
+  color: "var(--a-text-muted)",
   marginBottom: 8,
 };
 
@@ -71,7 +71,7 @@ function Overlay({ title, onClose, children }) {
         inset: 0,
         zIndex: 120,
         padding: 24,
-        background: "rgba(28,25,23,.4)",
+        background: "var(--a-overlay)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -84,24 +84,24 @@ function Overlay({ title, onClose, children }) {
           width: "min(1100px, 100%)",
           maxHeight: "92vh",
           overflowY: "auto",
-          background: "white",
+          background: "var(--a-surface)",
           borderRadius: 24,
-          border: "1px solid #f1f0ea",
-          boxShadow: "0 24px 60px rgba(28,25,23,.18)",
+          border: "1px solid var(--a-border)",
+          boxShadow: "var(--a-shadow-lg)",
         }}
       >
         <div
           style={{
             padding: "20px 24px 16px",
-            borderBottom: "1px solid #f1f0ea",
+            borderBottom: "1px solid var(--a-border)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
           <div>
-            <h3 style={{ margin: 0, fontSize: 22, color: "#1c1917" }}>{title}</h3>
-            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#78716c" }}>
+            <h3 style={{ margin: 0, fontSize: 22, color: "var(--a-text)" }}>{title}</h3>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--a-text-muted)" }}>
               Quản lý nội dung bài viết và xem trước ngay trong admin.
             </p>
           </div>
@@ -210,8 +210,8 @@ function QuillEditor({ value, onChange, onUploadImage, onOpenPreviewPage, editor
   };
 
   return (
-    <div className="primary-card-p" style={{ border: "1px solid #e2e8e1", borderRadius: 18, overflow: "hidden", background: "white" }}>
-      <div className="sub-card-p" style={{ display: "flex", justifyContent: "flex-end", padding: "10px 12px 0", background: "#fcfbf7", borderBottom: "1px solid #ece8df" }}>
+    <div className="primary-card-p" style={{ border: "1px solid var(--a-border)", borderRadius: 18, overflow: "hidden", background: "var(--a-surface)" }}>
+      <div className="sub-card-p" style={{ display: "flex", justifyContent: "flex-end", padding: "10px 12px 0", background: "var(--a-surface-raised)", borderBottom: "1px solid var(--a-border)" }}>
         <button
           type="button"
           onClick={onOpenPreviewPage}

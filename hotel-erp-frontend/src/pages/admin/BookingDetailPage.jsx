@@ -20,10 +20,98 @@ const ALLOWED_ACTIONS = {
 
 // ─── Thông báo ────────────────────────────────────────────────────────────────────
 const TOAST_STYLES = {
-  success: { bg: "#1e3a2f", border: "#2d5a45", text: "#a7f3d0", prog: "#34d399", icon: "check_circle" },
-  error:   { bg: "#3a1e1e", border: "#5a2d2d", text: "#fca5a5", prog: "#f87171", icon: "error" },
-  warning: { bg: "#3a2e1a", border: "#5a4820", text: "#fcd34d", prog: "#fbbf24", icon: "warning" },
-  info:    { bg: "#1e2f3a", border: "#2d4a5a", text: "#93c5fd", prog: "#60a5fa", icon: "info" },
+  success: { bg: "var(--a-success-bg)", border: "var(--a-success-border)", text: "var(--a-success)", prog: "var(--a-success)", icon: "check_circle" },
+  error:   { bg: "var(--a-error-bg)", border: "var(--a-error-border)", text: "var(--a-error)", prog: "var(--a-error)", icon: "error" },
+  warning: { bg: "var(--a-warning-bg)", border: "var(--a-warning-border)", text: "var(--a-warning)", prog: "var(--a-warning)", icon: "warning" },
+  info:    { bg: "var(--a-info-bg)", border: "var(--a-info-border)", text: "var(--a-info)", prog: "var(--a-info)", icon: "info" },
+};
+
+const MODAL_OVERLAY_STYLE = {
+  position: "fixed",
+  inset: 0,
+  background: "var(--a-overlay)",
+  backdropFilter: "blur(6px)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 20,
+};
+
+const MODAL_SURFACE_STYLE = {
+  background: "var(--a-surface)",
+  borderRadius: 24,
+  width: "100%",
+  boxShadow: "var(--a-shadow-lg)",
+  animation: "modalSlideUp .3s ease-out",
+  border: "1px solid var(--a-border)",
+};
+
+const MODAL_TITLE_STYLE = {
+  fontSize: 18,
+  fontWeight: 800,
+  color: "var(--a-text)",
+  margin: "0 0 8px",
+};
+
+const MODAL_SUBTITLE_STYLE = {
+  fontSize: 13,
+  color: "var(--a-text-muted)",
+  margin: "0 0 20px",
+};
+
+const FIELD_STYLE = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "12px 14px",
+  borderRadius: 12,
+  border: "1.5px solid var(--a-border-strong)",
+  background: "var(--a-surface-raised)",
+  fontSize: 13,
+  fontWeight: 500,
+  outline: "none",
+  color: "var(--a-text)",
+};
+
+const MODAL_SECONDARY_BUTTON_STYLE = {
+  flex: 1,
+  padding: "12px 0",
+  borderRadius: 12,
+  border: "1.5px solid var(--a-border-strong)",
+  background: "var(--a-surface)",
+  fontWeight: 700,
+  color: "var(--a-text-muted)",
+  cursor: "pointer",
+  fontSize: 14,
+};
+
+const MODAL_PRIMARY_BUTTON_STYLE = {
+  flex: 1,
+  padding: "12px 0",
+  borderRadius: 12,
+  border: "none",
+  background: "var(--a-primary)",
+  fontWeight: 700,
+  color: "var(--a-text-inverse)",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  fontSize: 14,
+};
+
+const MODAL_DANGER_BUTTON_STYLE = {
+  ...MODAL_PRIMARY_BUTTON_STYLE,
+  background: "var(--a-error)",
+};
+
+const INLINE_LIGHT_SPINNER = {
+  width: 14,
+  height: 14,
+  border: "2px solid rgba(255,255,255,.35)",
+  borderTopColor: "currentColor",
+  borderRadius: "50%",
+  animation: "spin .65s linear infinite",
 };
 
 function Toast({ id, msg, type = "success", dur = 3500, onDismiss }) {
@@ -61,23 +149,21 @@ function CancelModal({ open, onConfirm, onCancel, loading }) {
 
   if (!open) return null;
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20 }} onClick={(e) => e.target === e.currentTarget && onCancel()}>
-      <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 400, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)", animation: "modalSlideUp .3s ease-out", padding: 32 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 8px" }}>Hủy Đặt Phòng</h3>
-        <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px" }}>Vui lòng nhập lý do hủy phòng bên dưới:</p>
+    <div style={{ ...MODAL_OVERLAY_STYLE, zIndex: 2000 }} onClick={(e) => e.target === e.currentTarget && onCancel()}>
+      <div style={{ ...MODAL_SURFACE_STYLE, maxWidth: 400, padding: 32 }}>
+        <h3 style={MODAL_TITLE_STYLE}>Hủy Đặt Phòng</h3>
+        <p style={MODAL_SUBTITLE_STYLE}>Vui lòng nhập lý do hủy phòng bên dưới:</p>
         <textarea
           autoFocus
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="Lý do hủy..."
-          style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, fontFamily: "inherit", resize: "none", height: 80, outline: "none", color: "#1c1917", marginBottom: 20 }}
-          onFocus={(e) => e.target.style.borderColor = "#4f645b"}
-          onBlur={(e) => e.target.style.borderColor = "#e2e8e1"}
+          style={{ ...FIELD_STYLE, fontFamily: "inherit", resize: "none", height: 80, marginBottom: 20 }}
         />
         <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={onCancel} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "white", fontWeight: 700, color: "#6b7280", cursor: "pointer", fontSize: 14 }}>Hủy bỏ</button>
-          <button onClick={() => onConfirm(reason)} disabled={loading || !reason.trim()} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "#ef4444", fontWeight: 700, color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, opacity: (!reason.trim() || loading) ? 0.6 : 1 }}>
-            {loading ? <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "white", borderRadius: "50%", animation: "spin .65s linear infinite" }} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>cancel</span>}
+          <button onClick={onCancel} style={MODAL_SECONDARY_BUTTON_STYLE}>Hủy bỏ</button>
+          <button onClick={() => onConfirm(reason)} disabled={loading || !reason.trim()} style={{ ...MODAL_DANGER_BUTTON_STYLE, opacity: (!reason.trim() || loading) ? 0.6 : 1 }}>
+            {loading ? <div style={INLINE_LIGHT_SPINNER} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>cancel</span>}
             Xác nhận
           </button>
         </div>
@@ -104,22 +190,22 @@ function CheckInModal({ open, booking, loading, onConfirm, onCancel }) {
   const canSubmit = form.guestName.trim() && form.guestPhone.trim() && form.guestEmail.trim() && form.nationalId.trim();
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2100, padding: 20 }} onClick={(e) => e.target === e.currentTarget && onCancel()}>
-      <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 520, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)", animation: "modalSlideUp .3s ease-out", padding: 32 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 8px" }}>Xác nhận check-in</h3>
-        <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px" }}>
+    <div style={{ ...MODAL_OVERLAY_STYLE, zIndex: 2100 }} onClick={(e) => e.target === e.currentTarget && onCancel()}>
+      <div style={{ ...MODAL_SURFACE_STYLE, maxWidth: 520, padding: 32 }}>
+        <h3 style={MODAL_TITLE_STYLE}>Xác nhận check-in</h3>
+        <p style={MODAL_SUBTITLE_STYLE}>
           Booking này chưa gắn hồ sơ khách. Nhập thông tin lưu trú để hệ thống kiểm tra tài khoản theo email trước khi check-in.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-          <input value={form.guestName} onChange={(e) => setForm((prev) => ({ ...prev, guestName: e.target.value }))} placeholder="Họ tên khách" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
-          <input value={form.guestPhone} onChange={(e) => setForm((prev) => ({ ...prev, guestPhone: e.target.value }))} placeholder="Số điện thoại" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
-          <input value={form.guestEmail} onChange={(e) => setForm((prev) => ({ ...prev, guestEmail: e.target.value }))} placeholder="Email" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917", gridColumn: "span 2" }} />
-          <input value={form.nationalId} onChange={(e) => setForm((prev) => ({ ...prev, nationalId: e.target.value }))} placeholder="CCCD / Hộ chiếu" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917", gridColumn: "span 2" }} />
+          <input value={form.guestName} onChange={(e) => setForm((prev) => ({ ...prev, guestName: e.target.value }))} placeholder="Họ tên khách" style={FIELD_STYLE} />
+          <input value={form.guestPhone} onChange={(e) => setForm((prev) => ({ ...prev, guestPhone: e.target.value }))} placeholder="Số điện thoại" style={FIELD_STYLE} />
+          <input value={form.guestEmail} onChange={(e) => setForm((prev) => ({ ...prev, guestEmail: e.target.value }))} placeholder="Email" style={{ ...FIELD_STYLE, gridColumn: "span 2" }} />
+          <input value={form.nationalId} onChange={(e) => setForm((prev) => ({ ...prev, nationalId: e.target.value }))} placeholder="CCCD / Hộ chiếu" style={{ ...FIELD_STYLE, gridColumn: "span 2" }} />
         </div>
         <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={onCancel} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "white", fontWeight: 700, color: "#6b7280", cursor: "pointer", fontSize: 14 }}>Đóng</button>
-          <button onClick={() => onConfirm(form)} disabled={loading || !canSubmit} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "#4f645b", fontWeight: 700, color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, opacity: (!canSubmit || loading) ? 0.6 : 1 }}>
-            {loading ? <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "white", borderRadius: "50%", animation: "spin .65s linear infinite" }} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>login</span>}
+          <button onClick={onCancel} style={MODAL_SECONDARY_BUTTON_STYLE}>Đóng</button>
+          <button onClick={() => onConfirm(form)} disabled={loading || !canSubmit} style={{ ...MODAL_PRIMARY_BUTTON_STYLE, opacity: (!canSubmit || loading) ? 0.6 : 1 }}>
+            {loading ? <div style={INLINE_LIGHT_SPINNER} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>login</span>}
             Xác nhận check-in
           </button>
         </div>
@@ -163,26 +249,26 @@ function BookingPaymentModal({ open, booking, mode, loading, onConfirm, onCancel
       : `Số tiền đã thu trước đó: ${formatCurrency(booking?.depositAmount || 0)}.`;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2200, padding: 20 }} onClick={(e) => e.target === e.currentTarget && onCancel()}>
-      <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 460, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)", padding: 32 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 8px" }}>{title}</h3>
-        <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px" }}>{helper}</p>
+    <div style={{ ...MODAL_OVERLAY_STYLE, zIndex: 2200 }} onClick={(e) => e.target === e.currentTarget && onCancel()}>
+      <div style={{ ...MODAL_SURFACE_STYLE, maxWidth: 460, padding: 32 }}>
+        <h3 style={MODAL_TITLE_STYLE}>{title}</h3>
+        <p style={MODAL_SUBTITLE_STYLE}>{helper}</p>
         <div style={{ display: "grid", gap: 12, marginBottom: 20 }}>
-          <input type="text" inputMode="numeric" value={form.amountPaid} onChange={(e) => setForm((prev) => ({ ...prev, amountPaid: formatMoneyInput(e.target.value) }))} placeholder="Số tiền" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
-          <select value={form.paymentMethod} onChange={(e) => setForm((prev) => ({ ...prev, paymentMethod: e.target.value }))} style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }}>
+          <input type="text" inputMode="numeric" value={form.amountPaid} onChange={(e) => setForm((prev) => ({ ...prev, amountPaid: formatMoneyInput(e.target.value) }))} placeholder="Số tiền" style={FIELD_STYLE} />
+          <select value={form.paymentMethod} onChange={(e) => setForm((prev) => ({ ...prev, paymentMethod: e.target.value }))} style={FIELD_STYLE}>
             <option value="Cash">Tiền mặt</option>
             <option value="Momo">Momo</option>
             <option value="VNPay_Mock">VNPay</option>
             <option value="Credit Card">Thẻ tín dụng</option>
             <option value="Bank Transfer">Chuyển khoản</option>
           </select>
-          <input value={form.transactionCode} onChange={(e) => setForm((prev) => ({ ...prev, transactionCode: e.target.value }))} placeholder="Mã giao dịch (nếu có)" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
-          <textarea value={form.note} onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))} placeholder="Ghi chú" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917", minHeight: 80, resize: "none" }} />
+          <input value={form.transactionCode} onChange={(e) => setForm((prev) => ({ ...prev, transactionCode: e.target.value }))} placeholder="Mã giao dịch (nếu có)" style={FIELD_STYLE} />
+          <textarea value={form.note} onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))} placeholder="Ghi chú" style={{ ...FIELD_STYLE, minHeight: 80, resize: "none" }} />
         </div>
         <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={onCancel} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "white", fontWeight: 700, color: "#6b7280", cursor: "pointer", fontSize: 14 }}>Đóng</button>
-          <button onClick={() => onConfirm({ ...form, amountPaid: parseMoneyInput(form.amountPaid) })} disabled={loading || parseMoneyInput(form.amountPaid) <= 0} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "#4f645b", fontWeight: 700, color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, opacity: (parseMoneyInput(form.amountPaid) <= 0 || loading) ? 0.6 : 1 }}>
-            {loading ? <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "white", borderRadius: "50%", animation: "spin .65s linear infinite" }} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>payments</span>}
+          <button onClick={onCancel} style={MODAL_SECONDARY_BUTTON_STYLE}>Đóng</button>
+          <button onClick={() => onConfirm({ ...form, amountPaid: parseMoneyInput(form.amountPaid) })} disabled={loading || parseMoneyInput(form.amountPaid) <= 0} style={{ ...MODAL_PRIMARY_BUTTON_STYLE, opacity: (parseMoneyInput(form.amountPaid) <= 0 || loading) ? 0.6 : 1 }}>
+            {loading ? <div style={INLINE_LIGHT_SPINNER} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>payments</span>}
             Xác nhận
           </button>
         </div>

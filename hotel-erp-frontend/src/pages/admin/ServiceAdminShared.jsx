@@ -1,25 +1,26 @@
+/* eslint-disable react-refresh/only-export-components */
 import { NavLink } from "react-router-dom";
 
 export const SERVICE_VIEW_STORAGE_KEY = "admin_services_view";
 
 export const panelStyle = {
-  background: "white",
+  background: "var(--a-surface)",
   borderRadius: 16,
-  border: "1px solid #f1f0ea",
-  boxShadow: "0 1px 3px rgba(0,0,0,.06)",
+  border: "1px solid var(--a-border)",
+  boxShadow: "var(--a-shadow-sm)",
 };
 
 export const globalFontReset = `* { font-family: 'Manrope', sans-serif; }`;
 
 export const inputStyle = {
   width: "100%",
-  background: "#f9f8f3",
-  border: "1.5px solid #e2e8e1",
+  background: "var(--a-surface-raised)",
+  border: "1.5px solid var(--a-border-strong)",
   borderRadius: 12,
   padding: "10px 14px",
   fontSize: 14,
   fontWeight: 600,
-  color: "#1c1917",
+  color: "var(--a-text)",
   outline: "none",
   boxSizing: "border-box",
   fontFamily: "'Manrope', sans-serif",
@@ -32,7 +33,7 @@ export const labelStyle = {
   fontWeight: 700,
   letterSpacing: "0.12em",
   textTransform: "uppercase",
-  color: "#6b7280",
+  color: "var(--a-text-muted)",
   marginBottom: 8,
 };
 
@@ -44,31 +45,31 @@ export const statusFilterOptions = [
 
 const TOAST_STYLES = {
   success: {
-    bg: "#1e3a2f",
-    border: "#2d5a45",
-    text: "#a7f3d0",
-    prog: "#34d399",
+    bg: "var(--a-success-bg)",
+    border: "var(--a-success-border)",
+    text: "var(--a-success)",
+    prog: "var(--a-success)",
     icon: "check_circle",
   },
   warning: {
-    bg: "#3a2e1a",
-    border: "#5a4820",
-    text: "#fcd34d",
-    prog: "#fbbf24",
+    bg: "var(--a-warning-bg)",
+    border: "var(--a-warning-border)",
+    text: "var(--a-warning)",
+    prog: "var(--a-warning)",
     icon: "warning",
   },
   error: {
-    bg: "#3a1e1e",
-    border: "#5a2d2d",
-    text: "#fca5a5",
-    prog: "#f87171",
+    bg: "var(--a-error-bg)",
+    border: "var(--a-error-border)",
+    text: "var(--a-error)",
+    prog: "var(--a-error)",
     icon: "error",
   },
   info: {
-    bg: "#1e2f3a",
-    border: "#2d4a5a",
-    text: "#93c5fd",
-    prog: "#60a5fa",
+    bg: "var(--a-info-bg)",
+    border: "var(--a-info-border)",
+    text: "var(--a-info)",
+    prog: "var(--a-info)",
     icon: "info",
   },
 };
@@ -121,7 +122,7 @@ export function ServiceAdminShell({
               fontWeight: 700,
               letterSpacing: ".12em",
               textTransform: "uppercase",
-              color: "#6b7280",
+              color: "var(--a-text-muted)",
             }}
           >
             Service Admin
@@ -131,13 +132,13 @@ export function ServiceAdminShell({
               margin: "4px 0 0",
               fontSize: 28,
               fontWeight: 800,
-              color: "#1c1917",
+              color: "var(--a-text)",
               letterSpacing: "-0.02em",
             }}
           >
             {title}
           </h2>
-          <p style={{ margin: "8px 0 0", fontSize: 14, color: "#6b7280" }}>
+          <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--a-text-muted)" }}>
             {subtitle}
           </p>
         </div>
@@ -148,7 +149,7 @@ export function ServiceAdminShell({
         <div
           style={{
             display: "inline-flex",
-            background: "#f6f4ee",
+            background: "var(--a-surface-raised)",
             borderRadius: 16,
             padding: 6,
             gap: 6,
@@ -193,7 +194,7 @@ export function ServiceAdminShell({
                     fontWeight: 800,
                     letterSpacing: ".08em",
                     textTransform: "uppercase",
-                    color: "#78716c",
+                    color: "var(--a-text-muted)",
                   }}
                 >
                   {stat.label}
@@ -203,7 +204,7 @@ export function ServiceAdminShell({
                     marginTop: 8,
                     fontSize: 26,
                     fontWeight: 800,
-                    color: "#1c1917",
+                    color: "var(--a-text)",
                   }}
                 >
                   {stat.value}
@@ -212,7 +213,7 @@ export function ServiceAdminShell({
                   style={{
                     marginTop: 6,
                     fontSize: 12,
-                    color: "#78716c",
+                    color: "var(--a-text-muted)",
                   }}
                 >
                   {stat.description}
@@ -223,8 +224,8 @@ export function ServiceAdminShell({
                   width: 48,
                   height: 48,
                   borderRadius: 16,
-                  background: "rgba(79,100,91,.12)",
-                  color: "#4f645b",
+                  background: "var(--a-brand-bg)",
+                  color: "var(--a-brand-ink)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -258,8 +259,8 @@ function ServiceViewLink({ to, active, icon, label }) {
         padding: "10px 16px",
         borderRadius: 12,
         textDecoration: "none",
-        background: active ? "#4f645b" : "transparent",
-        color: active ? "#ecfdf5" : "#57534e",
+        background: active ? "var(--a-primary)" : "transparent",
+        color: active ? "var(--a-text-inverse)" : "var(--a-text-muted)",
         fontWeight: 800,
         transition: "all .15s",
       }}
@@ -280,7 +281,7 @@ export function Modal({ open, title, description, onClose, children }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(28,25,23,.35)",
+        background: "var(--a-overlay)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -294,27 +295,27 @@ export function Modal({ open, title, description, onClose, children }) {
           width: "min(760px, 100%)",
           maxHeight: "90vh",
           overflowY: "auto",
-          background: "white",
+          background: "var(--a-surface)",
           borderRadius: 24,
-          border: "1px solid #ede7dd",
-          boxShadow: "0 24px 60px rgba(28,25,23,.18)",
+          border: "1px solid var(--a-border)",
+          boxShadow: "var(--a-shadow-lg)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
           style={{
             padding: "22px 24px 16px",
-            borderBottom: "1px solid #f1f0ea",
+            borderBottom: "1px solid var(--a-border)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
           <div>
-            <h3 style={{ margin: 0, fontSize: 22, color: "#1c1917" }}>
+            <h3 style={{ margin: 0, fontSize: 22, color: "var(--a-text)" }}>
               {title}
             </h3>
-            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#78716c" }}>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--a-text-muted)" }}>
               {description || "Giao diện đồng bộ với admin hiện tại."}
             </p>
           </div>
@@ -324,7 +325,7 @@ export function Modal({ open, title, description, onClose, children }) {
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "#78716c",
+              color: "var(--a-text-muted)",
             }}
           >
             <span className="material-symbols-outlined">close</span>
@@ -342,8 +343,8 @@ export function StatusChip({ active, label }) {
       style={{
         padding: "5px 10px",
         borderRadius: 999,
-        background: active ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.05)",
-        color: active ? "#10b981" : "#94a3b8",
+        background: active ? "var(--a-success-bg)" : "var(--a-surface-bright)",
+        color: active ? "var(--a-success)" : "var(--a-text-soft)",
         fontSize: 11,
         fontWeight: 700,
         textTransform: "uppercase",
@@ -358,7 +359,7 @@ export function StatusChip({ active, label }) {
 
 export function EmptyState({ label, icon }) {
   return (
-    <div style={{ textAlign: "center", color: "#9ca3af" }}>
+    <div style={{ textAlign: "center", color: "var(--a-text-soft)" }}>
       <span className="material-symbols-outlined" style={{ fontSize: 42 }}>
         {icon}
       </span>
@@ -378,9 +379,9 @@ export function IconButton({ icon, title, onClick, danger = false }) {
         width: 36,
         height: 36,
         borderRadius: 10,
-        border: "1px solid #ece7de",
-        background: danger ? "#fff7f7" : "white",
-        color: danger ? "#dc2626" : "#57534e",
+        border: "1px solid var(--a-border)",
+        background: danger ? "var(--a-error-bg)" : "var(--a-surface)",
+        color: danger ? "var(--a-error)" : "var(--a-text-muted)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -410,9 +411,9 @@ export function FormFooter({ submitting, onClose }) {
         style={{
           padding: "10px 16px",
           borderRadius: 12,
-          border: "1px solid #e7e5e4",
-          background: "white",
-          color: "#57534e",
+          border: "1px solid var(--a-border-strong)",
+          background: "var(--a-surface)",
+          color: "var(--a-text-muted)",
           fontWeight: 600,
           cursor: "pointer",
         }}
@@ -426,8 +427,8 @@ export function FormFooter({ submitting, onClose }) {
           padding: "10px 18px",
           borderRadius: 12,
           border: "none",
-          background: "#4f645b",
-          color: "#e7fef3",
+          background: "var(--a-primary)",
+          color: "var(--a-text-inverse)",
           fontWeight: 700,
           cursor: "pointer",
           opacity: submitting ? 0.7 : 1,
@@ -466,7 +467,7 @@ export function VisibilitySwitch({ checked, disabled, onChange }) {
           width: 44,
           height: 24,
           borderRadius: 999,
-          background: checked ? "#4f645b" : "#d1d5db",
+          background: checked ? "var(--a-primary)" : "var(--a-border-strong)",
           transition: "all .2s ease",
         }}
       >
@@ -478,7 +479,7 @@ export function VisibilitySwitch({ checked, disabled, onChange }) {
             width: 18,
             height: 18,
             borderRadius: "50%",
-            background: "white",
+            background: "var(--a-surface)",
             transition: "all .2s ease",
             boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
           }}
@@ -489,7 +490,7 @@ export function VisibilitySwitch({ checked, disabled, onChange }) {
         style={{
           fontSize: 12,
           fontWeight: 700,
-          color: checked ? "#10b981" : "#94a3b8",
+          color: checked ? "var(--a-success)" : "var(--a-text-soft)",
           textTransform: "uppercase",
           letterSpacing: ".05em",
         }}
@@ -502,10 +503,8 @@ export function VisibilitySwitch({ checked, disabled, onChange }) {
 
 export function primaryButton(disabled) {
   return {
-    background: disabled
-      ? "#a8a29e"
-      : "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
-    color: "#e7fef3",
+    background: disabled ? "var(--a-text-soft)" : "var(--a-primary)",
+    color: "var(--a-text-inverse)",
     border: "none",
     borderRadius: 12,
     padding: "10px 22px",
@@ -515,7 +514,7 @@ export function primaryButton(disabled) {
     display: "inline-flex",
     alignItems: "center",
     gap: 8,
-    boxShadow: disabled ? "none" : "0 4px 12px rgba(79,100,91,.2)",
+    boxShadow: disabled ? "none" : "var(--a-shadow-sm)",
     transition: "all 0.15s",
   };
 }

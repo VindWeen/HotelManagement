@@ -7,10 +7,10 @@ import { getInvoiceStatusLabel } from "../../utils/statusLabels";
 
 // ─── Thông báo ────────────────────────────────────────────────────────────────────
 const TOAST_STYLES = {
-  success: { bg: "#1e3a2f", border: "#2d5a45", text: "#a7f3d0", prog: "#34d399", icon: "check_circle" },
-  error:   { bg: "#3a1e1e", border: "#5a2d2d", text: "#fca5a5", prog: "#f87171", icon: "error" },
-  warning: { bg: "#3a2e1a", border: "#5a4820", text: "#fcd34d", prog: "#fbbf24", icon: "warning" },
-  info:    { bg: "#1e2f3a", border: "#2d4a5a", text: "#93c5fd", prog: "#60a5fa", icon: "info" },
+  success: { bg: "var(--a-success-bg)", border: "var(--a-success-border)", text: "var(--a-success)", prog: "var(--a-success)", icon: "check_circle" },
+  error:   { bg: "var(--a-error-bg)", border: "var(--a-error-border)", text: "var(--a-error)", prog: "var(--a-error)", icon: "error" },
+  warning: { bg: "var(--a-warning-bg)", border: "var(--a-warning-border)", text: "var(--a-warning)", prog: "var(--a-warning)", icon: "warning" },
+  info:    { bg: "var(--a-info-bg)", border: "var(--a-info-border)", text: "var(--a-info)", prog: "var(--a-info)", icon: "info" },
 };
 
 function Toast({ id, msg, type = "success", dur = 3500, onDismiss }) {
@@ -38,12 +38,12 @@ function Toast({ id, msg, type = "success", dur = 3500, onDismiss }) {
 // ─── Nhãn trạng thái ─────────────────────────────────────────────────────────────
 const InvoiceStatusBadge = ({ status }) => {
   const map = {
-    Draft: { bg: "#e0f2fe", text: "#0369a1", icon: "draft" },
-    Ready_To_Collect: { bg: "#ede9fe", text: "#6d28d9", icon: "point_of_sale" },
-    Unpaid: { bg: "#fef2f2", text: "#dc2626", icon: "pending_actions" },
-    Partially_Paid: { bg: "#fef3c7", text: "#d97706", icon: "hourglass_top" },
-    Paid: { bg: "#ecfdf5", text: "#059669", icon: "check_circle" },
-    Refunded: { bg: "#f3f4f6", text: "#6b7280", icon: "replay" }
+    Draft: { bg: "var(--a-info-bg)", text: "var(--a-info)", icon: "draft" },
+    Ready_To_Collect: { bg: "var(--a-brand-bg)", text: "var(--a-brand-ink)", icon: "point_of_sale" },
+    Unpaid: { bg: "var(--a-error-bg)", text: "var(--a-error)", icon: "pending_actions" },
+    Partially_Paid: { bg: "var(--a-warning-bg)", text: "var(--a-warning)", icon: "hourglass_top" },
+    Paid: { bg: "var(--a-success-bg)", text: "var(--a-success)", icon: "check_circle" },
+    Refunded: { bg: "var(--a-surface-bright)", text: "var(--a-text-muted)", icon: "replay" }
   };
   const s = map[status] || { bg: "#f1f5f9", text: "#64748b", icon: "help" };
   return (
