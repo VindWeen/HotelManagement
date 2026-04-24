@@ -126,7 +126,7 @@ function VisibilitySwitch({ checked, onChange }) {
         height: 30,
         borderRadius: 999,
         border: "none",
-        background: checked ? "#4f645b" : "#d6d3d1",
+        background: checked ? "var(--a-primary)" : "var(--a-border-strong)",
         position: "relative",
         cursor: "pointer",
         transition: "all .2s ease",
@@ -140,7 +140,7 @@ function VisibilitySwitch({ checked, onChange }) {
           width: 24,
           height: 24,
           borderRadius: "50%",
-          background: "white",
+          background: "var(--a-surface)",
           boxShadow: "0 2px 6px rgba(0,0,0,.18)",
           transition: "all .2s ease",
         }}
@@ -220,9 +220,9 @@ function QuillEditor({ value, onChange, onUploadImage, onOpenPreviewPage, editor
             marginBottom: 10,
             padding: "8px 14px",
             borderRadius: 10,
-            border: "1px solid #e7e5e4",
-            background: "white",
-            color: "#57534e",
+            border: "1px solid var(--a-border)",
+            background: "var(--a-surface)",
+            color: "var(--a-text-muted)",
             cursor: "pointer",
             fontWeight: 600,
           }}
@@ -782,10 +782,10 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
       <div style={{ maxWidth: 1400, margin: "0 auto", paddingInline: isMobile ? 4 : 0 }}>
         <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", gap: 16, marginBottom: 24 }}>
           <div>
-            <h2 style={{ margin: "0 0 4px", fontSize: 28, color: "#1c1917", fontWeight: 800, letterSpacing: "-0.02em" }}>
+            <h2 style={{ margin: "0 0 4px", fontSize: 28, color: "var(--a-text)", fontWeight: 800, letterSpacing: "-0.02em" }}>
               Quản lý bài viết
             </h2>
-            <p style={{ margin: "6px 0 0", color: "#6b7280", fontSize: 14 }}>
+            <p style={{ margin: "6px 0 0", color: "var(--a-text-muted)", fontSize: 14 }}>
               Tạo, chỉnh sửa, xem trước và quản lý trạng thái bài viết trong admin.
             </p>
           </div>
@@ -793,8 +793,8 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
             <button
               onClick={openCreate}
               style={{
-                background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
-                color: "#e7fef3",
+                background: "var(--a-emphasis-bg)",
+                color: "var(--a-emphasis-text)",
                 border: "none",
                 borderRadius: 12,
                 padding: "0 22px",
@@ -808,7 +808,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                 gap: 8,
                 width: isMobile ? "100%" : "auto",
                 whiteSpace: "nowrap",
-                boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+                boxShadow: "var(--a-shadow-sm)",
                 transition: "all 0.15s",
               }}
             >
@@ -819,8 +819,8 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
             <button
               onClick={() => setCategoryModalOpen(true)}
               style={{
-                background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
-                color: "#e7fef3",
+                background: "var(--a-emphasis-bg)",
+                color: "var(--a-emphasis-text)",
                 border: "none",
                 borderRadius: 12,
                 padding: "0 22px",
@@ -834,7 +834,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                 gap: 8,
                 width: isMobile ? "100%" : "auto",
                 whiteSpace: "nowrap",
-                boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+                boxShadow: "var(--a-shadow-sm)",
                 transition: "all 0.15s",
               }}
             >
@@ -845,13 +845,13 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
         </div>
 
         {error ? (
-          <div style={{ ...cardStyle, padding: 14, marginBottom: 20, color: "#b91c1c", background: "#fff7f7" }}>
+          <div style={{ ...cardStyle, padding: 14, marginBottom: 20, color: "var(--a-error)", background: "var(--a-error-bg)", borderColor: "var(--a-error-border)" }}>
             {error}
           </div>
         ) : null}
 
         <section style={{ ...cardStyle, padding: 10, marginBottom: 24 }}>
-          <div style={{ display: "flex", gap: 6, background: "#f7f4ee", padding: 4, borderRadius: 14, width: "fit-content" }}>
+          <div style={{ display: "flex", gap: 6, background: "var(--a-surface-raised)", padding: 4, borderRadius: 14, width: "fit-content" }}>
             {[
               { key: "articles", label: "Bài viết", icon: "article" },
               { key: "categories", label: "Danh mục", icon: "category" },
@@ -864,14 +864,14 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                   padding: "9px 14px",
                   borderRadius: 10,
                   border: "none",
-                  background: activeTab === tab.key ? "white" : "transparent",
-                  color: activeTab === tab.key ? "#1c1917" : "#78716c",
+                  background: activeTab === tab.key ? "var(--a-surface)" : "transparent",
+                  color: activeTab === tab.key ? "var(--a-text)" : "var(--a-text-muted)",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   gap: 8,
                   fontWeight: 700,
-                  boxShadow: activeTab === tab.key ? "0 1px 4px rgba(0,0,0,.08)" : "none",
+                  boxShadow: activeTab === tab.key ? "var(--a-shadow-sm)" : "none",
                 }}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{tab.icon}</span>
@@ -905,7 +905,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
               </div>
               <div style={{ display: "none" }}>
                 <label style={labelStyle}>Chế độ xem</label>
-                <div style={{ display: "flex", gap: 2, background: "#f1f0ea", padding: 4, borderRadius: 12 }}>
+                <div style={{ display: "flex", gap: 2, background: "var(--a-surface-raised)", padding: 4, borderRadius: 12 }}>
                   {["table", "grid"].map((mode) => (
                     <button
                       key={mode}
@@ -914,16 +914,16 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                       style={{
                         padding: "7px 14px",
                         borderRadius: 9,
-                        background: viewMode === mode ? "white" : "transparent",
+                        background: viewMode === mode ? "var(--a-surface)" : "transparent",
                         border: "none",
                         cursor: "pointer",
-                        color: viewMode === mode ? "#1c1917" : "#9ca3af",
+                        color: viewMode === mode ? "var(--a-text)" : "var(--a-text-soft)",
                         display: "flex",
                         alignItems: "center",
                         gap: 6,
                         fontSize: 12,
                         fontWeight: 700,
-                        boxShadow: viewMode === mode ? "0 1px 4px rgba(0,0,0,.1)" : "none",
+                        boxShadow: viewMode === mode ? "var(--a-shadow-sm)" : "none",
                       }}
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
@@ -962,10 +962,10 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
 
         {activeTab === "articles" ? (
           <section style={{ ...cardStyle, overflow: "hidden" }}>
-            <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "end", gap: 16 }}>
+            <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--a-border)", display: "flex", justifyContent: "space-between", alignItems: "end", gap: 16 }}>
               <div>
-                <strong style={{ color: "#1c1917" }}>Danh sách bài viết</strong>
-                <p style={{ margin: "4px 0 0", color: "#78716c", fontSize: 13 }}>
+                <strong style={{ color: "var(--a-text)" }}>Danh sách bài viết</strong>
+                <p style={{ margin: "4px 0 0", color: "var(--a-text-muted)", fontSize: 13 }}>
                   Tổng cộng {filteredArticles.length} / {articles.length} bài viết. Trang {page}/{totalPages}.
                 </p>
               </div>
@@ -974,9 +974,9 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
-                    <tr style={{ background: "#faf8f3", borderBottom: "1px solid #f1f0ea" }}>
+                    <tr style={{ background: "var(--a-surface-raised)", borderBottom: "1px solid var(--a-border)" }}>
                       {["Bài viết", "Danh mục", "Trạng thái", "Hiển thị", "Ngày xuất bản", "Thao tác"].map((heading, idx) => (
-                        <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 5 ? "right" : "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>
+                        <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 5 ? "right" : "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)" }}>
                           {heading}
                         </th>
                       ))}
@@ -984,33 +984,33 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Đang tải dữ liệu...</td></tr>
+                      <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--a-text-soft)" }}>Đang tải dữ liệu...</td></tr>
                     ) : paginatedArticles.length === 0 ? (
-                      <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Chưa có bài viết phù hợp bộ lọc.</td></tr>
+                      <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--a-text-soft)" }}>Chưa có bài viết phù hợp bộ lọc.</td></tr>
                     ) : (
                       paginatedArticles.map((article) => (
-                        <tr key={article.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
+                        <tr key={article.id} style={{ borderBottom: "1px solid var(--a-divider)" }}>
                           <td style={{ padding: "16px 18px" }}>
-                            <div style={{ fontWeight: 700, color: "#1c1917" }}>{article.title}</div>
-                            <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>{article.slug}</div>
+                            <div style={{ fontWeight: 700, color: "var(--a-text)" }}>{article.title}</div>
+                            <div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>{article.slug}</div>
                           </td>
-                          <td style={{ padding: "16px 18px", color: "#57534e" }}>{article.category?.name || "-"}</td>
+                          <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>{article.category?.name || "-"}</td>
                           <td style={{ padding: "16px 18px" }}>
-                            <span style={{ padding: "5px 10px", borderRadius: 999, background: article.status === "Published" ? "#ecfdf5" : article.status === "Pending_Review" ? "#fff7ed" : "#f5f5f4", color: article.status === "Published" ? "#047857" : article.status === "Pending_Review" ? "#c2410c" : "#57534e", fontSize: 11, fontWeight: 700 }}>
+                            <span style={{ padding: "5px 10px", borderRadius: 999, background: article.status === "Published" ? "var(--a-success-bg)" : article.status === "Pending_Review" ? "var(--a-warning-bg)" : "var(--a-surface-raised)", color: article.status === "Published" ? "var(--a-success)" : article.status === "Pending_Review" ? "var(--a-warning)" : "var(--a-text-muted)", fontSize: 11, fontWeight: 700 }}>
                               {article.status}
                             </span>
                           </td>
                           <td style={{ padding: "16px 18px" }}>
                             <VisibilitySwitch checked={article.isActive !== false} onChange={() => handleToggleVisibility(article.id)} />
                           </td>
-                          <td style={{ padding: "16px 18px", color: "#57534e" }}>{formatDate(article.publishedAt)}</td>
+                          <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>{formatDate(article.publishedAt)}</td>
                           <td style={{ padding: "16px 18px", textAlign: "right" }}>
                             <div style={{ display: "inline-flex", gap: 8 }}>
                               {article.status !== "Published" ? (
-                                <button type="button" onClick={() => handlePublishArticle(article.id)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", cursor: "pointer", fontWeight: 600 }}>Publish</button>
+                                <button type="button" onClick={() => handlePublishArticle(article.id)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid var(--a-success-border)", background: "var(--a-success-bg)", color: "var(--a-success)", cursor: "pointer", fontWeight: 600 }}>Publish</button>
                               ) : null}
-                              <button type="button" onClick={() => viewArticle(article)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #dbe7df", background: "#f8fcf9", color: "#2f5d4d", cursor: "pointer" }}>Xem</button>
-                              <button type="button" onClick={() => openEdit(article)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer" }}>Sửa</button>
+                              <button type="button" onClick={() => viewArticle(article)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid var(--a-brand-border)", background: "var(--a-brand-bg)", color: "var(--a-brand-ink)", cursor: "pointer" }}>Xem</button>
+                              <button type="button" onClick={() => openEdit(article)} style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", cursor: "pointer" }}>Sửa</button>
                             </div>
                           </td>
                         </tr>
@@ -1028,17 +1028,17 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
                     {paginatedArticles.map((article) => (
-                      <article key={article.id} style={{ background: "#fffdfa", border: "1px solid #f1f0ea", borderRadius: 18, overflow: "hidden", boxShadow: "0 4px 14px rgba(0,0,0,.04)" }}>
-                        <div style={{ position: "relative", height: 180, background: "linear-gradient(135deg, #ece7df, #f8f5ef)" }}>
+                    <article key={article.id} style={{ background: "var(--a-surface)", border: "1px solid var(--a-border)", borderRadius: 18, overflow: "hidden", boxShadow: "var(--a-shadow-sm)" }}>
+                        <div style={{ position: "relative", height: 180, background: "linear-gradient(135deg, color-mix(in srgb, var(--a-surface-raised) 88%, transparent), color-mix(in srgb, var(--a-surface) 92%, transparent))" }}>
                           {article.thumbnailUrl ? (
                             <img src={article.thumbnailUrl} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                           ) : (
-                            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#a8a29e" }}>
+                            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--a-text-soft)" }}>
                               <span className="material-symbols-outlined" style={{ fontSize: 44 }}>article</span>
                             </div>
                           )}
                           <div style={{ position: "absolute", top: 12, left: 12 }}>
-                            <span style={{ padding: "6px 10px", borderRadius: 999, background: article.status === "Published" ? "rgba(236,253,245,.95)" : article.status === "Pending_Review" ? "rgba(255,247,237,.95)" : "rgba(245,245,244,.95)", color: article.status === "Published" ? "#047857" : article.status === "Pending_Review" ? "#c2410c" : "#57534e", fontSize: 11, fontWeight: 700 }}>
+                            <span style={{ padding: "6px 10px", borderRadius: 999, background: article.status === "Published" ? "var(--a-success-bg)" : article.status === "Pending_Review" ? "var(--a-warning-bg)" : "var(--a-surface-raised)", color: article.status === "Published" ? "var(--a-success)" : article.status === "Pending_Review" ? "var(--a-warning)" : "var(--a-text-muted)", fontSize: 11, fontWeight: 700 }}>
                               {article.status}
                             </span>
                           </div>
@@ -1046,25 +1046,25 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
 
                         <div style={{ padding: 16, display: "grid", gap: 12 }}>
                           <div>
-                            <div style={{ fontSize: 17, fontWeight: 700, color: "#1c1917", lineHeight: 1.4 }}>{article.title}</div>
-                            <div style={{ marginTop: 6, fontSize: 12, color: "#78716c" }}>{article.slug}</div>
+                            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--a-text)", lineHeight: 1.4 }}>{article.title}</div>
+                            <div style={{ marginTop: 6, fontSize: 12, color: "var(--a-text-muted)" }}>{article.slug}</div>
                           </div>
 
-                          <div style={{ display: "grid", gap: 8, fontSize: 13, color: "#57534e" }}>
-                            <div><strong style={{ color: "#1c1917" }}>Danh mục:</strong> {article.category?.name || "-"}</div>
-                            <div><strong style={{ color: "#1c1917" }}>Ngày xuất bản:</strong> {formatDate(article.publishedAt)}</div>
+                          <div style={{ display: "grid", gap: 8, fontSize: 13, color: "var(--a-text-muted)" }}>
+                            <div><strong style={{ color: "var(--a-text)" }}>Danh mục:</strong> {article.category?.name || "-"}</div>
+                            <div><strong style={{ color: "var(--a-text)" }}>Ngày xuất bản:</strong> {formatDate(article.publishedAt)}</div>
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                              <span style={{ color: "#1c1917", fontWeight: 600 }}>Hiển thị</span>
+                              <span style={{ color: "var(--a-text)", fontWeight: 600 }}>Hiển thị</span>
                               <VisibilitySwitch checked={article.isActive !== false} onChange={() => handleToggleVisibility(article.id)} />
                             </div>
                           </div>
 
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {article.status !== "Published" ? (
-                              <button type="button" onClick={() => handlePublishArticle(article.id)} style={{ padding: "10px 4px", borderRadius: 10, border: "1px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", cursor: "pointer", fontWeight: 600, fontSize: 13, width: "100%" }}>Publish</button>
+                              <button type="button" onClick={() => handlePublishArticle(article.id)} style={{ padding: "10px 4px", borderRadius: 10, border: "1px solid var(--a-success-border)", background: "var(--a-success-bg)", color: "var(--a-success)", cursor: "pointer", fontWeight: 600, fontSize: 13, width: "100%" }}>Publish</button>
                             ) : null}
-                            <button type="button" onClick={() => viewArticle(article)} style={{ padding: "10px 4px", borderRadius: 10, border: "1px solid #dbe7df", background: "#f8fcf9", color: "#2f5d4d", cursor: "pointer", fontWeight: 600, fontSize: 13, width: "100%", gridColumn: article.status === "Published" ? "span 1" : "auto" }}>Xem</button>
-                            <button type="button" onClick={() => openEdit(article)} style={{ padding: "10px 4px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer", fontWeight: 600, fontSize: 13, width: "100%" }}>Sửa</button>
+                            <button type="button" onClick={() => viewArticle(article)} style={{ padding: "10px 4px", borderRadius: 10, border: "1px solid var(--a-brand-border)", background: "var(--a-brand-bg)", color: "var(--a-brand-ink)", cursor: "pointer", fontWeight: 600, fontSize: 13, width: "100%", gridColumn: article.status === "Published" ? "span 1" : "auto" }}>Xem</button>
+                            <button type="button" onClick={() => openEdit(article)} style={{ padding: "10px 4px", borderRadius: 10, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", cursor: "pointer", fontWeight: 600, fontSize: 13, width: "100%" }}>Sửa</button>
                           </div>
                         </div>
                       </article>
@@ -1074,8 +1074,8 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
               </div>
             )}
             {!loading && filteredArticles.length > 0 ? (
-              <div style={{ marginTop: 14, padding: "18px 20px 20px", borderTop: "1px solid #f3efe7", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 500 }}>
+              <div style={{ marginTop: 14, padding: "18px 20px 20px", borderTop: "1px solid var(--a-border)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 12, color: "var(--a-text-soft)", fontWeight: 500 }}>
                   {(page - 1) * ARTICLES_PER_PAGE + 1}–{Math.min(page * ARTICLES_PER_PAGE, filteredArticles.length)} / {filteredArticles.length} bài viết
                 </span>
                 {filteredArticles.length > ARTICLES_PER_PAGE ? (
@@ -1088,9 +1088,9 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                         width: 36,
                         height: 36,
                         borderRadius: 10,
-                        border: "1px solid #e7e5e4",
-                        background: page <= 1 ? "#f5f5f4" : "white",
-                        color: page <= 1 ? "#c4bfb7" : "#57534e",
+                        border: "1px solid var(--a-border)",
+                        background: page <= 1 ? "var(--a-surface-raised)" : "var(--a-surface)",
+                        color: page <= 1 ? "var(--a-text-soft)" : "var(--a-text-muted)",
                         cursor: page <= 1 ? "not-allowed" : "pointer",
                         display: "flex",
                         alignItems: "center",
@@ -1109,9 +1109,9 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                           height: 36,
                           padding: "0 10px",
                           borderRadius: 10,
-                          border: pageNumber === page ? "1px solid #4f645b" : "1px solid #e7e5e4",
-                          background: pageNumber === page ? "#4f645b" : "white",
-                          color: pageNumber === page ? "#ecfdf5" : "#57534e",
+                          border: pageNumber === page ? "1px solid var(--a-primary)" : "1px solid var(--a-border)",
+                          background: pageNumber === page ? "var(--a-primary)" : "var(--a-surface)",
+                          color: pageNumber === page ? "var(--a-text-inverse)" : "var(--a-text-muted)",
                           cursor: "pointer",
                           fontWeight: 700,
                         }}
@@ -1127,9 +1127,9 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                         width: 36,
                         height: 36,
                         borderRadius: 10,
-                        border: "1px solid #e7e5e4",
-                        background: page >= totalPages ? "#f5f5f4" : "white",
-                        color: page >= totalPages ? "#c4bfb7" : "#57534e",
+                        border: "1px solid var(--a-border)",
+                        background: page >= totalPages ? "var(--a-surface-raised)" : "var(--a-surface)",
+                        color: page >= totalPages ? "var(--a-text-soft)" : "var(--a-text-muted)",
                         cursor: page >= totalPages ? "not-allowed" : "pointer",
                         display: "flex",
                         alignItems: "center",
@@ -1147,25 +1147,25 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
           <section style={{ ...cardStyle, padding: 20, display: "grid", gap: 20 }}>
             <div style={{ display: "grid", gap: 12 }}>
               {filteredCategories.length === 0 ? (
-                <div style={{ padding: 28, textAlign: "center", color: "#9ca3af", border: "1px dashed #e7e5e4", borderRadius: 16 }}>
+                <div style={{ padding: 28, textAlign: "center", color: "var(--a-text-soft)", border: "1px dashed var(--a-border-strong)", borderRadius: 16 }}>
                   Chưa có danh mục nào.
                 </div>
               ) : isMobile ? (
                 <div style={{ display: "grid", gap: 12 }}>
                   {filteredCategories.map((category) => (
-                    <article key={category.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12 }}>
+                    <article key={category.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "var(--a-surface)" }}>
                       {editingCategoryId === category.id ? (
                         <input value={editingCategoryName} onChange={(e) => setEditingCategoryName(e.target.value)} style={{ ...inputStyle, padding: "9px 12px", fontSize: 13 }} />
                       ) : (
                         <div>
-                          <div style={{ fontWeight: 900, color: "#1c1917", fontSize: 16 }}>{category.name}</div>
-                          <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>{category.slug || "-"}</div>
+                          <div style={{ fontWeight: 900, color: "var(--a-text)", fontSize: 16 }}>{category.name}</div>
+                          <div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>{category.slug || "-"}</div>
                         </div>
                       )}
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 12, color: "#57534e", fontWeight: 800 }}>{category.articleCount || 0} bài viết</span>
+                        <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 800 }}>{category.articleCount || 0} bài viết</span>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ padding: "6px 10px", borderRadius: 999, background: category.isActive !== false ? "#ecfdf5" : "#f5f5f4", color: category.isActive !== false ? "#047857" : "#57534e", fontSize: 11, fontWeight: 800 }}>
+                          <span style={{ padding: "6px 10px", borderRadius: 999, background: category.isActive !== false ? "var(--a-success-bg)" : "var(--a-surface-raised)", color: category.isActive !== false ? "var(--a-success)" : "var(--a-text-muted)", fontSize: 11, fontWeight: 800 }}>
                             {category.isActive !== false ? "Đang bật" : "Đang ẩn"}
                           </span>
                           <VisibilitySwitch checked={category.isActive !== false} onChange={() => handleToggleCategory(category.id)} />
@@ -1173,22 +1173,22 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                       </div>
                       {editingCategoryId === category.id ? (
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                          <button type="button" onClick={cancelEditCategory} style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", fontWeight: 800 }}>Hủy</button>
-                          <button type="button" onClick={() => saveCategoryEdit(category.id)} style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid #dbe7df", background: "#f8fcf9", color: "#2f5d4d", fontWeight: 800 }}>Lưu</button>
+                          <button type="button" onClick={cancelEditCategory} style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", fontWeight: 800 }}>Hủy</button>
+                          <button type="button" onClick={() => saveCategoryEdit(category.id)} style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid var(--a-brand-border)", background: "var(--a-brand-bg)", color: "var(--a-brand-ink)", fontWeight: 800 }}>Lưu</button>
                         </div>
                       ) : (
-                        <button type="button" onClick={() => startEditCategory(category)} style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", fontWeight: 800 }}>Sửa</button>
+                        <button type="button" onClick={() => startEditCategory(category)} style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", fontWeight: 800 }}>Sửa</button>
                       )}
                     </article>
                   ))}
                 </div>
               ) : (
-                <div style={{ overflowX: "auto", border: "1px solid #f1f0ea", borderRadius: 16 }}>
+                <div style={{ overflowX: "auto", border: "1px solid var(--a-border)", borderRadius: 16 }}>
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
-                      <tr style={{ background: "#faf8f3", borderBottom: "1px solid #f1f0ea" }}>
+                      <tr style={{ background: "var(--a-surface-raised)", borderBottom: "1px solid var(--a-border)" }}>
                         {["Danh mục", "Số bài viết", "Trạng thái", "Thao tác"].map((heading, idx) => (
-                          <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 3 ? "right" : "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>
+                          <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 3 ? "right" : "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)" }}>
                             {heading}
                           </th>
                         ))}
@@ -1196,7 +1196,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                     </thead>
                     <tbody>
                       {filteredCategories.map((category) => (
-                        <tr key={category.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
+                        <tr key={category.id} style={{ borderBottom: "1px solid var(--a-divider)" }}>
                           <td style={{ padding: "16px 18px" }}>
                             {editingCategoryId === category.id ? (
                               <input
@@ -1206,15 +1206,15 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                               />
                             ) : (
                               <>
-                                <div style={{ fontWeight: 700, color: "#1c1917" }}>{category.name}</div>
-                                <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>{category.slug || "-"}</div>
+                                <div style={{ fontWeight: 700, color: "var(--a-text)" }}>{category.name}</div>
+                                <div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>{category.slug || "-"}</div>
                               </>
                             )}
                           </td>
-                          <td style={{ padding: "16px 18px", color: "#57534e", fontWeight: 600 }}>{category.articleCount || 0}</td>
+                          <td style={{ padding: "16px 18px", color: "var(--a-text-muted)", fontWeight: 600 }}>{category.articleCount || 0}</td>
                           <td style={{ padding: "16px 18px" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <span style={{ padding: "6px 10px", borderRadius: 999, background: category.isActive !== false ? "#ecfdf5" : "#f5f5f4", color: category.isActive !== false ? "#047857" : "#57534e", fontSize: 11, fontWeight: 700 }}>
+                              <span style={{ padding: "6px 10px", borderRadius: 999, background: category.isActive !== false ? "var(--a-success-bg)" : "var(--a-surface-raised)", color: category.isActive !== false ? "var(--a-success)" : "var(--a-text-muted)", fontSize: 11, fontWeight: 700 }}>
                                 {category.isActive !== false ? "Đang bật" : "Đang ẩn"}
                               </span>
                               <VisibilitySwitch checked={category.isActive !== false} onChange={() => handleToggleCategory(category.id)} />
@@ -1224,11 +1224,11 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                             <div style={{ display: "inline-flex", gap: 8 }}>
                               {editingCategoryId === category.id ? (
                                 <>
-                                  <button type="button" onClick={cancelEditCategory} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer", fontWeight: 600 }}>Hủy</button>
-                                  <button type="button" onClick={() => saveCategoryEdit(category.id)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #dbe7df", background: "#f8fcf9", color: "#2f5d4d", cursor: "pointer", fontWeight: 600 }}>Lưu</button>
+                                  <button type="button" onClick={cancelEditCategory} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", cursor: "pointer", fontWeight: 600 }}>Hủy</button>
+                                  <button type="button" onClick={() => saveCategoryEdit(category.id)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid var(--a-brand-border)", background: "var(--a-brand-bg)", color: "var(--a-brand-ink)", cursor: "pointer", fontWeight: 600 }}>Lưu</button>
                                 </>
                               ) : (
-                                <button type="button" onClick={() => startEditCategory(category)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", cursor: "pointer", fontWeight: 600 }}>Sửa</button>
+                                <button type="button" onClick={() => startEditCategory(category)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", cursor: "pointer", fontWeight: 600 }}>Sửa</button>
                               )}
                             </div>
                           </td>
@@ -1295,8 +1295,8 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
               </div>
 
               <div style={{ display: "grid", gap: 16, alignContent: "start" }}>
-                <div className="sub-card-p" style={{ padding: 16, borderRadius: 18, border: "1px solid #f1f0ea" }}>
-                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c", fontWeight: 700 }}>
+                <div className="sub-card-p" style={{ padding: 16, borderRadius: 18, border: "1px solid var(--a-border)", background: "var(--a-surface)" }}>
+                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)", fontWeight: 700 }}>
                     Tóm tắt nhanh
                   </div>
                   <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
@@ -1305,45 +1305,45 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                     <div><strong>Trạng thái hiện tại:</strong> {editingArticle?.status || "Draft"}</div>
                   </div>
                 </div>
-                <div className="sub-card-p" style={{ padding: 16, borderRadius: 18, border: "1px solid #f1f0ea" }}>
-                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c", fontWeight: 700 }}>
+                <div className="sub-card-p" style={{ padding: 16, borderRadius: 18, border: "1px solid var(--a-border)", background: "var(--a-surface)" }}>
+                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)", fontWeight: 700 }}>
                     Địa điểm sẽ hiển thị bên phải
                   </div>
                   <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
                     {selectedAttraction ? (
-                      <div className="sub-card-p" style={{ padding: 12, borderRadius: 14, background: "#f9f8f3", border: "1px solid #ece7dc", display: "grid", gap: 6 }}>
-                        <div style={{ fontWeight: 700, color: "#1c1917" }}>{selectedAttraction.name}</div>
+                      <div className="sub-card-p" style={{ padding: 12, borderRadius: 14, background: "var(--a-surface-raised)", border: "1px solid var(--a-border)", display: "grid", gap: 6 }}>
+                        <div style={{ fontWeight: 700, color: "var(--a-text)" }}>{selectedAttraction.name}</div>
                         {selectedAttraction.category ? (
-                          <div style={{ fontSize: 13, color: "#57534e" }}>Loại: {selectedAttraction.category}</div>
+                          <div style={{ fontSize: 13, color: "var(--a-text-muted)" }}>Loại: {selectedAttraction.category}</div>
                         ) : null}
                         {selectedAttraction.address ? (
-                          <div style={{ fontSize: 13, color: "#6b7280" }}>{selectedAttraction.address}</div>
+                          <div style={{ fontSize: 13, color: "var(--a-text-muted)" }}>{selectedAttraction.address}</div>
                         ) : null}
-                        <div style={{ fontSize: 13, color: "#2f5d4d" }}>
+                        <div style={{ fontSize: 13, color: "var(--a-brand-ink)" }}>
                           Khi xem bài, card địa điểm và sitemap sẽ hiện ở cột bên phải.
                         </div>
                       </div>
                     ) : (
-                      <div style={{ fontSize: 13, color: "#78716c", lineHeight: 1.6 }}>
+                      <div style={{ fontSize: 13, color: "var(--a-text-muted)", lineHeight: 1.6 }}>
                         Nếu chọn địa điểm, trang xem bài sẽ tự hiện card thông tin địa điểm và sitemap ở cột bên phải.
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="sub-card-p" style={{ padding: 16, borderRadius: 18, border: "1px solid #f1f0ea" }}>
-                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c", fontWeight: 700 }}>
+                <div className="sub-card-p" style={{ padding: 16, borderRadius: 18, border: "1px solid var(--a-border)", background: "var(--a-surface)" }}>
+                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)", fontWeight: 700 }}>
                     Ảnh bìa
                   </div>
                   {thumbnailPreviewUrl ? (
-                    <div style={{ marginTop: 12, borderRadius: 14, overflow: "hidden", border: "1px solid #ece7dc", background: "#f9f8f3" }}>
+                    <div style={{ marginTop: 12, borderRadius: 14, overflow: "hidden", border: "1px solid var(--a-border)", background: "var(--a-surface-raised)" }}>
                       <img src={thumbnailPreviewUrl} alt="Thumbnail preview" style={{ width: "100%", height: 180, objectFit: "cover", display: "block" }} />
                     </div>
                   ) : (
-                    <div style={{ marginTop: 12, borderRadius: 14, border: "1px dashed #d6d3d1", background: "#fcfbf7", minHeight: 180, display: "flex", alignItems: "center", justifyContent: "center", color: "#a8a29e" }}>
+                    <div style={{ marginTop: 12, borderRadius: 14, border: "1px dashed var(--a-border-strong)", background: "var(--a-surface-raised)", minHeight: 180, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--a-text-soft)" }}>
                       <span className="material-symbols-outlined" style={{ fontSize: 42 }}>image</span>
                     </div>
                   )}
-                  <button type="button" onClick={() => thumbnailInputRef.current?.click()} style={{ marginTop: 12, padding: "10px 14px", borderRadius: 12, border: "1px solid #e7e5e4", background: "white", cursor: "pointer", fontWeight: 600 }}>
+                  <button type="button" onClick={() => thumbnailInputRef.current?.click()} style={{ marginTop: 12, padding: "10px 14px", borderRadius: 12, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", cursor: "pointer", fontWeight: 600 }}>
                     {thumbnailPreviewUrl ? "Đổi ảnh bìa" : "Chọn ảnh bìa"}
                   </button>
                   <input ref={thumbnailInputRef} type="file" accept="image/*" onChange={handleThumbnailUpload} style={{ display: "none" }} />
@@ -1352,12 +1352,12 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                 {/* AI Gợi ý bài viết — 1 nút, tự động điền */}
                 <div className="sub-card-p" style={{ ...cardStyle, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: "#4f645b" }}>auto_awesome</span>
-                    <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c", fontWeight: 700 }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: "var(--a-primary)" }}>auto_awesome</span>
+                    <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)", fontWeight: 700 }}>
                       AI Viết bài tự động
                     </div>
                   </div>
-                  <p style={{ margin: "0 0 12px", fontSize: 12, color: "#78716c", lineHeight: 1.6 }}>
+                  <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--a-text-muted)", lineHeight: 1.6 }}>
                     Nhập tiêu đề rồi nhấn nút — AI sẽ tự viết <strong>Mô tả SEO</strong> và <strong>Nội dung</strong> và điền thẳng vào form.
                   </p>
                   <button
@@ -1369,8 +1369,8 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                       padding: "11px 14px",
                       borderRadius: 12,
                       border: "none",
-                      background: aiLoading ? "#a3b3ae" : "linear-gradient(135deg, #4f645b, #2f5d4d)",
-                      color: "white",
+                      background: aiLoading ? "var(--a-surface-bright)" : "var(--a-emphasis-bg)",
+                      color: "var(--a-emphasis-text)",
                       fontWeight: 700,
                       cursor: aiLoading ? "not-allowed" : "pointer",
                       display: "flex",
@@ -1378,7 +1378,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                       justifyContent: "center",
                       gap: 8,
                       fontSize: 13,
-                      boxShadow: aiLoading ? "none" : "0 4px 12px rgba(79,100,91,.25)",
+                      boxShadow: aiLoading ? "none" : "var(--a-shadow-sm)",
                       transition: "all .2s ease",
                     }}
                   >
@@ -1398,15 +1398,15 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                         padding: "10px 12px",
                         borderRadius: 10,
                         background:
-                          aiFeedback.type === "success" ? "#f0fdf4" :
-                            aiFeedback.type === "warn" ? "#fffbeb" : "#fff7f7",
+                          aiFeedback.type === "success" ? "var(--a-success-bg)" :
+                            aiFeedback.type === "warn" ? "var(--a-warning-bg)" : "var(--a-error-bg)",
                         border:
-                          aiFeedback.type === "success" ? "1px solid #bbf7d0" :
-                            aiFeedback.type === "warn" ? "1px solid #fde68a" : "1px solid #fecaca",
+                          aiFeedback.type === "success" ? "1px solid var(--a-success-border)" :
+                            aiFeedback.type === "warn" ? "1px solid var(--a-warning-border)" : "1px solid var(--a-error-border)",
                         fontSize: 12,
                         color:
-                          aiFeedback.type === "success" ? "#15803d" :
-                            aiFeedback.type === "warn" ? "#92400e" : "#b91c1c",
+                          aiFeedback.type === "success" ? "var(--a-success)" :
+                            aiFeedback.type === "warn" ? "var(--a-warning)" : "var(--a-error)",
                         fontWeight: 600,
                         lineHeight: 1.6,
                       }}
@@ -1419,7 +1419,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                     <button
                       type="button"
                       onClick={() => setAiFeedback(null)}
-                      style={{ marginTop: 8, padding: "6px 12px", borderRadius: 9, border: "1px solid #e7e5e4", background: "white", color: "#78716c", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                      style={{ marginTop: 8, padding: "6px 12px", borderRadius: 9, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
                     >
                       Đóng thông báo
                     </button>
@@ -1431,10 +1431,10 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
             </div>
 
             <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end", gap: 12 }}>
-              <button type="button" onClick={() => setModalOpen(false)} style={{ padding: "10px 16px", borderRadius: 12, border: "1px solid #e7e5e4", background: "white", color: "#57534e", fontWeight: 600, cursor: "pointer" }}>
+              <button type="button" onClick={() => setModalOpen(false)} style={{ padding: "10px 16px", borderRadius: 12, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", fontWeight: 600, cursor: "pointer" }}>
                 Đóng
               </button>
-              <button type="submit" disabled={saving} style={{ padding: "10px 18px", borderRadius: 12, border: "none", background: "#4f645b", color: "#ecfdf5", fontWeight: 700, cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
+              <button type="submit" disabled={saving} style={{ padding: "10px 18px", borderRadius: 12, border: "none", background: "var(--a-emphasis-bg)", color: "var(--a-emphasis-text)", fontWeight: 700, cursor: "pointer", opacity: saving ? 0.7 : 1 }}>
                 {saving ? "Đang lưu..." : "Lưu bài viết"}
               </button>
             </div>
@@ -1455,10 +1455,10 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
               />
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-              <button type="button" onClick={() => setCategoryModalOpen(false)} style={{ padding: "10px 16px", borderRadius: 12, border: "1px solid #e7e5e4", background: "white", color: "#57534e", fontWeight: 600, cursor: "pointer" }}>
+              <button type="button" onClick={() => setCategoryModalOpen(false)} style={{ padding: "10px 16px", borderRadius: 12, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", fontWeight: 600, cursor: "pointer" }}>
                 Đóng
               </button>
-              <button type="button" onClick={submitCategory} style={{ padding: "10px 18px", borderRadius: 12, border: "none", background: "#4f645b", color: "#ecfdf5", fontWeight: 700, cursor: "pointer" }}>
+              <button type="button" onClick={submitCategory} style={{ padding: "10px 18px", borderRadius: 12, border: "none", background: "var(--a-emphasis-bg)", color: "var(--a-emphasis-text)", fontWeight: 700, cursor: "pointer" }}>
                 Lưu danh mục
               </button>
             </div>

@@ -325,10 +325,10 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel, loading }) {
               flex: 1,
               padding: "12px 0",
               borderRadius: 12,
-              border: "1px solid #e2e8f0",
-              background: "white",
+              border: "1px solid var(--a-border)",
+              background: "var(--a-surface-raised)",
               fontWeight: 700,
-              color: "#64748b",
+              color: "var(--a-text-muted)",
               cursor: "pointer",
             }}
           >
@@ -342,9 +342,9 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel, loading }) {
               padding: "12px 0",
               borderRadius: 12,
               border: "none",
-              background: "#ef4444",
+              background: "var(--a-error)",
               fontWeight: 700,
-              color: "white",
+              color: "#fff",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -358,7 +358,7 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel, loading }) {
                   width: 14,
                   height: 14,
                   border: "2px solid rgba(255,255,255,0.3)",
-                  borderTopColor: "white",
+                  borderTopColor: "#fff",
                   borderRadius: "50%",
                   animation: "spin 0.6s linear infinite",
                 }}
@@ -533,7 +533,7 @@ function DetailModal({ open, item, onClose }) {
                 style={{
                   fontSize: 12,
                   fontWeight: 700,
-                  color: "#94a3b8",
+                  color: "var(--a-text-soft)",
                   textTransform: "uppercase",
                   marginBottom: 16,
                 }}
@@ -819,7 +819,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
         <div
           style={{
             padding: "24px 32px",
-            borderBottom: "1px solid #f1f5f9",
+            borderBottom: "1px solid var(--a-border)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -829,7 +829,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
             style={{
               fontSize: 18,
               fontWeight: 800,
-              color: "#0f172a",
+              color: "var(--a-text)",
               margin: 0,
             }}
           >
@@ -841,7 +841,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
               border: "none",
               background: "none",
               cursor: "pointer",
-              color: "#64748b",
+              color: "var(--a-text-muted)",
             }}
           >
             <span className="material-symbols-outlined">close</span>
@@ -854,7 +854,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: "#64748b",
+                  color: "var(--a-text-muted)",
                   textTransform: "uppercase",
                 }}
               >
@@ -868,7 +868,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
                 }
                 style={{
                   ...inputStyle,
-                  background: "white",
+                  background: "var(--a-surface)",
                   padding: "10px 14px",
                 }}
               />
@@ -878,7 +878,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: "#64748b",
+                  color: "var(--a-text-muted)",
                   textTransform: "uppercase",
                 }}
               >
@@ -892,7 +892,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
                 }
                 style={{
                   ...inputStyle,
-                  background: "white",
+                  background: "var(--a-surface)",
                   padding: "10px 14px",
                 }}
               />
@@ -910,7 +910,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: "#64748b",
+                color: "var(--a-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -923,7 +923,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
               }
               style={{
                 ...inputStyle,
-                background: "white",
+                background: "var(--a-surface)",
                 padding: "10px 14px",
                 cursor: "pointer",
               }}
@@ -935,7 +935,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
               </option>
             </select>
             {item?.isPenaltySettled ? (
-              <div style={{ fontSize: 12, color: "#b45309", marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: "var(--a-warning)", marginTop: 6 }}>
                 Biên bản đã thanh toán nên không thể chuyển sang miễn trừ.
               </div>
             ) : null}
@@ -952,7 +952,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: "#64748b",
+                color: "var(--a-text-muted)",
                 textTransform: "uppercase",
               }}
             >
@@ -966,7 +966,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
               }
               style={{
                 ...inputStyle,
-                background: "white",
+                background: "var(--a-surface)",
                 padding: "10px 14px",
                 resize: "none",
               }}
@@ -977,7 +977,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: "#64748b",
+                color: "var(--a-text-muted)",
                 textTransform: "uppercase",
                 marginBottom: 8,
                 display: "block",
@@ -995,7 +995,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
                     height: 70,
                     borderRadius: 12,
                     overflow: "hidden",
-                    border: "1px solid #f1f5f9",
+                    border: "1px solid var(--a-border)",
                   }}
                 >
                   <img
@@ -1039,7 +1039,7 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
                     height: 70,
                     borderRadius: 12,
                     overflow: "hidden",
-                    border: "2px solid #3b82f6",
+                    border: "2px solid var(--a-info)",
                   }}
                 >
                   <img
@@ -1079,10 +1079,10 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
                   width: 70,
                   height: 70,
                   borderRadius: 12,
-                  border: "2px dashed #e2e8f0",
-                  background: "#f8fafc",
+                  border: "2px dashed var(--a-border)",
+                  background: "var(--a-surface-soft)",
                   cursor: "pointer",
-                  color: "#94a3b8",
+                  color: "var(--a-text-soft)",
                 }}
               >
                 <span className="material-symbols-outlined">add_a_photo</span>
@@ -1100,8 +1100,8 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
         <div
           style={{
             padding: "24px 32px",
-            background: "#f8fafc",
-            borderTop: "1px solid #f1f5f9",
+            background: "var(--a-surface-soft)",
+            borderTop: "1px solid var(--a-border)",
             display: "flex",
             justifyContent: "flex-end",
             gap: 12,
@@ -1112,11 +1112,11 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
             style={{
               padding: "10px 24px",
               borderRadius: 12,
-              border: "1px solid #e2e8f0",
-              background: "white",
+              border: "1px solid var(--a-border)",
+              background: "var(--a-surface)",
               fontSize: 14,
               fontWeight: 700,
-              color: "#64748b",
+              color: "var(--a-text-muted)",
               cursor: "pointer",
             }}
           >
@@ -1129,10 +1129,10 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
               padding: "10px 28px",
               borderRadius: 12,
               border: "none",
-              background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+            background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
               fontSize: 14,
               fontWeight: 700,
-              color: "#e7fef3",
+              color: "#111411",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -1216,23 +1216,23 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
         <div
           style={{
             padding: "24px 32px",
-            borderBottom: "1px solid #f1f5f9",
+            borderBottom: "1px solid var(--a-border)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
           <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-text-muted)" }}>
               Bổ sung vật tư #{item.id}
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: "4px 0 0" }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--a-text)", margin: "4px 0 0" }}>
               {item.itemName} · Phòng {item.roomNumber}
             </h3>
           </div>
           <button
             onClick={onClose}
-            style={{ border: "none", background: "none", cursor: "pointer", color: "#64748b" }}
+            style={{ border: "none", background: "none", cursor: "pointer", color: "var(--a-text-muted)" }}
           >
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -1240,22 +1240,22 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
 
         <div style={{ padding: 32, display: "flex", flexDirection: "column", gap: 16 }}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 4 }}>THIẾU CẦN BÙ</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#0f172a" }}>{item.remainingToReplenish}</div>
+            <div style={{ background: "var(--a-surface-soft)", border: "1px solid var(--a-border)", borderRadius: 16, padding: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 4 }}>THIẾU CẦN BÙ</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--a-text)" }}>{item.remainingToReplenish}</div>
             </div>
-            <div style={{ background: "#ecfdf5", borderRadius: 16, padding: 16 }}>
+            <div style={{ background: "var(--a-success-bg)", border: "1px solid var(--a-success-border)", borderRadius: 16, padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#15803d", marginBottom: 4 }}>TỒN KHẢ DỤNG</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#166534" }}>{item.availableStock ?? 0}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--a-success)" }}>{item.availableStock ?? 0}</div>
             </div>
-            <div style={{ background: "#eff6ff", borderRadius: 16, padding: 16 }}>
+            <div style={{ background: "var(--a-info-bg)", border: "1px solid var(--a-info-border)", borderRadius: 16, padding: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", marginBottom: 4 }}>ĐÃ BỔ SUNG</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#1d4ed8" }}>{item.replenishedQuantity || 0}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--a-info)" }}>{item.replenishedQuantity || 0}</div>
             </div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--a-text-muted)", textTransform: "uppercase" }}>
               Số lượng bổ sung lần này
             </label>
             <input
@@ -1269,7 +1269,7 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--a-text-muted)", textTransform: "uppercase" }}>
               Ghi chú bổ sung
             </label>
             <textarea
@@ -1282,7 +1282,7 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
           </div>
 
           {!canSubmit ? (
-            <div style={{ background: "#fff7ed", color: "#c2410c", borderRadius: 14, padding: "12px 14px", fontSize: 13, fontWeight: 600 }}>
+            <div style={{ background: "var(--a-warning-bg)", color: "var(--a-warning)", border: "1px solid var(--a-warning-border)", borderRadius: 14, padding: "12px 14px", fontSize: 13, fontWeight: 600 }}>
               {item.status !== "Confirmed"
                 ? "Chỉ bổ sung được khi biên bản đã ở trạng thái Đã xác nhận."
                 : item.equipmentIsActive === false
@@ -1295,7 +1295,7 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
         <div
           style={{
             padding: "20px 32px",
-            borderTop: "1px solid #f1f5f9",
+            borderTop: "1px solid var(--a-border)",
             display: "flex",
             justifyContent: "flex-end",
             gap: 12,
@@ -1306,10 +1306,10 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
             style={{
               padding: "10px 18px",
               borderRadius: 12,
-              border: "1px solid #e2e8f0",
-              background: "white",
+              border: "1px solid var(--a-border)",
+              background: "var(--a-surface)",
               fontWeight: 700,
-              color: "#64748b",
+              color: "var(--a-text-muted)",
               cursor: "pointer",
             }}
           >
@@ -1322,8 +1322,8 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
               padding: "10px 18px",
               borderRadius: 12,
               border: "none",
-              background: saving || !canSubmit ? "#cbd5e1" : "#166534",
-              color: "white",
+              background: saving || !canSubmit ? "var(--a-surface-bright)" : "var(--a-primary)",
+              color: "#fff",
               fontWeight: 800,
               cursor: saving || !canSubmit ? "not-allowed" : "pointer",
             }}
@@ -1436,7 +1436,7 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
         <div
           style={{
             padding: "24px 32px",
-            borderBottom: "1px solid #f1f5f9",
+            borderBottom: "1px solid var(--a-border)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -1444,13 +1444,13 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
           }}
         >
           <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-text-muted)" }}>
               Bổ sung hàng loạt
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: "4px 0 0" }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--a-text)", margin: "4px 0 0" }}>
               Phòng {seedItem.roomNumber || "—"} · cùng lượt lưu trú
             </h3>
-            <p style={{ margin: "8px 0 0", color: "#64748b", fontSize: 13 }}>
+            <p style={{ margin: "8px 0 0", color: "var(--a-text-muted)", fontSize: 13 }}>
               Chọn các vật tư đã đền bù cần bổ sung lại vào phòng trong một lượt.
             </p>
           </div>
@@ -1460,8 +1460,8 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
               width: 36,
               height: 36,
               borderRadius: 12,
-              border: "1px solid #e2e8f0",
-              background: "white",
+              border: "1px solid var(--a-border)",
+              background: "var(--a-surface)",
               cursor: "pointer",
             }}
           >
@@ -1471,7 +1471,7 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
 
         <div style={{ padding: 24, display: "grid", gap: 16 }}>
           {candidates.length === 0 ? (
-            <div style={{ background: "#f8fafc", borderRadius: 16, padding: 20, color: "#64748b", fontWeight: 600 }}>
+            <div style={{ background: "var(--a-surface-soft)", border: "1px solid var(--a-border)", borderRadius: 16, padding: 20, color: "var(--a-text-muted)", fontWeight: 600 }}>
               Không còn vật tư nào trong cùng booking cần bổ sung.
             </div>
           ) : (
@@ -1495,8 +1495,8 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
                     style={{
                       padding: 16,
                       borderRadius: 16,
-                      border: checked ? "1.5px solid #4f645b" : "1px solid #e2e8f0",
-                      background: disabled ? "#f8fafc" : checked ? "#f0faf5" : "white",
+                      border: checked ? "1.5px solid var(--a-primary)" : "1px solid var(--a-border)",
+                      background: disabled ? "var(--a-surface-soft)" : checked ? "var(--a-primary-soft)" : "var(--a-surface)",
                       opacity: disabled ? 0.7 : 1,
                     }}
                   >
@@ -1507,8 +1507,8 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
                       onChange={() => toggleSelect(item.id)}
                     />
                     <div>
-                      <div style={{ fontWeight: 800, color: "#0f172a" }}>{item.itemName}</div>
-                      <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
+                      <div style={{ fontWeight: 800, color: "var(--a-text)" }}>{item.itemName}</div>
+                      <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginTop: 4 }}>
                         Thiếu cần bù: {item.remainingToReplenish} · Tồn khả dụng: {item.availableStock}
                       </div>
                       {item.equipmentIsActive === false ? (
@@ -1518,7 +1518,7 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
                       ) : null}
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, fontWeight: 800, color: "#64748b", marginBottom: 6 }}>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: "var(--a-text-muted)", marginBottom: 6 }}>
                         SỐ LƯỢNG BÙ
                       </div>
                       <input
@@ -1531,8 +1531,8 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
                         style={inputStyle}
                       />
                     </div>
-                    <div style={{ fontSize: 12, color: "#64748b" }}>
-                      <div style={{ fontWeight: 800, color: "#0f172a" }}>#{item.id}</div>
+                    <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>
+                      <div style={{ fontWeight: 800, color: "var(--a-text)" }}>#{item.id}</div>
                       <div style={{ marginTop: 4 }}>
                         {item.equipmentIsActive === false
                           ? "\u004e\u0067\u1eeb\u006e\u0067 \u006b\u0069\u006e\u0068 \u0064\u006f\u0061\u006e\u0068"
@@ -1548,7 +1548,7 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
           )}
 
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "#334155", marginBottom: 8 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "var(--a-text-muted)", marginBottom: 8 }}>
               Ghi chú chung
             </label>
             <textarea
@@ -1561,7 +1561,7 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
           </div>
 
           {!canSubmit ? (
-            <div style={{ background: "#fff7ed", color: "#c2410c", borderRadius: 14, padding: "12px 14px", fontSize: 13, fontWeight: 600 }}>
+            <div style={{ background: "var(--a-warning-bg)", color: "var(--a-warning)", border: "1px solid var(--a-warning-border)", borderRadius: 14, padding: "12px 14px", fontSize: 13, fontWeight: 600 }}>
               Chọn ít nhất một vật tư còn tồn kho để bổ sung hàng loạt.
             </div>
           ) : null}
@@ -1573,10 +1573,10 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
               style={{
                 padding: "10px 18px",
                 borderRadius: 12,
-                border: "1px solid #e2e8f0",
-                background: "white",
+                border: "1px solid var(--a-border)",
+                background: "var(--a-surface)",
                 fontWeight: 700,
-                color: "#334155",
+                color: "var(--a-text-muted)",
                 cursor: "pointer",
               }}
             >
@@ -1591,7 +1591,7 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
                 borderRadius: 12,
                 border: "none",
                 background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
-                color: "#e7fef3",
+                color: "#111411",
                 fontWeight: 800,
                 cursor: canSubmit ? "pointer" : "not-allowed",
                 opacity: canSubmit ? 1 : 0.55,
@@ -1624,20 +1624,21 @@ export function LossAndDamageHeader({ recordCount, onRefresh }) {
           style={{
             fontSize: 28,
             fontWeight: 800,
-            color: "#1c1917",
+            color: "var(--a-text)",
             letterSpacing: "-0.02em",
             margin: 0,
           }}
         >
           Thất thoát & Đền bù
         </h2>
-        <p style={{ fontSize: 14, color: "#6b7280", marginTop: 4, marginBottom: 0 }}>
-          Tổng <span className="font-extrabold text-gray-900">{recordCount}</span> biên bản sự cố
+        <p style={{ fontSize: 14, color: "var(--a-text-muted)", marginTop: 4, marginBottom: 0 }}>
+          Tổng <span style={{ fontWeight: 800, color: "var(--a-text)" }}>{recordCount}</span> biên bản sự cố
         </p>
       </div>
       <button
         onClick={onRefresh}
-        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-white text-gray-900 border-[1.5px] border-gray-200 cursor-pointer shadow-sm hover:bg-gray-50 transition-colors w-full sm:w-auto"
+        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-colors w-full sm:w-auto"
+        style={{ background: "var(--a-surface-raised)", color: "var(--a-text)", border: "1.5px solid var(--a-border)", boxShadow: "var(--a-shadow-sm)" }}
       >
         <span className="material-symbols-outlined text-[18px]">refresh</span>
         Làm mới
@@ -1649,30 +1650,30 @@ export function LossAndDamageHeader({ recordCount, onRefresh }) {
 export function LossAndDamageStats({ stats, lastUpdated, fmtCurrency }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-      <div className="bg-amber-50 border-[1.5px] border-amber-200 rounded-2xl p-[16px_18px] flex flex-col justify-center">
-        <p className="text-[9px] font-extrabold uppercase tracking-widest text-amber-600 m-0 mb-1.5 opacity-80">
+      <div className="rounded-2xl p-[16px_18px] flex flex-col justify-center" style={{ background: "var(--a-warning-bg)", border: "1.5px solid var(--a-warning-border)" }}>
+        <p className="text-[9px] font-extrabold uppercase tracking-widest m-0 mb-1.5 opacity-80" style={{ color: "var(--a-warning)" }}>
           SỰ CỐ TRÊN TRANG
         </p>
-        <p className="text-[28px] font-extrabold text-amber-600 m-0 leading-none">
+        <p className="text-[28px] font-extrabold m-0 leading-none" style={{ color: "var(--a-warning)" }}>
           {stats.totalOnPage}{" "}
           <span className="text-[13px] font-medium opacity-70">Bản ghi</span>
         </p>
       </div>
 
-      <div className="bg-red-50 border-[1.5px] border-red-200 rounded-2xl p-[16px_18px] flex flex-col justify-center">
-        <p className="text-[9px] font-extrabold uppercase tracking-widest text-red-600 m-0 mb-1.5 opacity-80">
+      <div className="rounded-2xl p-[16px_18px] flex flex-col justify-center" style={{ background: "var(--a-error-bg)", border: "1.5px solid var(--a-error-border)" }}>
+        <p className="text-[9px] font-extrabold uppercase tracking-widest m-0 mb-1.5 opacity-80" style={{ color: "var(--a-error)" }}>
           TỔNG TIỀN ĐỀN BÙ
         </p>
-        <p className="text-[24px] font-extrabold text-red-600 m-0 leading-none truncate">
+        <p className="text-[24px] font-extrabold m-0 leading-none truncate" style={{ color: "var(--a-error)" }}>
           {fmtCurrency(stats.penaltyOnPage)}
         </p>
       </div>
 
-      <div className="bg-gray-50 border-[1.5px] border-gray-200 rounded-2xl p-[16px_18px] flex flex-col justify-center sm:col-span-2 lg:col-span-1">
-        <p className="text-[9px] font-extrabold uppercase tracking-widest text-gray-500 m-0 mb-1.5 opacity-80">
+      <div className="rounded-2xl p-[16px_18px] flex flex-col justify-center sm:col-span-2 lg:col-span-1" style={{ background: "var(--a-surface-raised)", border: "1.5px solid var(--a-border)" }}>
+        <p className="text-[9px] font-extrabold uppercase tracking-widest m-0 mb-1.5 opacity-80" style={{ color: "var(--a-text-soft)" }}>
           CẬP NHẬT GẦN NHẤT
         </p>
-        <p className="text-[28px] font-extrabold text-gray-900 m-0 leading-none truncate">
+        <p className="text-[28px] font-extrabold m-0 leading-none truncate" style={{ color: "var(--a-text)" }}>
           {lastUpdated
             ? lastUpdated.toLocaleTimeString("vi-VN", {
                 hour: "2-digit",
@@ -1691,28 +1692,34 @@ export function LossAndDamageToolbar({
   onClearFilters,
 }) {
   return (
-    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200 shadow-sm flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 mb-6">
+    <div
+      className="rounded-2xl p-4 sm:p-5 flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 mb-6"
+      style={{ background: "var(--a-surface-raised)", border: "1px solid var(--a-border)" }}
+    >
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-        <div className="flex items-center gap-2 bg-gray-50 px-3 py-2.5 rounded-xl border-[1.5px] border-gray-200 flex-1 sm:flex-none">
-          <span className="material-symbols-outlined text-[18px] text-gray-400">calendar_today</span>
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl flex-1 sm:flex-none" style={{ background: "var(--a-surface)", border: "1px solid var(--a-border)" }}>
+          <span className="material-symbols-outlined text-[18px]" style={{ color: "var(--a-text-soft)" }}>calendar_today</span>
           <input
             type="date"
             value={filters.fromDate}
             onChange={(e) => setFilters((f) => ({ ...f, fromDate: e.target.value }))}
-            className="border-none bg-transparent text-[13px] font-semibold outline-none text-gray-900 w-full min-w-0"
+            className="border-none bg-transparent text-[13px] font-semibold outline-none w-full min-w-0"
+            style={{ color: "var(--a-text)" }}
           />
-          <span className="text-gray-300">—</span>
+          <span style={{ color: "var(--a-text-soft)" }}>—</span>
           <input
             type="date"
             value={filters.toDate}
             onChange={(e) => setFilters((f) => ({ ...f, toDate: e.target.value }))}
-            className="border-none bg-transparent text-[13px] font-semibold outline-none text-gray-900 w-full min-w-0"
+            className="border-none bg-transparent text-[13px] font-semibold outline-none w-full min-w-0"
+            style={{ color: "var(--a-text)" }}
           />
         </div>
         <select
           value={filters.status}
           onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
-          className="px-4 py-3 sm:py-2.5 rounded-xl border-[1.5px] border-gray-200 text-[13px] font-extrabold bg-gray-50 cursor-pointer outline-none w-full sm:w-auto"
+          className="px-4 py-3 sm:py-2.5 rounded-xl text-[13px] font-extrabold cursor-pointer outline-none w-full sm:w-auto"
+          style={{ background: "var(--a-surface)", border: "1px solid var(--a-border)", color: "var(--a-text)" }}
         >
           <option value="">Tất cả trạng thái</option>
           <option value="Pending">Chờ xử lý</option>
@@ -1722,7 +1729,8 @@ export function LossAndDamageToolbar({
       </div>
       <button
         onClick={onClearFilters}
-        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border-[1.5px] border-gray-200 bg-white text-gray-900 text-sm font-bold cursor-pointer shadow-sm hover:bg-gray-50 transition-colors w-full lg:w-auto"
+        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-colors w-full lg:w-auto"
+        style={{ background: "var(--a-surface)", border: "1px solid var(--a-border)", color: "var(--a-text)" }}
       >
         <span className="material-symbols-outlined text-[18px]">filter_alt_off</span>
         Xóa bộ lọc
@@ -1751,53 +1759,52 @@ export function LossAndDamageTable({
   return (
     <div
       style={{
-        background: "white",
+        background: "var(--a-surface-raised)",
         borderRadius: 18,
-        border: "1px solid #f1f0ea",
+        border: "1px solid var(--a-border)",
         overflowX: isMobile ? "hidden" : "auto",
-        boxShadow: "0 1px 4px rgba(0,0,0,.06)",
       }}
     >
       {isMobile ? (
         <div style={{ display: "grid", gap: 12, padding: 14 }}>
           {loading ? (
-            <div style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>Dang dong bo du lieu...</div>
+            <div style={{ padding: 24, textAlign: "center", color: "var(--a-text-soft)" }}>Dang dong bo du lieu...</div>
           ) : paged.length === 0 ? (
-            <div style={{ padding: 32, textAlign: "center", color: "#94a3b8" }}>Phong ban chua ghi nhan su co nao</div>
+            <div style={{ padding: 32, textAlign: "center", color: "var(--a-text-soft)" }}>Phong ban chua ghi nhan su co nao</div>
           ) : paged.map((rec) => {
             const imgs = rec.images || [];
             const dt = fmtDateTime(rec.createdAt);
             const batchCandidates = getBulkReplenishCandidates(records, rec);
             const canBatchReplenish = batchCandidates.length > 1;
             return (
-              <article key={rec.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+              <article key={rec.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "var(--a-surface)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 900, color: "#64748b" }}>#{rec.id}</div>
-                    <div style={{ marginTop: 4, fontSize: 16, fontWeight: 900, color: "#0f172a" }}>{rec.itemName}</div>
-                    <div style={{ marginTop: 6, display: "inline-flex", padding: "3px 10px", borderRadius: 8, background: "#f0faf5", color: "#1a3826", fontWeight: 900, border: "1.5px solid #a7f3d0" }}>Phong {rec.roomNumber}</div>
+                    <div style={{ fontSize: 12, fontWeight: 900, color: "var(--a-text-muted)" }}>#{rec.id}</div>
+                    <div style={{ marginTop: 4, fontSize: 16, fontWeight: 900, color: "var(--a-text)" }}>{rec.itemName}</div>
+                    <div style={{ marginTop: 6, display: "inline-flex", padding: "3px 10px", borderRadius: 8, background: "var(--a-primary-soft)", color: "var(--a-primary)", fontWeight: 900, border: "1px solid var(--a-primary)" }}>Phong {rec.roomNumber}</div>
                   </div>
-                  <div className="badge-p" style={{ background: imgs.length > 0 ? "#ecfdf5" : "#f1f5f9", color: imgs.length > 0 ? "#065f46" : "#64748b" }}>
+                  <div className="badge-p" style={{ background: imgs.length > 0 ? "var(--a-success-bg)" : "var(--a-surface-soft)", color: imgs.length > 0 ? "var(--a-success)" : "var(--a-text-muted)" }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{imgs.length > 0 ? "image" : "hide_image"}</span>
                     {imgs.length > 0 ? `${imgs.length} ảnh` : "Không ảnh"}
                   </div>
                 </div>
                 {rec.status === "Confirmed" ? (
-                  <div style={{ display: "inline-flex", width: "fit-content", padding: "4px 10px", borderRadius: 999, background: rec.remainingToReplenish > 0 ? "#fff7ed" : "#ecfdf5", color: rec.remainingToReplenish > 0 ? "#c2410c" : "#15803d", fontSize: 12, fontWeight: 900 }}>
+                  <div style={{ display: "inline-flex", width: "fit-content", padding: "4px 10px", borderRadius: 999, background: rec.remainingToReplenish > 0 ? "var(--a-warning-bg)" : "var(--a-success-bg)", color: rec.remainingToReplenish > 0 ? "var(--a-warning)" : "var(--a-success)", fontSize: 12, fontWeight: 900 }}>
                     {rec.remainingToReplenish > 0 ? `Còn thiếu ${rec.remainingToReplenish}` : "Đã bổ sung đủ"}
                   </div>
                 ) : null}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
-                    <div style={{ fontSize: 10, color: "#64748b", fontWeight: 900 }}>Số lượng</div>
-                    <div style={{ fontSize: 15, color: "#1c1917", fontWeight: 900 }}>{rec.quantity}</div>
+                  <div style={{ background: "var(--a-surface-soft)", borderRadius: 12, padding: 10 }}>
+                    <div style={{ fontSize: 10, color: "var(--a-text-muted)", fontWeight: 900 }}>Số lượng</div>
+                    <div style={{ fontSize: 15, color: "var(--a-text)", fontWeight: 900 }}>{rec.quantity}</div>
                   </div>
-                  <div style={{ background: "#fef2f2", borderRadius: 12, padding: 10 }}>
+                  <div style={{ background: "var(--a-error-bg)", borderRadius: 12, padding: 10 }}>
                     <div style={{ fontSize: 10, color: "#ef4444", fontWeight: 900 }}>Đền bù</div>
-                    <div style={{ fontSize: 15, color: "#ef4444", fontWeight: 900 }}>{fmtCurrency(rec.penaltyAmount)}</div>
+                    <div style={{ fontSize: 15, color: "var(--a-error)", fontWeight: 900 }}>{fmtCurrency(rec.penaltyAmount)}</div>
                   </div>
                 </div>
-                <div style={{ fontSize: 12, color: "#64748b" }}>{dt.date} {dt.time}</div>
+                <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>{dt.date} {dt.time}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8 }}>
                   <button className="btn-icon-p" onClick={() => onView(rec)} title="Xem chi tiet" style={{ width: "100%" }}><span className="material-symbols-outlined">visibility</span></button>
                   <button className="btn-icon-p" onClick={() => onEdit(rec)} title="Chinh sua" style={{ width: "100%" }}><span className="material-symbols-outlined">edit_square</span></button>
@@ -1829,7 +1836,7 @@ export function LossAndDamageTable({
                   textAlign: "left",
                   fontSize: 11,
                   fontWeight: 800,
-                  color: "#94a3b8",
+                  color: "var(--a-text-soft)",
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
                 }}
@@ -1842,13 +1849,13 @@ export function LossAndDamageTable({
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={8} style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>
+              <td colSpan={8} style={{ padding: 40, textAlign: "center", color: "var(--a-text-soft)" }}>
                 Đang đồng bộ dữ liệu...
               </td>
             </tr>
           ) : paged.length === 0 ? (
             <tr>
-              <td colSpan={8} style={{ padding: 60, textAlign: "center", color: "#94a3b8" }}>
+              <td colSpan={8} style={{ padding: 60, textAlign: "center", color: "var(--a-text-soft)" }}>
                 Phòng ban chưa ghi nhận sự cố nào
               </td>
             </tr>
@@ -1860,19 +1867,19 @@ export function LossAndDamageTable({
               const canBatchReplenish = batchCandidates.length > 1;
               return (
                 <tr key={rec.id} className="table-row">
-                  <td style={{ padding: "20px 24px", fontSize: 13, fontWeight: 700, color: "#64748b" }}>
+                  <td style={{ padding: "20px 24px", fontSize: 13, fontWeight: 700, color: "var(--a-text-muted)" }}>
                     #{rec.id}
                   </td>
                   <td style={{ padding: "20px 24px" }}>
                     {imgs.length > 0 ? (
-                      <div className="badge-p" style={{ background: "#ecfdf5", color: "#065f46" }}>
+                      <div className="badge-p" style={{ background: "var(--a-success-bg)", color: "var(--a-success)" }}>
                         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
                           image
                         </span>
                         Có hình ảnh ({imgs.length})
                       </div>
                     ) : (
-                      <div className="badge-p" style={{ background: "#f1f5f9", color: "#64748b" }}>
+                      <div className="badge-p" style={{ background: "var(--a-surface-soft)", color: "var(--a-text-muted)" }}>
                         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
                           hide_image
                         </span>
@@ -1885,18 +1892,18 @@ export function LossAndDamageTable({
                       style={{
                         padding: "3px 10px",
                         borderRadius: 8,
-                        background: "#f0faf5",
-                        color: "#1a3826",
+                        background: "var(--a-primary-soft)",
+                        color: "var(--a-primary)",
                         fontWeight: 800,
                         fontSize: 14,
                         display: "inline-block",
-                        border: "1.5px solid #a7f3d0",
+                        border: "1px solid var(--a-primary)",
                       }}
                     >
                       {rec.roomNumber}
                     </div>
                   </td>
-                  <td style={{ padding: "20px 24px", fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+                  <td style={{ padding: "20px 24px", fontSize: 14, fontWeight: 700, color: "var(--a-text)" }}>
                     <div>{rec.itemName}</div>
                     {rec.status === "Confirmed" ? (
                       <div
@@ -1907,8 +1914,8 @@ export function LossAndDamageTable({
                           gap: 6,
                           padding: "3px 10px",
                           borderRadius: 999,
-                          background: rec.remainingToReplenish > 0 ? "#fff7ed" : "#ecfdf5",
-                          color: rec.remainingToReplenish > 0 ? "#c2410c" : "#15803d",
+                          background: rec.remainingToReplenish > 0 ? "var(--a-warning-bg)" : "var(--a-success-bg)",
+                          color: rec.remainingToReplenish > 0 ? "var(--a-warning)" : "var(--a-success)",
                           fontSize: 12,
                           fontWeight: 800,
                         }}
@@ -1919,15 +1926,15 @@ export function LossAndDamageTable({
                       </div>
                     ) : null}
                   </td>
-                  <td style={{ padding: "20px 24px", fontSize: 15, fontWeight: 800, color: "#64748b" }}>
+                  <td style={{ padding: "20px 24px", fontSize: 15, fontWeight: 800, color: "var(--a-text-muted)" }}>
                     {rec.quantity}
                   </td>
                   <td style={{ padding: "20px 24px", fontSize: 15, fontWeight: 800, color: "#ef4444" }}>
                     {fmtCurrency(rec.penaltyAmount)}
                   </td>
                   <td style={{ padding: "16px 24px" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1c1917" }}>{dt.date}</div>
-                    <div style={{ fontSize: 11, color: "#9ca3af" }}>{dt.time}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--a-text)" }}>{dt.date}</div>
+                    <div style={{ fontSize: 11, color: "var(--a-text-soft)" }}>{dt.time}</div>
                   </td>
                   <td style={{ padding: "20px 24px" }}>
                     <div style={{ display: "flex", gap: 8 }}>
@@ -1976,7 +1983,7 @@ export function LossAndDamageTable({
       <footer
         style={{
           padding: "14px 24px",
-          borderTop: "1px solid #f1f0ea",
+          borderTop: "1px solid var(--a-border)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -2029,15 +2036,15 @@ function LossAndDamageHeaderUnified({ recordCount, onRefresh }) {
           style={{
             fontSize: 28,
             fontWeight: 800,
-            color: "#1c1917",
+            color: "var(--a-text)",
             letterSpacing: "-0.02em",
             margin: 0,
           }}
         >
           Thất thoát & Đền bù
         </h2>
-        <p style={{ fontSize: 14, color: "#6b7280", marginTop: 4, marginBottom: 0 }}>
-          Tổng: <span style={{ fontWeight: 600, color: "#1c1917" }}>{recordCount}</span> biên bản sự cố
+        <p style={{ fontSize: 14, color: "var(--a-text-muted)", marginTop: 4, marginBottom: 0 }}>
+          Tổng: <span style={{ fontWeight: 600, color: "var(--a-text)" }}>{recordCount}</span> biên bản sự cố
         </p>
       </div>
       <button onClick={onRefresh} style={secondaryButton}>
@@ -2069,7 +2076,7 @@ function LossAndDamageToolbarUnified({ filters, setFilters, onClearFilters }) {
         padding: 24,
         marginBottom: 24,
         boxShadow: "0 1px 3px rgba(0,0,0,.06)",
-        border: "1px solid #f1f0ea",
+        border: "1px solid var(--a-border)",
         display: "flex",
         flexWrap: "wrap",
         gap: 16,
@@ -2212,10 +2219,9 @@ function LossAndDamageTableUnified({
   return (
     <div
       style={{
-        background: "white",
+        background: "var(--a-surface-raised)",
         borderRadius: 16,
-        boxShadow: "0 1px 3px rgba(0,0,0,.06)",
-        border: "1px solid #f1f0ea",
+        border: "1px solid var(--a-border)",
         overflow: "hidden",
       }}
     >
@@ -2224,8 +2230,8 @@ function LossAndDamageTableUnified({
           <thead>
             <tr
               style={{
-                background: "rgba(249,248,243,.5)",
-                borderBottom: "1px solid #f1f0ea",
+                background: "var(--a-surface)",
+                borderBottom: "1px solid var(--a-border)",
               }}
             >
               {[
@@ -2246,7 +2252,7 @@ function LossAndDamageTableUnified({
                     fontWeight: 700,
                     textTransform: "uppercase",
                     letterSpacing: "0.08em",
-                    color: "#6b7280",
+                    color: "var(--a-text-muted)",
                     textAlign: i === 7 ? "right" : "left",
                   }}
                 >
@@ -2255,16 +2261,16 @@ function LossAndDamageTableUnified({
               ))}
             </tr>
           </thead>
-          <tbody style={{ borderTop: "1px solid #f1f0ea" }}>
+          <tbody style={{ borderTop: "1px solid var(--a-border)" }}>
             {loading ? (
               <tr>
-                <td colSpan={8} style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>
+                <td colSpan={8} style={{ padding: 40, textAlign: "center", color: "var(--a-text-soft)" }}>
                   Đang đồng bộ dữ liệu...
                 </td>
               </tr>
             ) : paged.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ padding: 60, textAlign: "center", color: "#9ca3af" }}>
+                <td colSpan={8} style={{ padding: 60, textAlign: "center", color: "var(--a-text-soft)" }}>
                   Phòng ban chưa ghi nhận sự cố nào
                 </td>
               </tr>
@@ -2279,13 +2285,13 @@ function LossAndDamageTableUnified({
                   <tr
                     key={rec.id}
                     style={{
-                      borderBottom: "1px solid #fafaf8",
+                      borderBottom: "1px solid var(--a-border)",
                       animationDelay: `${Math.min(i * 25, 200)}ms`,
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "#fafaf8")}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--a-surface-bright)")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                   >
-                    <td style={{ padding: "16px 24px", fontSize: 13, fontWeight: 700, color: "#78716c" }}>
+                    <td style={{ padding: "16px 24px", fontSize: 13, fontWeight: 700, color: "var(--a-text-muted)" }}>
                       #{rec.id}
                     </td>
                     <td style={{ padding: "16px 24px" }}>
@@ -2298,8 +2304,8 @@ function LossAndDamageTableUnified({
                           borderRadius: 999,
                           fontSize: 11,
                           fontWeight: 800,
-                          background: imgs.length > 0 ? "#f0faf5" : "#f5f5f4",
-                          color: imgs.length > 0 ? "#4f645b" : "#78716c",
+                          background: imgs.length > 0 ? "var(--a-success-bg)" : "var(--a-surface-soft)",
+                          color: imgs.length > 0 ? "var(--a-success)" : "var(--a-text-muted)",
                         }}
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
@@ -2314,16 +2320,17 @@ function LossAndDamageTableUnified({
                           display: "inline-block",
                           padding: "6px 12px",
                           borderRadius: 999,
-                          background: "#f0faf5",
-                          color: "#4f645b",
+                          background: "var(--a-primary-soft)",
+                          color: "var(--a-primary)",
                           fontWeight: 700,
                           fontSize: 13,
+                          border: "1px solid var(--a-primary)",
                         }}
                       >
                         {rec.roomNumber}
                       </span>
                     </td>
-                    <td style={{ padding: "16px 24px", fontSize: 14, color: "#292524" }}>
+                    <td style={{ padding: "16px 24px", fontSize: 14, color: "var(--a-text)" }}>
                       <div style={{ fontWeight: 600 }}>{rec.itemName}</div>
                       {rec.status === "Confirmed" ? (
                         <div
@@ -2334,8 +2341,8 @@ function LossAndDamageTableUnified({
                             gap: 6,
                             padding: "4px 10px",
                             borderRadius: 999,
-                            background: rec.remainingToReplenish > 0 ? "#fff7ed" : "#f0faf5",
-                            color: rec.remainingToReplenish > 0 ? "#c2410c" : "#4f645b",
+                            background: rec.remainingToReplenish > 0 ? "var(--a-warning-bg)" : "var(--a-success-bg)",
+                            color: rec.remainingToReplenish > 0 ? "var(--a-warning)" : "var(--a-success)",
                             fontSize: 11,
                             fontWeight: 800,
                           }}
@@ -2346,15 +2353,15 @@ function LossAndDamageTableUnified({
                         </div>
                       ) : null}
                     </td>
-                    <td style={{ padding: "16px 24px", fontSize: 14, color: "#4b5563", fontWeight: 600 }}>
+                    <td style={{ padding: "16px 24px", fontSize: 14, color: "var(--a-text-muted)", fontWeight: 600 }}>
                       {rec.quantity}
                     </td>
-                    <td style={{ padding: "16px 24px", fontSize: 14, color: "#dc2626", fontWeight: 700 }}>
+                    <td style={{ padding: "16px 24px", fontSize: 14, color: "var(--a-error)", fontWeight: 700 }}>
                       {fmtCurrency(rec.penaltyAmount)}
                     </td>
                     <td style={{ padding: "16px 24px" }}>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: "#292524" }}>{dt.date}</div>
-                      <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>{dt.time}</div>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: "var(--a-text)" }}>{dt.date}</div>
+                      <div style={{ fontSize: 12, color: "var(--a-text-soft)", marginTop: 2 }}>{dt.time}</div>
                     </td>
                     <td style={{ padding: "16px 24px", textAlign: "right" }}>
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: 4 }}>
@@ -2366,14 +2373,14 @@ function LossAndDamageTableUnified({
                             icon: "inventory_2",
                             onClick: () => onReplenish(rec),
                             disabled: !canReplenishRecord(rec),
-                            activeColor: "#4f645b",
+                            activeColor: "var(--a-primary)",
                           },
                           {
                             title: "Bổ sung hàng loạt theo booking",
                             icon: "playlist_add_check",
                             onClick: () => onBatchReplenish(rec),
                             disabled: !canBatchReplenish,
-                            activeColor: "#4f645b",
+                            activeColor: "var(--a-info)",
                           },
                         ].map((action) => (
                           <button
@@ -2383,7 +2390,7 @@ function LossAndDamageTableUnified({
                             title={action.title}
                             style={{
                               padding: 8,
-                              color: action.disabled ? "#d6d3d1" : action.activeColor || "#9ca3af",
+                              color: action.disabled ? "var(--a-text-soft)" : action.activeColor || "var(--a-text-muted)",
                               background: "none",
                               border: "none",
                               cursor: action.disabled ? "not-allowed" : "pointer",
@@ -2392,12 +2399,12 @@ function LossAndDamageTableUnified({
                             }}
                             onMouseEnter={(e) => {
                               if (action.disabled) return;
-                              e.currentTarget.style.background = "#f3f4f6";
-                              e.currentTarget.style.color = "#4f645b";
+                              e.currentTarget.style.background = "var(--a-surface-bright)";
+                              e.currentTarget.style.color = action.activeColor || "var(--a-primary)";
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.background = "";
-                              e.currentTarget.style.color = action.disabled ? "#d6d3d1" : action.activeColor || "#9ca3af";
+                              e.currentTarget.style.color = action.disabled ? "var(--a-text-soft)" : action.activeColor || "var(--a-text-muted)";
                             }}
                           >
                             <span className="material-symbols-outlined" style={{ fontSize: 22 }}>
@@ -2418,7 +2425,7 @@ function LossAndDamageTableUnified({
       <div
         style={{
           padding: "16px 20px",
-          borderTop: "1px solid #f1f0ea",
+          borderTop: "1px solid var(--a-border)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -2546,13 +2553,13 @@ export default function LossAndDamagePage() {
         @keyframes modalSlideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
         @keyframes spin { to{transform:rotate(360deg)} }
         @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
-        .table-row { transition: background 0.1s; border-bottom: 1px solid #f1f0ea; }
-        .table-row:hover { background: #fafaf8 !important; }
-        .btn-icon-p { width: 34px; height: 34px; border-radius: 9px; border: 1.5px solid #f1f0ea; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; color: #6b7280; }
-        .btn-icon-p:hover { border-color: #4f645b; color: #4f645b; background: #f0faf5; }
-        .pg-btn { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#6b7280; background:transparent; border:none; cursor:pointer; transition:background .15s,color .15s; font-family:'Manrope',sans-serif; }
-        .pg-btn:hover:not(:disabled) { background:#f3f4f6; }
-        .pg-btn.active { background:#4f645b; color:#e7fef3; cursor:default; }
+        .table-row { transition: background 0.1s; border-bottom: 1px solid var(--a-border); }
+        .table-row:hover { background: var(--a-surface-bright) !important; }
+        .btn-icon-p { width: 34px; height: 34px; border-radius: 9px; border: 1.5px solid var(--a-border); background: var(--a-surface-raised); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; color: var(--a-text-muted); }
+        .btn-icon-p:hover { border-color: var(--a-primary); color: var(--a-primary); background: var(--a-primary-soft); }
+        .pg-btn { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:var(--a-text-muted); background:transparent; border:none; cursor:pointer; transition:background .15s,color .15s; font-family:'Manrope',sans-serif; }
+        .pg-btn:hover:not(:disabled) { background:var(--a-surface-bright); }
+        .pg-btn.active { background:var(--a-primary); color:#111411; cursor:default; }
         .pg-btn:disabled { opacity:.35; cursor:not-allowed; }
         .badge-p { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; }
       `}</style>

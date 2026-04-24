@@ -58,8 +58,8 @@ export default function NotificationMenu() {
         onClick={() => setOpen((v) => !v)}
         className="admin-notification-trigger"
       >
-        <Badge count={unreadCount} size="small" offset={[-2, 6]}>
-          <BellOutlined className="text-xl" />
+        <Badge count={unreadCount} size="small">
+          <BellOutlined className="admin-notification-bell text-xl" />
         </Badge>
       </button>
 
@@ -115,7 +115,7 @@ export default function NotificationMenu() {
             <div className="admin-notification-scroll overflow-y-auto flex-1">
               {notifications.length === 0 ? (
                 <div className="py-10 px-6 text-center admin-notification-muted">
-                  <BellOutlined className="text-3xl mb-3 opacity-30" />
+                  <BellOutlined className="text-3xl mb-3 opacity-30" style={{ color: "currentColor", display: "inline-flex" }} />
                   <p className="m-0 text-[13px]">Chưa có thông báo nào</p>
                 </div>
               ) : (

@@ -379,8 +379,9 @@ export default function ServiceItemsPage() {
               ...panelStyle,
               marginBottom: 20,
               padding: 16,
-              color: "#b91c1c",
-              background: "#fff7f7",
+              color: "var(--a-error)",
+              background: "var(--a-error-bg)",
+              borderColor: "var(--a-error-border)",
             }}
           >
             {errorMessage}
@@ -391,7 +392,7 @@ export default function ServiceItemsPage() {
           <div
             style={{
               padding: "18px 20px",
-              borderBottom: "1px solid #f1f0ea",
+              borderBottom: "1px solid var(--a-border)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -399,8 +400,8 @@ export default function ServiceItemsPage() {
             }}
           >
             <div>
-              <div style={{ fontWeight: 700, color: "#1c1917" }}>Danh sách dịch vụ</div>
-              <div style={{ fontSize: 12, color: "#78716c", marginTop: 2 }}>
+              <div style={{ fontWeight: 700, color: "var(--a-text)" }}>Danh sách dịch vụ</div>
+              <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginTop: 2 }}>
                 {pagination.totalItems || 0} dịch vụ theo bộ lọc hiện tại
               </div>
             </div>
@@ -413,23 +414,23 @@ export default function ServiceItemsPage() {
               ) : serviceRows.length === 0 ? (
                 <EmptyState label="Chưa có dịch vụ phù hợp bộ lọc." icon="search_off" />
               ) : serviceRows.map((service) => (
-                <article key={service.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12 }}>
+                <article key={service.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "var(--a-surface-raised)" }}>
                   <ServiceImage imageUrl={service.imageUrl} name={service.name} height={150} />
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 900, color: "#1c1917", fontSize: 16 }}>{service.name}</div>
-                      <div style={{ color: "#78716c", fontSize: 12, marginTop: 4 }}>{service.description || "Chưa có mô tả"}</div>
+                      <div style={{ fontWeight: 900, color: "var(--a-text)", fontSize: 16 }}>{service.name}</div>
+                      <div style={{ color: "var(--a-text-muted)", fontSize: 12, marginTop: 4 }}>{service.description || "Chưa có mô tả"}</div>
                     </div>
                     <StatusChip active={service.isActive} label={service.isActive ? "Đang bán" : "Đã ẩn"} />
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
-                      <div style={{ fontSize: 10, color: "#78716c", fontWeight: 900 }}>Nhóm</div>
-                      <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 800 }}>{service.categoryName || "Chưa gán"}</div>
+                    <div style={{ background: "var(--a-bg)", borderRadius: 12, padding: 10, border: "1px solid var(--a-border)" }}>
+                      <div style={{ fontSize: 10, color: "var(--a-text-muted)", fontWeight: 900 }}>Nhóm</div>
+                      <div style={{ fontSize: 13, color: "var(--a-text)", fontWeight: 800 }}>{service.categoryName || "Chưa gán"}</div>
                     </div>
-                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
-                      <div style={{ fontSize: 10, color: "#78716c", fontWeight: 900 }}>Giá</div>
-                      <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 900 }}>{formatCurrency(service.price)}</div>
+                    <div style={{ background: "var(--a-bg)", borderRadius: 12, padding: 10, border: "1px solid var(--a-border)" }}>
+                      <div style={{ fontSize: 10, color: "var(--a-text-muted)", fontWeight: 900 }}>Giá</div>
+                      <div style={{ fontSize: 13, color: "var(--a-text)", fontWeight: 900 }}>{formatCurrency(service.price)}</div>
                     </div>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
@@ -448,8 +449,8 @@ export default function ServiceItemsPage() {
               <thead>
                 <tr
                   style={{
-                    background: "#faf8f3",
-                    borderBottom: "1px solid #f1f0ea",
+                    background: "var(--a-surface-raised)",
+                    borderBottom: "1px solid var(--a-border)",
                   }}
                 >
                   {[
@@ -469,7 +470,7 @@ export default function ServiceItemsPage() {
                         fontSize: 11,
                         textTransform: "uppercase",
                         letterSpacing: ".08em",
-                        color: "#78716c",
+                        color: "var(--a-text-muted)",
                       }}
                     >
                       {heading}
@@ -495,13 +496,13 @@ export default function ServiceItemsPage() {
                   </tr>
                 ) : (
                   serviceRows.map((service) => (
-                    <tr key={service.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
+                    <tr key={service.id} style={{ borderBottom: "1px solid var(--a-border)" }}>
                       <td style={{ padding: "16px 18px" }}>
                         <div>
                           <div
                             style={{
                               fontWeight: 700,
-                              color: "#1c1917",
+                              color: "var(--a-text)",
                               fontSize: 14,
                             }}
                           >
@@ -509,7 +510,7 @@ export default function ServiceItemsPage() {
                           </div>
                           <div
                             style={{
-                              color: "#78716c",
+                              color: "var(--a-text-muted)",
                               fontSize: 12,
                               marginTop: 4,
                             }}
@@ -521,7 +522,7 @@ export default function ServiceItemsPage() {
                       <td
                         style={{
                           padding: "16px 18px",
-                          color: "#57534e",
+                          color: "var(--a-text-muted)",
                           fontSize: 14,
                         }}
                       >
@@ -530,13 +531,13 @@ export default function ServiceItemsPage() {
                       <td
                         style={{
                           padding: "16px 18px",
-                          color: "#1f2937",
+                          color: "var(--a-text)",
                           fontWeight: 700,
                         }}
                       >
                         {formatCurrency(service.price)}
                       </td>
-                      <td style={{ padding: "16px 18px", color: "#57534e" }}>
+                      <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>
                         {service.unit || "—"}
                       </td>
                       <td style={{ padding: "16px 18px" }}>
@@ -671,7 +672,7 @@ export default function ServiceItemsPage() {
             </div>
           </div>
           {errorMessage ? (
-            <p style={{ color: "#b91c1c", marginTop: 12 }}>{errorMessage}</p>
+            <p style={{ color: "var(--a-error)", marginTop: 12 }}>{errorMessage}</p>
           ) : null}
           <FormFooter
             submitting={submitting}
@@ -685,7 +686,7 @@ export default function ServiceItemsPage() {
 
 function ServiceImage({ imageUrl, name, height = 120, width = "100%" }) {
   return (
-    <div style={{ width, height, borderRadius: 14, overflow: "hidden", background: "linear-gradient(135deg,#eef7f1,#f7efe3)", border: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f645b", flexShrink: 0 }}>
+    <div style={{ width, height, borderRadius: 14, overflow: "hidden", background: "linear-gradient(135deg, color-mix(in srgb, var(--a-primary) 14%, var(--a-surface)) 0%, color-mix(in srgb, var(--a-warning-bg) 36%, var(--a-surface-raised)) 100%)", border: "1px solid var(--a-border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--a-primary)", flexShrink: 0 }}>
       {imageUrl ? (
         <img src={imageUrl} alt={name || "Dịch vụ"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       ) : (
@@ -706,12 +707,12 @@ function ImagePicker({ preview, fileName, onPick, onRemove }) {
           <input type="file" accept="image/*" onChange={(e) => onPick(e.target.files?.[0] || null)} style={{ display: "none" }} />
         </label>
         {preview ? (
-          <button type="button" onClick={onRemove} style={{ padding: "10px 14px", borderRadius: 12, border: "1px solid #fecaca", background: "#fff7f7", color: "#dc2626", fontWeight: 800, cursor: "pointer" }}>
+          <button type="button" onClick={onRemove} style={{ padding: "10px 14px", borderRadius: 12, border: "1px solid var(--a-error-border)", background: "var(--a-error-bg)", color: "var(--a-error)", fontWeight: 800, cursor: "pointer" }}>
             Gỡ ảnh
           </button>
         ) : null}
       </div>
-      {fileName ? <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 700, wordBreak: "break-word" }}>{fileName}</div> : null}
+      {fileName ? <div style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 700, wordBreak: "break-word" }}>{fileName}</div> : null}
     </div>
   );
 }

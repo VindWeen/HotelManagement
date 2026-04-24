@@ -93,6 +93,27 @@ const SECONDARY_BUTTON = {
   transition: "all 0.15s",
 };
 
+const DETAIL_GRID_CARD = {
+  background: "var(--a-surface-raised)",
+  border: "1px solid var(--a-border)",
+  borderRadius: 14,
+  padding: 14,
+};
+
+function getUserStatusBadgeStyle(active) {
+  return active
+    ? {
+        background: "var(--a-success-bg)",
+        color: "var(--a-success)",
+        border: "1px solid var(--a-success-border)",
+      }
+    : {
+        background: "var(--a-warning-bg)",
+        color: "var(--a-warning)",
+        border: "1px solid var(--a-warning-border)",
+      };
+}
+
 // Thành phần thông báo ──────────────────────────────────────────────────────────
 const TOAST_STYLES = {
   success: {
@@ -751,14 +772,15 @@ export default function UserListPage() {
           className="fixed inset-0 bg-black/50 modal-backdrop flex items-center justify-center z-50"
           onClick={(e) => e.target === e.currentTarget && setAddModalOpen(false)}
         >
-          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border border-stone-100">
+          <div className="rounded-2xl p-8 w-full max-w-md shadow-2xl" style={{ background: "var(--a-surface)", border: "1px solid var(--a-border)", color: "var(--a-text)" }}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold">
                 {editingId ? "Chỉnh sửa thông tin" : "Thêm người dùng mới"}
               </h3>
               <button
                 onClick={() => setAddModalOpen(false)}
-                className="p-1.5 rounded-lg text-stone-400 hover:bg-stone-100 transition-colors border-0"
+                className="p-1.5 rounded-lg transition-colors border-0"
+                style={{ color: "var(--a-text-soft)" }}
               >
                 <span className="material-symbols-outlined text-xl">close</span>
               </button>
@@ -772,8 +794,8 @@ export default function UserListPage() {
                   value={fFullName}
                   onChange={(e) => setFFullName(e.target.value)}
                   style={INPUT_STYLE}
-                  onFocus={(e) => { e.target.style.borderColor = "#4f645b"; e.target.style.boxShadow = "0 0 0 2px rgba(79,100,91,0.1)"; }}
-                  onBlur={(e) => { e.target.style.borderColor = "#e2e8e1"; e.target.style.boxShadow = "none"; }}
+                  onFocus={(e) => { e.target.style.borderColor = "var(--a-primary)"; e.target.style.boxShadow = "0 0 0 2px color-mix(in srgb, var(--a-primary) 18%, transparent)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "var(--a-border-strong)"; e.target.style.boxShadow = "none"; }}
                 />
                 {fieldErrors.fullName && (
                   <p className="text-xs mt-1 text-red-600">{fieldErrors.fullName}</p>
@@ -801,8 +823,8 @@ export default function UserListPage() {
                   value={fPhone}
                   onChange={(e) => setFPhone(e.target.value)}
                   style={INPUT_STYLE}
-                  onFocus={(e) => { e.target.style.borderColor = "#4f645b"; e.target.style.boxShadow = "0 0 0 2px rgba(79,100,91,0.1)"; }}
-                  onBlur={(e) => { e.target.style.borderColor = "#e2e8e1"; e.target.style.boxShadow = "none"; }}
+                  onFocus={(e) => { e.target.style.borderColor = "var(--a-primary)"; e.target.style.boxShadow = "0 0 0 2px color-mix(in srgb, var(--a-primary) 18%, transparent)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "var(--a-border-strong)"; e.target.style.boxShadow = "none"; }}
                 />
               </div>
               <div className="mb-4">
@@ -810,7 +832,7 @@ export default function UserListPage() {
                 <select
                   value={fRoleId}
                   onChange={(e) => setFRoleId(e.target.value)}
-                  className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm text-stone-700 focus:border-[#4f645b] focus:ring-2 focus:ring-[#4f645b]/20 focus:outline-none transition"
+                  style={INPUT_STYLE}
                 >
                   <option value="">-- Chọn vai trò --</option>
                   {assignableRoles.map((r) => (
@@ -823,7 +845,7 @@ export default function UserListPage() {
                 <select
                   value={fGender}
                   onChange={(e) => setFGender(e.target.value)}
-                  className="w-full bg-white border border-stone-300 rounded-xl px-4 py-2.5 text-sm text-stone-700 focus:border-[#4f645b] focus:ring-2 focus:ring-[#4f645b]/20 focus:outline-none transition"
+                  style={INPUT_STYLE}
                 >
                   <option value="">-- Chọn --</option>
                   <option value="Nam">Nam</option>
@@ -832,13 +854,13 @@ export default function UserListPage() {
                 </select>
               </div>
               {!editingId && (
-                <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                <div className="mb-4 rounded-xl px-4 py-3 text-sm" style={{ background: "var(--a-warning-bg)", border: "1px solid var(--a-warning-border)", color: "var(--a-warning)" }}>
                   Mật khẩu sẽ được tạo ngẫu nhiên và gửi về email người dùng sau khi tạo tài khoản.
                 </div>
               )}
               {formError && (
-                <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
-                  <span className="material-symbols-outlined text-red-500 mt-0.5" style={{ fontSize: 16 }}>error</span>
+                <div className="mb-4 rounded-xl px-4 py-3 text-sm flex items-start gap-2" style={{ background: "var(--a-error-bg)", border: "1px solid var(--a-error-border)", color: "var(--a-error)" }}>
+                  <span className="material-symbols-outlined mt-0.5" style={{ fontSize: 16, color: "var(--a-error)" }}>error</span>
                   <span>{formError}</span>
                 </div>
               )}
@@ -870,14 +892,15 @@ export default function UserListPage() {
           onClick={(e) => e.target === e.currentTarget && setDetailModalOpen(false)}
         >
           <div
-            className="bg-white rounded-2xl w-full max-w-md shadow-2xl"
-            style={{ maxHeight: "90vh", display: "flex", flexDirection: "column" }}
+            className="rounded-2xl w-full max-w-md shadow-2xl"
+            style={{ maxHeight: "90vh", display: "flex", flexDirection: "column", background: "var(--a-surface)", border: "1px solid var(--a-border)", color: "var(--a-text)" }}
           >
-            <div className="flex items-center justify-between px-8 pt-7 pb-4 border-b border-stone-100 flex-shrink-0">
+            <div className="flex items-center justify-between px-8 pt-7 pb-4 flex-shrink-0" style={{ borderBottom: "1px solid var(--a-border)" }}>
               <h3 className="text-xl font-bold">Chi tiết người dùng</h3>
               <button
                 onClick={() => setDetailModalOpen(false)}
-                className="p-1.5 rounded-lg text-stone-400 hover:bg-stone-100 transition-colors"
+                className="p-1.5 rounded-lg transition-colors"
+                style={{ color: "var(--a-text-soft)" }}
               >
                 <span className="material-symbols-outlined text-xl">close</span>
               </button>
@@ -885,58 +908,139 @@ export default function UserListPage() {
             <div className="px-8 py-5 overflow-y-auto flex-1">
               {detailLoading ? (
                 <div className="py-10 flex justify-center">
-                  <div className="spinner-dark" style={{ width: 24, height: 24, border: "3px solid rgba(79,100,91,.2)", borderTopColor: "#4f645b", borderRadius: "50%", animation: "spin .65s linear infinite" }} />
+                  <div className="spinner-dark" style={{ width: 24, height: 24, border: "3px solid color-mix(in srgb, var(--a-primary) 22%, transparent)", borderTopColor: "var(--a-primary)", borderRadius: "50%", animation: "spin .65s linear infinite" }} />
                 </div>
               ) : detailUser ? (
+                (() => {
+                  const active = detailUser.status === true || detailUser.status === 1;
+                  const statusStyle = getUserStatusBadgeStyle(active);
+                  const infoRows = [
+                    ["Vai trò", detailUser.roleName || "—"],
+                    ["Hạng thành viên", detailUser.membershipTier || "—"],
+                    ["Điện thoại", detailUser.phone || "—"],
+                    ["Giới tính", detailUser.gender || "—"],
+                    ["Ngày sinh", detailUser.dateOfBirth || "—"],
+                    ["CCCD / Hộ chiếu", detailUser.nationalId || "—"],
+                    ["Điểm tích lũy", detailUser.loyaltyPoints ?? "-"],
+                    ["Điểm khả dụng", detailUser.loyaltyPointsUsable ?? "-"],
+                    ["Địa chỉ", detailUser.address || "—"],
+                    ["Ngày tạo", detailUser.createdAt ? new Date(detailUser.createdAt).toLocaleDateString("vi-VN") : "—"],
+                  ];
+
+                  return (
                 <>
-                  <div className="flex items-center gap-4 mb-5 pb-4 border-b border-stone-100">
-                    <div
-                      className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-2xl"
-                      style={{ background: "rgba(79,100,91,.2)", color: "#4f645b" }}
-                    >
-                      {(detailUser.fullName || "?")[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold">{detailUser.fullName || "—"}</p>
-                      <p className="text-sm text-stone-500">{detailUser.email || "—"}</p>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${detailUser.status ? "bg-emerald-50 text-emerald-600" : "bg-stone-100 text-stone-500"}`}>
-                          {detailUser.status ? "Hoạt động" : "Đã khóa"}
-                        </span>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${ROLE_BADGE[detailUser.roleName] || "bg-stone-100 text-stone-500"}`}>
-                          {detailUser.roleName || "—"}
-                        </span>
+                  <div
+                    style={{
+                      background: "var(--a-emphasis-bg)",
+                      border: "1px solid color-mix(in srgb, var(--a-primary) 20%, transparent)",
+                      borderRadius: 18,
+                      padding: 18,
+                      marginBottom: 18,
+                    }}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div
+                        className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl"
+                        style={{
+                          background: "color-mix(in srgb, var(--a-surface) 20%, transparent)",
+                          color: "var(--a-emphasis-text)",
+                          border: "1px solid color-mix(in srgb, var(--a-emphasis-text) 16%, transparent)",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {(detailUser.fullName || "?")[0].toUpperCase()}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--a-emphasis-muted)" }}>
+                          Hồ sơ người dùng
+                        </div>
+                        <div style={{ marginTop: 6, fontSize: 22, fontWeight: 800, color: "var(--a-emphasis-text)", lineHeight: 1.2 }}>
+                          {detailUser.fullName || "—"}
+                        </div>
+                        <div style={{ marginTop: 6, fontSize: 13, color: "var(--a-emphasis-muted)", overflowWrap: "anywhere" }}>
+                          {detailUser.email || "—"}
+                        </div>
+                        <div className="flex items-center gap-2 mt-3 flex-wrap">
+                          <span
+                            style={{
+                              ...statusStyle,
+                              padding: "5px 10px",
+                              borderRadius: 999,
+                              fontSize: 11,
+                              fontWeight: 800,
+                              textTransform: "uppercase",
+                              letterSpacing: ".04em",
+                            }}
+                          >
+                            {active ? "Hoạt động" : "Đã khóa"}
+                          </span>
+                          <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase ${ROLE_BADGE[detailUser.roleName] || "bg-stone-100 text-stone-500"}`}>
+                            {detailUser.roleName || "—"}
+                          </span>
+                          <span
+                            style={{
+                              padding: "5px 10px",
+                              borderRadius: 999,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: "var(--a-emphasis-text)",
+                              background: "color-mix(in srgb, var(--a-surface) 18%, transparent)",
+                              border: "1px solid color-mix(in srgb, var(--a-emphasis-text) 14%, transparent)",
+                            }}
+                          >
+                            ID #{detailUser.id}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {[
-                      ["Vai trò", detailUser.roleName || "—"],
-                      ["Hạng thành viên", detailUser.membershipTier || "—"],
-                      ["Điện thoại", detailUser.phone || "—"],
-                      ["Giới tính", detailUser.gender || "—"],
-                      ["Ngày sinh", detailUser.dateOfBirth || "—"],
-                      ["CCCD / Hộ chiếu", detailUser.nationalId || "—"],
-                      ["Điểm tích lũy", detailUser.loyaltyPoints ?? "-"],
-                      ["Điểm khả dụng", detailUser.loyaltyPointsUsable ?? "-"],
-                      ["Địa chỉ", detailUser.address || "—"],
-                      ["Ngày tạo", detailUser.createdAt ? new Date(detailUser.createdAt).toLocaleDateString("vi-VN") : "—"],
-                    ].map(([k, v], i) => (
-                      <div key={i} className="bg-stone-50 rounded-xl p-2.5">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 mb-0.5">{k}</p>
-                        <p className="text-sm font-semibold text-stone-700 truncate" title={String(v)}>{String(v)}</p>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: 12,
+                    }}
+                  >
+                    {infoRows.map(([k, v], i) => (
+                      <div key={i} style={DETAIL_GRID_CARD}>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 800,
+                            textTransform: "uppercase",
+                            letterSpacing: ".12em",
+                            color: "var(--a-text-soft)",
+                            marginBottom: 8,
+                          }}
+                        >
+                          {k}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 700,
+                            color: "var(--a-text)",
+                            lineHeight: 1.45,
+                            wordBreak: "break-word",
+                          }}
+                          title={String(v)}
+                        >
+                          {String(v)}
+                        </div>
                       </div>
                     ))}
                   </div>
-                  <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-stone-100">
+
+                  <div className="flex justify-end gap-3 mt-5 pt-4" style={{ borderTop: "1px solid var(--a-border)" }}>
                     <button
                       onClick={() => handleResetPassword(detailUser.id)}
                       disabled={resetPasswordLoading}
                       className="px-4 py-2 text-sm font-bold rounded-xl hover:opacity-90 transition-all flex items-center gap-1.5 disabled:opacity-50"
-                      style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fee2e2" }}
+                      style={{ background: "var(--a-error-bg)", color: "var(--a-error)", border: "1px solid var(--a-error-border)" }}
                     >
                       {resetPasswordLoading ? (
-                        <span className="spinner-dark" style={{ borderColor: "rgba(220,38,38,0.2)", borderTopColor: "#dc2626", width: 16, height: 16 }} />
+                        <span className="spinner-dark" style={{ borderColor: "color-mix(in srgb, var(--a-error) 20%, transparent)", borderTopColor: "var(--a-error)", width: 16, height: 16 }} />
                       ) : (
                         <span className="material-symbols-outlined text-base">key</span>
                       )}
@@ -945,13 +1049,15 @@ export default function UserListPage() {
                     <button
                       onClick={() => { setDetailModalOpen(false); openEdit(detailUser.id); }}
                       className="px-4 py-2 text-sm font-bold rounded-xl hover:opacity-90 transition-all flex items-center gap-1.5"
-                      style={{ background: "#4f645b", color: "#e7fef3" }}
+                      style={{ background: "var(--a-emphasis-bg)", color: "var(--a-emphasis-text)" }}
                     >
                       <span className="material-symbols-outlined text-base">edit_square</span>
                       Chỉnh sửa
                     </button>
                   </div>
                 </>
+                  );
+                })()
               ) : null}
             </div>
           </div>
@@ -1034,17 +1140,17 @@ export function UserListHeader({
           style={{
             fontSize: 28,
             fontWeight: 800,
-            color: "#1c1917",
+            color: "var(--a-text)",
             letterSpacing: "-0.02em",
             margin: 0,
           }}
         >
           Quản lý Nhân sự &amp; Người dùng
         </h2>
-        <p style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
-          Tổng: <span style={{ fontWeight: 600, color: "#1c1917" }}>{allUsersCount}</span> người dùng
+        <p style={{ fontSize: 14, color: "var(--a-text-muted)", marginTop: 4 }}>
+          Tổng: <span style={{ fontWeight: 600, color: "var(--a-text)" }}>{allUsersCount}</span> người dùng
           {hasFilter && filteredCount !== allUsersCount && (
-            <span style={{ color: "#4f645b", marginLeft: 4 }}>
+            <span style={{ color: "var(--a-brand-ink)", marginLeft: 4 }}>
               (lọc: <span style={{ fontWeight: 600 }}>{filteredCount}</span>)
             </span>
           )}
@@ -1095,12 +1201,12 @@ export function UserListFilters({
   return (
     <section
       style={{
-        background: "white",
+        background: "var(--a-surface)",
         borderRadius: 16,
         padding: 24,
         marginBottom: 24,
-        boxShadow: "0 1px 3px rgba(0,0,0,.06)",
-        border: "1px solid #f1f0ea",
+        boxShadow: "var(--a-shadow-sm)",
+        border: "1px solid var(--a-border)",
         display: "flex",
         flexWrap: "wrap",
         gap: 16,
@@ -1115,7 +1221,7 @@ export function UserListFilters({
             fontWeight: 700,
             letterSpacing: "0.15em",
             textTransform: "uppercase",
-            color: "#6b7280",
+            color: "var(--a-text-muted)",
             marginBottom: 8,
           }}
         >
@@ -1129,7 +1235,7 @@ export function UserListFilters({
               left: 12,
               top: "50%",
               transform: "translateY(-50%)",
-              color: "#9ca3af",
+              color: "var(--a-text-soft)",
               fontSize: 20,
             }}
           >
@@ -1154,7 +1260,7 @@ export function UserListFilters({
             fontWeight: 700,
             letterSpacing: "0.15em",
             textTransform: "uppercase",
-            color: "#6b7280",
+            color: "var(--a-text-muted)",
             marginBottom: 8,
           }}
         >
@@ -1181,7 +1287,7 @@ export function UserListFilters({
             fontWeight: 700,
             letterSpacing: "0.15em",
             textTransform: "uppercase",
-            color: "#6b7280",
+            color: "var(--a-text-muted)",
             marginBottom: 8,
           }}
         >
@@ -1235,10 +1341,10 @@ export function UserListTable({
   return (
     <div
       style={{
-        background: "white",
+        background: "var(--a-surface)",
         borderRadius: 16,
-        boxShadow: "0 1px 3px rgba(0,0,0,.06)",
-        border: "1px solid #f1f0ea",
+        boxShadow: "var(--a-shadow-sm)",
+        border: "1px solid var(--a-border)",
         overflow: "hidden",
       }}
     >
@@ -1254,12 +1360,12 @@ export function UserListTable({
               const initial = (u.fullName || "?")[0].toUpperCase();
               const roleClass = ROLE_BADGE[u.roleName] || "bg-stone-100 text-stone-500";
               return (
-                <article key={u.id} className="fade-row" style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+                <article key={u.id} className="fade-row" style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "var(--a-surface)" }}>
                   <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                     {u.avatarUrl ? (
                       <img alt="" src={u.avatarUrl} style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                     ) : (
-                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(79,100,91,.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f645b", fontWeight: 900, fontSize: 15, flexShrink: 0 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--a-primary-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--a-primary)", fontWeight: 900, fontSize: 15, flexShrink: 0 }}>
                         {initial}
                       </div>
                     )}
@@ -1267,7 +1373,7 @@ export function UserListTable({
                       <div style={{ fontWeight: 900, color: "#292524", fontSize: 16 }}>{u.fullName || "-"}</div>
                       <div style={{ fontSize: 12, color: "#9ca3af" }}>#{u.id}</div>
                       <div style={{ marginTop: 6, overflowWrap: "anywhere", fontSize: 13, color: "#4b5563" }}>{u.email || "-"}</div>
-                      <div style={{ fontSize: 13, color: "#6b7280" }}>{u.phone || "-"}</div>
+                      <div style={{ fontSize: 13, color: "var(--a-text-muted)" }}>{u.phone || "-"}</div>
                     </div>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
@@ -1284,7 +1390,7 @@ export function UserListTable({
                       </label>
                     </div>
                   </div>
-                  <button type="button" onClick={() => openDetail(u.id)} style={{ height: 40, borderRadius: 12, border: "none", background: "#4f645b", color: "#fff", fontWeight: 900, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  <button type="button" onClick={() => openDetail(u.id)} style={{ height: 40, borderRadius: 12, border: "none", background: "var(--a-emphasis-bg)", color: "var(--a-emphasis-text)", fontWeight: 900, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 18 }}>visibility</span>
                     Xem chi tiết
                   </button>
@@ -1305,8 +1411,8 @@ export function UserListTable({
           <thead>
             <tr
               style={{
-                background: "rgba(249,248,243,.5)",
-                borderBottom: "1px solid #f1f0ea",
+                background: "var(--a-surface-raised)",
+                borderBottom: "1px solid var(--a-border)",
               }}
             >
               {["Họ và tên", "Email", "Số điện thoại", "Vai trò", "Trạng thái", "Thao tác"].map((h, i) => (
@@ -1318,7 +1424,7 @@ export function UserListTable({
                     fontWeight: 700,
                     textTransform: "uppercase",
                     letterSpacing: "0.08em",
-                    color: "#6b7280",
+                    color: "var(--a-text-muted)",
                     textAlign: i === 5 ? "right" : "left",
                   }}
                 >
@@ -1327,7 +1433,7 @@ export function UserListTable({
               ))}
             </tr>
           </thead>
-          <tbody style={{ borderTop: "1px solid #f1f0ea" }}>
+          <tbody style={{ borderTop: "1px solid var(--a-border)" }}>
             {loading ? (
               <SkeletonRows />
             ) : paginatedUsers.length === 0 ? null : (
@@ -1340,10 +1446,10 @@ export function UserListTable({
                     key={u.id}
                     className="fade-row"
                     style={{
-                      borderBottom: "1px solid #fafaf8",
+                      borderBottom: "1px solid var(--a-divider)",
                       animationDelay: `${Math.min(i * 25, 200)}ms`,
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "#fafaf8")}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "color-mix(in srgb, var(--a-primary) 6%, var(--a-surface))")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                   >
                     <td style={{ padding: "16px 24px" }}>
@@ -1365,11 +1471,11 @@ export function UserListTable({
                               width: 36,
                               height: 36,
                               borderRadius: "50%",
-                              background: "rgba(79,100,91,.2)",
+                              background: "var(--a-primary-soft)",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              color: "#4f645b",
+                              color: "var(--a-primary)",
                               fontWeight: 700,
                               fontSize: 14,
                             }}
@@ -1378,17 +1484,17 @@ export function UserListTable({
                           </div>
                         )}
                         <div>
-                          <span style={{ fontWeight: 500, color: "#292524", fontSize: 14 }}>
+                          <span style={{ fontWeight: 500, color: "var(--a-text)", fontSize: 14 }}>
                             {u.fullName || "—"}
                           </span>
-                          <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>#{u.id}</p>
+                          <p style={{ fontSize: 12, color: "var(--a-text-soft)", margin: 0 }}>#{u.id}</p>
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: "16px 24px", fontSize: 14, color: "#4b5563" }}>
+                    <td style={{ padding: "16px 24px", fontSize: 14, color: "var(--a-text-muted)" }}>
                       {u.email || "—"}
                     </td>
-                    <td style={{ padding: "16px 24px", fontSize: 14, color: "#4b5563" }}>
+                    <td style={{ padding: "16px 24px", fontSize: 14, color: "var(--a-text-muted)" }}>
                       {u.phone || "—"}
                     </td>
                     <td style={{ padding: "16px 24px" }}>
@@ -1402,7 +1508,7 @@ export function UserListTable({
                           style={{
                             fontSize: 12,
                             fontWeight: 500,
-                            color: active ? "#059669" : "#9ca3af",
+                            color: active ? "var(--a-success)" : "var(--a-text-soft)",
                           }}
                         >
                           {active ? "Hoạt động" : "Đã khóa"}
@@ -1424,7 +1530,7 @@ export function UserListTable({
                           onClick={() => openDetail(u.id)}
                           style={{
                             padding: 8,
-                            color: "#9ca3af",
+                            color: "var(--a-text-soft)",
                             background: "none",
                             border: "none",
                             cursor: "pointer",
@@ -1432,12 +1538,12 @@ export function UserListTable({
                             transition: "all .15s",
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.background = "#f3f4f6";
-                            e.currentTarget.style.color = "#4f645b";
+                            e.currentTarget.style.background = "var(--a-surface-raised)";
+                            e.currentTarget.style.color = "var(--a-primary)";
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.background = "";
-                            e.currentTarget.style.color = "#9ca3af";
+                            e.currentTarget.style.color = "var(--a-text-soft)";
                           }}
                           title="Xem chi tiết"
                         >
@@ -1462,21 +1568,21 @@ export function UserListTable({
             className="material-symbols-outlined"
             style={{
               fontSize: 48,
-              color: "#d1d5db",
+              color: "var(--a-text-soft)",
               display: "block",
               marginBottom: 12,
             }}
           >
             group_off
           </span>
-          <p style={{ color: "#9ca3af", fontWeight: 500 }}>Không tìm thấy người dùng nào</p>
+          <p style={{ color: "var(--a-text-soft)", fontWeight: 500 }}>Không tìm thấy người dùng nào</p>
         </div>
       )}
 
       <div
         style={{
           padding: "16px 24px",
-          borderTop: "1px solid #f1f0ea",
+          borderTop: "1px solid var(--a-border)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -1485,7 +1591,7 @@ export function UserListTable({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 14, color: "#6b7280" }}>Hiển thị</span>
+          <span style={{ fontSize: 14, color: "var(--a-text-muted)" }}>Hiển thị</span>
           <select
             value={pageSize}
             onChange={(e) => {
@@ -1493,8 +1599,9 @@ export function UserListTable({
               setPage(1);
             }}
             style={{
-              background: "#f9f8f3",
-              border: "1px solid #e2e8e1",
+              background: "var(--a-surface-raised)",
+              border: "1px solid var(--a-border-strong)",
+              color: "var(--a-text)",
               borderRadius: 8,
               padding: "4px 8px",
               fontSize: 12,
@@ -1506,7 +1613,7 @@ export function UserListTable({
             <option value="50">50/trang</option>
           </select>
           {filteredCount > 0 && (
-            <span style={{ fontSize: 12, color: "#9ca3af" }}>
+            <span style={{ fontSize: 12, color: "var(--a-text-soft)" }}>
               {start}–{end} / {filteredCount}
             </span>
           )}

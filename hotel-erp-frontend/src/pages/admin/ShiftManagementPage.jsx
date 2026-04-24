@@ -37,10 +37,10 @@ function buildShiftDateRange(shiftType) {
 }
 
 const pageCard = {
-  background: "#fff",
-  border: "1px solid #f1f0ea",
+  background: "var(--a-surface)",
+  border: "1px solid var(--a-border)",
   borderRadius: 20,
-  boxShadow: "0 1px 3px rgba(0,0,0,.06)",
+  boxShadow: "var(--a-shadow-sm)",
 };
 
 const inputStyle = {
@@ -48,18 +48,18 @@ const inputStyle = {
   boxSizing: "border-box",
   padding: "10px 14px",
   borderRadius: 12,
-  border: "1.5px solid #e2e8e1",
-  background: "#f9f8f3",
+  border: "1.5px solid var(--a-border-strong)",
+  background: "var(--a-surface-raised)",
   fontSize: 13,
   fontWeight: 600,
-  color: "#1c1917",
+  color: "var(--a-text)",
   outline: "none",
   fontFamily: "'Manrope', sans-serif",
 };
 
 const PRIMARY_BUTTON = {
-  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
-  color: "#e7fef3",
+  background: "var(--a-emphasis-bg)",
+  color: "var(--a-emphasis-text)",
   border: "none",
   borderRadius: 12,
   padding: "10px 22px",
@@ -69,16 +69,16 @@ const PRIMARY_BUTTON = {
   display: "inline-flex",
   alignItems: "center",
   gap: 8,
-  boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+  boxShadow: "var(--a-shadow-sm)",
   transition: "all 0.15s",
 };
 
 const SECONDARY_BUTTON = {
   padding: "10px 22px",
   borderRadius: 12,
-  border: "1.5px solid #e2e8e1",
-  background: "white",
-  color: "#57534e",
+  border: "1px solid var(--a-border)",
+  background: "var(--a-surface)",
+  color: "var(--a-text-muted)",
   fontSize: 14,
   fontWeight: 700,
   cursor: "pointer",
@@ -91,6 +91,32 @@ const statusMeta = {
   Completed: { bg: "#e0e7ff", color: "#3730a3", label: "Hoàn tất" },
   Absent: { bg: "#fee2e2", color: "#991b1b", label: "Vắng mặt" },
 };
+
+const subtlePanelStyle = {
+  background: "var(--a-surface-raised)",
+  border: "1px solid var(--a-border)",
+  borderRadius: 14,
+};
+
+const outlineButtonStyle = {
+  border: "1px solid var(--a-border)",
+  background: "var(--a-surface)",
+  color: "var(--a-text)",
+};
+
+const strongButtonStyle = {
+  border: "1px solid var(--a-border)",
+  background: "var(--a-surface-bright)",
+  color: "var(--a-text)",
+};
+
+function getStatusMeta(status) {
+  const base = statusMeta[status] || statusMeta.Scheduled;
+  if (status === "Active") return { ...base, bg: "var(--a-success-bg)", color: "var(--a-success)" };
+  if (status === "Completed") return { ...base, bg: "var(--a-info-bg)", color: "var(--a-info)" };
+  if (status === "Absent") return { ...base, bg: "var(--a-error-bg)", color: "var(--a-error)" };
+  return { ...base, bg: "var(--a-warning-bg)", color: "var(--a-warning)" };
+}
 
 const fmtDateTimeLocal = (value) =>
   value ? new Date(value).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
@@ -196,8 +222,8 @@ export default function ShiftManagementPage() {
       `}</style>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 28, color: "#1c1917", fontWeight: 800 }}>Ca làm việc</h2>
-          <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: 14, maxWidth: 760, lineHeight: 1.65 }}>
+          <h2 style={{ margin: 0, fontSize: 28, color: "var(--a-text)", fontWeight: 800 }}>Ca làm việc</h2>
+          <p style={{ margin: "8px 0 0", color: "var(--a-text-muted)", fontSize: 14, maxWidth: 760, lineHeight: 1.65 }}>
             Module này hỗ trợ phân ca, bắt đầu ca, ghi chú bàn giao và xác nhận hoàn tất. Quy tắc chồng ca và ca active cùng bộ phận được xử lý ở backend.
           </p>
         </div>
@@ -206,11 +232,11 @@ export default function ShiftManagementPage() {
         </button>
       </div>
 
-      {errorMessage ? <div style={{ ...pageCard, marginBottom: 20, padding: 14, color: "#b91c1c", background: "#fff7f7", borderColor: "#fecaca" }}>{errorMessage}</div> : null}
+      {errorMessage ? <div style={{ ...pageCard, marginBottom: 20, padding: 14, color: "var(--a-error)", background: "var(--a-error-bg)", borderColor: "var(--a-error-border)" }}>{errorMessage}</div> : null}
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
         <article style={{ ...pageCard, padding: 22 }}>
-          <h3 style={{ margin: "0 0 18px", fontSize: 18, color: "#1c1917", fontWeight: 800 }}>Tạo ca mới</h3>
+          <h3 style={{ margin: "0 0 18px", fontSize: 18, color: "var(--a-text)", fontWeight: 800 }}>Tạo ca mới</h3>
           <form onSubmit={handleCreate} style={{ display: "grid", gap: 12 }}>
             <select value={form.userId} onChange={(e) => setForm((prev) => ({ ...prev, userId: e.target.value }))} style={inputStyle} required>
               <option value="">Chọn nhân sự</option>
@@ -234,7 +260,7 @@ export default function ShiftManagementPage() {
               <input type="datetime-local" value={form.plannedStart} onChange={(e) => setForm((prev) => ({ ...prev, plannedStart: e.target.value }))} style={inputStyle} required />
               <input type="datetime-local" value={form.plannedEnd} onChange={(e) => setForm((prev) => ({ ...prev, plannedEnd: e.target.value }))} style={inputStyle} required />
             </div>
-            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 700 }}>
+            <div style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 700 }}>
               Khung giờ mặc định: {SHIFT_TIME_PRESETS[form.shiftType]?.label || "--"}
             </div>
             <button type="submit" disabled={saving} style={{ ...PRIMARY_BUTTON, height: 44, justifyContent: "center" }}>
@@ -244,22 +270,22 @@ export default function ShiftManagementPage() {
         </article>
 
         <article style={{ ...pageCard, padding: 22 }}>
-          <h3 style={{ margin: "0 0 18px", fontSize: 18, color: "#1c1917", fontWeight: 800 }}>Ca đang hoạt động / trong giờ</h3>
+          <h3 style={{ margin: "0 0 18px", fontSize: 18, color: "var(--a-text)", fontWeight: 800 }}>Ca đang hoạt động / trong giờ</h3>
           <div style={{ display: "grid", gap: 12 }}>
             {currentRows.length === 0 ? (
-              <div style={{ color: "#9ca3af", fontSize: 14 }}>Hiện chưa có ca nào trong khung giờ hiện tại.</div>
+              <div style={{ color: "var(--a-text-soft)", fontSize: 14 }}>Hiện chưa có ca nào trong khung giờ hiện tại.</div>
             ) : currentRows.map((shift) => {
-              const meta = statusMeta[shift.status] || statusMeta.Scheduled;
+              const meta = getStatusMeta(shift.status);
               return (
-                <div key={shift.id} style={{ background: "#faf8f3", borderRadius: 14, padding: 14 }}>
+                <div key={shift.id} style={{ ...subtlePanelStyle, padding: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
                     <div>
-                      <div style={{ color: "#1c1917", fontSize: 15, fontWeight: 800 }}>{shift.userFullName}</div>
-                      <div style={{ color: "#6b7280", fontSize: 13 }}>{shift.department} • {shift.shiftType}</div>
+                      <div style={{ color: "var(--a-text)", fontSize: 15, fontWeight: 800 }}>{shift.userFullName}</div>
+                      <div style={{ color: "var(--a-text-muted)", fontSize: 13 }}>{shift.department} • {shift.shiftType}</div>
                     </div>
                     <span style={{ padding: "6px 10px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 11, fontWeight: 800 }}>{meta.label}</span>
                   </div>
-                  <div style={{ marginTop: 10, color: "#57534e", fontSize: 13 }}>
+                  <div style={{ marginTop: 10, color: "var(--a-text-muted)", fontSize: 13 }}>
                     {fmtDateTimeLocal(shift.plannedStart)} - {fmtDateTimeLocal(shift.plannedEnd)}
                   </div>
                 </div>
@@ -270,8 +296,8 @@ export default function ShiftManagementPage() {
       </section>
 
       <section style={{ ...pageCard, overflow: "hidden" }}>
-        <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1ece2", display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <strong style={{ color: "#1c1917", fontSize: 18 }}>Danh sách ca làm việc</strong>
+        <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--a-border)", display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <strong style={{ color: "var(--a-text)", fontSize: 18 }}>Danh sách ca làm việc</strong>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
             <select value={filters.department} onChange={(e) => setFilters((prev) => ({ ...prev, department: e.target.value }))} style={{ ...inputStyle, width: isMobile ? "100%" : 160 }}>
               <option value="">Tất cả bộ phận</option>
@@ -291,20 +317,20 @@ export default function ShiftManagementPage() {
         {isMobile ? (
           <div style={{ display: "grid", gap: 12, padding: 14 }}>
             {rows.length === 0 ? (
-              <div style={{ padding: 24, textAlign: "center", color: "#9ca3af" }}>Chưa có ca làm việc nào.</div>
+              <div style={{ padding: 24, textAlign: "center", color: "var(--a-text-soft)" }}>Chưa có ca làm việc nào.</div>
             ) : rows.map((shift) => {
-              const meta = statusMeta[shift.status] || statusMeta.Scheduled;
+              const meta = getStatusMeta(shift.status);
               const isEditingHandover = handoverTarget === shift.id;
               return (
-                <article key={shift.id} style={{ border: "1px solid #f1ece2", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+                <article key={shift.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "var(--a-surface)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
                     <div>
-                      <div style={{ color: "#1c1917", fontWeight: 900, fontSize: 16 }}>{shift.userFullName}</div>
-                      <div style={{ color: "#6b7280", fontSize: 13, marginTop: 4 }}>{shift.department} - {shift.shiftType}</div>
+                      <div style={{ color: "var(--a-text)", fontWeight: 900, fontSize: 16 }}>{shift.userFullName}</div>
+                      <div style={{ color: "var(--a-text-muted)", fontSize: 13, marginTop: 4 }}>{shift.department} - {shift.shiftType}</div>
                     </div>
                     <span style={{ padding: "6px 10px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 11, fontWeight: 900, whiteSpace: "nowrap" }}>{meta.label}</span>
                   </div>
-                  <div style={{ display: "grid", gap: 6, color: "#57534e", fontSize: 13 }}>
+                  <div style={{ display: "grid", gap: 6, color: "var(--a-text-muted)", fontSize: 13 }}>
                     <div><strong>Thời gian:</strong> {fmtDateTimeLocal(shift.plannedStart)} - {fmtDateTimeLocal(shift.plannedEnd)}</div>
                     <div><strong>Bắt đầu thực tế:</strong> {fmtDateTimeLocal(shift.actualStart)}</div>
                     <div><strong>Xác nhận:</strong> {shift.confirmedByName || "Chưa có"}</div>
@@ -315,21 +341,21 @@ export default function ShiftManagementPage() {
                       <textarea value={handoverForm.handoverNote} onChange={(e) => setHandoverForm((prev) => ({ ...prev, handoverNote: e.target.value }))} placeholder="Ghi chú bàn giao" style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} />
                       <input type="number" value={handoverForm.cashAtHandover} onChange={(e) => setHandoverForm((prev) => ({ ...prev, cashAtHandover: e.target.value }))} placeholder="Tiền mặt bàn giao (nếu có)" style={inputStyle} />
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                        <button type="button" onClick={() => runAction(() => handoverShift(shift.id, { handoverNote: handoverForm.handoverNote, cashAtHandover: handoverForm.cashAtHandover || null }))} style={{ height: 38, borderRadius: 10, border: "none", background: "#4f645b", color: "#fff", fontWeight: 800 }}>Lưu</button>
-                        <button type="button" onClick={() => setHandoverTarget(null)} style={{ height: 38, borderRadius: 10, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 800 }}>Hủy</button>
+                        <button type="button" onClick={() => runAction(() => handoverShift(shift.id, { handoverNote: handoverForm.handoverNote, cashAtHandover: handoverForm.cashAtHandover || null }))} style={{ ...PRIMARY_BUTTON, height: 38, padding: 0, justifyContent: "center" }}>Lưu</button>
+                        <button type="button" onClick={() => setHandoverTarget(null)} style={{ ...SECONDARY_BUTTON, height: 38, padding: 0 }}>Hủy</button>
                       </div>
                     </div>
                   ) : (
-                    <div style={{ background: "#faf8f3", borderRadius: 12, padding: 10, color: "#57534e", fontSize: 13, lineHeight: 1.5 }}>
+                    <div style={{ ...subtlePanelStyle, padding: 10, color: "var(--a-text-muted)", fontSize: 13, lineHeight: 1.5 }}>
                       {shift.handoverNote || "Chưa có ghi chú bàn giao."}
                       {shift.cashAtHandover != null ? <div style={{ marginTop: 6, fontWeight: 800 }}>Tiền bàn giao: {shift.cashAtHandover}</div> : null}
                     </div>
                   )}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    <button type="button" onClick={() => runAction(() => startShift(shift.id))} disabled={shift.status !== "Scheduled"} style={{ height: 38, borderRadius: 10, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 800, opacity: shift.status !== "Scheduled" ? 0.5 : 1 }}>Bắt đầu</button>
-                    <button type="button" onClick={() => { setHandoverTarget(shift.id); setHandoverForm({ handoverNote: shift.handoverNote || "", cashAtHandover: shift.cashAtHandover || "" }); }} style={{ height: 38, borderRadius: 10, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 800 }}>Bàn giao</button>
-                    <button type="button" onClick={() => runAction(() => completeShift(shift.id))} disabled={shift.status !== "Active"} style={{ height: 38, borderRadius: 10, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 800, opacity: shift.status !== "Active" ? 0.5 : 1 }}>Hoàn tất</button>
-                    <button type="button" onClick={() => runAction(() => confirmShift(shift.id))} style={{ height: 38, borderRadius: 10, border: "none", background: "#1f2937", color: "#fff", fontWeight: 800 }}>Xác nhận</button>
+                    <button type="button" onClick={() => runAction(() => startShift(shift.id))} disabled={shift.status !== "Scheduled"} style={{ ...outlineButtonStyle, height: 38, borderRadius: 10, fontWeight: 800, opacity: shift.status !== "Scheduled" ? 0.5 : 1 }}>Bắt đầu</button>
+                    <button type="button" onClick={() => { setHandoverTarget(shift.id); setHandoverForm({ handoverNote: shift.handoverNote || "", cashAtHandover: shift.cashAtHandover || "" }); }} style={{ ...outlineButtonStyle, height: 38, borderRadius: 10, fontWeight: 800 }}>Bàn giao</button>
+                    <button type="button" onClick={() => runAction(() => completeShift(shift.id))} disabled={shift.status !== "Active"} style={{ ...outlineButtonStyle, height: 38, borderRadius: 10, fontWeight: 800, opacity: shift.status !== "Active" ? 0.5 : 1 }}>Hoàn tất</button>
+                    <button type="button" onClick={() => runAction(() => confirmShift(shift.id))} style={{ ...strongButtonStyle, height: 38, borderRadius: 10, fontWeight: 800 }}>Xác nhận</button>
                   </div>
                 </article>
               );
@@ -339,28 +365,28 @@ export default function ShiftManagementPage() {
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", minWidth: 980, borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#faf8f3", borderBottom: "1px solid #f1ece2" }}>
+              <tr style={{ background: "var(--a-surface-raised)", borderBottom: "1px solid var(--a-border)" }}>
                 {["Nhân sự", "Bộ phận", "Thời gian", "Trạng thái", "Bàn giao", "Thao tác"].map((title) => (
-                  <th key={title} style={{ padding: "14px 18px", textAlign: "left", color: "#78716c", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em" }}>{title}</th>
+                  <th key={title} style={{ padding: "14px 18px", textAlign: "left", color: "var(--a-text-muted)", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em" }}>{title}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", color: "#9ca3af" }}>Chưa có ca làm việc nào.</td></tr>
+                <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", color: "var(--a-text-soft)" }}>Chưa có ca làm việc nào.</td></tr>
               ) : rows.map((shift) => {
-                const meta = statusMeta[shift.status] || statusMeta.Scheduled;
+                const meta = getStatusMeta(shift.status);
                 const isEditingHandover = handoverTarget === shift.id;
                 return (
-                  <tr key={shift.id} style={{ borderBottom: "1px solid #f7f4ee", verticalAlign: "top" }}>
+                  <tr key={shift.id} style={{ borderBottom: "1px solid var(--a-divider)", verticalAlign: "top" }}>
                     <td style={{ padding: "16px 18px" }}>
-                      <div style={{ color: "#1c1917", fontWeight: 800 }}>{shift.userFullName}</div>
-                      <div style={{ color: "#6b7280", fontSize: 13 }}>Xác nhận: {shift.confirmedByName || "Chưa có"}</div>
+                      <div style={{ color: "var(--a-text)", fontWeight: 800 }}>{shift.userFullName}</div>
+                      <div style={{ color: "var(--a-text-muted)", fontSize: 13 }}>Xác nhận: {shift.confirmedByName || "Chưa có"}</div>
                     </td>
-                    <td style={{ padding: "16px 18px", color: "#57534e", fontWeight: 700 }}>{shift.department} • {shift.shiftType}</td>
-                    <td style={{ padding: "16px 18px", color: "#57534e" }}>
+                    <td style={{ padding: "16px 18px", color: "var(--a-text-muted)", fontWeight: 700 }}>{shift.department} • {shift.shiftType}</td>
+                    <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>
                       <div>{fmtDateTimeLocal(shift.plannedStart)} - {fmtDateTimeLocal(shift.plannedEnd)}</div>
-                      <div style={{ marginTop: 6, fontSize: 12, color: "#78716c" }}>Bắt đầu thực tế: {fmtDateTimeLocal(shift.actualStart)}</div>
+                      <div style={{ marginTop: 6, fontSize: 12, color: "var(--a-text-soft)" }}>Bắt đầu thực tế: {fmtDateTimeLocal(shift.actualStart)}</div>
                     </td>
                     <td style={{ padding: "16px 18px" }}>
                       <span style={{ padding: "6px 10px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 11, fontWeight: 800 }}>{meta.label}</span>
@@ -372,12 +398,12 @@ export default function ShiftManagementPage() {
                           <textarea value={handoverForm.handoverNote} onChange={(e) => setHandoverForm((prev) => ({ ...prev, handoverNote: e.target.value }))} placeholder="Ghi chú bàn giao" style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} />
                           <input type="number" value={handoverForm.cashAtHandover} onChange={(e) => setHandoverForm((prev) => ({ ...prev, cashAtHandover: e.target.value }))} placeholder="Tiền mặt bàn giao (nếu có)" style={inputStyle} />
                           <div style={{ display: "flex", gap: 8 }}>
-                            <button type="button" onClick={() => runAction(() => handoverShift(shift.id, { handoverNote: handoverForm.handoverNote, cashAtHandover: handoverForm.cashAtHandover || null }))} style={{ height: 36, padding: "0 12px", borderRadius: 10, border: "none", background: "#4f645b", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Lưu</button>
-                            <button type="button" onClick={() => setHandoverTarget(null)} style={{ height: 36, padding: "0 12px", borderRadius: 10, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 700, cursor: "pointer" }}>Hủy</button>
+                            <button type="button" onClick={() => runAction(() => handoverShift(shift.id, { handoverNote: handoverForm.handoverNote, cashAtHandover: handoverForm.cashAtHandover || null }))} style={{ ...PRIMARY_BUTTON, height: 36, padding: "0 12px", fontWeight: 700 }}>Lưu</button>
+                            <button type="button" onClick={() => setHandoverTarget(null)} style={{ ...SECONDARY_BUTTON, height: 36, padding: "0 12px", fontWeight: 700 }}>Hủy</button>
                           </div>
                         </div>
                       ) : (
-                        <div style={{ color: "#57534e", fontSize: 13, lineHeight: 1.5 }}>
+                        <div style={{ color: "var(--a-text-muted)", fontSize: 13, lineHeight: 1.5 }}>
                           <div>{shift.handoverNote || "Chưa có ghi chú bàn giao."}</div>
                           {shift.cashAtHandover != null ? <div style={{ marginTop: 6, fontWeight: 700 }}>Tiền bàn giao: {shift.cashAtHandover}</div> : null}
                         </div>
@@ -385,7 +411,7 @@ export default function ShiftManagementPage() {
                     </td>
                     <td style={{ padding: "16px 18px" }}>
                       <div style={{ display: "grid", gap: 8 }}>
-                        <button type="button" onClick={() => runAction(() => startShift(shift.id))} disabled={shift.status !== "Scheduled"} style={{ height: 36, borderRadius: 10, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 700, cursor: "pointer" }}>Bắt đầu ca</button>
+                        <button type="button" onClick={() => runAction(() => startShift(shift.id))} disabled={shift.status !== "Scheduled"} style={{ ...outlineButtonStyle, height: 36, borderRadius: 10, fontWeight: 700, cursor: "pointer" }}>Bắt đầu ca</button>
                         <button
                           type="button"
                           onClick={() => {
@@ -395,12 +421,12 @@ export default function ShiftManagementPage() {
                               cashAtHandover: shift.cashAtHandover || "",
                             });
                           }}
-                          style={{ height: 36, borderRadius: 10, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 700, cursor: "pointer" }}
+                          style={{ ...outlineButtonStyle, height: 36, borderRadius: 10, fontWeight: 700, cursor: "pointer" }}
                         >
                           Bàn giao
                         </button>
-                        <button type="button" onClick={() => runAction(() => completeShift(shift.id))} disabled={shift.status !== "Active"} style={{ height: 36, borderRadius: 10, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 700, cursor: "pointer" }}>Hoàn tất</button>
-                        <button type="button" onClick={() => runAction(() => confirmShift(shift.id))} style={{ height: 36, borderRadius: 10, border: "none", background: "#1f2937", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Xác nhận</button>
+                        <button type="button" onClick={() => runAction(() => completeShift(shift.id))} disabled={shift.status !== "Active"} style={{ ...outlineButtonStyle, height: 36, borderRadius: 10, fontWeight: 700, cursor: "pointer" }}>Hoàn tất</button>
+                        <button type="button" onClick={() => runAction(() => confirmShift(shift.id))} style={{ ...strongButtonStyle, height: 36, borderRadius: 10, fontWeight: 700, cursor: "pointer" }}>Xác nhận</button>
                       </div>
                     </td>
                   </tr>

@@ -284,8 +284,9 @@ export default function ServiceCategoryPage() {
               ...panelStyle,
               marginBottom: 20,
               padding: 16,
-              color: "#b91c1c",
-              background: "#fff7f7",
+              color: "var(--a-error)",
+              background: "var(--a-error-bg)",
+              borderColor: "var(--a-error-border)",
             }}
           >
             {errorMessage}
@@ -296,7 +297,7 @@ export default function ServiceCategoryPage() {
           <div
             style={{
               padding: "18px 20px",
-              borderBottom: "1px solid #f1f0ea",
+              borderBottom: "1px solid var(--a-border)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -304,10 +305,10 @@ export default function ServiceCategoryPage() {
             }}
           >
             <div>
-              <div style={{ fontWeight: 700, color: "#1c1917" }}>
+              <div style={{ fontWeight: 700, color: "var(--a-text)" }}>
                 Danh sách nhóm dịch vụ
               </div>
-              <div style={{ fontSize: 12, color: "#78716c", marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginTop: 2 }}>
                 {pagination.totalItems || 0} nhóm theo bộ lọc hiện tại
               </div>
             </div>
@@ -320,11 +321,11 @@ export default function ServiceCategoryPage() {
               ) : categoryRows.length === 0 ? (
                 <EmptyState label="Chưa có nhóm dịch vụ phù hợp bộ lọc." icon="search_off" />
               ) : categoryRows.map((category) => (
-                <article key={category.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12 }}>
+                <article key={category.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "var(--a-surface-raised)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
                     <div>
-                      <div style={{ fontWeight: 900, color: "#1c1917", fontSize: 16 }}>{category.name}</div>
-                      <div style={{ fontSize: 12, color: "#78716c", marginTop: 4 }}>{category.serviceCount ?? 0} dịch vụ</div>
+                      <div style={{ fontWeight: 900, color: "var(--a-text)", fontSize: 16 }}>{category.name}</div>
+                      <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginTop: 4 }}>{category.serviceCount ?? 0} dịch vụ</div>
                     </div>
                     <StatusChip active={category.isActive} />
                   </div>
@@ -344,8 +345,8 @@ export default function ServiceCategoryPage() {
               <thead>
                 <tr
                   style={{
-                    background: "#faf8f3",
-                    borderBottom: "1px solid #f1f0ea",
+                    background: "var(--a-surface-raised)",
+                    borderBottom: "1px solid var(--a-border)",
                   }}
                 >
                   {[
@@ -363,7 +364,7 @@ export default function ServiceCategoryPage() {
                         fontSize: 11,
                         textTransform: "uppercase",
                         letterSpacing: ".08em",
-                        color: "#78716c",
+                        color: "var(--a-text-muted)",
                       }}
                     >
                       {heading}
@@ -392,13 +393,13 @@ export default function ServiceCategoryPage() {
                   </tr>
                 ) : (
                   categoryRows.map((category) => (
-                    <tr key={category.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
+                    <tr key={category.id} style={{ borderBottom: "1px solid var(--a-border)" }}>
                       <td style={{ padding: "16px 18px" }}>
-                        <div style={{ fontWeight: 700, color: "#1c1917" }}>
+                        <div style={{ fontWeight: 700, color: "var(--a-text)" }}>
                           {category.name}
                         </div>
                       </td>
-                      <td style={{ padding: "16px 18px", color: "#57534e" }}>
+                      <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>
                         {category.serviceCount ?? 0}
                       </td>
                       <td style={{ padding: "16px 18px" }}>
@@ -460,7 +461,7 @@ export default function ServiceCategoryPage() {
             placeholder="Ví dụ: Spa & Massage"
           />
           {errorMessage ? (
-            <p style={{ color: "#b91c1c", marginTop: 12 }}>{errorMessage}</p>
+            <p style={{ color: "var(--a-error)", marginTop: 12 }}>{errorMessage}</p>
           ) : null}
           <FormFooter
             submitting={submitting}

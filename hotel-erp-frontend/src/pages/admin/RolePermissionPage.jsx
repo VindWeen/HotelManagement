@@ -42,15 +42,15 @@ const getPermissionLabel = (permission) =>
 
 // â”€â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const TOAST_STYLES = {
-  success: { bg: "#1e3a2f", border: "#2d5a45", text: "#a7f3d0", prog: "#34d399", icon: "check_circle" },
-  error: { bg: "#3a1e1e", border: "#5a2d2d", text: "#fca5a5", prog: "#f87171", icon: "error" },
-  warning: { bg: "#3a2e1a", border: "#5a4820", text: "#fcd34d", prog: "#fbbf24", icon: "warning" },
-  info: { bg: "#1e2f3a", border: "#2d4a5a", text: "#93c5fd", prog: "#60a5fa", icon: "info" },
+  success: { bg: "var(--a-success-bg)", border: "var(--a-success-border)", text: "var(--a-success)", prog: "var(--a-success)", icon: "check_circle" },
+  error: { bg: "var(--a-error-bg)", border: "var(--a-error-border)", text: "var(--a-error)", prog: "var(--a-error)", icon: "error" },
+  warning: { bg: "var(--a-warning-bg)", border: "var(--a-warning-border)", text: "var(--a-warning)", prog: "var(--a-warning)", icon: "warning" },
+  info: { bg: "var(--a-info-bg)", border: "var(--a-info-border)", text: "var(--a-info)", prog: "var(--a-info)", icon: "info" },
 };
 
 const PRIMARY_BUTTON = {
-  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
-  color: "#e7fef3",
+  background: "var(--a-emphasis-bg)",
+  color: "var(--a-emphasis-text)",
   border: "none",
   borderRadius: 12,
   padding: "10px 22px",
@@ -60,14 +60,14 @@ const PRIMARY_BUTTON = {
   display: "inline-flex",
   alignItems: "center",
   gap: 8,
-  boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+  boxShadow: "var(--a-shadow-sm)",
   transition: "all 0.15s",
 };
 
 const SECONDARY_BUTTON = {
-  background: "#fff",
-  color: "#57534e",
-  border: "1.5px solid #e2e8e1",
+  background: "var(--a-surface)",
+  color: "var(--a-text-muted)",
+  border: "1.5px solid var(--a-border-strong)",
   borderRadius: 12,
   padding: "10px 22px",
   fontSize: 14,
@@ -209,7 +209,7 @@ function PermissionCheckbox({
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "#ffffff",
+          color: "var(--a-text-inverse)",
           boxShadow: isActive ? "inset 0 0 0 1px rgba(255,255,255,0.08)" : "none",
           opacity: disabled ? 0.65 : 1,
           transition: "all .18s ease",
@@ -221,7 +221,7 @@ function PermissionCheckbox({
               width: Math.max(8, size - 7),
               height: 2,
               borderRadius: 9999,
-              background: "#ffffff",
+              background: "var(--a-text-inverse)",
               display: "block",
             }}
           />
@@ -253,7 +253,7 @@ const ROLE_COLORS = {
 };
 
 function getRoleColor(name) {
-  return ROLE_COLORS[name] || "#4f645b";
+  return ROLE_COLORS[name] || "var(--a-primary)";
 }
 
 function isProtectedRole(name) {
@@ -457,7 +457,7 @@ function PermissionModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,.55)",
+        background: "var(--a-overlay)",
         backdropFilter: "blur(5px)",
         display: "flex",
         alignItems: "center",
@@ -470,11 +470,11 @@ function PermissionModal({
       <div
         className="primary-card-p"
         style={{
-          background: "white",
+          background: "var(--a-surface)",
           borderRadius: 20,
           width: "100%",
           maxWidth: 540,
-          boxShadow: "0 24px 64px rgba(0,0,0,.4)",
+          boxShadow: "var(--a-shadow-lg)",
           animation: "modalIn .25s cubic-bezier(.22,1,.36,1)",
           maxHeight: "90vh",
           display: "flex",
@@ -485,7 +485,7 @@ function PermissionModal({
         <div
           style={{
             padding: "24px 28px 18px",
-            borderBottom: "1px solid #f1f0ea",
+            borderBottom: "1px solid var(--a-border)",
             display: "flex",
             alignItems: "flex-start",
             justifyContent: "space-between",
@@ -526,7 +526,7 @@ function PermissionModal({
               cursor: "pointer",
               padding: 6,
               borderRadius: 8,
-              color: "#9ca3af",
+              color: "var(--a-text-soft)",
               display: "flex",
             }}
           >
@@ -552,8 +552,8 @@ function PermissionModal({
               marginBottom: 16,
               padding: "10px 14px",
               borderRadius: 12,
-              border: "1.5px solid #d8e2dc",
-              background: "#f5f8f6",
+              border: "1.5px solid var(--a-border-strong)",
+              background: "var(--a-surface-raised)",
               cursor: canEditRole ? "pointer" : "not-allowed",
               userSelect: "none",
             }}
@@ -576,9 +576,9 @@ function PermissionModal({
                 marginBottom: 16,
                 padding: "10px 14px",
                 borderRadius: 12,
-                background: "#fff7ed",
-                border: "1px solid #fed7aa",
-                color: "#9a3412",
+                background: "var(--a-warning-bg)",
+                border: "1px solid var(--a-warning-border)",
+                color: "var(--a-warning)",
                 fontSize: 12,
                 lineHeight: 1.6,
                 fontWeight: 600,
@@ -623,7 +623,7 @@ function PermissionModal({
                     fontWeight: 800,
                     letterSpacing: ".12em",
                     textTransform: "uppercase",
-                    color: "#9ca3af",
+                    color: "var(--a-text-soft)",
                     margin: 0,
                   }}
                 >
@@ -643,8 +643,8 @@ function PermissionModal({
                       borderRadius: 12,
                       background: checked[p.id]
                         ? "rgba(16,185,129,.1)"
-                        : "#f9f8f3",
-                      border: `1.5px solid ${checked[p.id] ? "rgba(16,185,129,.3)" : "#e2e8e1"}`,
+                        : "var(--a-surface-raised)",
+                      border: `1.5px solid ${checked[p.id] ? "var(--a-success-border)" : "var(--a-border-strong)"}`,
                       cursor: canEditRole ? "pointer" : "not-allowed",
                       transition: "all .15s",
                       userSelect: "none",
@@ -660,7 +660,7 @@ function PermissionModal({
                       style={{
                         fontSize: 13,
                         fontWeight: 600,
-                        color: checked[p.id] ? "#10b981" : "inherit",
+                        color: checked[p.id] ? "var(--a-success)" : "inherit",
                         lineHeight: 1.3,
                       }}
                     >
@@ -691,8 +691,8 @@ function PermissionModal({
               fontSize: 14,
               fontWeight: 600,
               background: "none",
-              border: "1.5px solid #e2e8e1",
-              color: "#4b5563",
+              border: "1.5px solid var(--a-border-strong)",
+              color: "var(--a-text-muted)",
               cursor: "pointer",
             }}
           >
@@ -706,8 +706,8 @@ function PermissionModal({
               borderRadius: 10,
               fontSize: 14,
               fontWeight: 700,
-              background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
-              color: "#e7fef3",
+              background: "var(--a-emphasis-bg)",
+              color: "var(--a-emphasis-text)",
               border: "none",
               cursor: canEditRole ? "pointer" : "not-allowed",
               display: "flex",
@@ -721,8 +721,8 @@ function PermissionModal({
                 style={{
                   width: 14,
                   height: 14,
-                  border: "2px solid rgba(231,254,243,.4)",
-                  borderTopColor: "#e7fef3",
+                  border: "2px solid color-mix(in srgb, var(--a-emphasis-text) 35%, transparent)",
+                  borderTopColor: "var(--a-emphasis-text)",
                   borderRadius: "50%",
                   animation: "spin .65s linear infinite",
                 }}
@@ -834,19 +834,19 @@ export default function RolePermissionPage() {
         .perm-btn {
             display:inline-flex; align-items:center; gap:6px;
             padding:8px 16px; border-radius:10px; font-size:13px; font-weight:700;
-            background:rgba(79,100,91,0.08); color:#4f645b; border:1.5px solid rgba(79,100,91,.15);
+            background:var(--a-brand-bg); color:var(--a-brand-ink); border:1.5px solid var(--a-brand-border);
             cursor:pointer; transition:all .15s; font-family:'Manrope',sans-serif;
         }
-        .perm-btn:hover { background:#4f645b; color:#fff; border-color:#4f645b; }
+        .perm-btn:hover { background:var(--a-primary); color:var(--a-text-inverse); border-color:var(--a-primary); }
 
-        .pg-btn { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:#57534e; opacity:0.6; background:transparent; border:none; cursor:pointer; transition:all .15s; font-family:'Manrope',sans-serif; }
-        .pg-btn:hover:not(:disabled) { background:rgba(0,0,0,0.05); opacity:1; }
-        .pg-btn.active { background:#4f645b; color:#fff; font-weight:700; cursor:default; opacity:1; }
+        .pg-btn { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:var(--a-text-muted); opacity:0.8; background:transparent; border:none; cursor:pointer; transition:all .15s; font-family:'Manrope',sans-serif; }
+        .pg-btn:hover:not(:disabled) { background:var(--a-surface-raised); opacity:1; }
+        .pg-btn.active { background:var(--a-primary); color:var(--a-text-inverse); font-weight:700; cursor:default; opacity:1; }
         .pg-btn:disabled { opacity:.2; cursor:not-allowed; }
 
-        tr:hover td { background:#fafaf9 !important; }
-        .table-head { background:#f9f8f3; border-bottom:1.5px solid #e2e8e1; }
-        .table-cell { border-bottom:1px solid #f1f0ea; padding:16px 20px; }
+        tr:hover td { background:color-mix(in srgb, var(--a-primary) 6%, var(--a-surface)) !important; }
+        .table-head { background:var(--a-surface-raised); border-bottom:1.5px solid var(--a-border); }
+        .table-cell { border-bottom:1px solid var(--a-divider); padding:16px 20px; }
             `}</style>
 
       {/* Khu v?c thĂ´ng bĂ¡o */}
@@ -896,7 +896,7 @@ export default function RolePermissionPage() {
               style={{
                 fontSize: 28,
                 fontWeight: 800,
-                color: "#1c1917",
+                color: "var(--a-text)",
                 letterSpacing: "-0.03em",
                 margin: "0 0 6px",
               }}
@@ -937,10 +937,10 @@ export default function RolePermissionPage() {
         <div
           className="primary-card-p"
           style={{
-            background: "white",
+            background: "var(--a-surface)",
             borderRadius: 20,
-            boxShadow: "0 1px 4px rgba(0,0,0,.06)",
-            border: "1px solid #f1f0ea",
+            boxShadow: "var(--a-shadow-sm)",
+            border: "1px solid var(--a-border)",
             overflow: "hidden",
           }}
         >
@@ -948,7 +948,7 @@ export default function RolePermissionPage() {
           <div
             style={{
               padding: "20px 28px",
-              borderBottom: "1px solid #f1f0ea",
+              borderBottom: "1px solid var(--a-border)",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -980,22 +980,22 @@ export default function RolePermissionPage() {
                   <div key={index} className="skeleton" style={{ height: 104, borderRadius: 16 }} />
                 ))
               ) : paginatedRoles.length === 0 ? (
-                <div style={{ padding: "36px 0", textAlign: "center", color: "#9ca3af" }}>Chua co vai tro nao</div>
+                <div style={{ padding: "36px 0", textAlign: "center", color: "var(--a-text-soft)" }}>Chua co vai tro nao</div>
               ) : paginatedRoles.map((role, i) => {
                 const dotColor = getRoleColor(role.name);
                 const roleNum = (page - 1) * pageSize + i + 1;
                 return (
-                  <article key={role.id} className="fade-row" style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+                  <article key={role.id} className="fade-row" style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "var(--a-surface)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
                       <div>
                         <div style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 900, color: "#9ca3af" }}>ROLE-{String(roleNum).padStart(3, "0")}</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
                           <span style={{ width: 10, height: 10, borderRadius: "50%", background: dotColor, boxShadow: `0 0 0 2px ${dotColor}22` }} />
-                          <span style={{ fontSize: 16, fontWeight: 900, color: "#1c1917" }}>{role.name}</span>
+                          <span style={{ fontSize: 16, fontWeight: 900, color: "var(--a-text)" }}>{role.name}</span>
                         </div>
                       </div>
                     </div>
-                    <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.45 }}>{role.description || "Chưa có mô tả"}</div>
+                    <div style={{ fontSize: 13, color: "var(--a-text-muted)", lineHeight: 1.45 }}>{role.description || "Chưa có mô tả"}</div>
                     {hasPermission("EDIT_ROLES") && (
                       <button className="perm-btn" onClick={() => openPermission(role)} disabled={isProtectedRole(role.name)} style={{ opacity: isProtectedRole(role.name) ? 0.55 : 1, cursor: isProtectedRole(role.name) ? "not-allowed" : "pointer", width: "100%", justifyContent: "center" }}>
                         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>shield_lock</span>
@@ -1019,7 +1019,7 @@ export default function RolePermissionPage() {
                         fontSize: 11,
                         fontWeight: 800,
                         letterSpacing: ".1em",
-                        color: "#78716c",
+                        color: "var(--a-text-muted)",
                         textAlign: i === 3 ? "right" : "left",
                         whiteSpace: "nowrap",
                       }}
@@ -1174,15 +1174,15 @@ export default function RolePermissionPage() {
             <div
               style={{
                 padding: "14px 28px",
-                borderTop: "1px solid #f1f0ea",
+                borderTop: "1px solid var(--a-border)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
               }}
             >
-              <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>
+              <p style={{ fontSize: 12, color: "var(--a-text-soft)", margin: 0 }}>
                 {start}-{end} /{" "}
-                <span style={{ fontWeight: 600, color: "#6b7280" }}>
+                <span style={{ fontWeight: 600, color: "var(--a-text-muted)" }}>
                   {roles.length}
                 </span>{" "}
                 vai trò
@@ -1234,9 +1234,9 @@ export default function RolePermissionPage() {
           style={{
             marginTop: 20,
             padding: "14px 20px",
-            background: "rgba(79,100,91,.06)",
+            background: "var(--a-brand-bg)",
             borderRadius: 12,
-            border: "1px solid rgba(79,100,91,.12)",
+            border: "1px solid var(--a-brand-border)",
             display: "flex",
             alignItems: "flex-start",
             gap: 10,
@@ -1246,7 +1246,7 @@ export default function RolePermissionPage() {
             className="material-symbols-outlined"
             style={{
               fontSize: 18,
-              color: "#4f645b",
+              color: "var(--a-brand-ink)",
               flexShrink: 0,
               marginTop: 1,
             }}

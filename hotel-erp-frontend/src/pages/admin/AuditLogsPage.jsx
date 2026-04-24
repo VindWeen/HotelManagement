@@ -9,19 +9,20 @@ import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import { useAdminAuthStore } from "../../store/adminAuthStore";
 
 const panelStyle = {
-  background: "white",
+  background: "var(--a-surface)",
   borderRadius: 16,
-  boxShadow: "0 1px 3px rgba(0,0,0,.06)",
-  border: "1px solid #f1f0ea",
+  boxShadow: "var(--a-shadow-sm)",
+  border: "1px solid var(--a-border)",
 };
 
 const inputStyle = {
   width: "100%",
-  background: "#f9f8f3",
-  border: "1px solid #e2e8e1",
+  background: "var(--a-surface-raised)",
+  border: "1px solid var(--a-border-strong)",
   borderRadius: 12,
   padding: "10px 16px",
   fontSize: 14,
+  color: "var(--a-text)",
   outline: "none",
   boxSizing: "border-box",
   minHeight: 42,
@@ -33,7 +34,7 @@ const fieldLabelStyle = {
   fontWeight: 800,
   letterSpacing: "0.15em",
   textTransform: "uppercase",
-  color: "#6b7280",
+  color: "var(--a-text-muted)",
   marginBottom: 8,
 };
 
@@ -83,22 +84,22 @@ function normalizeEmployeeOptions(payload) {
 
 function roleBadgeStyle(roleName) {
   if (roleName === "Admin") {
-    return { background: "#ede9fe", color: "#6d28d9" };
+    return { background: "var(--a-info-bg)", color: "var(--a-info)" };
   }
   if (roleName === "Manager") {
-    return { background: "#dcfce7", color: "#15803d" };
+    return { background: "var(--a-success-bg)", color: "var(--a-success)" };
   }
   if (roleName === "Housekeeping") {
-    return { background: "#fef3c7", color: "#b45309" };
+    return { background: "var(--a-warning-bg)", color: "var(--a-warning)" };
   }
-  return { background: "#e5e7eb", color: "#4b5563" };
+  return { background: "var(--a-surface-raised)", color: "var(--a-text-muted)" };
 }
 
 function actionTextStyle(actionType) {
-  if (actionType === "DELETE") return { color: "#b45309" };
-  if (actionType === "PATCH") return { color: "#0f766e" };
-  if (actionType === "PUT" || actionType === "UPDATE") return { color: "#2563eb" };
-  return { color: "#15803d" };
+  if (actionType === "DELETE") return { color: "var(--a-warning)" };
+  if (actionType === "PATCH") return { color: "var(--a-brand-ink)" };
+  if (actionType === "PUT" || actionType === "UPDATE") return { color: "var(--a-info)" };
+  return { color: "var(--a-success)" };
 }
 
 function downloadBlob(blob, fileName) {
@@ -231,8 +232,8 @@ export default function AuditLogsPage() {
         }}
       >
         <div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: "#1f2937" }}>Nhật ký hoạt động</h1>
-          <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: 14 }}>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: "var(--a-text)" }}>Nhật ký hoạt động</h1>
+          <p style={{ margin: "4px 0 0", color: "var(--a-text-muted)", fontSize: 14 }}>
             {canViewAll
               ? "Theo dõi toàn bộ hoạt động trong hệ thống."
               : `Bạn chỉ xem được log của nhóm vai trò ${currentUserRole || "hiện tại"}.`}
@@ -250,11 +251,11 @@ export default function AuditLogsPage() {
               borderRadius: 12,
               fontSize: 14,
               fontWeight: 800,
-              background: "white",
-              color: "#1c1917",
-              border: "1px solid #e2e8e1",
+              background: "var(--a-surface)",
+              color: "var(--a-text)",
+              border: "1px solid var(--a-border)",
               cursor: exporting ? "not-allowed" : "pointer",
-              boxShadow: "0 1px 3px rgba(0,0,0,.06)",
+              boxShadow: "var(--a-shadow-sm)",
               opacity: exporting ? 0.7 : 1,
             }}
           >
@@ -270,11 +271,11 @@ export default function AuditLogsPage() {
               borderRadius: 12,
               fontSize: 14,
               fontWeight: 800,
-              background: "#4f645b",
-              color: "#e7fef3",
+              background: "var(--a-emphasis-bg)",
+              color: "var(--a-emphasis-text)",
               border: "none",
               cursor: exporting ? "not-allowed" : "pointer",
-              boxShadow: "0 4px 12px rgba(79,100,91,.2)",
+              boxShadow: "var(--a-shadow-sm)",
               opacity: exporting ? 0.7 : 1,
             }}
           >
@@ -333,9 +334,9 @@ export default function AuditLogsPage() {
           <button
             onClick={clearFilters}
             style={{
-              background: "#f3f4f6",
-              border: "1px solid #e2e8e1",
-              color: "#4b5563",
+              background: "var(--a-surface-raised)",
+              border: "1px solid var(--a-border)",
+              color: "var(--a-text-muted)",
               padding: 10,
               borderRadius: 12,
               cursor: "pointer",
@@ -356,35 +357,35 @@ export default function AuditLogsPage() {
         {isMobile ? (
           <div style={{ display: "grid", gap: 12, padding: 14 }}>
             {loading ? (
-              <div style={{ padding: 24, textAlign: "center", color: "#6b7280" }}>Dang tai du lieu...</div>
+              <div style={{ padding: 24, textAlign: "center", color: "var(--a-text-muted)" }}>Dang tai du lieu...</div>
             ) : rows.length === 0 ? (
-              <div style={{ padding: 24, textAlign: "center", color: "#6b7280" }}>Khong co log phu hop bo loc hien tai.</div>
+              <div style={{ padding: 24, textAlign: "center", color: "var(--a-text-muted)" }}>Khong co log phu hop bo loc hien tai.</div>
             ) : rows.map((row) => {
               const badge = roleBadgeStyle(row.roleName);
               const expanded = !!expandedIds[row.id];
               return (
-                <article key={row.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, background: expanded ? "#fcfcfa" : "white", boxShadow: "0 1px 3px rgba(0,0,0,.04)" }}>
+                <article key={row.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, background: expanded ? "var(--a-surface-raised)" : "var(--a-surface)", boxShadow: "var(--a-shadow-sm)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 12, color: "#78716c", fontWeight: 800, marginBottom: 4 }}>{row.logDate}</div>
-                      <div style={{ fontSize: 15, color: "#1c1917", fontWeight: 800 }}>{row.userName}</div>
+                      <div style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 800, marginBottom: 4 }}>{row.logDate}</div>
+                      <div style={{ fontSize: 15, color: "var(--a-text)", fontWeight: 800 }}>{row.userName}</div>
                       <span style={{ display: "inline-flex", marginTop: 6, padding: "4px 9px", borderRadius: 999, fontSize: 10, fontWeight: 800, textTransform: "uppercase", ...badge }}>{row.roleName}</span>
                     </div>
-                    <button onClick={() => toggleExpanded(row.id)} style={{ width: 36, height: 36, borderRadius: 12, border: "1px solid #d6d3d1", background: "#fff", color: "#4f645b", fontWeight: 900 }}>
+                    <button onClick={() => toggleExpanded(row.id)} style={{ width: 36, height: 36, borderRadius: 12, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-primary)", fontWeight: 900 }}>
                       {expanded ? "-" : "+"}
                     </button>
                   </div>
-                  <p style={{ margin: "12px 0 0", color: "#4b5563", fontSize: 13, lineHeight: 1.55 }}>{row.summary}</p>
+                  <p style={{ margin: "12px 0 0", color: "var(--a-text-muted)", fontSize: 13, lineHeight: 1.55 }}>{row.summary}</p>
                   {expanded ? (
                     <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
                       {(row.events || []).map((event, index) => (
-                        <div key={event.eventId || `${row.id}-${index}`} style={{ border: "1px solid #e2e8e1", borderRadius: 12, padding: 10, background: "#f8fafc" }}>
+                        <div key={event.eventId || `${row.id}-${index}`} style={{ border: "1px solid var(--a-border)", borderRadius: 12, padding: 10, background: "var(--a-surface-raised)" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
-                            <span style={{ fontSize: 12, color: "#44403c", fontWeight: 800 }}>{event.time}</span>
+                            <span style={{ fontSize: 12, color: "var(--a-text)", fontWeight: 800 }}>{event.time}</span>
                             <span style={{ fontSize: 12, fontWeight: 900, ...actionTextStyle(event.actionType) }}>{event.actionType}</span>
                           </div>
-                          <div style={{ fontSize: 12, color: "#78716c", fontWeight: 700, marginBottom: 4 }}>{event.entityType}</div>
-                          <div style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.45 }}>{event.message}</div>
+                          <div style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 700, marginBottom: 4 }}>{event.entityType}</div>
+                          <div style={{ fontSize: 13, color: "var(--a-text-muted)", lineHeight: 1.45 }}>{event.message}</div>
                         </div>
                       ))}
                     </div>
@@ -397,21 +398,21 @@ export default function AuditLogsPage() {
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
-              <tr style={{ background: "rgba(249,248,243,.5)", borderBottom: "1px solid #f1f0ea", color: "#44403c" }}>
+              <tr style={{ background: "var(--a-surface-raised)", borderBottom: "1px solid var(--a-border)", color: "var(--a-text)" }}>
                 <th style={{ padding: "16px 18px", width: 56 }} />
                 <th style={{ padding: "16px 18px", textAlign: "left", fontSize: 13, fontWeight: 800 }}>Ngày</th>
                 <th style={{ padding: "16px 18px", textAlign: "left", fontSize: 13, fontWeight: 800 }}>Nhân viên</th>
                 <th style={{ padding: "16px 18px", textAlign: "left", fontSize: 13, fontWeight: 800 }}>Tóm tắt hoạt động</th>
               </tr>
             </thead>
-            <tbody style={{ borderTop: "1px solid #f1f0ea" }}>
+            <tbody style={{ borderTop: "1px solid var(--a-border)" }}>
               {loading ? (
                 <tr>
-                  <td colSpan={4} style={{ padding: 28, textAlign: "center", color: "#6b7280" }}>Đang tải dữ liệu...</td>
+                  <td colSpan={4} style={{ padding: 28, textAlign: "center", color: "var(--a-text-muted)" }}>Đang tải dữ liệu...</td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ padding: 28, textAlign: "center", color: "#6b7280" }}>Không có log phù hợp bộ lọc hiện tại.</td>
+                  <td colSpan={4} style={{ padding: 28, textAlign: "center", color: "var(--a-text-muted)" }}>Không có log phù hợp bộ lọc hiện tại.</td>
                 </tr>
               ) : rows.map((row) => {
                 const badge = roleBadgeStyle(row.roleName);
@@ -421,15 +422,15 @@ export default function AuditLogsPage() {
                     <tr
                       key={row.id}
                       style={{
-                        borderBottom: expanded ? "none" : "1px solid #fafaf8",
-                        background: expanded ? "#fcfcfa" : "",
-                        boxShadow: expanded ? "inset 3px 0 0 #4f645b" : "none",
+                        borderBottom: expanded ? "none" : "1px solid var(--a-divider)",
+                        background: expanded ? "var(--a-surface-raised)" : "",
+                        boxShadow: expanded ? "inset 3px 0 0 var(--a-primary)" : "none",
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = expanded ? "#fcfcfa" : "#fafaf8";
+                        e.currentTarget.style.background = expanded ? "var(--a-surface-raised)" : "color-mix(in srgb, var(--a-primary) 6%, var(--a-surface))";
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = expanded ? "#fcfcfa" : "";
+                        e.currentTarget.style.background = expanded ? "var(--a-surface-raised)" : "";
                       }}
                     >
                       <td style={{ padding: "16px 18px", verticalAlign: "top" }}>
@@ -439,10 +440,10 @@ export default function AuditLogsPage() {
                             width: 34,
                             height: 34,
                             borderRadius: 999,
-                            border: "1px solid #d6d3d1",
-                            background: "#fff",
+                            border: "1px solid var(--a-border)",
+                            background: "var(--a-surface)",
                             cursor: "pointer",
-                            color: "#4f645b",
+                            color: "var(--a-primary)",
                             fontWeight: 700,
                             fontSize: 16,
                           }}
@@ -450,10 +451,10 @@ export default function AuditLogsPage() {
                           {expanded ? "-" : "+"}
                         </button>
                       </td>
-                      <td style={{ padding: "16px 24px", verticalAlign: "top", fontWeight: 600, color: "#292524" }}>{row.logDate}</td>
+                      <td style={{ padding: "16px 24px", verticalAlign: "top", fontWeight: 600, color: "var(--a-text)" }}>{row.logDate}</td>
                       <td style={{ padding: "16px 24px", verticalAlign: "top" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                          <span style={{ fontWeight: 500, color: "#292524", fontSize: 14 }}>{row.userName}</span>
+                          <span style={{ fontWeight: 500, color: "var(--a-text)", fontSize: 14 }}>{row.userName}</span>
                           <span style={{
                             display: "inline-flex",
                             width: "fit-content",
@@ -469,29 +470,29 @@ export default function AuditLogsPage() {
                           </span>
                         </div>
                       </td>
-                      <td style={{ padding: "16px 24px", verticalAlign: "top", color: "#4b5563", fontSize: 14 }}>{row.summary}</td>
+                      <td style={{ padding: "16px 24px", verticalAlign: "top", color: "var(--a-text-muted)", fontSize: 14 }}>{row.summary}</td>
                     </tr>
                     {expanded ? (
-                      <tr style={{ background: "#fcfcfa", borderBottom: "1px solid #f1f0ea" }}>
+                      <tr style={{ background: "var(--a-surface-raised)", borderBottom: "1px solid var(--a-border)" }}>
                         <td />
                         <td colSpan={3} style={{ padding: "0 24px 20px 40px" }}>
-                          <div style={{ background: "#f8fafc", border: "1px solid #e2e8e1", borderRadius: 14, overflow: "hidden", borderLeft: "4px solid #4f645b", boxShadow: "0 1px 2px rgba(0,0,0,.04)" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 16px", background: "rgba(79,100,91,.07)", borderBottom: "1px solid #e2e8e1" }}>
+                          <div style={{ background: "var(--a-surface)", border: "1px solid var(--a-border)", borderRadius: 14, overflow: "hidden", borderLeft: "4px solid var(--a-primary)", boxShadow: "var(--a-shadow-sm)" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 16px", background: "var(--a-brand-bg)", borderBottom: "1px solid var(--a-border)" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span className="material-symbols-outlined" style={{ fontSize: 18, color: "#4f645b" }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: 18, color: "var(--a-brand-ink)" }}>
                                 subdirectory_arrow_right
                               </span>
-                              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#4f645b" }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--a-brand-ink)" }}>
                                 Chi tiết hoạt động
                               </span>
                             </div>
-                            <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
+                            <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 600 }}>
                               {row.events.length} sự kiện
                             </span>
                           </div>
                           <table style={{ width: "100%", borderCollapse: "collapse" }}>
                             <thead>
-                              <tr style={{ color: "#6b7280", background: "rgba(248,250,252,.95)", borderBottom: "1px solid #e2e8e1" }}>
+                              <tr style={{ color: "var(--a-text-muted)", background: "var(--a-surface-raised)", borderBottom: "1px solid var(--a-border)" }}>
                                 <th style={{ textAlign: "left", padding: "12px 16px" }}>Giờ</th>
                                 <th style={{ textAlign: "left", padding: "12px 16px" }}>Hành động</th>
                                 <th style={{ textAlign: "left", padding: "12px 16px" }}>Đối tượng</th>
@@ -500,11 +501,11 @@ export default function AuditLogsPage() {
                             </thead>
                             <tbody>
                               {row.events.map((event, index) => (
-                                <tr key={event.eventId || `${row.id}-${index}`} style={{ borderTop: index === 0 ? "none" : "1px solid #f1f0ea" }}>
-                                  <td style={{ padding: "12px 16px", whiteSpace: "nowrap", color: "#44403c" }}>{event.time}</td>
+                                <tr key={event.eventId || `${row.id}-${index}`} style={{ borderTop: index === 0 ? "none" : "1px solid var(--a-divider)" }}>
+                                  <td style={{ padding: "12px 16px", whiteSpace: "nowrap", color: "var(--a-text)" }}>{event.time}</td>
                                   <td style={{ padding: "12px 16px", fontWeight: 700, fontSize: 13, ...actionTextStyle(event.actionType) }}>{event.actionType}</td>
-                                  <td style={{ padding: "12px 16px", color: "#44403c" }}>{event.entityType}</td>
-                                  <td style={{ padding: "12px 16px", color: "#4b5563" }}>{event.message}</td>
+                                  <td style={{ padding: "12px 16px", color: "var(--a-text)" }}>{event.entityType}</td>
+                                  <td style={{ padding: "12px 16px", color: "var(--a-text-muted)" }}>{event.message}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -521,8 +522,8 @@ export default function AuditLogsPage() {
         </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: isMobile ? "14px" : "16px 24px", borderTop: "1px solid #f1f0ea", flexWrap: "wrap", gap: 12 }}>
-          <span style={{ color: "#6b7280", fontSize: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: isMobile ? "14px" : "16px 24px", borderTop: "1px solid var(--a-border)", flexWrap: "wrap", gap: 12 }}>
+          <span style={{ color: "var(--a-text-muted)", fontSize: 14 }}>
             Tổng {pagination.total || 0} nhóm log
           </span>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -530,31 +531,31 @@ export default function AuditLogsPage() {
               onClick={() => loadRows(Math.max(1, pagination.page - 1))}
               disabled={(pagination.page || 1) <= 1}
               style={{
-                background: "#fff",
-                border: "1px solid #e2e8e1",
+                background: "var(--a-surface)",
+                border: "1px solid var(--a-border)",
                 borderRadius: 10,
                 padding: "8px 14px",
                 fontSize: 13,
-                color: "#44403c",
+                color: "var(--a-text)",
                 cursor: (pagination.page || 1) <= 1 ? "not-allowed" : "pointer",
                 opacity: (pagination.page || 1) <= 1 ? 0.5 : 1,
               }}
             >
               Trước
             </button>
-            <span style={{ color: "#4b5563", fontSize: 14 }}>
+            <span style={{ color: "var(--a-text-muted)", fontSize: 14 }}>
               Trang {pagination.page || 1}/{pagination.totalPages || 1}
             </span>
             <button
               onClick={() => loadRows(Math.min(pagination.totalPages || 1, (pagination.page || 1) + 1))}
               disabled={(pagination.page || 1) >= (pagination.totalPages || 1)}
               style={{
-                background: "#fff",
-                border: "1px solid #e2e8e1",
+                background: "var(--a-surface)",
+                border: "1px solid var(--a-border)",
                 borderRadius: 10,
                 padding: "8px 14px",
                 fontSize: 13,
-                color: "#44403c",
+                color: "var(--a-text)",
                 cursor: (pagination.page || 1) >= (pagination.totalPages || 1) ? "not-allowed" : "pointer",
                 opacity: (pagination.page || 1) >= (pagination.totalPages || 1) ? 0.5 : 1,
               }}

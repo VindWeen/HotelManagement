@@ -47,7 +47,11 @@ const InvoiceStatusBadge = ({ status }) => {
     Paid: { bg: "var(--a-success-bg)", text: "var(--a-success)", icon: "check_circle" },
     Refunded: { bg: "var(--a-surface-bright)", text: "var(--a-text-muted)", icon: "replay" }
   };
-  const s = map[status] || { bg: "#f1f5f9", text: "#64748b", icon: "help" };
+  const s = map[status] || {
+    bg: "var(--a-surface-bright)",
+    text: "var(--a-text-muted)",
+    icon: "help",
+  };
   return (
     <span className="badge-p" style={{ background: s.bg, color: s.text }}>
       <span className="material-symbols-outlined" style={{ fontSize: 13, fontWeight: 700 }}>{s.icon}</span>
@@ -396,8 +400,50 @@ export default function InvoiceDetailPage() {
     }, 200);
   };
 
-  const inputStyle = { border: "1.5px solid #e2e8e1", background: "#f9f8f3", padding: "10px 14px", borderRadius: 12, fontSize: 13, fontWeight: 600, color: "#1c1917", outline: "none", width: "100%", boxSizing: "border-box", fontFamily: "Manrope, sans-serif" };
-
+  const inputStyle = {
+    border: "1px solid var(--a-border)",
+    background: "var(--a-surface-raised)",
+    padding: "10px 14px",
+    borderRadius: 12,
+    fontSize: 13,
+    fontWeight: 600,
+    color: "var(--a-text)",
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box",
+    fontFamily: "Manrope, sans-serif",
+  };
+  const cardStyle = {
+    background: "var(--a-surface)",
+    borderRadius: 18,
+    border: "1px solid var(--a-border)",
+    boxShadow: "var(--a-shadow-sm)",
+  };
+  const sectionHeaderStyle = {
+    padding: "20px 24px",
+    borderBottom: "1px solid var(--a-border)",
+    background: "var(--a-surface-raised)",
+  };
+  const tableHeadCellStyle = {
+    padding: "14px 24px",
+    fontSize: 12,
+    fontWeight: 700,
+    color: "var(--a-text-muted)",
+    borderBottom: "1px solid var(--a-border)",
+    textTransform: "uppercase",
+    letterSpacing: ".05em",
+  };
+  const damageStatusBadgeStyle = (remainingToReplenish) => ({
+    width: "fit-content",
+    background:
+      remainingToReplenish > 0 ? "var(--a-warning-bg)" : "var(--a-success-bg)",
+    border: `1px solid ${
+      remainingToReplenish > 0
+        ? "var(--a-warning-border)"
+        : "var(--a-success-border)"
+    }`,
+    color: remainingToReplenish > 0 ? "var(--a-warning)" : "var(--a-success)",
+  });
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", paddingBottom: 40 }}>
       <style>{`
@@ -405,13 +451,14 @@ export default function InvoiceDetailPage() {
         * { font-family: 'Manrope', sans-serif; }
         @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
-        .table-row { transition: background 0.1s; border-bottom: 1px solid #f1f0ea; }
-        .table-row:hover { background: #fafaf8 !important; }
-        .badge-p { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
-        .action-btn { display: inline-flex; alignItems: center; gap: 8px; padding: 10px 22px; borderRadius: 12px; font-size: 14px; font-weight: 800; background: white; color: #1c1917; border: 1.5px solid #e2e8e1; cursor: pointer; transition: all 0.15s; justify-content: center; }
-        .action-btn:hover:not(:disabled) { border-color: #4f645b; color: #4f645b; background: #f0faf5; }
-        .action-btn.primary { background: linear-gradient(135deg,#4f645b 0%,#43574f 100%); color: #e7fef3; border: none; font-weight: 800; }
-        .action-btn.primary:hover:not(:disabled) { box-shadow: 0 4px 14px rgba(79,100,91,0.25); }
+        .table-row { transition: background 0.1s; }
+        .table-row td { border-bottom: 1px solid var(--a-border); }
+        .table-row:hover td { background: color-mix(in srgb, var(--a-primary) 6%, var(--a-surface)); }
+        .badge-p { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; }
+        .action-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; border-radius: 12px; font-size: 14px; font-weight: 800; background: var(--a-surface); color: var(--a-text); border: 1px solid var(--a-border); cursor: pointer; transition: all 0.15s; justify-content: center; }
+        .action-btn:hover:not(:disabled) { border-color: var(--a-border-strong); color: var(--a-primary); background: var(--a-primary-muted); }
+        .action-btn.primary { background: var(--a-primary); color: var(--a-text-inverse); border: 1px solid transparent; font-weight: 800; }
+        .action-btn.primary:hover:not(:disabled) { background: var(--a-primary-hover); color: var(--a-text-inverse); box-shadow: var(--a-shadow-sm); }
         .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
       `}</style>
 
@@ -423,15 +470,15 @@ export default function InvoiceDetailPage() {
       <div style={{ marginBottom: 28 }}>
         <button
           onClick={() => navigate("/admin/invoices")}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#6b7280", fontSize: 13, fontWeight: 800, cursor: "pointer", padding: 0, marginBottom: 12 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "var(--a-text-muted)", fontSize: 13, fontWeight: 800, cursor: "pointer", padding: 0, marginBottom: 12 }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
           Quay lại danh sách
         </button>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ fontSize: 28, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.03em", margin: 0 }}>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: "var(--a-text)", letterSpacing: "-0.03em", margin: 0 }}>
             Chi tiết Hóa đơn
-            {invoice && <span style={{ marginLeft: 14, color: "#9ca3af", fontWeight: 600, fontSize: 18 }}>#{invoice.id}</span>}
+            {invoice && <span style={{ marginLeft: 14, color: "var(--a-text-soft)", fontWeight: 600, fontSize: 18 }}>#{invoice.id}</span>}
           </h2>
           {invoice && <InvoiceStatusBadge status={invoice.status} />}
         </div>
@@ -441,8 +488,8 @@ export default function InvoiceDetailPage() {
         <div className="flex flex-col xl:flex-row gap-8">
           {/* Left Column: Form & Table */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
-            <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: "0 0 16px" }}>Phụ phí / Điều chỉnh hóa đơn</h3>
+            <div style={{ ...cardStyle, padding: 24 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--a-text)", margin: "0 0 16px" }}>Phụ phí / Điều chỉnh hóa đơn</h3>
               <form onSubmit={submitAdjustment} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <select value={adjustmentForm.adjustmentType} onChange={(e) => setAdjustmentForm((prev) => ({ ...prev, adjustmentType: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
@@ -481,10 +528,10 @@ export default function InvoiceDetailPage() {
             
             {/* Payment Form */}
             {invoice.status !== "Paid" && (
-              <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: "0 0 16px" }}>Ghi nhận thanh toán</h3>
+              <div style={{ ...cardStyle, padding: 24 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--a-text)", margin: "0 0 16px" }}>Ghi nhận thanh toán</h3>
                 {(invoice.status === "Draft" || invoice.status === "Ready_To_Collect") && (
-                  <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 12, border: "1px solid #bae6fd", background: "#f0f9ff", color: "#075985", fontSize: 13, fontWeight: 700 }}>
+                  <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 12, border: "1px solid var(--a-info-border)", background: "var(--a-info-bg)", color: "var(--a-info)", fontSize: 13, fontWeight: 700 }}>
                     {invoice.status === "Draft"
                       ? "Hóa đơn này đang ở trạng thái nháp. Bạn có thể chốt hóa đơn trước hoặc thu tiền trực tiếp để hệ thống tự cập nhật trạng thái."
                       : "Hóa đơn đã sẵn sàng để thu tiền. Bạn có thể ghi nhận thanh toán từng phần hoặc thanh toán đủ."}
@@ -493,7 +540,7 @@ export default function InvoiceDetailPage() {
                 <form onSubmit={submitPayment} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 6 }}>Số tiền (Dư nợ: {formatCurrency(outstanding)})</label>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "var(--a-text-muted)", marginBottom: 6 }}>Số tiền (Dư nợ: {formatCurrency(outstanding)})</label>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -505,13 +552,13 @@ export default function InvoiceDetailPage() {
                         }}
                         required
                         style={inputStyle}
-                        onFocus={(e) => e.target.style.borderColor = "#4f645b"}
-                        onBlur={(e) => e.target.style.borderColor = "#e2e8e1"}
+                        onFocus={(e) => e.target.style.borderColor = "var(--a-primary)"}
+                        onBlur={(e) => e.target.style.borderColor = "var(--a-border)"}
                       />
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 6 }}>Loại thanh toán</label>
-                      <select value={form.paymentType} onChange={(e) => setForm({ ...form, paymentType: e.target.value })} style={{ ...inputStyle, cursor: "pointer" }} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"}>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "var(--a-text-muted)", marginBottom: 6 }}>Loại thanh toán</label>
+                      <select value={form.paymentType} onChange={(e) => setForm({ ...form, paymentType: e.target.value })} style={{ ...inputStyle, cursor: "pointer" }} onFocus={(e) => e.target.style.borderColor = "var(--a-primary)"} onBlur={(e) => e.target.style.borderColor = "var(--a-border)"}>
                         <option value="Final_Settlement">Thanh toán cuối</option>
                         <option value="Refund">Hoàn tiền</option>
                       </select>
@@ -519,8 +566,8 @@ export default function InvoiceDetailPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 6 }}>Phương thức</label>
-                      <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} style={{ ...inputStyle, cursor: "pointer" }} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"}>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "var(--a-text-muted)", marginBottom: 6 }}>Phương thức</label>
+                      <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} style={{ ...inputStyle, cursor: "pointer" }} onFocus={(e) => e.target.style.borderColor = "var(--a-primary)"} onBlur={(e) => e.target.style.borderColor = "var(--a-border)"}>
                         <option value="Cash">Tiền mặt (Cash)</option>
                         <option value="Momo">Momo</option>
                         <option value="VNPay_Mock">VNPay (Mock)</option>
@@ -529,12 +576,12 @@ export default function InvoiceDetailPage() {
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 6 }}>Mã giao dịch</label>
-                      <input placeholder="VD: VNP1234..." value={form.transactionCode} onChange={(e) => setForm({ ...form, transactionCode: e.target.value })} style={inputStyle} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"} />
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 800, color: "var(--a-text-muted)", marginBottom: 6 }}>Mã giao dịch</label>
+                      <input placeholder="VD: VNP1234..." value={form.transactionCode} onChange={(e) => setForm({ ...form, transactionCode: e.target.value })} style={inputStyle} onFocus={(e) => e.target.style.borderColor = "var(--a-primary)"} onBlur={(e) => e.target.style.borderColor = "var(--a-border)"} />
                     </div>
                   </div>
                   <div>
-                    <textarea placeholder="Ghi chú (Tùy chọn)" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} style={{ ...inputStyle, minHeight: 80, resize: "none" }} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"} />
+                    <textarea placeholder="Ghi chú (Tùy chọn)" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} style={{ ...inputStyle, minHeight: 80, resize: "none" }} onFocus={(e) => e.target.style.borderColor = "var(--a-primary)"} onBlur={(e) => e.target.style.borderColor = "var(--a-border)"} />
                   </div>
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
                     <button type="submit" className="action-btn primary" disabled={!form.amountPaid}>
@@ -546,26 +593,26 @@ export default function InvoiceDetailPage() {
             )}
 
             {/* Payments Table */}
-            <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-              <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Danh sách điều chỉnh</h3>
+            <div style={{ ...cardStyle, overflow: "hidden" }}>
+              <div style={sectionHeaderStyle}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--a-text)", margin: 0 }}>Danh sách điều chỉnh</h3>
               </div>
               {isMobile && (
                 <div style={{ display: "grid", gap: 12, padding: 14 }}>
                   {(invoice.adjustments || []).length === 0 ? (
-                    <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>Chưa có phụ phí hoặc giảm trừ thủ công.</div>
+                    <div style={{ padding: 20, textAlign: "center", color: "var(--a-text-muted)", fontSize: 14 }}>Chưa có phụ phí hoặc giảm trừ thủ công.</div>
                   ) : (invoice.adjustments || []).map((item) => (
-                    <article key={item.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 10 }}>
+                    <article key={item.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 10, background: "var(--a-surface-soft)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                         <div>
-                          <div style={{ fontWeight: 900, color: "#1c1917" }}>{item.reason}</div>
-                          <div style={{ fontSize: 12, color: "#78716c", marginTop: 4 }}>{formatDate(item.createdAt)}</div>
+                          <div style={{ fontWeight: 900, color: "var(--a-text)" }}>{item.reason}</div>
+                          <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginTop: 4 }}>{formatDate(item.createdAt)}</div>
                         </div>
-                        <div style={{ fontWeight: 900, color: item.adjustmentType === "Discount" ? "#d97706" : "#b91c1c" }}>
+                        <div style={{ fontWeight: 900, color: item.adjustmentType === "Discount" ? "var(--a-warning)" : "var(--a-error)" }}>
                           {item.adjustmentType === "Discount" ? "-" : "+"}{formatCurrency(item.amount)}
                         </div>
                       </div>
-                      <div style={{ fontSize: 12, color: item.adjustmentType === "Discount" ? "#b45309" : "#6b7280" }}>
+                      <div style={{ fontSize: 12, color: item.adjustmentType === "Discount" ? "var(--a-warning)" : "var(--a-text-muted)" }}>
                         {item.adjustmentType === "Discount" ? "Giảm trừ thủ công" : "Phụ phí"}{item.note ? ` • ${item.note}` : ""}
                       </div>
                       <button type="button" className="action-btn" style={{ justifyContent: "center", padding: "9px 12px", fontSize: 12 }} onClick={() => handleRemoveAdjustment(item.id)}>
@@ -578,17 +625,17 @@ export default function InvoiceDetailPage() {
               <div data-invoice-list="adjustments" className="overflow-x-auto" style={{ display: isMobile ? "none" : "block" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "white" }}>
-                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Thời gian</th>
-                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Lý do</th>
-                    <th style={{ padding: "14px 24px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Giá trị</th>
-                    <th style={{ padding: "14px 24px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Thao tác</th>
+                  <tr data-admin-table-head="true">
+                    <th style={{ ...tableHeadCellStyle, textAlign: "left" }}>Thời gian</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "left" }}>Lý do</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "right" }}>Giá trị</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "right" }}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(invoice.adjustments || []).length === 0 && (
                     <tr>
-                      <td colSpan={4} style={{ padding: "32px 24px", textAlign: "center", color: "#9ca3af", fontSize: 14 }}>
+                      <td colSpan={4} style={{ padding: "32px 24px", textAlign: "center", color: "var(--a-text-muted)", fontSize: 14 }}>
                         Chưa có phụ phí hoặc giảm trừ thủ công.
                       </td>
                     </tr>
@@ -596,18 +643,18 @@ export default function InvoiceDetailPage() {
                   {(invoice.adjustments || []).map((item) => (
                     <tr key={item.id} className="table-row">
                       <td style={{ padding: "16px 24px" }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1c1917" }}>{formatDate(item.createdAt).split(" ")[0]}</div>
-                        <div style={{ fontSize: 11, color: "#9ca3af" }}>{formatDate(item.createdAt).split(" ")[1]}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--a-text)" }}>{formatDate(item.createdAt).split(" ")[0]}</div>
+                        <div style={{ fontSize: 11, color: "var(--a-text-soft)" }}>{formatDate(item.createdAt).split(" ")[1]}</div>
                       </td>
                       <td style={{ padding: "16px 24px" }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: "#1c1917" }}>{item.reason}</div>
-                        <div style={{ fontSize: 12, color: item.adjustmentType === "Discount" ? "#b45309" : "#6b7280", marginTop: 4 }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "var(--a-text)" }}>{item.reason}</div>
+                        <div style={{ fontSize: 12, color: item.adjustmentType === "Discount" ? "var(--a-warning)" : "var(--a-text-muted)", marginTop: 4 }}>
                           {item.adjustmentType === "Discount" ? "Giảm trừ thủ công" : "Phụ phí"}
                           {item.note ? ` • ${item.note}` : ""}
                         </div>
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: item.adjustmentType === "Discount" ? "#d97706" : "#b91c1c" }}>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: item.adjustmentType === "Discount" ? "var(--a-warning)" : "var(--a-error)" }}>
                           {item.adjustmentType === "Discount" ? "-" : "+"}{formatCurrency(item.amount)}
                         </div>
                       </td>
@@ -623,24 +670,24 @@ export default function InvoiceDetailPage() {
               </div>
             </div>
 
-            <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-              <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Dịch vụ đã sử dụng</h3>
+            <div style={{ ...cardStyle, overflow: "hidden" }}>
+              <div style={sectionHeaderStyle}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--a-text)", margin: 0 }}>Dịch vụ đã sử dụng</h3>
               </div>
               {isMobile && (
                 <div style={{ display: "grid", gap: 12, padding: 14 }}>
                   {(invoice.serviceItems || []).length === 0 ? (
-                    <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>Không có dịch vụ phát sinh.</div>
+                    <div style={{ padding: 20, textAlign: "center", color: "var(--a-text-muted)", fontSize: 14 }}>Không có dịch vụ phát sinh.</div>
                   ) : (invoice.serviceItems || []).map((item, index) => (
-                    <article key={`${item.orderServiceId}-${item.serviceId}-${index}`} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 10 }}>
+                    <article key={`${item.orderServiceId}-${item.serviceId}-${index}`} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 10, background: "var(--a-surface-soft)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                         <div>
-                          <div style={{ fontWeight: 900, color: "#1c1917" }}>{item.serviceName || "-"}</div>
-                          <div style={{ fontSize: 12, color: "#78716c", marginTop: 4 }}>Phòng {item.roomNumber || "-"} • {item.orderDate ? formatDate(item.orderDate) : "Chưa có thời gian"}</div>
+                          <div style={{ fontWeight: 900, color: "var(--a-text)" }}>{item.serviceName || "-"}</div>
+                          <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginTop: 4 }}>Phòng {item.roomNumber || "-"} • {item.orderDate ? formatDate(item.orderDate) : "Chưa có thời gian"}</div>
                         </div>
-                        <div style={{ fontWeight: 900, color: "#1c1917" }}>{formatCurrency(item.totalAmount || 0)}</div>
+                        <div style={{ fontWeight: 900, color: "var(--a-text)" }}>{formatCurrency(item.totalAmount || 0)}</div>
                       </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 12, color: "#57534e" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 12, color: "var(--a-text-muted)" }}>
                         <div>SL: <strong>{item.quantity || 0}</strong></div>
                         <div>Đơn giá: <strong>{formatCurrency(item.unitPrice || 0)}</strong></div>
                       </div>
@@ -651,32 +698,32 @@ export default function InvoiceDetailPage() {
               <div data-invoice-list="services" className="overflow-x-auto" style={{ display: isMobile ? "none" : "block" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "white" }}>
-                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Phòng</th>
-                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Dịch vụ</th>
-                    <th style={{ padding: "14px 24px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>SL</th>
-                    <th style={{ padding: "14px 24px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Đơn giá</th>
-                    <th style={{ padding: "14px 24px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Thành tiền</th>
+                  <tr data-admin-table-head="true">
+                    <th style={{ ...tableHeadCellStyle, textAlign: "left" }}>Phòng</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "left" }}>Dịch vụ</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "right" }}>SL</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "right" }}>Đơn giá</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "right" }}>Thành tiền</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(invoice.serviceItems || []).length === 0 && (
                     <tr>
-                      <td colSpan={5} style={{ padding: "32px 24px", textAlign: "center", color: "#9ca3af", fontSize: 14 }}>
+                      <td colSpan={5} style={{ padding: "32px 24px", textAlign: "center", color: "var(--a-text-muted)", fontSize: 14 }}>
                         Không có dịch vụ phát sinh.
                       </td>
                     </tr>
                   )}
                   {(invoice.serviceItems || []).map((item, index) => (
                     <tr key={`${item.orderServiceId}-${item.serviceId}-${index}`} className="table-row">
-                      <td style={{ padding: "16px 24px", fontSize: 13, fontWeight: 700, color: "#1c1917" }}>{item.roomNumber || "-"}</td>
+                      <td style={{ padding: "16px 24px", fontSize: 13, fontWeight: 700, color: "var(--a-text)" }}>{item.roomNumber || "-"}</td>
                       <td style={{ padding: "16px 24px" }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: "#1c1917" }}>{item.serviceName || "-"}</div>
-                        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>{item.orderDate ? formatDate(item.orderDate) : "Chưa có thời gian"}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "var(--a-text)" }}>{item.serviceName || "-"}</div>
+                        <div style={{ fontSize: 11, color: "var(--a-text-soft)", marginTop: 4 }}>{item.orderDate ? formatDate(item.orderDate) : "Chưa có thời gian"}</div>
                       </td>
-                      <td style={{ padding: "16px 24px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#1c1917" }}>{item.quantity || 0}</td>
-                      <td style={{ padding: "16px 24px", textAlign: "right", fontSize: 13, color: "#6b7280" }}>{formatCurrency(item.unitPrice || 0)}</td>
-                      <td style={{ padding: "16px 24px", textAlign: "right", fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{formatCurrency(item.totalAmount || 0)}</td>
+                      <td style={{ padding: "16px 24px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "var(--a-text)" }}>{item.quantity || 0}</td>
+                      <td style={{ padding: "16px 24px", textAlign: "right", fontSize: 13, color: "var(--a-text-muted)" }}>{formatCurrency(item.unitPrice || 0)}</td>
+                      <td style={{ padding: "16px 24px", textAlign: "right", fontSize: 14, fontWeight: 800, color: "var(--a-text)" }}>{formatCurrency(item.totalAmount || 0)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -684,25 +731,25 @@ export default function InvoiceDetailPage() {
               </div>
             </div>
 
-            <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-              <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Thiết bị / thất thoát</h3>
+            <div style={{ ...cardStyle, overflow: "hidden" }}>
+              <div style={sectionHeaderStyle}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--a-text)", margin: 0 }}>Thiết bị / thất thoát</h3>
               </div>
               {isMobile && (
                 <div style={{ display: "grid", gap: 12, padding: 14 }}>
                   {(invoice.damageItems || []).length === 0 ? (
-                    <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>Không có thất thoát hoặc thiết bị hư.</div>
+                    <div style={{ padding: 20, textAlign: "center", color: "var(--a-text-muted)", fontSize: 14 }}>Không có thất thoát hoặc thiết bị hư.</div>
                   ) : (invoice.damageItems || []).map((item) => (
-                    <article key={item.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 10 }}>
+                    <article key={item.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 10, background: "var(--a-surface-soft)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                         <div>
-                          <div style={{ fontWeight: 900, color: "#1c1917" }}>{item.itemName || "-"}</div>
-                          <div style={{ fontSize: 12, color: "#78716c", marginTop: 4 }}>Phòng {item.roomNumber || "-"} • SL {item.quantity || 0}</div>
+                          <div style={{ fontWeight: 900, color: "var(--a-text)" }}>{item.itemName || "-"}</div>
+                          <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginTop: 4 }}>Phòng {item.roomNumber || "-"} • SL {item.quantity || 0}</div>
                         </div>
-                        <div style={{ fontWeight: 900, color: "#b91c1c" }}>{formatCurrency(item.totalAmount || 0)}</div>
+                        <div style={{ fontWeight: 900, color: "var(--a-error)" }}>{formatCurrency(item.totalAmount || 0)}</div>
                       </div>
-                      <div style={{ fontSize: 12, color: "#57534e" }}>{item.description || "Không có ghi chú"}</div>
-                      <span className="badge-p" style={{ width: "fit-content", background: item.remainingToReplenish > 0 ? "#fff7ed" : "#ecfdf5", color: item.remainingToReplenish > 0 ? "#c2410c" : "#15803d" }}>
+                      <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>{item.description || "Không có ghi chú"}</div>
+                      <span className="badge-p" style={damageStatusBadgeStyle(item.remainingToReplenish)}>
                         {item.remainingToReplenish > 0 ? `Còn thiếu ${item.remainingToReplenish}` : "Đã bổ sung đủ"}
                       </span>
                     </article>
@@ -712,44 +759,41 @@ export default function InvoiceDetailPage() {
               <div data-invoice-list="damages" className="overflow-x-auto" style={{ display: isMobile ? "none" : "block" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "white" }}>
-                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Phòng</th>
-                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Vật tư</th>
-                    <th style={{ padding: "14px 24px", textAlign: "center", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Trạng thái</th>
-                    <th style={{ padding: "14px 24px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>SL</th>
-                    <th style={{ padding: "14px 24px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Đơn giá</th>
-                    <th style={{ padding: "14px 24px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Thành tiền</th>
+                  <tr data-admin-table-head="true">
+                    <th style={{ ...tableHeadCellStyle, textAlign: "left" }}>Phòng</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "left" }}>Vật tư</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "center" }}>Trạng thái</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "right" }}>SL</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "right" }}>Đơn giá</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "right" }}>Thành tiền</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(invoice.damageItems || []).length === 0 && (
                     <tr>
-                      <td colSpan={6} style={{ padding: "32px 24px", textAlign: "center", color: "#9ca3af", fontSize: 14 }}>
+                      <td colSpan={6} style={{ padding: "32px 24px", textAlign: "center", color: "var(--a-text-muted)", fontSize: 14 }}>
                         Không có thất thoát hoặc thiết bị hư.
                       </td>
                     </tr>
                   )}
                   {(invoice.damageItems || []).map((item) => (
                     <tr key={item.id} className="table-row">
-                      <td style={{ padding: "16px 24px", fontSize: 13, fontWeight: 700, color: "#1c1917" }}>{item.roomNumber || "-"}</td>
+                      <td style={{ padding: "16px 24px", fontSize: 13, fontWeight: 700, color: "var(--a-text)" }}>{item.roomNumber || "-"}</td>
                       <td style={{ padding: "16px 24px" }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: "#1c1917" }}>{item.itemName || "-"}</div>
-                        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>{item.description || "Không có ghi chú"}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "var(--a-text)" }}>{item.itemName || "-"}</div>
+                        <div style={{ fontSize: 11, color: "var(--a-text-soft)", marginTop: 4 }}>{item.description || "Không có ghi chú"}</div>
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "center" }}>
                         <span
                           className="badge-p"
-                          style={{
-                            background: item.remainingToReplenish > 0 ? "#fff7ed" : "#ecfdf5",
-                            color: item.remainingToReplenish > 0 ? "#c2410c" : "#15803d",
-                          }}
+                          style={damageStatusBadgeStyle(item.remainingToReplenish)}
                         >
                           {item.remainingToReplenish > 0 ? `Còn thiếu ${item.remainingToReplenish}` : "Đã bổ sung đủ"}
                         </span>
                       </td>
-                      <td style={{ padding: "16px 24px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#1c1917" }}>{item.quantity || 0}</td>
-                      <td style={{ padding: "16px 24px", textAlign: "right", fontSize: 13, color: "#6b7280" }}>{formatCurrency(item.penaltyAmount || 0)}</td>
-                      <td style={{ padding: "16px 24px", textAlign: "right", fontSize: 14, fontWeight: 800, color: "#b91c1c" }}>{formatCurrency(item.totalAmount || 0)}</td>
+                      <td style={{ padding: "16px 24px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "var(--a-text)" }}>{item.quantity || 0}</td>
+                      <td style={{ padding: "16px 24px", textAlign: "right", fontSize: 13, color: "var(--a-text-muted)" }}>{formatCurrency(item.penaltyAmount || 0)}</td>
+                      <td style={{ padding: "16px 24px", textAlign: "right", fontSize: 14, fontWeight: 800, color: "var(--a-error)" }}>{formatCurrency(item.totalAmount || 0)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -757,24 +801,24 @@ export default function InvoiceDetailPage() {
               </div>
             </div>
 
-            <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-              <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Lịch sử thanh toán</h3>
+            <div style={{ ...cardStyle, overflow: "hidden" }}>
+              <div style={sectionHeaderStyle}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--a-text)", margin: 0 }}>Lịch sử thanh toán</h3>
               </div>
               {isMobile && (
                 <div style={{ display: "grid", gap: 12, padding: 14 }}>
                   {(invoice.payments || []).length === 0 ? (
-                    <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>Chưa có lịch sử giao dịch.</div>
+                    <div style={{ padding: 20, textAlign: "center", color: "var(--a-text-muted)", fontSize: 14 }}>Chưa có lịch sử giao dịch.</div>
                   ) : (invoice.payments || []).map((p) => (
-                    <article key={p.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 8 }}>
+                    <article key={p.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 8, background: "var(--a-surface-soft)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                         <div>
-                          <div style={{ fontWeight: 900, color: "#1c1917" }}>{getPaymentTypeLabel(p.paymentType)}</div>
-                          <div style={{ fontSize: 12, color: "#78716c", marginTop: 4 }}>{formatDate(p.paymentDate)} • {p.paymentMethod}</div>
+                          <div style={{ fontWeight: 900, color: "var(--a-text)" }}>{getPaymentTypeLabel(p.paymentType)}</div>
+                          <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginTop: 4 }}>{formatDate(p.paymentDate)} • {p.paymentMethod}</div>
                         </div>
-                        <div style={{ fontWeight: 900, color: p.paymentType === "Refund" ? "#dc2626" : "#16a34a" }}>{formatCurrency(p.amountPaid)}</div>
+                        <div style={{ fontWeight: 900, color: p.paymentType === "Refund" ? "var(--a-error)" : "var(--a-success)" }}>{formatCurrency(p.amountPaid)}</div>
                       </div>
-                      <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "monospace" }}>Mã GD: {p.transactionCode || "-"}</div>
+                      <div style={{ fontSize: 12, color: "var(--a-text-muted)", fontFamily: "monospace" }}>Mã GD: {p.transactionCode || "-"}</div>
                     </article>
                   ))}
                 </div>
@@ -782,17 +826,17 @@ export default function InvoiceDetailPage() {
               <div data-invoice-list="payments" className="overflow-x-auto" style={{ display: isMobile ? "none" : "block" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "white" }}>
-                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Thời gian</th>
-                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Loại / PT</th>
-                    <th style={{ padding: "14px 24px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Số tiền</th>
-                    <th style={{ padding: "14px 24px", textAlign: "center", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Mã Giao Dịch</th>
+                  <tr data-admin-table-head="true">
+                    <th style={{ ...tableHeadCellStyle, textAlign: "left" }}>Thời gian</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "left" }}>Loại / PT</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "right" }}>Số tiền</th>
+                    <th style={{ ...tableHeadCellStyle, textAlign: "center" }}>Mã Giao Dịch</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(invoice.payments || []).length === 0 && (
                     <tr>
-                      <td colSpan={4} style={{ padding: "40px 24px", textAlign: "center", color: "#9ca3af", fontSize: 14 }}>
+                      <td colSpan={4} style={{ padding: "40px 24px", textAlign: "center", color: "var(--a-text-muted)", fontSize: 14 }}>
                         Chưa có lịch sử giao dịch.
                       </td>
                     </tr>
@@ -800,20 +844,20 @@ export default function InvoiceDetailPage() {
                   {(invoice.payments || []).map((p) => (
                     <tr key={p.id} className="table-row">
                       <td style={{ padding: "16px 24px" }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1c1917" }}>{formatDate(p.paymentDate).split(' ')[0]}</div>
-                        <div style={{ fontSize: 11, color: "#9ca3af" }}>{formatDate(p.paymentDate).split(' ')[1]}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--a-text)" }}>{formatDate(p.paymentDate).split(' ')[0]}</div>
+                        <div style={{ fontSize: 11, color: "var(--a-text-soft)" }}>{formatDate(p.paymentDate).split(' ')[1]}</div>
                       </td>
                       <td style={{ padding: "16px 24px" }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: "#1c1917" }}>{getPaymentTypeLabel(p.paymentType)}</div>
-                        <div style={{ fontSize: 12, color: "#6b7280" }}>{p.paymentMethod}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "var(--a-text)" }}>{getPaymentTypeLabel(p.paymentType)}</div>
+                        <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>{p.paymentMethod}</div>
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: p.paymentType === "Refund" ? "#dc2626" : "#16a34a" }}>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: p.paymentType === "Refund" ? "var(--a-error)" : "var(--a-success)" }}>
                           {formatCurrency(p.amountPaid)}
                         </div>
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "center" }}>
-                        <div style={{ fontSize: 13, color: "#6b7280", fontFamily: "monospace", letterSpacing: 0.5 }}>{p.transactionCode || "-"}</div>
+                        <div style={{ fontSize: 13, color: "var(--a-text-muted)", fontFamily: "monospace", letterSpacing: 0.5 }}>{p.transactionCode || "-"}</div>
                       </td>
                     </tr>
                   ))}
@@ -824,11 +868,11 @@ export default function InvoiceDetailPage() {
           </div>
 
           <div className="w-full xl:w-[320px] shrink-0">
-            <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,.06)", position: "sticky", top: 24 }}>
+            <div style={{ ...cardStyle, padding: 24, position: "sticky", top: 24, background: "color-mix(in srgb, var(--a-surface) 88%, transparent)", backdropFilter: "blur(12px)" }}>
               <div style={{ marginBottom: 20 }}>
-                <p style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Liên kết Booking</p>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", display: "flex", alignItems: "center", gap: 6 }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 18, color: "#4f645b" }}>link</span>
+                <p style={{ fontSize: 12, color: "var(--a-text-soft)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Liên kết Booking</p>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "var(--a-text)", display: "flex", alignItems: "center", gap: 6 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18, color: "var(--a-primary)" }}>link</span>
                   {invoice.bookingCode || invoice.bookingId || "-"}
                 </div>
               </div>
@@ -844,74 +888,74 @@ export default function InvoiceDetailPage() {
                 </button>
               </div>
 
-              <div style={{ height: 1, background: "#f1f0ea", margin: "20px 0" }} />
+              <div style={{ height: 1, background: "var(--a-border)", margin: "20px 0" }} />
               
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#6b7280" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--a-text-muted)" }}>
                   <span>Tiền phòng:</span>
-                  <span style={{ fontWeight: 700, color: "#1c1917" }}>{formatCurrency(invoice.totalRoomAmount)}</span>
+                  <span style={{ fontWeight: 700, color: "var(--a-text)" }}>{formatCurrency(invoice.totalRoomAmount)}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#6b7280" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--a-text-muted)" }}>
                   <span>Tiền dịch vụ:</span>
-                  <span style={{ fontWeight: 700, color: "#1c1917" }}>{formatCurrency(invoice.totalServiceAmount)}</span>
+                  <span style={{ fontWeight: 700, color: "var(--a-text)" }}>{formatCurrency(invoice.totalServiceAmount)}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#6b7280" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--a-text-muted)" }}>
                   <span>Bồi thường thiết bị:</span>
-                  <span style={{ fontWeight: 700, color: "#1c1917" }}>{formatCurrency(invoice.totalDamageAmount)}</span>
+                  <span style={{ fontWeight: 700, color: "var(--a-text)" }}>{formatCurrency(invoice.totalDamageAmount)}</span>
                 </div>
                 {invoice.adjustmentAmount > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#b91c1c" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--a-error)" }}>
                     <span>Phụ phí thủ công:</span>
                     <span style={{ fontWeight: 700 }}>+{formatCurrency(invoice.adjustmentAmount)}</span>
                   </div>
                 )}
                 {invoice.discountAmount > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#16a34a" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--a-success)" }}>
                     <span>Chiết khấu:</span>
                     <span style={{ fontWeight: 700 }}>-{formatCurrency(invoice.discountAmount)}</span>
                   </div>
                 )}
                 {invoice.manualDiscountAmount > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#d97706" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--a-warning)" }}>
                     <span>Giảm trừ thủ công:</span>
                     <span style={{ fontWeight: 700 }}>-{formatCurrency(invoice.manualDiscountAmount)}</span>
                   </div>
                 )}
                 {invoice.taxAmount > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#6b7280" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--a-text-muted)" }}>
                     <span>Thuế:</span>
-                    <span style={{ fontWeight: 700, color: "#1c1917" }}>{formatCurrency(invoice.taxAmount)}</span>
+                    <span style={{ fontWeight: 700, color: "var(--a-text)" }}>{formatCurrency(invoice.taxAmount)}</span>
                   </div>
                 )}
               </div>
 
-              <div style={{ height: 1, background: "#f1f0ea", margin: "20px 0", borderStyle: "dashed" }} />
+              <div style={{ height: 1, background: "var(--a-border)", margin: "20px 0", borderStyle: "dashed" }} />
 
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: 800, color: "#1c1917", marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: 800, color: "var(--a-text)", marginBottom: 12 }}>
                 <span>Tổng cộng:</span>
                 <span>{formatCurrency(invoice.finalTotal)}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "#16a34a", fontWeight: 700, marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "var(--a-success)", fontWeight: 700, marginBottom: 16 }}>
                 <span>Đã thanh toán:</span>
                 <span>{formatCurrency(invoice.paidAmount)}</span>
               </div>
               {invoice.depositAmount > 0 && (
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#4f645b", fontWeight: 700, marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--a-primary)", fontWeight: 700, marginBottom: 16 }}>
                   <span>Tiền cọc booking:</span>
                   <span>{formatCurrency(invoice.depositAmount)}</span>
                 </div>
               )}
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, fontWeight: 800, color: invoice.outstandingAmount > 0 ? "#dc2626" : "#6b7280", padding: "12px 14px", background: invoice.outstandingAmount > 0 ? "#fef2f2" : "#f1f5f9", borderRadius: 12, border: `1px solid ${invoice.outstandingAmount > 0 ? "#fecaca" : "#e2e8f0"}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 16, fontWeight: 800, color: invoice.outstandingAmount > 0 ? "var(--a-error)" : "var(--a-text-muted)", padding: "12px 14px", background: invoice.outstandingAmount > 0 ? "var(--a-error-bg)" : "var(--a-surface-raised)", borderRadius: 12, border: `1px solid ${invoice.outstandingAmount > 0 ? "var(--a-error-border)" : "var(--a-border)"}` }}>
                 <span>Dư nợ / Còn lại:</span>
                 <span>{formatCurrency(invoice.outstandingAmount)}</span>
               </div>
 
               {invoice.status !== "Paid" && invoice.status !== "Refunded" && (
                 <div style={{ marginTop: 24 }}>
-                  <button className="action-btn" style={{ width: "100%", background: "#1c1917", color: "white", padding: "14px", border: "none", fontSize: 15 }} onClick={runFinalize}>
+                  <button className="action-btn primary" style={{ width: "100%", padding: "14px", fontSize: 15 }} onClick={runFinalize}>
                     <span className="material-symbols-outlined" style={{ fontSize: 20 }}>verified</span> Chốt Hóa Đơn
                   </button>
-                  <div style={{ fontSize: 12, textAlign: "center", color: "#9ca3af", marginTop: 8 }}>
+                  <div style={{ fontSize: 12, textAlign: "center", color: "var(--a-text-soft)", marginTop: 8 }}>
                     Chỉ chốt (Finalize) khi khách đã thanh toán đủ hoặc không còn phát sinh giao dịch.
                   </div>
                 </div>

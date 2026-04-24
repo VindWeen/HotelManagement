@@ -7,7 +7,7 @@ export const panelStyle = {
   background: "var(--a-surface)",
   borderRadius: 16,
   border: "1px solid var(--a-border)",
-  boxShadow: "var(--a-shadow-sm)",
+  boxShadow: "none",
 };
 
 export const globalFontReset = `* { font-family: 'Manrope', sans-serif; }`;
@@ -600,7 +600,7 @@ export function ServiceToast({ id, msg, type = "success", dur = 4000, onDismiss 
           margin: "0 12px 9px",
           height: 3,
           borderRadius: 9999,
-          background: "rgba(255,255,255,.1)",
+          background: "color-mix(in srgb, var(--a-text) 10%, transparent)",
           overflow: "hidden",
         }}
       >
@@ -666,14 +666,14 @@ export function ServicePagination({
     <div
       style={{
         padding: "14px 20px",
-        borderTop: "1px solid #f1f0ea",
+        borderTop: "1px solid var(--a-border)",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
         gap: 16,
       }}
     >
-      <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 600 }}>
+      <span style={{ fontSize: 12, color: "var(--a-text-soft)", fontWeight: 600 }}>
         {start}–{end} / {totalItems}
       </span>
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -714,9 +714,9 @@ function PaginationButton({ label, onClick, disabled = false, active = false, ic
         height: 32,
         padding: icon ? 0 : "0 10px",
         borderRadius: 9,
-        border: active ? "none" : "1px solid #ece7de",
-        background: active ? "#4f645b" : "white",
-        color: active ? "#ecfdf5" : "#6b7280",
+        border: active ? "none" : "1px solid var(--a-border)",
+        background: active ? "var(--a-primary)" : "var(--a-surface)",
+        color: active ? "var(--a-text-inverse)" : "var(--a-text-muted)",
         fontSize: 12,
         fontWeight: 700,
         cursor: disabled ? "not-allowed" : "pointer",

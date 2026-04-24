@@ -378,19 +378,19 @@ function CheckInModal({ open, booking, loading, onConfirm, onCancel }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: 20 }} onClick={(e) => e.target === e.currentTarget && onCancel()}>
-      <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 520, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)", animation: "modalSlideUp .3s ease-out", padding: 32 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 8px" }}>Xác nhận check-in</h3>
-        <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px" }}>
+      <div style={{ background: "var(--a-surface-raised)", borderRadius: 24, width: "100%", maxWidth: 520, boxShadow: "var(--a-shadow-lg)", border: "1px solid var(--a-border)", animation: "modalSlideUp .3s ease-out", padding: 32 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--a-text)", margin: "0 0 8px" }}>Xác nhận check-in</h3>
+        <p style={{ fontSize: 13, color: "var(--a-text-muted)", margin: "0 0 20px" }}>
           Booking này chưa gắn hồ sơ khách. Nhập thông tin lưu trú để hệ thống kiểm tra tài khoản theo email trước khi check-in.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-          <input value={form.guestName} onChange={(e) => setForm((prev) => ({ ...prev, guestName: e.target.value }))} placeholder="Họ tên khách" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
-          <input value={form.guestPhone} onChange={(e) => setForm((prev) => ({ ...prev, guestPhone: e.target.value }))} placeholder="Số điện thoại" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917" }} />
-          <input value={form.guestEmail} onChange={(e) => setForm((prev) => ({ ...prev, guestEmail: e.target.value }))} placeholder="Email" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917", gridColumn: "span 2" }} />
-          <input value={form.nationalId} onChange={(e) => setForm((prev) => ({ ...prev, nationalId: e.target.value }))} placeholder="CCCD / Hộ chiếu" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917", gridColumn: "span 2" }} />
+          <input value={form.guestName} onChange={(e) => setForm((prev) => ({ ...prev, guestName: e.target.value }))} placeholder="Họ tên khách" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid var(--a-border)", background: "var(--a-surface-soft)", fontSize: 13, fontWeight: 500, outline: "none", color: "var(--a-text)" }} />
+          <input value={form.guestPhone} onChange={(e) => setForm((prev) => ({ ...prev, guestPhone: e.target.value }))} placeholder="Số điện thoại" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid var(--a-border)", background: "var(--a-surface-soft)", fontSize: 13, fontWeight: 500, outline: "none", color: "var(--a-text)" }} />
+          <input value={form.guestEmail} onChange={(e) => setForm((prev) => ({ ...prev, guestEmail: e.target.value }))} placeholder="Email" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid var(--a-border)", background: "var(--a-surface-soft)", fontSize: 13, fontWeight: 500, outline: "none", color: "var(--a-text)", gridColumn: "span 2" }} />
+          <input value={form.nationalId} onChange={(e) => setForm((prev) => ({ ...prev, nationalId: e.target.value }))} placeholder="CCCD / Hộ chiếu" style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1.5px solid var(--a-border)", background: "var(--a-surface-soft)", fontSize: 13, fontWeight: 500, outline: "none", color: "var(--a-text)", gridColumn: "span 2" }} />
         </div>
         <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={onCancel} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1.5px solid #e2e8e1", background: "white", fontWeight: 700, color: "#6b7280", cursor: "pointer", fontSize: 14 }}>Đóng</button>
+          <button onClick={onCancel} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1.5px solid var(--a-border)", background: "var(--a-surface-raised)", fontWeight: 700, color: "var(--a-text-muted)", cursor: "pointer", fontSize: 14 }}>Đóng</button>
           <button onClick={() => onConfirm(form)} disabled={loading || !canSubmit} style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "#4f645b", fontWeight: 700, color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, opacity: (!canSubmit || loading) ? 0.6 : 1 }}>
             {loading ? <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "white", borderRadius: "50%", animation: "spin .65s linear infinite" }} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>login</span>}
             Xác nhận check-in
@@ -1029,8 +1029,8 @@ export default function BookingListPage() {
 
   // Reusable input style for toolbar
   const inputStyle = {
-    border: "1.5px solid #e2e8e1", background: "#f9f8f3", padding: "10px 14px",
-    borderRadius: 12, fontSize: 13, fontWeight: 600, color: "#1c1917", outline: "none",
+    border: "1.5px solid var(--a-border)", background: "var(--a-surface)", padding: "10px 14px",
+    borderRadius: 12, fontSize: 13, fontWeight: 600, color: "var(--a-text)", outline: "none",
     width: "100%", boxSizing: "border-box", fontFamily: "Manrope, sans-serif",
   };
 
@@ -1043,10 +1043,10 @@ export default function BookingListPage() {
         @keyframes toastProgress { from{width:100%} to{width:0} }
         @keyframes modalSlideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
         @keyframes spin { to{transform:rotate(360deg)} }
-        .table-row { transition: background 0.1s; border-bottom: 1px solid #f1f0ea; }
-        .table-row:hover { background: #fafaf8 !important; }
-        .btn-icon-p { width: 34px; height: 34px; border-radius: 9px; border: 1.5px solid #f1f0ea; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; color: #6b7280; }
-        .btn-icon-p:hover:not(:disabled) { border-color: #4f645b; color: #4f645b; background: #f0faf5; transform: scale(1.05); }
+        .table-row { transition: background 0.1s; border-bottom: 1px solid var(--a-border); }
+        .table-row:hover { background: var(--a-surface-soft) !important; }
+        .btn-icon-p { width: 34px; height: 34px; border-radius: 9px; border: 1.5px solid var(--a-border); background: var(--a-surface-raised); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; color: var(--a-text-muted); }
+        .btn-icon-p:hover:not(:disabled) { border-color: var(--a-primary); color: var(--a-primary); background: var(--a-primary-soft); transform: scale(1.05); }
         .btn-icon-p:disabled { opacity: 0.35; cursor: not-allowed; }
         .badge-p { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
       `}</style>
@@ -1083,16 +1083,16 @@ export default function BookingListPage() {
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.025em", margin: "0 0 4px" }}>
+          <h2 style={{ fontSize: 26, fontWeight: 800, color: "var(--a-text)", letterSpacing: "-0.025em", margin: "0 0 4px" }}>
             Quầy Lễ tân
           </h2>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+          <p style={{ fontSize: 13, color: "var(--a-text-muted)", margin: 0 }}>
             Theo dõi booking, khách đến hôm nay, khách đang lưu trú và thủ tục trả phòng trong cùng một màn hình
           </p>
         </div>
         <button
           onClick={load}
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 22px", borderRadius: 12, fontSize: 14, fontWeight: 700, background: "white", color: "#1c1917", border: "1.5px solid #e2e8e1", cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 22px", borderRadius: 12, fontSize: 14, fontWeight: 700, background: "var(--a-surface-raised)", color: "var(--a-text)", border: "1.5px solid var(--a-border)", cursor: "pointer", boxShadow: "var(--a-shadow-sm)" }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>refresh</span> Làm mới
         </button>
@@ -1106,33 +1106,33 @@ export default function BookingListPage() {
             style={{
               borderRadius: 16,
               padding: "16px 18px",
-              border: activeTab === tab.id ? "1.5px solid #4f645b" : "1px solid #e5e7eb",
-              background: activeTab === tab.id ? "#f0faf5" : "white",
+              border: activeTab === tab.id ? "1.5px solid var(--a-primary)" : "1px solid var(--a-border)",
+              background: activeTab === tab.id ? "var(--a-primary-soft)" : "var(--a-surface-raised)",
               textAlign: "left",
               cursor: "pointer",
               boxShadow: "0 1px 4px rgba(0,0,0,.04)",
             }}
           >
-            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>
+            <div style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>
               {tab.label}
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#1c1917" }}>{tab.count}</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "var(--a-text)" }}>{tab.count}</div>
           </button>
         ))}
       </div>
 
       {activeTab === "manage" && (
-        <div className="primary-card-p" style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.06)", padding: 22, marginBottom: 24 }}>
+        <div className="primary-card-p" style={{ background: "var(--a-surface-raised)", borderRadius: 18, border: "1px solid var(--a-border)", boxShadow: "var(--a-shadow-sm)", padding: 22, marginBottom: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 18 }}>
             <div>
-              <h3 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 800, color: "#1c1917" }}>Tạo booking cho lễ tân</h3>
-              <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+              <h3 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 800, color: "var(--a-text)" }}>Tạo booking cho lễ tân</h3>
+              <p style={{ margin: 0, fontSize: 13, color: "var(--a-text-muted)" }}>
                 Chọn ngày và số khách để hệ thống gợi ý hạng phòng phù hợp. Giá chỉ hiển thị ở bước nội bộ này.
               </p>
             </div>
             <button
               onClick={loadAvailability}
-              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "white", color: "#1c1917", border: "1.5px solid #e2e8e1", cursor: "pointer" }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "var(--a-surface)", color: "var(--a-text)", border: "1.5px solid var(--a-border)", cursor: "pointer" }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>travel_explore</span>
               Gợi ý phòng
@@ -1140,8 +1140,8 @@ export default function BookingListPage() {
           </div>
 
           <div style={{ display: "grid", gap: 16, marginBottom: 16 }}>
-            <div className="sub-card-p" style={{ padding: 16, borderRadius: 16, background: "#fcfbf8", border: "1px solid #f1f0ea" }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 12 }}>
+            <div className="sub-card-p" style={{ padding: 16, borderRadius: 16, background: "var(--a-surface-soft)", border: "1px solid var(--a-border)" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-text-muted)", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 12 }}>
                 Thông tin khách
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1188,11 +1188,11 @@ export default function BookingListPage() {
                     style={inputStyle}
                   />
                   {bookingForm.customerType === "member" && memberSuggestOpen && (bookingForm.memberKeyword || memberLoading || memberOptions.length > 0) && (
-                    <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 30, background: "white", border: "1px solid #e5e7eb", borderRadius: 14, boxShadow: "0 16px 32px rgba(15,23,42,.12)", maxHeight: 220, overflowY: "auto" }}>
+                    <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 30, background: "var(--a-surface-raised)", border: "1px solid var(--a-border)", borderRadius: 14, boxShadow: "var(--a-shadow-lg)", maxHeight: 220, overflowY: "auto" }}>
                       {memberLoading ? (
-                        <div style={{ padding: 12, fontSize: 13, color: "#6b7280" }}>Đang tìm khách thành viên...</div>
+                        <div style={{ padding: 12, fontSize: 13, color: "var(--a-text-muted)" }}>Đang tìm khách thành viên...</div>
                       ) : memberOptions.length === 0 ? (
-                        <div style={{ padding: 12, fontSize: 13, color: "#6b7280" }}>Không có gợi ý phù hợp.</div>
+                        <div style={{ padding: 12, fontSize: 13, color: "var(--a-text-muted)" }}>Không có gợi ý phù hợp.</div>
                       ) : memberOptions.map((member) => (
                         <button
                           key={member.id}
@@ -1201,10 +1201,10 @@ export default function BookingListPage() {
                             e.preventDefault();
                             handleSelectMember(member);
                           }}
-                          style={{ width: "100%", textAlign: "left", border: "none", background: "white", padding: 12, cursor: "pointer", borderBottom: "1px solid #f3f4f6" }}
+                          style={{ width: "100%", textAlign: "left", border: "none", background: "var(--a-surface-raised)", padding: 12, cursor: "pointer", borderBottom: "1px solid var(--a-border)" }}
                         >
-                          <div style={{ fontSize: 13, fontWeight: 800, color: "#1c1917" }}>{member.fullName}</div>
-                          <div style={{ fontSize: 12, color: "#6b7280" }}>{member.phone || "Chưa có SĐT"} • {member.email || "Chưa có email"}</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--a-text)" }}>{member.fullName}</div>
+                          <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>{member.phone || "Chưa có SĐT"} • {member.email || "Chưa có email"}</div>
                         </button>
                       ))}
                     </div>
@@ -1215,8 +1215,8 @@ export default function BookingListPage() {
               </div>
             </div>
 
-            <div className="sub-card-p" style={{ padding: 16, borderRadius: 16, background: "#fcfbf8", border: "1px solid #f1f0ea" }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 12 }}>
+            <div className="sub-card-p" style={{ padding: 16, borderRadius: 16, background: "var(--a-surface-soft)", border: "1px solid var(--a-border)" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-text-muted)", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 12 }}>
                 Thông tin lưu trú
               </div>
               <div className="grid grid-cols-1 md:grid-cols-[1.1fr_2fr_1fr_1fr] gap-3">
@@ -1251,20 +1251,20 @@ export default function BookingListPage() {
               ))}
             </select>
             {vouchers.length > 0 && selectableVouchers.length === 0 && (
-              <div style={{ marginTop: 8, fontSize: 12, color: "#9a3412", fontWeight: 700 }}>
+              <div style={{ marginTop: 8, fontSize: 12, color: "var(--a-warning)", fontWeight: 700 }}>
                 Hiện chưa có voucher phù hợp với hạng phòng hoặc tổng tiền dự kiến của booking này.
               </div>
             )}
           </div>
 
-          <div className="primary-card-p" style={{ border: "1px solid #e5e7eb", borderRadius: 16, overflow: "hidden", marginBottom: 16 }}>
-            <div className="sub-card-p" style={{ padding: "14px 16px", background: "#fafaf8", borderBottom: "1px solid #f1f0ea", fontSize: 13, fontWeight: 800, color: "#1c1917" }}>
+          <div className="primary-card-p" style={{ border: "1px solid var(--a-border)", borderRadius: 16, overflow: "hidden", marginBottom: 16, background: "var(--a-surface-raised)" }}>
+            <div className="sub-card-p" style={{ padding: "14px 16px", background: "var(--a-surface-soft)", borderBottom: "1px solid var(--a-border)", fontSize: 13, fontWeight: 800, color: "var(--a-text)" }}>
               Hạng phòng phù hợp
             </div>
             {availabilityLoading ? (
-              <div style={{ padding: 20, fontSize: 13, color: "#6b7280" }}>Đang lấy danh sách phòng phù hợp...</div>
+              <div style={{ padding: 20, fontSize: 13, color: "var(--a-text-muted)" }}>Đang lấy danh sách phòng phù hợp...</div>
             ) : availableRoomTypes.length === 0 ? (
-              <div style={{ padding: 20, fontSize: 13, color: "#6b7280" }}>Chưa có gợi ý. Hãy chọn ngày và số khách rồi bấm “Gợi ý phòng”.</div>
+              <div style={{ padding: 20, fontSize: 13, color: "var(--a-text-muted)" }}>Chưa có gợi ý. Hãy chọn ngày và số khách rồi bấm “Gợi ý phòng”.</div>
             ) : (
               <div style={{ display: "grid", gap: 14, padding: 14 }}>
                 {availableRoomTypes.map((item) => {
@@ -1273,19 +1273,19 @@ export default function BookingListPage() {
                       key={item.id}
                       style={{
                         borderRadius: 14,
-                        border: "1px solid #e5e7eb",
-                        background: "white",
+                        border: "1px solid var(--a-border)",
+                        background: "var(--a-surface)",
                         padding: 16,
                       }}
                     >
-                      <div style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", marginBottom: 4 }}>{item.name}</div>
-                      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "var(--a-text)", marginBottom: 4 }}>{item.name}</div>
+                      <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginBottom: 8 }}>
                         {item.capacityAdults} người lớn • {item.capacityChildren} trẻ em
                       </div>
-                      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                      <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginBottom: 8 }}>
                         Còn {item.availableRooms} phòng phù hợp
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "#166534", marginBottom: 12 }}>{formatCurrency(item.suggestedTotal)}</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--a-success)", marginBottom: 12 }}>{formatCurrency(item.suggestedTotal)}</div>
 
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                         {(item.rooms || []).map((room) => {
@@ -1295,10 +1295,10 @@ export default function BookingListPage() {
                           const selectable = room.selectable;
                           const bookingStatusLabel = room.bookingStatusLabel || (selectable ? "Có thể book" : "Không khả dụng");
                           const liveStatusLabel = room.liveStatusLabel || "Chưa rõ trạng thái";
-                          const bg = selectable ? (selectedRoom ? "#dcfce7" : "#eff6ff") : "#fef2f2";
-                          const border = selectable ? (selectedRoom ? "#16a34a" : "#60a5fa") : "#fca5a5";
-                          const color = selectable ? "#1c1917" : "#b91c1c";
-                          const bookingStatusColor = selectable ? "#166534" : "#b91c1c";
+                          const bg = selectable ? (selectedRoom ? "var(--a-success-bg)" : "var(--a-info-bg)") : "var(--a-error-bg)";
+                          const border = selectable ? (selectedRoom ? "var(--a-success-border)" : "var(--a-info-border)") : "var(--a-error-border)";
+                          const color = selectable ? "var(--a-text)" : "var(--a-error)";
+                          const bookingStatusColor = selectable ? (selectedRoom ? "var(--a-success)" : "var(--a-info)") : "var(--a-error)";
 
                           return (
                             <button
@@ -1321,7 +1321,7 @@ export default function BookingListPage() {
                               <div style={{ fontSize: 11, color: bookingStatusColor, marginTop: 4, fontWeight: 700 }}>
                                 {bookingStatusLabel}
                               </div>
-                              <div style={{ fontSize: 11, color: selectable ? "#6b7280" : "#7f1d1d", marginTop: 3 }}>
+                              <div style={{ fontSize: 11, color: selectable ? "var(--a-text-muted)" : "var(--a-error)", marginTop: 3 }}>
                                 Hiện tại: {liveStatusLabel}
                               </div>
                             </button>
@@ -1337,18 +1337,18 @@ export default function BookingListPage() {
 
           <div
             style={{
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--a-border)",
               borderRadius: 16,
-              background: bookingForm.selectedRooms.length ? "#f8fafc" : "#fafaf8",
+              background: bookingForm.selectedRooms.length ? "var(--a-surface-soft)" : "var(--a-surface)",
               padding: 16,
               marginBottom: 16,
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: bookingForm.selectedRooms.length ? 12 : 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#1c1917" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--a-text)" }}>
                 Phòng đã chọn {bookingForm.selectedRooms.length ? `(${bookingForm.selectedRooms.length})` : ""}
               </div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#166534" }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--a-success)" }}>
                 {formatCurrency(estimatedBookingAmount)}
               </div>
             </div>
@@ -1369,9 +1369,9 @@ export default function BookingListPage() {
                       gap: 8,
                       padding: "8px 12px",
                       borderRadius: 999,
-                      border: "1px solid #bbf7d0",
-                      background: "#f0fdf4",
-                      color: "#166534",
+                      border: "1px solid var(--a-success-border)",
+                      background: "var(--a-success-bg)",
+                      color: "var(--a-success)",
                       fontSize: 13,
                       fontWeight: 700,
                       cursor: "pointer",
@@ -1384,7 +1384,7 @@ export default function BookingListPage() {
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: 13, color: "#6b7280" }}>
+              <div style={{ fontSize: 13, color: "var(--a-text-muted)" }}>
                 Chưa chọn phòng nào. Bấm vào từng phòng khả dụng để chọn, bấm lại lần nữa để bỏ chọn.
               </div>
             )}
@@ -1403,7 +1403,7 @@ export default function BookingListPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl p-5 border border-[#f1f0ea] shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(5,1fr)_auto] items-center gap-3 mb-6">
+      <div className="rounded-2xl p-5 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(5,1fr)_auto] items-center gap-3 mb-6" style={{ background: "var(--a-surface-raised)", border: "1px solid var(--a-border)" }}>
         <input placeholder="Mã booking" value={filters.bookingCode} onChange={(e) => setFilters((f) => ({ ...f, bookingCode: e.target.value }))} style={inputStyle} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"} />
         <input placeholder="Tên / SĐT Khách" value={filters.guest} onChange={(e) => setFilters((f) => ({ ...f, guest: e.target.value }))} style={inputStyle} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"} />
         <select value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"}>
@@ -1417,18 +1417,18 @@ export default function BookingListPage() {
         </select>
         <div style={{ position: "relative" }}>
           <input type="date" value={filters.fromDate} onChange={(e) => setFilters((f) => ({ ...f, fromDate: e.target.value }))} style={inputStyle} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"} />
-          <div style={{ position: "absolute", top: -8, left: 10, background: "white", padding: "0 4px", fontSize: 10, fontWeight: 700, color: "#9ca3af" }}>Từ ngày</div>
+          <div style={{ position: "absolute", top: -8, left: 10, background: "var(--a-surface-raised)", padding: "0 4px", fontSize: 10, fontWeight: 700, color: "var(--a-text-soft)" }}>Từ ngày</div>
         </div>
         <div style={{ position: "relative" }}>
           <input type="date" value={filters.toDate} onChange={(e) => setFilters((f) => ({ ...f, toDate: e.target.value }))} style={inputStyle} onFocus={(e) => e.target.style.borderColor = "#4f645b"} onBlur={(e) => e.target.style.borderColor = "#e2e8e1"} />
-          <div style={{ position: "absolute", top: -8, left: 10, background: "white", padding: "0 4px", fontSize: 10, fontWeight: 700, color: "#9ca3af" }}>Đến ngày</div>
+          <div style={{ position: "absolute", top: -8, left: 10, background: "var(--a-surface-raised)", padding: "0 4px", fontSize: 10, fontWeight: 700, color: "var(--a-text-soft)" }}>Đến ngày</div>
         </div>
         <button
           onClick={clearFilters}
           disabled={!hasActiveFilters}
-          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 18px", borderRadius: 12, border: hasActiveFilters ? "1.5px solid #f59e0b" : "1.5px solid #e2e8e1", background: hasActiveFilters ? "#fff7ed" : "white", color: hasActiveFilters ? "#b45309" : "#9ca3af", fontSize: 13, fontWeight: 800, cursor: hasActiveFilters ? "pointer" : "not-allowed", boxShadow: hasActiveFilters ? "0 8px 20px rgba(245,158,11,.16)" : "0 1px 3px rgba(0,0,0,.04)", fontFamily: "Manrope, sans-serif", whiteSpace: "nowrap", opacity: hasActiveFilters ? 1 : 0.65 }}
-          onMouseEnter={(e) => { if (!hasActiveFilters) return; e.currentTarget.style.borderColor = "#d97706"; e.currentTarget.style.background = "#ffedd5"; }}
-          onMouseLeave={(e) => { if (!hasActiveFilters) return; e.currentTarget.style.borderColor = "#f59e0b"; e.currentTarget.style.background = "#fff7ed"; }}
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 18px", borderRadius: 12, border: hasActiveFilters ? "1.5px solid var(--a-warning-border)" : "1.5px solid var(--a-border)", background: hasActiveFilters ? "var(--a-warning-bg)" : "var(--a-surface)", color: hasActiveFilters ? "var(--a-warning)" : "var(--a-text-soft)", fontSize: 13, fontWeight: 800, cursor: hasActiveFilters ? "pointer" : "not-allowed", boxShadow: "var(--a-shadow-sm)", fontFamily: "Manrope, sans-serif", whiteSpace: "nowrap", opacity: hasActiveFilters ? 1 : 0.65 }}
+          onMouseEnter={(e) => { if (!hasActiveFilters) return; e.currentTarget.style.borderColor = "var(--a-warning)"; e.currentTarget.style.background = "var(--a-warning-bg)"; }}
+          onMouseLeave={(e) => { if (!hasActiveFilters) return; e.currentTarget.style.borderColor = "var(--a-warning-border)"; e.currentTarget.style.background = "var(--a-warning-bg)"; }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 16 }}>filter_alt_off</span> Xóa lọc
         </button>
@@ -1445,9 +1445,9 @@ export default function BookingListPage() {
                 gap: 6,
                 padding: "7px 11px",
                 borderRadius: 999,
-                background: chip.key === "date" ? "#ecfdf5" : "#f8fafc",
-                border: chip.key === "date" ? "1px solid #bbf7d0" : "1px solid #e5e7eb",
-                color: chip.key === "date" ? "#047857" : "#475569",
+                background: chip.key === "date" ? "var(--a-success-bg)" : "var(--a-surface-soft)",
+                border: chip.key === "date" ? "1px solid var(--a-success-border)" : "1px solid var(--a-border)",
+                color: chip.key === "date" ? "var(--a-success)" : "var(--a-text-muted)",
                 fontSize: 12,
                 fontWeight: 800,
               }}
@@ -1462,27 +1462,27 @@ export default function BookingListPage() {
       )}
 
       {activeTab !== "manage" && (
-        <div style={{ marginBottom: 18, padding: "12px 14px", borderRadius: 12, border: "1px solid #d1fae5", background: "#ecfdf5", color: "#065f46", fontSize: 13, fontWeight: 700 }}>
+        <div style={{ marginBottom: 18, padding: "12px 14px", borderRadius: 12, border: "1px solid var(--a-success-border)", background: "var(--a-success-bg)", color: "var(--a-success)", fontSize: 13, fontWeight: 700 }}>
           {activeTab === "arrivals" && "Danh sách này chỉ hiển thị các booking dự kiến check-in trong ngày."}
           {activeTab === "staying" && "Danh sách này chỉ hiển thị các booking đang lưu trú để lễ tân theo dõi nhanh."}
           {activeTab === "checkout" && "Mặc định hiển thị booking checkout hôm nay; chọn Từ ngày/Đến ngày để xem booking checkout của ngày khác."}
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-[#f1f0ea] shadow-sm mb-6">
+      <div className="rounded-2xl border shadow-sm mb-6" style={{ background: "var(--a-surface-raised)", borderColor: "var(--a-border)" }}>
         {isMobile ? (
           <div style={{ display: "grid", gap: 12, padding: 14 }}>
             {!loading && filteredRows.length === 0 ? (
-              <div style={{ padding: "28px 12px", textAlign: "center", color: "#9ca3af", fontSize: 14 }}>
+              <div style={{ padding: "28px 12px", textAlign: "center", color: "var(--a-text-soft)", fontSize: 14 }}>
                 <span className="material-symbols-outlined mx-auto text-center" style={{ fontSize: 44, marginBottom: 10, opacity: 0.5, display: "block" }}>search_off</span>
                 Khong tim thay booking nao
               </div>
             ) : paginatedRows.map((item) => (
-              <article key={item.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white", boxShadow: "0 1px 3px rgba(0,0,0,.04)" }}>
+              <article key={item.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "var(--a-surface)", boxShadow: "var(--a-shadow-sm)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 16, fontWeight: 900, color: "#1c1917" }}>{item.bookingCode}</span>
+                      <span style={{ fontSize: 16, fontWeight: 900, color: "var(--a-text)" }}>{item.bookingCode}</span>
                       <button className="btn-icon-p" title="Sao chep ma booking" onClick={async () => {
                         try {
                           await navigator.clipboard.writeText(item.bookingCode || "");
@@ -1494,25 +1494,25 @@ export default function BookingListPage() {
                         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>content_copy</span>
                       </button>
                     </div>
-                    <div style={{ marginTop: 6, fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{item.guestName || "-"}</div>
-                    <div style={{ fontSize: 12, color: "#6b7280" }}>{item.guestPhone || "-"}</div>
+                    <div style={{ marginTop: 6, fontSize: 14, fontWeight: 800, color: "var(--a-text)" }}>{item.guestName || "-"}</div>
+                    <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>{item.guestPhone || "-"}</div>
                   </div>
                   <BookingStatusBadge status={item.status} />
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
-                    <div style={{ fontSize: 11, color: "#78716c", fontWeight: 800 }}>Check-in</div>
-                    <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 800 }}>{formatDate(item.bookingDetails?.[0]?.checkInDate).split(' ')[0]}</div>
+                  <div style={{ background: "var(--a-surface-soft)", borderRadius: 12, padding: 10 }}>
+                    <div style={{ fontSize: 11, color: "var(--a-text-soft)", fontWeight: 800 }}>Check-in</div>
+                    <div style={{ fontSize: 13, color: "var(--a-text)", fontWeight: 800 }}>{formatDate(item.bookingDetails?.[0]?.checkInDate).split(' ')[0]}</div>
                   </div>
-                  <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
-                    <div style={{ fontSize: 11, color: "#78716c", fontWeight: 800 }}>Nguồn</div>
-                    <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 800 }}>{getBookingSourceLabel(item.source)}</div>
+                  <div style={{ background: "var(--a-surface-soft)", borderRadius: 12, padding: 10 }}>
+                    <div style={{ fontSize: 11, color: "var(--a-text-soft)", fontWeight: 800 }}>Nguồn</div>
+                    <div style={{ fontSize: 13, color: "var(--a-text)", fontWeight: 800 }}>{getBookingSourceLabel(item.source)}</div>
                   </div>
                 </div>
-                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: 10 }}>
-                  <div style={{ fontSize: 11, color: "#166534", fontWeight: 800 }}>Tổng tiền</div>
-                  <div style={{ fontSize: 16, fontWeight: 900, color: "#16a34a" }}>{formatCurrency(item.totalEstimatedAmount)}</div>
-                  <div style={{ fontSize: 11, color: "#166534", marginTop: 4 }}>Đã thu trước lưu trú: {formatCurrency(item.depositAmount || 0)}</div>
+                <div style={{ background: "var(--a-success-bg)", border: "1px solid var(--a-success-border)", borderRadius: 12, padding: 10 }}>
+                  <div style={{ fontSize: 11, color: "var(--a-success)", fontWeight: 800 }}>Tổng tiền</div>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: "var(--a-success)" }}>{formatCurrency(item.totalEstimatedAmount)}</div>
+                  <div style={{ fontSize: 11, color: "var(--a-success)", marginTop: 4 }}>Đã thu trước lưu trú: {formatCurrency(item.depositAmount || 0)}</div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8 }}>
                   <button className="btn-icon-p" title="Chi tiết" onClick={() => navigate(`/admin/bookings/${item.id}`)} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>visibility</span></button>
@@ -1531,19 +1531,19 @@ export default function BookingListPage() {
         <div className="overflow-x-auto">
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "rgba(249,248,243,.6)" }}>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 13, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea" }}>Mã Code</th>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 13, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea" }}>Khách hàng</th>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 13, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea" }}>Check-in</th>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 13, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea" }}>Tổng tiền</th>
-              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 13, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea" }}>Trạng thái</th>
-              <th style={{ padding: "16px 24px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea" }}>Thao tác</th>
+            <tr style={{ background: "var(--a-surface-soft)" }}>
+              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 13, fontWeight: 700, color: "var(--a-text-muted)", borderBottom: "1px solid var(--a-border)" }}>Mã Code</th>
+              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 13, fontWeight: 700, color: "var(--a-text-muted)", borderBottom: "1px solid var(--a-border)" }}>Khách hàng</th>
+              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 13, fontWeight: 700, color: "var(--a-text-muted)", borderBottom: "1px solid var(--a-border)" }}>Check-in</th>
+              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 13, fontWeight: 700, color: "var(--a-text-muted)", borderBottom: "1px solid var(--a-border)" }}>Tổng tiền</th>
+              <th style={{ padding: "16px 24px", textAlign: "left", fontSize: 13, fontWeight: 700, color: "var(--a-text-muted)", borderBottom: "1px solid var(--a-border)" }}>Trạng thái</th>
+              <th style={{ padding: "16px 24px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "var(--a-text-muted)", borderBottom: "1px solid var(--a-border)" }}>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {!loading && filteredRows.length === 0 && (
               <tr>
-                <td style={{ padding: "40px 24px", textAlign: "center", color: "#9ca3af", fontSize: 14 }} colSpan={6}>
+                <td style={{ padding: "40px 24px", textAlign: "center", color: "var(--a-text-soft)", fontSize: 14 }} colSpan={6}>
                   <span className="material-symbols-outlined mx-auto text-center" style={{ fontSize: 48, marginBottom: 12, opacity: 0.5, display: "block" }}>search_off</span>
                   Không tìm thấy bookings nào
                 </td>
@@ -1553,7 +1553,7 @@ export default function BookingListPage() {
               <tr key={item.id} className="table-row">
                 <td style={{ padding: "16px 24px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{item.bookingCode}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "var(--a-text)" }}>{item.bookingCode}</div>
                     <button
                       className="btn-icon-p"
                       title="Sao chép mã booking"
@@ -1571,20 +1571,20 @@ export default function BookingListPage() {
                   </div>
                 </td>
                 <td style={{ padding: "16px 24px" }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#1c1917" }}>{item.guestName || "-"}</div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>{item.guestPhone || "-"}</div>
-                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>{getBookingSourceLabel(item.source)}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--a-text)" }}>{item.guestName || "-"}</div>
+                  <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>{item.guestPhone || "-"}</div>
+                  <div style={{ fontSize: 11, color: "var(--a-text-soft)", marginTop: 4 }}>{getBookingSourceLabel(item.source)}</div>
                 </td>
                 <td style={{ padding: "16px 24px" }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#1c1917" }}>{formatDate(item.bookingDetails?.[0]?.checkInDate).split(' ')[0]}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--a-text)" }}>{formatDate(item.bookingDetails?.[0]?.checkInDate).split(' ')[0]}</div>
                 </td>
                 <td style={{ padding: "16px 24px" }}>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "#16a34a" }}>{formatCurrency(item.totalEstimatedAmount)}</div>
-                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
+                  <div style={{ fontSize: 11, color: "var(--a-text-muted)", marginTop: 4 }}>
                     Đã thu trước lưu trú: {formatCurrency(item.depositAmount || 0)}
                   </div>
                   {item.paymentSummary && item.status !== "Completed" && item.status !== "Cancelled" && (
-                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 3 }}>
+                    <div style={{ fontSize: 11, color: "var(--a-text-soft)", marginTop: 3 }}>
                       {item.paymentSummary.canCheckIn
                         ? "Đủ điều kiện nhận phòng"
                         : item.status === "Pending"
@@ -1615,15 +1615,15 @@ export default function BookingListPage() {
         </div>
         )}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18, padding: "0 18px 18px", gap: 16, flexWrap: "wrap" }}>
-          <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
-            Trang <strong style={{ color: "#1c1917" }}>{page}</strong> / {totalPages}
+          <p style={{ margin: 0, fontSize: 13, color: "var(--a-text-muted)" }}>
+            Trang <strong style={{ color: "var(--a-text)" }}>{page}</strong> / {totalPages}
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <button
               type="button"
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               disabled={page === 1}
-              style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "transparent", color: "#6b7280", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.35 : 1 }}
+              style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "transparent", color: "var(--a-text-muted)", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.35 : 1 }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
             </button>
@@ -1640,8 +1640,8 @@ export default function BookingListPage() {
                     height: 32,
                     borderRadius: 8,
                     border: "none",
-                    background: active ? "#4f645b" : "transparent",
-                    color: active ? "#e7fef3" : "#6b7280",
+                    background: active ? "var(--a-primary)" : "transparent",
+                    color: active ? "#fff" : "var(--a-text-muted)",
                     fontSize: 13,
                     fontWeight: 700,
                     cursor: active ? "default" : "pointer",
@@ -1655,7 +1655,7 @@ export default function BookingListPage() {
               type="button"
               onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={page === totalPages}
-              style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "transparent", color: "#6b7280", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.35 : 1 }}
+              style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "transparent", color: "var(--a-text-muted)", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.35 : 1 }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
             </button>

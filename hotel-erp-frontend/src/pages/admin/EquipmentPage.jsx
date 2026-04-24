@@ -16,11 +16,11 @@ const INPUT_STYLE = {
   width: "100%",
   padding: "10px 14px",
   borderRadius: 12,
-  border: "1.5px solid #e2e8e1",
-  background: "#f9f8f3",
+  border: "1.5px solid var(--a-border)",
+  background: "var(--a-surface-raised)",
   fontSize: 14,
   fontWeight: 600,
-  color: "#1c1917",
+  color: "var(--a-text)",
   outline: "none",
   fontFamily: "'Manrope', sans-serif",
 };
@@ -40,8 +40,8 @@ const emptyForm = {
 
 function Toast({ message, type = "success", onClose }) {
   const palette = {
-    success: { bg: "#ecfdf5", border: "#a7f3d0", text: "#065f46" },
-    error: { bg: "#fef2f2", border: "#fecaca", text: "#991b1b" },
+    success: { bg: "var(--a-success-bg)", border: "var(--a-success-border)", text: "var(--a-success)" },
+    error: { bg: "var(--a-error-bg)", border: "var(--a-error-border)", text: "var(--a-error)" },
   };
   const s = palette[type] || palette.success;
 
@@ -104,10 +104,10 @@ function EquipmentModal({ open, mode, form, setForm, loading, error, onClose, on
           maxHeight: isMobile ? "92vh" : "90vh",
           display: "flex",
           flexDirection: "column",
-          background: "white",
+          background: "var(--a-surface)",
           borderRadius: isMobile ? "22px 22px 0 0" : 18,
-          boxShadow: "0 24px 64px rgba(0,0,0,.2)",
-          border: "1px solid #f1f0ea",
+          boxShadow: "var(--a-shadow-lg)",
+          border: "1px solid var(--a-border)",
           overflow: "hidden",
         }}
       >
@@ -117,15 +117,15 @@ function EquipmentModal({ open, mode, form, setForm, loading, error, onClose, on
             justifyContent: "space-between",
             alignItems: "center",
             padding: "18px 22px",
-            borderBottom: "1px solid #f1f0ea",
+            borderBottom: "1px solid var(--a-border)",
             flexShrink: 0,
           }}
         >
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#1c1917" }}>{title}</h3>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--a-text)" }}>{title}</h3>
           <button
             type="button"
             onClick={onClose}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--a-text-soft)" }}
           >
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -134,66 +134,66 @@ function EquipmentModal({ open, mode, form, setForm, loading, error, onClose, on
         <form onSubmit={onSubmit} style={{ padding: 22, overflowY: "auto", flex: 1, minHeight: 0 }}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6 }}>Mã VT *</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Mã VT *</label>
               <input value={form.itemCode} onChange={(e) => setForm((p) => ({ ...p, itemCode: e.target.value }))} style={INPUT_STYLE} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6 }}>Tên vật tư *</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Tên vật tư *</label>
               <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} style={INPUT_STYLE} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6 }}>Danh mục *</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Danh mục *</label>
               <input value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} style={INPUT_STYLE} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6 }}>ĐVT *</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>ĐVT *</label>
               <input value={form.unit} onChange={(e) => setForm((p) => ({ ...p, unit: e.target.value }))} style={INPUT_STYLE} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6 }}>Tổng số lượng *</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Tổng số lượng *</label>
               <input type="number" min="0" value={form.totalQuantity} onChange={(e) => setForm((p) => ({ ...p, totalQuantity: e.target.value }))} style={INPUT_STYLE} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6 }}>Giá gốc *</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Giá gốc *</label>
               <input type="number" min="0" value={form.basePrice} onChange={(e) => setForm((p) => ({ ...p, basePrice: e.target.value }))} style={INPUT_STYLE} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6 }}>Giá đền bù *</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Giá đền bù *</label>
               <input type="number" min="0" value={form.defaultPriceIfLost} onChange={(e) => setForm((p) => ({ ...p, defaultPriceIfLost: e.target.value }))} style={INPUT_STYLE} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6 }}>Nhà cung cấp</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Nhà cung cấp</label>
               <input value={form.supplier} onChange={(e) => setForm((p) => ({ ...p, supplier: e.target.value }))} style={INPUT_STYLE} />
             </div>
           </div>
 
           <div style={{ marginTop: 12 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#4b5563", marginBottom: 6 }}>Ảnh từ máy (optional)</label>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Ảnh từ máy (optional)</label>
             {mode === "edit" && form.currentImageUrl ? (
               <div className="flex flex-col sm:flex-row gap-3 items-center mb-2">
                 <div style={{
                   width: 80, height: 80, borderRadius: 12, overflow: "hidden",
-                  border: "1.5px solid #e2e8e1", flexShrink: 0,
-                  background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center",
+                  border: "1.5px solid var(--a-border)", flexShrink: 0,
+                  background: "var(--a-surface-soft)", display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
                   <img src={form.currentImageUrl} alt="current" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
                 <div>
-                  <p style={{ fontSize: 11, color: "#9ca3af", margin: "0 0 8px", fontWeight: 600 }}>Ảnh hiện tại</p>
+                  <p style={{ fontSize: 11, color: "var(--a-text-soft)", margin: "0 0 8px", fontWeight: 600 }}>Ảnh hiện tại</p>
                   <label
                     htmlFor="equipment-img-upload"
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 6,
                       padding: "7px 14px", borderRadius: 10,
-                      border: "1.5px dashed #a7c4bb", background: "#f5f8f6",
-                      color: "#4f645b", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                      border: "1.5px dashed var(--a-success-border)", background: "var(--a-surface-raised)",
+                      color: "var(--a-primary)", fontSize: 12, fontWeight: 700, cursor: "pointer",
                     }}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: 16 }}>upload_file</span>
                     Thay ảnh
                   </label>
                   {form.imageFile && (
-                    <p style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>{form.imageFile.name}</p>
+                    <p style={{ fontSize: 11, color: "var(--a-text-muted)", marginTop: 4 }}>{form.imageFile.name}</p>
                   )}
                 </div>
               </div>
@@ -203,15 +203,15 @@ function EquipmentModal({ open, mode, form, setForm, loading, error, onClose, on
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 8,
                   padding: "8px 16px", borderRadius: 10,
-                  border: "1.5px dashed #a7c4bb", background: "#f5f8f6",
-                  color: "#4f645b", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  border: "1.5px dashed var(--a-success-border)", background: "var(--a-surface-raised)",
+                  color: "var(--a-primary)", fontSize: 13, fontWeight: 700, cursor: "pointer",
                   marginBottom: 6,
                 }}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 18 }}>upload_file</span>
                 Chọn ảnh
                 {form.imageFile && (
-                  <span style={{ fontSize: 11, color: "#6b7280", fontWeight: 500, marginLeft: 4 }}>{form.imageFile.name}</span>
+                  <span style={{ fontSize: 11, color: "var(--a-text-muted)", fontWeight: 500, marginLeft: 4 }}>{form.imageFile.name}</span>
                 )}
               </label>
             )}
@@ -230,9 +230,9 @@ function EquipmentModal({ open, mode, form, setForm, loading, error, onClose, on
                 marginTop: 12,
                 borderRadius: 10,
                 padding: "10px 12px",
-                background: "#fef2f2",
-                border: "1px solid #fecaca",
-                color: "#b91c1c",
+                background: "var(--a-error-bg)",
+                border: "1px solid var(--a-error-border)",
+                color: "var(--a-error)",
                 fontSize: 13,
                 fontWeight: 600,
               }}
@@ -248,9 +248,9 @@ function EquipmentModal({ open, mode, form, setForm, loading, error, onClose, on
               style={{
                 padding: "8px 20px",
                 borderRadius: 10,
-                border: "1px solid #e2e8e1",
-                background: "white",
-                color: "#4b5563",
+                border: "1px solid var(--a-border)",
+                background: "var(--a-surface-raised)",
+                color: "var(--a-text-muted)",
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -306,28 +306,28 @@ function EquipmentSyncPreviewModal({ open, changes, loading, onClose, onConfirm 
       }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div style={{ width: "100%", maxWidth: 980, background: "white", borderRadius: 20, boxShadow: "0 24px 64px rgba(0,0,0,.2)", overflow: "hidden" }}>
-        <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ width: "100%", maxWidth: 980, background: "var(--a-surface)", border: "1px solid var(--a-border)", borderRadius: 20, boxShadow: "var(--a-shadow-lg)", overflow: "hidden" }}>
+        <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--a-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#1c1917" }}>Đồng bộ vật tư toàn hệ thống</h3>
-            <p style={{ margin: "6px 0 0", fontSize: 13, color: "#6b7280" }}>Trước là `InUse` hiện tại trong kho, sau là tổng vật tư active từ tất cả các phòng.</p>
+            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--a-text)" }}>Đồng bộ vật tư toàn hệ thống</h3>
+            <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--a-text-muted)" }}>Trước là `InUse` hiện tại trong kho, sau là tổng vật tư active từ tất cả các phòng.</p>
           </div>
-          <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}>
+          <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--a-text-soft)" }}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
         <div style={{ padding: "16px 24px", maxHeight: "55vh", overflowY: "auto" }}>
           {changes.length === 0 ? (
-            <div style={{ padding: "28px 0", textAlign: "center", color: "#6b7280", fontSize: 14 }}>
+            <div style={{ padding: "28px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 14 }}>
               Không có vật tư nào để đối soát.
             </div>
           ) : (
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "#f9f8f3" }}>
+                <tr style={{ background: "var(--a-surface-raised)" }}>
                   {["Mã VT", "Tên vật tư", "Trước", "Sau", "Chênh lệch"].map((title, idx) => (
-                    <th key={title} style={{ padding: "12px 14px", fontSize: 10, textTransform: "uppercase", letterSpacing: ".08em", color: "#9ca3af", textAlign: idx >= 2 ? "right" : "left", borderBottom: "1px solid #f1f0ea" }}>
+                    <th key={title} style={{ padding: "12px 14px", fontSize: 10, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-soft)", textAlign: idx >= 2 ? "right" : "left", borderBottom: "1px solid var(--a-border)" }}>
                       {title}
                     </th>
                   ))}
@@ -335,12 +335,12 @@ function EquipmentSyncPreviewModal({ open, changes, loading, onClose, onConfirm 
               </thead>
               <tbody>
                 {changes.map((item) => (
-                  <tr key={item.equipmentId} style={{ borderBottom: "1px solid #f8fafc" }}>
-                    <td style={{ padding: "12px 14px", fontSize: 12, fontFamily: "monospace", fontWeight: 700, color: "#4f645b" }}>{item.itemCode}</td>
-                    <td style={{ padding: "12px 14px", fontSize: 14, fontWeight: 600, color: "#1c1917" }}>{item.equipmentName}</td>
-                    <td style={{ padding: "12px 14px", fontSize: 13, textAlign: "right", color: "#6b7280" }}>{item.oldInUseQuantity ?? 0}</td>
-                    <td style={{ padding: "12px 14px", fontSize: 13, textAlign: "right", color: "#1c1917", fontWeight: 700 }}>{item.newInUseQuantity ?? 0}</td>
-                    <td style={{ padding: "12px 14px", fontSize: 13, textAlign: "right", fontWeight: 700, color: item.delta > 0 ? "#16a34a" : item.delta < 0 ? "#dc2626" : "#6b7280" }}>
+                  <tr key={item.equipmentId} style={{ borderBottom: "1px solid var(--a-border)" }}>
+                    <td style={{ padding: "12px 14px", fontSize: 12, fontFamily: "monospace", fontWeight: 700, color: "var(--a-primary)" }}>{item.itemCode}</td>
+                    <td style={{ padding: "12px 14px", fontSize: 14, fontWeight: 600, color: "var(--a-text)" }}>{item.equipmentName}</td>
+                    <td style={{ padding: "12px 14px", fontSize: 13, textAlign: "right", color: "var(--a-text-muted)" }}>{item.oldInUseQuantity ?? 0}</td>
+                    <td style={{ padding: "12px 14px", fontSize: 13, textAlign: "right", color: "var(--a-text)", fontWeight: 700 }}>{item.newInUseQuantity ?? 0}</td>
+                    <td style={{ padding: "12px 14px", fontSize: 13, textAlign: "right", fontWeight: 700, color: item.delta > 0 ? "var(--a-success)" : item.delta < 0 ? "var(--a-error)" : "var(--a-text-muted)" }}>
                       {item.delta > 0 ? "+" : ""}
                       {item.delta ?? 0}
                     </td>
@@ -351,10 +351,10 @@ function EquipmentSyncPreviewModal({ open, changes, loading, onClose, onConfirm 
           )}
         </div>
 
-        <div style={{ padding: "16px 24px", borderTop: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 12, color: "#6b7280" }}>Tổng equipment được kiểm tra: {changes.length}</span>
+        <div style={{ padding: "16px 24px", borderTop: "1px solid var(--a-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 12, color: "var(--a-text-muted)" }}>Tổng equipment được kiểm tra: {changes.length}</span>
           <div style={{ display: "flex", gap: 10 }}>
-            <button type="button" onClick={onClose} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #e2e8e1", background: "white", color: "#4b5563", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            <button type="button" onClick={onClose} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--a-border)", background: "var(--a-surface-raised)", color: "var(--a-text-muted)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               Đóng
             </button>
             <button
@@ -617,11 +617,11 @@ export default function EquipmentPage() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center sm:mb-7 mb-4 gap-4">
         <div>
-          <h2 style={{ fontSize: 28, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: "var(--a-text)", margin: "0 0 6px" }}>
             Vật tư & Minibar
           </h2>
-          <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>
-            Tổng <strong style={{ color: "#1c1917" }}>{filteredItems.length}</strong> vật tư hiển thị từ bảng Equipments
+          <p style={{ fontSize: 14, color: "var(--a-text-muted)", margin: 0 }}>
+            Tổng <strong style={{ color: "var(--a-text)" }}>{filteredItems.length}</strong> vật tư hiển thị từ bảng Equipments
           </p>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -631,9 +631,9 @@ export default function EquipmentPage() {
             style={{
               padding: "10px 18px",
               borderRadius: 12,
-              border: "1px solid #e2e8e1",
-              background: "white",
-              color: "#1c1917",
+              border: "1px solid var(--a-border)",
+              background: "var(--a-surface-raised)",
+              color: "var(--a-text)",
               fontSize: 13,
               fontWeight: 800,
               cursor: "pointer",
@@ -662,8 +662,8 @@ export default function EquipmentPage() {
             style={{
               padding: "10px 18px",
               borderRadius: 12,
-              border: "1px solid #e2e8e1",
-              background: "white",
+              border: "1px solid var(--a-border)",
+              background: "var(--a-surface-raised)",
               fontSize: 13,
               fontWeight: 800,
               cursor: "pointer",
@@ -674,7 +674,7 @@ export default function EquipmentPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#f1f0ea] shadow-sm mb-5 grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-3">
+      <div className="rounded-2xl p-4 sm:p-5 mb-5 grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-3" style={{ background: "var(--a-surface)", border: "1px solid var(--a-border)", boxShadow: "var(--a-shadow-sm)" }}>
         <input
           value={filters.search}
           onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
@@ -704,48 +704,48 @@ export default function EquipmentPage() {
         </select>
       </div>
 
-      <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", boxShadow: "0 1px 4px rgba(0,0,0,.06)", overflow: "hidden" }}>
+      <div style={{ background: "var(--a-surface)", borderRadius: 18, border: "1px solid var(--a-border)", boxShadow: "var(--a-shadow-sm)", overflow: "hidden" }}>
         {error ? (
-          <div style={{ padding: 32, color: "#dc2626", fontWeight: 600 }}>{error}</div>
+          <div style={{ padding: 32, color: "var(--a-error)", fontWeight: 600 }}>{error}</div>
         ) : loading ? (
-          <div style={{ padding: 32, color: "#6b7280" }}>Đang tải dữ liệu vật tư...</div>
+          <div style={{ padding: 32, color: "var(--a-text-muted)" }}>Đang tải dữ liệu vật tư...</div>
         ) : filteredItems.length === 0 ? (
-          <div style={{ padding: 32, color: "#6b7280" }}>Không có vật tư phù hợp bộ lọc.</div>
+          <div style={{ padding: 32, color: "var(--a-text-muted)" }}>Không có vật tư phù hợp bộ lọc.</div>
         ) : isMobile ? (
           <div style={{ display: "grid", gap: 12, padding: 14 }}>
             {paginatedItems.map((item) => (
-              <article key={item.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+              <article key={item.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "var(--a-surface-raised)" }}>
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.name} style={{ width: 52, height: 52, borderRadius: 12, objectFit: "cover", border: "1px solid #f1f0ea", flexShrink: 0 }} />
+                    <img src={item.imageUrl} alt={item.name} style={{ width: 52, height: 52, borderRadius: 12, objectFit: "cover", border: "1px solid var(--a-border)", flexShrink: 0 }} />
                   ) : (
-                    <div style={{ width: 52, height: 52, borderRadius: 12, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", flexShrink: 0 }}>
+                    <div style={{ width: 52, height: 52, borderRadius: 12, background: "var(--a-surface-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--a-text-soft)", flexShrink: 0 }}>
                       <span className="material-symbols-outlined" style={{ fontSize: 24 }}>inventory_2</span>
                     </div>
                   )}
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 900, color: "#4f645b" }}>{item.itemCode}</div>
-                    <div style={{ fontSize: 16, fontWeight: 900, color: "#1c1917", marginTop: 4 }}>{item.name}</div>
-                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{item.category || "-"} - {item.unit || "-"}</div>
+                    <div style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 900, color: "var(--a-primary)" }}>{item.itemCode}</div>
+                    <div style={{ fontSize: 16, fontWeight: 900, color: "var(--a-text)", marginTop: 4 }}>{item.name}</div>
+                    <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginTop: 4 }}>{item.category || "-"} - {item.unit || "-"}</div>
                   </div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
                   {[["Tổng", item.totalQuantity ?? 0], ["Đang dùng", item.inUseQuantity ?? 0], ["Tồn kho", item.inStockQuantity ?? 0]].map(([labelText, value]) => (
-                    <div key={labelText} style={{ background: "#f8fafc", borderRadius: 12, padding: 9 }}>
-                      <div style={{ fontSize: 10, color: "#78716c", fontWeight: 900 }}>{labelText}</div>
-                      <div style={{ fontSize: 15, color: "#1c1917", fontWeight: 900 }}>{value}</div>
+                    <div key={labelText} style={{ background: "var(--a-surface-soft)", border: "1px solid var(--a-border)", borderRadius: 12, padding: 9 }}>
+                      <div style={{ fontSize: 10, color: "var(--a-text-soft)", fontWeight: 900 }}>{labelText}</div>
+                      <div style={{ fontSize: 15, color: "var(--a-text)", fontWeight: 900 }}>{value}</div>
                     </div>
                   ))}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  <div style={{ fontSize: 12, color: "#475569" }}>Giá gốc: <strong>{fmtCurrency(item.basePrice)}</strong></div>
-                  <div style={{ fontSize: 12, color: "#dc2626" }}>Đền bù: <strong>{fmtCurrency(item.defaultPriceIfLost)}</strong></div>
+                  <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>Giá gốc: <strong style={{ color: "var(--a-text)" }}>{fmtCurrency(item.basePrice)}</strong></div>
+                  <div style={{ fontSize: 12, color: "var(--a-error)" }}>Đền bù: <strong>{fmtCurrency(item.defaultPriceIfLost)}</strong></div>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                  <button type="button" onClick={() => handleToggleActive(item)} disabled={togglingId === item.id} style={{ height: 36, padding: "0 12px", borderRadius: 999, border: "none", background: item.isActive ? "#10b981" : "#4b5563", color: "white", fontWeight: 900 }}>
+                  <button type="button" onClick={() => handleToggleActive(item)} disabled={togglingId === item.id} style={{ height: 36, padding: "0 12px", borderRadius: 999, border: "none", background: item.isActive ? "var(--a-success)" : "var(--a-text-soft)", color: "#fff", fontWeight: 900 }}>
                     {togglingId === item.id ? "Đang đổi..." : item.isActive ? "Bật" : "Tắt"}
                   </button>
-                  <button type="button" onClick={() => openEditModal(item)} style={{ height: 38, borderRadius: 10, border: "1.5px solid rgba(79,100,91,.2)", background: "#f0faf5", color: "#1a3826", fontWeight: 900, padding: "0 14px" }}>
+                  <button type="button" onClick={() => openEditModal(item)} style={{ height: 38, borderRadius: 10, border: "1.5px solid var(--a-success-border)", background: "var(--a-success-bg)", color: "var(--a-success)", fontWeight: 900, padding: "0 14px" }}>
                     Sửa
                   </button>
                 </div>
@@ -756,7 +756,7 @@ export default function EquipmentPage() {
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1300 }}>
               <thead>
-                <tr style={{ background: "#f9f8f3" }}>
+                <tr style={{ background: "var(--a-surface-raised)" }}>
                   {[
                     "Mã VT",
                     "Tên vật tư",
@@ -773,7 +773,7 @@ export default function EquipmentPage() {
                     "Trạng thái",
                     "Thao tác",
                   ].map((title) => (
-                    <th key={title} style={{ padding: "14px 16px", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", color: "#6b7280", textAlign: "left", borderBottom: "1px solid #f1f0ea" }}>
+                    <th key={title} style={{ padding: "14px 16px", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)", textAlign: "left", borderBottom: "1px solid var(--a-border)" }}>
                       {title}
                     </th>
                   ))}
@@ -781,30 +781,30 @@ export default function EquipmentPage() {
               </thead>
               <tbody>
                 {paginatedItems.map((item) => (
-                  <tr key={item.id} style={{ borderBottom: "1px solid #f8fafc" }}>
-                    <td style={{ padding: "16px", fontSize: 13, fontFamily: "monospace", fontWeight: 800, color: "#4f645b" }}>{item.itemCode}</td>
-                    <td style={{ padding: "16px", fontSize: 14, fontWeight: 800, color: "#1c1917" }}>
+                  <tr key={item.id} style={{ borderBottom: "1px solid var(--a-border)" }}>
+                    <td style={{ padding: "16px", fontSize: 13, fontFamily: "monospace", fontWeight: 800, color: "var(--a-primary)" }}>{item.itemCode}</td>
+                    <td style={{ padding: "16px", fontSize: 14, fontWeight: 800, color: "var(--a-text)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         {item.imageUrl ? (
-                          <img src={item.imageUrl} alt={item.name} style={{ width: 42, height: 42, borderRadius: 10, objectFit: "cover", border: "1px solid #f1f0ea" }} />
+                          <img src={item.imageUrl} alt={item.name} style={{ width: 42, height: 42, borderRadius: 10, objectFit: "cover", border: "1px solid var(--a-border)" }} />
                         ) : (
-                          <div style={{ width: 42, height: 42, borderRadius: 10, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>
+                          <div style={{ width: 42, height: 42, borderRadius: 10, background: "var(--a-surface-soft)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--a-text-soft)" }}>
                             <span className="material-symbols-outlined" style={{ fontSize: 20 }}>inventory_2</span>
                           </div>
                         )}
                         <span>{item.name}</span>
                       </div>
                     </td>
-                    <td style={{ padding: "16px", fontSize: 13, color: "#475569" }}>{item.category || "—"}</td>
-                    <td style={{ padding: "16px", fontSize: 13, color: "#475569" }}>{item.unit || "—"}</td>
+                    <td style={{ padding: "16px", fontSize: 13, color: "var(--a-text-muted)" }}>{item.category || "—"}</td>
+                    <td style={{ padding: "16px", fontSize: 13, color: "var(--a-text-muted)" }}>{item.unit || "—"}</td>
                     <td style={{ padding: "16px", fontSize: 13, fontWeight: 800 }}>{item.totalQuantity ?? 0}</td>
                     <td style={{ padding: "16px", fontSize: 13, fontWeight: 800 }}>{item.inUseQuantity ?? 0}</td>
                     <td style={{ padding: "16px", fontSize: 13, fontWeight: 800 }}>{item.damagedQuantity ?? 0}</td>
                     <td style={{ padding: "16px", fontSize: 13, fontWeight: 800 }}>{item.liquidatedQuantity ?? 0}</td>
-                    <td style={{ padding: "16px", fontSize: 13, fontWeight: 800, color: "#2563eb" }}>{item.inStockQuantity ?? 0}</td>
-                    <td style={{ padding: "16px", fontSize: 13, color: "#475569" }}>{fmtCurrency(item.basePrice)}</td>
-                    <td style={{ padding: "16px", fontSize: 13, color: "#dc2626", fontWeight: 800 }}>{fmtCurrency(item.defaultPriceIfLost)}</td>
-                    <td style={{ padding: "16px", fontSize: 13, color: "#475569" }}>{item.supplier || "—"}</td>
+                    <td style={{ padding: "16px", fontSize: 13, fontWeight: 800, color: "var(--a-info)" }}>{item.inStockQuantity ?? 0}</td>
+                    <td style={{ padding: "16px", fontSize: 13, color: "var(--a-text-muted)" }}>{fmtCurrency(item.basePrice)}</td>
+                    <td style={{ padding: "16px", fontSize: 13, color: "var(--a-error)", fontWeight: 800 }}>{fmtCurrency(item.defaultPriceIfLost)}</td>
+                    <td style={{ padding: "16px", fontSize: 13, color: "var(--a-text-muted)" }}>{item.supplier || "—"}</td>
                     <td style={{ padding: "16px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <button
@@ -819,7 +819,7 @@ export default function EquipmentPage() {
                             borderRadius: 9999,
                             padding: 3,
                             cursor: togglingId === item.id ? "not-allowed" : "pointer",
-                            background: item.isActive ? "#10b981" : "#4b5563",
+                            background: item.isActive ? "var(--a-success)" : "var(--a-text-soft)",
                             opacity: togglingId === item.id ? 0.65 : 1,
                             transition: "background .18s ease",
                             position: "relative",
@@ -831,14 +831,14 @@ export default function EquipmentPage() {
                               width: 20,
                               height: 20,
                               borderRadius: "50%",
-                              background: "white",
+                              background: "var(--a-surface)",
                               boxShadow: "0 1px 3px rgba(0,0,0,.2)",
                               transform: item.isActive ? "translateX(20px)" : "translateX(0)",
                               transition: "transform .18s ease",
                             }}
                           />
                         </button>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: item.isActive ? "#10b981" : "#9ca3af" }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: item.isActive ? "var(--a-success)" : "var(--a-text-soft)" }}>
                           {togglingId === item.id ? "Đang đổi..." : item.isActive ? "Bật" : "Tắt"}
                         </span>
                       </div>
@@ -852,17 +852,17 @@ export default function EquipmentPage() {
                           width: 34,
                           height: 34,
                           borderRadius: 9,
-                          border: "1.5px solid rgba(79,100,91,.2)",
-                          background: "#f0faf5",
-                          color: "#1a3826",
+                          border: "1.5px solid var(--a-success-border)",
+                          background: "var(--a-success-bg)",
+                          color: "var(--a-success)",
                           cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           transition: "all .15s",
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "#4f645b"; e.currentTarget.style.color = "#e7fef3"; e.currentTarget.style.borderColor = "#4f645b"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = "#f0faf5"; e.currentTarget.style.color = "#1a3826"; e.currentTarget.style.borderColor = "rgba(79,100,91,.2)"; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--a-primary)"; e.currentTarget.style.color = "#e7fef3"; e.currentTarget.style.borderColor = "var(--a-primary)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "var(--a-success-bg)"; e.currentTarget.style.color = "var(--a-success)"; e.currentTarget.style.borderColor = "var(--a-success-border)"; }}
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: 17, fontVariationSettings: "'FILL' 0" }}>edit_note</span>
                       </button>
@@ -877,15 +877,15 @@ export default function EquipmentPage() {
 
       {!loading && !error && filteredItems.length > 0 && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18, gap: 16, flexWrap: "wrap" }}>
-          <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
-            Trang <strong style={{ color: "#1c1917" }}>{page}</strong> / {totalPages}
+          <p style={{ margin: 0, fontSize: 13, color: "var(--a-text-muted)" }}>
+            Trang <strong style={{ color: "var(--a-text)" }}>{page}</strong> / {totalPages}
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <button
               type="button"
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               disabled={page === 1}
-              style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "transparent", color: "#6b7280", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.35 : 1 }}
+              style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "transparent", color: "var(--a-text-muted)", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.35 : 1 }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
             </button>
@@ -903,8 +903,8 @@ export default function EquipmentPage() {
                     borderRadius: 8,
                     border: "none",
                     cursor: active ? "default" : "pointer",
-                    background: active ? "#4f645b" : "transparent",
-                    color: active ? "#e7fef3" : "#6b7280",
+                    background: active ? "var(--a-primary)" : "transparent",
+                    color: active ? "#e7fef3" : "var(--a-text-muted)",
                     fontSize: 13,
                     fontWeight: 800,
                   }}
@@ -917,7 +917,7 @@ export default function EquipmentPage() {
               type="button"
               onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={page === totalPages}
-              style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "transparent", color: "#6b7280", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.35 : 1 }}
+              style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "transparent", color: "var(--a-text-muted)", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.35 : 1 }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
             </button>

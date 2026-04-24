@@ -5,10 +5,10 @@ import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import { getUsers } from "../../api/userManagementApi";
 
 const cardStyle = {
-  background: "#fff",
-  border: "1px solid #f1f0ea",
+  background: "var(--a-surface)",
+  border: "1px solid var(--a-border)",
   borderRadius: 20,
-  boxShadow: "0 1px 3px rgba(0,0,0,.06)",
+  boxShadow: "var(--a-shadow-sm)",
 };
 
 const inputStyle = {
@@ -16,11 +16,11 @@ const inputStyle = {
   boxSizing: "border-box",
   padding: "10px 14px",
   borderRadius: 12,
-  border: "1.5px solid #e2e8e1",
-  background: "#f9f8f3",
+  border: "1.5px solid var(--a-border)",
+  background: "var(--a-surface-raised)",
   fontSize: 14,
   fontWeight: 600,
-  color: "#1c1917",
+  color: "var(--a-text)",
   outline: "none",
   fontFamily: "'Manrope', sans-serif",
   transition: "all 0.2s",
@@ -45,9 +45,9 @@ const PRIMARY_BUTTON = {
 const SECONDARY_BUTTON = {
   padding: "10px 22px",
   borderRadius: 12,
-  border: "1.5px solid #e2e8e1",
-  background: "white",
-  color: "#57534e",
+  border: "1.5px solid var(--a-border)",
+  background: "var(--a-surface-raised)",
+  color: "var(--a-text-muted)",
   fontSize: 14,
   fontWeight: 700,
   cursor: "pointer",
@@ -215,8 +215,8 @@ export default function MaintenancePage() {
       `}</style>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 28, color: "#1c1917", fontWeight: 800 }}>Bảo trì phòng</h2>
-          <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: 14, maxWidth: 760, lineHeight: 1.65 }}>
+          <h2 style={{ margin: 0, fontSize: 28, color: "var(--a-text)", fontWeight: 800 }}>Bảo trì phòng</h2>
+          <p style={{ margin: "8px 0 0", color: "var(--a-text-muted)", fontSize: 14, maxWidth: 760, lineHeight: 1.65 }}>
             Workflow này tách ticket bảo trì khỏi trạng thái vận hành của phòng. Khi ticket có `blocksRoom`, backend sẽ đưa phòng sang `Disabled` cho tới lúc đóng ticket.
           </p>
         </div>
@@ -225,11 +225,11 @@ export default function MaintenancePage() {
         </button>
       </div>
 
-      {errorMessage ? <div className="sub-card-p" style={{ ...cardStyle, marginBottom: 20, padding: 14, color: "#b91c1c", background: "#fff7f7", borderColor: "#fecaca" }}>{errorMessage}</div> : null}
+      {errorMessage ? <div className="sub-card-p" style={{ ...cardStyle, marginBottom: 20, padding: 14, color: "var(--a-error)", background: "var(--a-error-bg)", borderColor: "color-mix(in srgb, var(--a-error) 28%, var(--a-border))" }}>{errorMessage}</div> : null}
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
         <article className="primary-card-p" style={{ ...cardStyle, padding: 22 }}>
-          <h3 style={{ margin: "0 0 18px", fontSize: 18, color: "#1c1917", fontWeight: 800 }}>Tạo ticket bảo trì</h3>
+          <h3 style={{ margin: "0 0 18px", fontSize: 18, color: "var(--a-text)", fontWeight: 800 }}>Tạo ticket bảo trì</h3>
           <form onSubmit={handleCreate} style={{ display: "grid", gap: 12 }}>
             <select value={form.roomId} onChange={(e) => setForm((prev) => ({ ...prev, roomId: e.target.value }))} style={inputStyle} required>
               <option value="">Chọn phòng</option>
@@ -261,7 +261,7 @@ export default function MaintenancePage() {
               </select>
               <input type="datetime-local" value={form.expectedDoneAt} onChange={(e) => setForm((prev) => ({ ...prev, expectedDoneAt: e.target.value }))} style={inputStyle} />
             </div>
-            <label style={{ display: "flex", alignItems: "center", gap: 10, color: "#44403c", fontWeight: 700 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--a-text-muted)", fontWeight: 700 }}>
               <input type="checkbox" checked={form.blocksRoom} onChange={(e) => setForm((prev) => ({ ...prev, blocksRoom: e.target.checked }))} />
               Block phòng ngay khi mở ticket
             </label>
@@ -272,11 +272,11 @@ export default function MaintenancePage() {
         </article>
 
         <article style={{ ...cardStyle, padding: 22 }}>
-          <h3 style={{ margin: "0 0 18px", fontSize: 18, color: "#1c1917", fontWeight: 800 }}>Quy trình đề xuất</h3>
+          <h3 style={{ margin: "0 0 18px", fontSize: 18, color: "var(--a-text)", fontWeight: 800 }}>Quy trình đề xuất</h3>
           <div style={{ display: "grid", gap: 12 }}>
             {workflowNotes.map((item) => (
-              <div key={item.status} className="sub-card-p" style={{ background: "#faf8f3", borderRadius: 14, padding: 14, color: "#44403c", lineHeight: 1.6 }}>
-                <strong style={{ color: statusMeta[item.status]?.color || "#1c1917" }}>{statusLabels[item.status] || item.status}:</strong> {item.text}
+              <div key={item.status} className="sub-card-p" style={{ background: "var(--a-surface-raised)", border: "1px solid var(--a-border)", borderRadius: 14, padding: 14, color: "var(--a-text-muted)", lineHeight: 1.6 }}>
+                <strong style={{ color: statusMeta[item.status]?.color || "var(--a-text)" }}>{statusLabels[item.status] || item.status}:</strong> {item.text}
               </div>
             ))}
             {false && [
@@ -286,7 +286,7 @@ export default function MaintenancePage() {
               "Closed: vận hành xác nhận hoàn tất, backend bỏ Disabled và đưa phòng về Available + Dirty.",
               "Cancelled: ticket tạo nhầm hoặc không còn cần xử lý.",
             ].map((line) => (
-              <div key={line} className="sub-card-p" style={{ background: "#faf8f3", borderRadius: 14, padding: 14, color: "#44403c", lineHeight: 1.6 }}>
+              <div key={line} className="sub-card-p" style={{ background: "var(--a-surface-raised)", border: "1px solid var(--a-border)", borderRadius: 14, padding: 14, color: "var(--a-text-muted)", lineHeight: 1.6 }}>
                 {line}
               </div>
             ))}
@@ -295,8 +295,8 @@ export default function MaintenancePage() {
       </section>
 
       <section className="primary-card-p" style={{ ...cardStyle, overflow: "hidden" }}>
-        <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1ece2", display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <strong style={{ color: "#1c1917", fontSize: 18 }}>Danh sách ticket bảo trì</strong>
+        <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--a-border)", display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <strong style={{ color: "var(--a-text)", fontSize: 18 }}>Danh sách ticket bảo trì</strong>
           <select value={filters.status} onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))} style={{ ...inputStyle, width: isMobile ? "100%" : 180 }}>
             <option value="">Tất cả trạng thái</option>
             <option value="Open">{statusLabels.Open}</option>
@@ -309,24 +309,24 @@ export default function MaintenancePage() {
         {isMobile ? (
           <div style={{ display: "grid", gap: 12, padding: 14 }}>
             {rows.length === 0 ? (
-              <div style={{ padding: 24, textAlign: "center", color: "#9ca3af" }}>Chua co ticket bao tri nao.</div>
+              <div style={{ padding: 24, textAlign: "center", color: "var(--a-text-muted)" }}>Chua co ticket bao tri nao.</div>
             ) : rows.map((ticket) => {
               const meta = statusMeta[ticket.status] || statusMeta.Open;
               return (
-                <article key={ticket.id} style={{ border: "1px solid #f1ece2", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "white" }}>
+                <article key={ticket.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "var(--a-surface-raised)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
                     <div>
-                      <div style={{ color: "#1c1917", fontWeight: 900, fontSize: 16 }}>Phong {ticket.roomNumber}</div>
-                      <div style={{ color: "#6b7280", fontSize: 13 }}>{ticket.roomTypeName || "-"}</div>
+                      <div style={{ color: "var(--a-text)", fontWeight: 900, fontSize: 16 }}>Phong {ticket.roomNumber}</div>
+                      <div style={{ color: "var(--a-text-muted)", fontSize: 13 }}>{ticket.roomTypeName || "-"}</div>
                     </div>
                     <span style={{ padding: "6px 10px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 11, fontWeight: 900 }}>{statusLabels[ticket.status] || ticket.status}</span>
                   </div>
                   <div>
-                    <div style={{ color: "#1c1917", fontWeight: 900 }}>{ticket.title}</div>
-                    <div style={{ color: "#6b7280", fontSize: 13, marginTop: 4 }}>{ticket.reason}</div>
-                    <div style={{ marginTop: 6, color: "#57534e", fontSize: 12, fontWeight: 800 }}>{categoryLabels[ticket.category] || ticket.category || "-"} - {priorityLabels[ticket.priority] || ticket.priority}</div>
+                    <div style={{ color: "var(--a-text)", fontWeight: 900 }}>{ticket.title}</div>
+                    <div style={{ color: "var(--a-text-muted)", fontSize: 13, marginTop: 4 }}>{ticket.reason}</div>
+                    <div style={{ marginTop: 6, color: "var(--a-text-soft)", fontSize: 12, fontWeight: 800 }}>{categoryLabels[ticket.category] || ticket.category || "-"} - {priorityLabels[ticket.priority] || ticket.priority}</div>
                   </div>
-                  <div style={{ display: "grid", gap: 5, color: "#57534e", fontSize: 12 }}>
+                  <div style={{ display: "grid", gap: 5, color: "var(--a-text-soft)", fontSize: 12 }}>
                     <div>Mở: {fmtDateTime(ticket.openedAt)}</div>
                     <div>ETA: {fmtDateTime(ticket.expectedDoneAt)}</div>
                     <div>Báo cáo: {ticket.reportedBy?.fullName || "-"}</div>
@@ -335,7 +335,7 @@ export default function MaintenancePage() {
                   <textarea value={statusNotes[ticket.id] || ticket.resolutionNote || ""} onChange={(e) => setStatusNotes((prev) => ({ ...prev, [ticket.id]: e.target.value }))} placeholder="Ghi chú khi xử lý / đóng ticket" style={{ ...inputStyle, minHeight: 78, resize: "vertical" }} />
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                     {["InProgress", "Resolved", "Closed", "Cancelled"].map((status) => (
-                      <button key={status} type="button" onClick={() => handleStatusUpdate(ticket.id, status)} disabled={saving || ticket.status === status} style={{ height: 36, borderRadius: 10, border: "1px solid #d6d3d1", background: "#fff", fontWeight: 800, opacity: ticket.status === status ? 0.5 : 1 }}>
+                      <button key={status} type="button" onClick={() => handleStatusUpdate(ticket.id, status)} disabled={saving || ticket.status === status} style={{ height: 36, borderRadius: 10, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", fontWeight: 800, opacity: ticket.status === status ? 0.5 : 1 }}>
                         {statusActionLabels[status] || status}
                       </button>
                     ))}
@@ -348,36 +348,36 @@ export default function MaintenancePage() {
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", minWidth: 1100, borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#faf8f3", borderBottom: "1px solid #f1ece2" }}>
+              <tr style={{ background: "color-mix(in srgb, var(--a-surface-raised) 88%, transparent)", borderBottom: "1px solid var(--a-border)" }}>
                 {["Phòng", "Ticket", "Phụ trách", "Thời gian", "Trạng thái", "Ghi chú đóng", "Cập nhật"].map((title) => (
-                  <th key={title} style={{ padding: "14px 18px", textAlign: "left", color: "#78716c", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em" }}>{title}</th>
+                  <th key={title} style={{ padding: "14px 18px", textAlign: "left", color: "var(--a-text-muted)", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em" }}>{title}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr><td colSpan={7} style={{ padding: 32, textAlign: "center", color: "#9ca3af" }}>Chưa có ticket bảo trì nào.</td></tr>
+                <tr><td colSpan={7} style={{ padding: 32, textAlign: "center", color: "var(--a-text-muted)" }}>Chưa có ticket bảo trì nào.</td></tr>
               ) : rows.map((ticket) => {
                 const meta = statusMeta[ticket.status] || statusMeta.Open;
                 return (
-                  <tr key={ticket.id} style={{ borderBottom: "1px solid #f7f4ee", verticalAlign: "top" }}>
+                  <tr key={ticket.id} style={{ borderBottom: "1px solid var(--a-border)", verticalAlign: "top" }}>
                     <td style={{ padding: "16px 18px" }}>
-                      <div style={{ color: "#1c1917", fontWeight: 800 }}>Phòng {ticket.roomNumber}</div>
-                      <div style={{ color: "#6b7280", fontSize: 13 }}>{ticket.roomTypeName || "—"}</div>
-                      <div style={{ marginTop: 6, color: ticket.blocksRoom ? "#b45309" : "#6b7280", fontSize: 12, fontWeight: 700 }}>
+                      <div style={{ color: "var(--a-text)", fontWeight: 800 }}>Phòng {ticket.roomNumber}</div>
+                      <div style={{ color: "var(--a-text-muted)", fontSize: 13 }}>{ticket.roomTypeName || "—"}</div>
+                      <div style={{ marginTop: 6, color: ticket.blocksRoom ? "var(--a-warning)" : "var(--a-text-muted)", fontSize: 12, fontWeight: 700 }}>
                         {ticket.blocksRoom ? "Đang block phòng" : "Không block phòng"}
                       </div>
                     </td>
                     <td style={{ padding: "16px 18px" }}>
-                      <div style={{ color: "#1c1917", fontWeight: 800 }}>{ticket.title}</div>
-                      <div style={{ color: "#6b7280", fontSize: 13 }}>{ticket.reason}</div>
-                      <div style={{ marginTop: 6, color: "#57534e", fontSize: 12, fontWeight: 700 }}>{categoryLabels[ticket.category] || ticket.category || "—"} • {priorityLabels[ticket.priority] || ticket.priority}</div>
+                      <div style={{ color: "var(--a-text)", fontWeight: 800 }}>{ticket.title}</div>
+                      <div style={{ color: "var(--a-text-muted)", fontSize: 13 }}>{ticket.reason}</div>
+                      <div style={{ marginTop: 6, color: "var(--a-text-soft)", fontSize: 12, fontWeight: 700 }}>{categoryLabels[ticket.category] || ticket.category || "—"} • {priorityLabels[ticket.priority] || ticket.priority}</div>
                     </td>
-                    <td style={{ padding: "16px 18px", color: "#57534e" }}>
+                    <td style={{ padding: "16px 18px", color: "var(--a-text-soft)" }}>
                       <div>Báo cáo: {ticket.reportedBy?.fullName || "—"}</div>
                       <div style={{ marginTop: 6 }}>Xử lý: {ticket.assignedTo?.fullName || "Chưa gán"}</div>
                     </td>
-                    <td style={{ padding: "16px 18px", color: "#57534e", fontSize: 13 }}>
+                    <td style={{ padding: "16px 18px", color: "var(--a-text-soft)", fontSize: 13 }}>
                       <div>Mở: {fmtDateTime(ticket.openedAt)}</div>
                       <div style={{ marginTop: 6 }}>ETA: {fmtDateTime(ticket.expectedDoneAt)}</div>
                       <div style={{ marginTop: 6 }}>Resolved: {fmtDateTime(ticket.resolvedAt)}</div>
@@ -404,8 +404,9 @@ export default function MaintenancePage() {
                             style={{
                               height: 34,
                               borderRadius: 10,
-                              border: "1px solid #d6d3d1",
-                              background: "#fff",
+                              border: "1px solid var(--a-border)",
+                              background: "var(--a-surface)",
+                              color: "var(--a-text-muted)",
                               fontWeight: 700,
                               cursor: "pointer",
                               opacity: ticket.status === status ? 0.5 : 1,

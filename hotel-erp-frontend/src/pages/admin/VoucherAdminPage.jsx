@@ -6,10 +6,10 @@ import { getMemberships } from "../../api/membershipsApi";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const pageCard = {
-  background: "#fff",
-  border: "1px solid #f1f0ea",
+  background: "var(--a-surface)",
+  border: "1px solid var(--a-border)",
   borderRadius: 20,
-  boxShadow: "0 1px 4px rgba(28,25,23,.05)",
+  boxShadow: "none",
 };
 
 const inputStyle = {
@@ -17,13 +17,14 @@ const inputStyle = {
   boxSizing: "border-box",
   padding: "10px 14px",
   borderRadius: 12,
-  border: "1.5px solid #e2e8e1",
-  background: "#f9f8f3",
+  border: "1px solid var(--a-surface-bright)",
+  background: "var(--a-bg)",
   fontSize: 13,
   fontWeight: 600,
-  color: "#1c1917",
+  color: "var(--a-text)",
   outline: "none",
   fontFamily: "'Manrope', sans-serif",
+  boxShadow: "0 0 0 0 rgba(165, 214, 167, 0)",
 };
 
 const primaryButton = {
@@ -31,8 +32,8 @@ const primaryButton = {
   padding: "0 18px",
   borderRadius: 12,
   border: "none",
-  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
-  color: "#e7fef3",
+  background: "var(--a-primary)",
+  color: "var(--a-text-inverse)",
   fontWeight: 800,
   fontSize: 14,
   cursor: "pointer",
@@ -40,16 +41,16 @@ const primaryButton = {
   alignItems: "center",
   gap: 8,
   fontFamily: "'Manrope', sans-serif",
-  boxShadow: "0 4px 12px rgba(79,100,91,.15)",
+  boxShadow: "none",
 };
 
 const secondaryButton = {
   height: 40,
   padding: "0 14px",
   borderRadius: 12,
-  border: "1.5px solid #e2e8e1",
-  background: "#fff",
-  color: "#57534e",
+  border: "1px solid var(--a-primary)",
+  background: "transparent",
+  color: "var(--a-primary)",
   fontWeight: 800,
   fontSize: 13,
   cursor: "pointer",
@@ -107,34 +108,6 @@ const toDateTimeLocalValue = (value) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-function StatusChip({ active }) {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "6px 10px",
-        borderRadius: 999,
-        fontSize: 12,
-        fontWeight: 800,
-        background: active ? "#ecfdf5" : "#f3f4f6",
-        color: active ? "#047857" : "#6b7280",
-      }}
-    >
-      <span
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: 999,
-          background: active ? "#10b981" : "#9ca3af",
-        }}
-      />
-      {active ? "Đang bật" : "Đang tắt"}
-    </span>
-  );
-}
-
 function StatusSwitch({ active, onToggle, disabled = false }) {
   return (
     <button
@@ -151,12 +124,11 @@ function StatusSwitch({ active, onToggle, disabled = false }) {
         height: 30,
         padding: 3,
         borderRadius: 999,
-        border: active ? "1px solid #86efac" : "1px solid #d1d5db",
-        background: active ? "#dcfce7" : "#f3f4f6",
+        border: active ? "1px solid var(--a-success-border)" : "1px solid var(--a-border)",
+        background: active ? "var(--a-success-bg)" : "var(--a-surface-raised)",
         cursor: disabled ? "wait" : "pointer",
         transition: "all 0.2s ease",
         fontFamily: "'Manrope', sans-serif",
-        boxShadow: active ? "0 4px 10px rgba(34,197,94,.12)" : "none",
         opacity: disabled ? 0.72 : 1,
       }}
     >
@@ -167,7 +139,7 @@ function StatusSwitch({ active, onToggle, disabled = false }) {
           right: active ? "auto" : 12,
           fontSize: 10,
           fontWeight: 900,
-          color: active ? "#15803d" : "#6b7280",
+          color: active ? "var(--a-success)" : "var(--a-text-muted)",
           pointerEvents: "none",
           transition: "all 0.2s ease",
         }}
@@ -183,9 +155,8 @@ function StatusSwitch({ active, onToggle, disabled = false }) {
           width: 24,
           height: 24,
           borderRadius: 999,
-          background: "#fff",
-          border: active ? "1px solid #bbf7d0" : "1px solid #d1d5db",
-          boxShadow: "0 1px 3px rgba(15,23,42,.18)",
+          background: active ? "var(--a-primary)" : "var(--a-surface)",
+          border: active ? "1px solid var(--a-success-border)" : "1px solid var(--a-border)",
           transform: active ? "translateX(46px)" : "translateX(0)",
           transition: "transform 0.22s ease, border-color 0.2s ease",
         }}
@@ -202,7 +173,7 @@ function Modal({ open, title, onClose, children }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(15,23,42,.35)",
+        background: "var(--a-overlay)",
         display: "flex",
         alignItems: isMobile ? "flex-end" : "center",
         justifyContent: "center",
@@ -211,13 +182,13 @@ function Modal({ open, title, onClose, children }) {
       }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div style={{ ...pageCard, width: "100%", maxWidth: isMobile ? "100%" : 760, maxHeight: isMobile ? "92vh" : "90vh", overflowY: "auto", padding: isMobile ? 16 : 24, borderRadius: isMobile ? "24px 24px 0 0" : 20 }}>
+      <div style={{ ...pageCard, background: "var(--a-surface)", width: "100%", maxWidth: isMobile ? "100%" : 760, maxHeight: isMobile ? "92vh" : "90vh", overflowY: "auto", padding: isMobile ? 16 : 24, borderRadius: isMobile ? "24px 24px 0 0" : 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 18 }}>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: ".08em" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-text-muted)", textTransform: "uppercase", letterSpacing: ".08em" }}>
               Quản trị voucher
             </div>
-            <h3 style={{ margin: "6px 0 0", fontSize: 22, color: "#1c1917" }}>{title}</h3>
+            <h3 style={{ margin: "6px 0 0", fontSize: 22, color: "var(--a-text)" }}>{title}</h3>
           </div>
           <button type="button" onClick={onClose} style={{ ...secondaryButton, width: 40, padding: 0 }}>
             <span className="material-symbols-outlined">close</span>
@@ -479,22 +450,39 @@ export default function VoucherAdminPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
         * { font-family: 'Manrope', sans-serif; }
+        .voucher-input::placeholder { color: var(--a-text-soft); }
+        .voucher-input:focus,
+        .voucher-select:focus {
+          border-color: var(--a-primary) !important;
+          box-shadow: 0 0 0 2px rgba(165, 214, 167, 0.2) !important;
+        }
+        .voucher-primary:hover { background: var(--a-primary-hover) !important; }
+        .voucher-ghost:hover {
+          background: var(--a-surface-bright) !important;
+          color: var(--a-text) !important;
+          border-color: var(--a-surface-bright) !important;
+        }
+        .voucher-row:hover td { background: var(--a-surface-bright); }
+        .voucher-mobile-card:hover {
+          background: color-mix(in srgb, var(--a-surface-raised) 82%, var(--a-surface-bright));
+          border-color: var(--a-border-strong);
+        }
       `}</style>
       <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 28, color: "#1c1917", fontWeight: 800 }}>Voucher</h2>
-          <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: 14, maxWidth: 780, lineHeight: 1.65 }}>
+          <h2 style={{ margin: 0, fontSize: 28, color: "var(--a-text)", fontWeight: 800 }}>Voucher</h2>
+          <p style={{ margin: "8px 0 0", color: "var(--a-text-muted)", fontSize: 14, maxWidth: 780, lineHeight: 1.65 }}>
             Quản lý danh sách voucher, chỉnh sửa cấu hình giảm giá và bật tắt voucher mà không ảnh hưởng tới luồng áp dụng voucher ở trang booking.
           </p>
         </div>
-        <button type="button" onClick={openCreateModal} style={{ ...primaryButton, width: isMobile ? "100%" : "auto", justifyContent: "center" }}>
+        <button className="voucher-primary" type="button" onClick={openCreateModal} style={{ ...primaryButton, width: isMobile ? "100%" : "auto", justifyContent: "center" }}>
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add</span>
           Thêm voucher
         </button>
       </div>
 
       {errorMessage ? (
-        <div style={{ ...pageCard, marginBottom: 20, padding: 14, color: "#b91c1c", background: "#fff7f7", borderColor: "#fecaca" }}>
+        <div style={{ ...pageCard, marginBottom: 20, padding: 14, color: "var(--a-error)", background: "var(--a-error-bg)", borderColor: "var(--a-error-border)" }}>
           {errorMessage}
         </div>
       ) : null}
@@ -507,9 +495,9 @@ export default function VoucherAdminPage() {
           { label: "Đã quá hạn", value: stats.expiredCount, sub: "Cần rà soát lại thời hạn" },
         ].map((item) => (
           <div key={item.label} style={{ ...pageCard, padding: 18 }}>
-            <div style={{ color: "#78716c", fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em" }}>{item.label}</div>
-            <div style={{ marginTop: 10, fontSize: 28, fontWeight: 800, color: "#1c1917" }}>{item.value}</div>
-            <div style={{ marginTop: 6, color: "#6b7280", fontSize: 13 }}>{item.sub}</div>
+            <div style={{ color: "var(--a-text-muted)", fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em" }}>{item.label}</div>
+            <div style={{ marginTop: 10, fontSize: 28, fontWeight: 800, color: "var(--a-text)" }}>{item.value}</div>
+            <div style={{ marginTop: 6, color: "var(--a-text-muted)", fontSize: 13 }}>{item.sub}</div>
           </div>
         ))}
       </section>
@@ -517,61 +505,61 @@ export default function VoucherAdminPage() {
       <section style={{ ...pageCard, padding: isMobile ? 16 : 20, marginBottom: 20 }}>
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.5fr 0.8fr 0.9fr auto", gap: 14, alignItems: "end" }}>
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Tìm mã voucher</label>
-            <input value={keyword} onChange={(e) => setKeyword(e.target.value)} style={inputStyle} placeholder="Ví dụ: SUMMER, VIP..." />
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Tìm mã voucher</label>
+            <input className="voucher-input" value={keyword} onChange={(e) => setKeyword(e.target.value)} style={inputStyle} placeholder="Ví dụ: SUMMER, VIP..." />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Trạng thái</label>
-            <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Trạng thái</label>
+            <select className="voucher-select" value={status} onChange={(e) => setStatus(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
               <option value="">Tất cả</option>
               <option value="active">Đang bật</option>
               <option value="inactive">Đang tắt</option>
             </select>
           </div>
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Phân loại voucher</label>
-            <select value={audienceType} onChange={(e) => setAudienceType(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Phân loại voucher</label>
+            <select className="voucher-select" value={audienceType} onChange={(e) => setAudienceType(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
               <option value="">Tất cả</option>
               {AUDIENCE_OPTIONS.map((item) => (
                 <option key={item.value} value={item.value}>{item.label}</option>
               ))}
             </select>
           </div>
-          <button type="button" onClick={loadData} style={{ ...secondaryButton, width: isMobile ? "100%" : "auto", justifyContent: "center" }}>Làm mới</button>
+          <button className="voucher-ghost" type="button" onClick={loadData} style={{ ...secondaryButton, width: isMobile ? "100%" : "auto", justifyContent: "center" }}>Làm mới</button>
         </div>
       </section>
 
       <section style={{ ...pageCard, overflow: "hidden" }}>
-        <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1f0ea" }}>
-          <strong style={{ color: "#1c1917" }}>Danh sách voucher</strong>
-          <p style={{ margin: "4px 0 0", color: "#78716c", fontSize: 13 }}>Tổng cộng {rows.length} voucher.</p>
+        <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--a-border)", background: "var(--a-surface)" }}>
+          <strong style={{ color: "var(--a-text)" }}>Danh sách voucher</strong>
+          <p style={{ margin: "4px 0 0", color: "var(--a-text-muted)", fontSize: 13 }}>Tổng cộng {rows.length} voucher.</p>
         </div>
         {isMobile ? (
           <div style={{ display: "grid", gap: 12, padding: 16 }}>
             {loading ? (
-              <div style={{ padding: 24, textAlign: "center", color: "#9ca3af" }}>Đang tải dữ liệu...</div>
+              <div style={{ padding: 24, textAlign: "center", color: "var(--a-text-soft)" }}>Đang tải dữ liệu...</div>
             ) : rows.length === 0 ? (
-              <div style={{ padding: 24, textAlign: "center", color: "#9ca3af" }}>Chưa có voucher nào.</div>
+              <div style={{ padding: 24, textAlign: "center", color: "var(--a-text-soft)" }}>Chưa có voucher nào.</div>
             ) : (
               rows.map((item) => (
-                <article key={item.id} style={{ border: "1px solid #f1ece2", borderRadius: 16, padding: 14, display: "grid", gap: 12 }}>
+                <article className="voucher-mobile-card" key={item.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "var(--a-surface-raised)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
                     <div>
-                      <div style={{ color: "#1c1917", fontWeight: 800 }}>{item.code}</div>
-                      <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>#{item.id}</div>
+                      <div style={{ color: "var(--a-text)", fontWeight: 800 }}>{item.code}</div>
+                      <div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>#{item.id}</div>
                     </div>
                     <StatusSwitch active={item.isActive !== false} onToggle={() => handleToggleActive(item)} disabled={Boolean(togglingIds[item.id])} />
                   </div>
-                  <div style={{ display: "grid", gap: 6, fontSize: 13, color: "#57534e" }}>
-                    <div>Giảm giá: <strong style={{ color: "#1f2937" }}>{item.discountType === "PERCENT" ? `${item.discountValue}%` : fmtCurrency(item.discountValue)}</strong></div>
-                    <div>Phân loại: <strong style={{ color: "#1f2937" }}>{audienceLabel(item.audienceType)}</strong></div>
+                  <div style={{ display: "grid", gap: 6, fontSize: 13, color: "var(--a-text-muted)" }}>
+                    <div>Giảm giá: <strong style={{ color: "var(--a-text)" }}>{item.discountType === "PERCENT" ? `${item.discountValue}%` : fmtCurrency(item.discountValue)}</strong></div>
+                    <div>Phân loại: <strong style={{ color: "var(--a-info)" }}>{audienceLabel(item.audienceType)}</strong></div>
                     <div>Giảm tối đa: {item.maxDiscountAmount != null ? fmtCurrency(item.maxDiscountAmount) : "Không giới hạn"}</div>
                     <div>Tối thiểu: {item.minBookingValue != null ? fmtCurrency(item.minBookingValue) : "Không yêu cầu"}</div>
                     <div>Hạng phòng: {item.applicableRoomTypeId ? roomTypeMap.get(String(item.applicableRoomTypeId)) || `#${item.applicableRoomTypeId}` : "Tất cả"}</div>
                     <div>Hiệu lực: {fmtDateTime(item.validFrom)} - {fmtDateTime(item.validTo)}</div>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
-                    <button type="button" onClick={() => openEditModal(item)} style={{ ...primaryButton, width: "100%", justifyContent: "center" }}>Sửa</button>
+                    <button className="voucher-primary" type="button" onClick={() => openEditModal(item)} style={{ ...primaryButton, width: "100%", justifyContent: "center" }}>Sửa</button>
                   </div>
                 </article>
               ))
@@ -581,9 +569,9 @@ export default function VoucherAdminPage() {
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#faf8f3", borderBottom: "1px solid #f1f0ea" }}>
+              <tr style={{ background: "var(--a-surface-raised)", borderBottom: "1px solid var(--a-border)" }}>
                 {["Mã voucher", "Phân loại", "Giảm giá", "Điều kiện", "Thời gian", "Trạng thái", "Thao tác"].map((heading, idx) => (
-                  <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 6 ? "right" : "left", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>
+                  <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 6 ? "right" : "left", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)" }}>
                     {heading}
                   </th>
                 ))}
@@ -591,19 +579,19 @@ export default function VoucherAdminPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ padding: 48, textAlign: "center", color: "#9ca3af" }}>Đang tải dữ liệu...</td></tr>
+                <tr><td colSpan={7} style={{ padding: 48, textAlign: "center", color: "var(--a-text-soft)" }}>Đang tải dữ liệu...</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={7} style={{ padding: 48, textAlign: "center", color: "#9ca3af" }}>Chưa có voucher nào.</td></tr>
+                <tr><td colSpan={7} style={{ padding: 48, textAlign: "center", color: "var(--a-text-soft)" }}>Chưa có voucher nào.</td></tr>
               ) : (
                 rows.map((item) => (
-                  <tr key={item.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
+                  <tr className="voucher-row" key={item.id} style={{ borderBottom: "1px solid var(--a-border)" }}>
                     <td style={{ padding: "16px 18px" }}>
-                      <div style={{ color: "#1c1917", fontWeight: 800 }}>{item.code}</div>
-                      <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>#{item.id}</div>
+                      <div style={{ color: "var(--a-text)", fontWeight: 800 }}>{item.code}</div>
+                      <div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>#{item.id}</div>
                     </td>
-                    <td style={{ padding: "16px 18px", color: "#57534e" }}>
-                      <div style={{ fontWeight: 800, color: "#1f2937" }}>{audienceLabel(item.audienceType)}</div>
-                      <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>
+                    <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>
+                      <div style={{ fontWeight: 800, color: "var(--a-info)" }}>{audienceLabel(item.audienceType)}</div>
+                      <div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>
                         {item.audienceType === "USER"
                           ? `${item.targetUsers?.length || 0} khách`
                           : item.audienceType === "MEMBERSHIP"
@@ -615,33 +603,33 @@ export default function VoucherAdminPage() {
                                 : "Mọi khách"}
                       </div>
                     </td>
-                    <td style={{ padding: "16px 18px", color: "#57534e" }}>
-                      <div style={{ fontWeight: 800, color: "#1f2937" }}>
+                    <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>
+                      <div style={{ fontWeight: 800, color: "var(--a-text)" }}>
                         {item.discountType === "PERCENT" ? `${item.discountValue}%` : fmtCurrency(item.discountValue)}
                       </div>
-                      <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>
+                      <div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>
                         Giảm tối đa: {item.maxDiscountAmount != null ? fmtCurrency(item.maxDiscountAmount) : "Không giới hạn"}
                       </div>
                     </td>
-                    <td style={{ padding: "16px 18px", color: "#57534e" }}>
+                    <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>
                       <div>Tối thiểu: {item.minBookingValue != null ? fmtCurrency(item.minBookingValue) : "Không yêu cầu"}</div>
-                      <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>
+                      <div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>
                         Hạng phòng: {item.applicableRoomTypeId ? roomTypeMap.get(String(item.applicableRoomTypeId)) || `#${item.applicableRoomTypeId}` : "Tất cả"}
                       </div>
-                      <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>
+                      <div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>
                         Đã dùng {item.usedCount || 0}/{item.usageLimit ?? "∞"} lượt
                       </div>
                     </td>
-                    <td style={{ padding: "16px 18px", color: "#57534e" }}>
+                    <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>
                       <div>Từ: {fmtDateTime(item.validFrom)}</div>
-                      <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>Đến: {fmtDateTime(item.validTo)}</div>
+                      <div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>Đến: {fmtDateTime(item.validTo)}</div>
                     </td>
                     <td style={{ padding: "16px 18px" }}>
                       <StatusSwitch active={item.isActive !== false} onToggle={() => handleToggleActive(item)} disabled={Boolean(togglingIds[item.id])} />
                     </td>
                     <td style={{ padding: "16px 18px", textAlign: "right" }}>
                       <div style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
-                        <button type="button" onClick={() => openEditModal(item)} style={{ ...secondaryButton, fontWeight: 800 }}>Sửa</button>
+                        <button className="voucher-ghost" type="button" onClick={() => openEditModal(item)} style={{ ...secondaryButton, fontWeight: 800 }}>Sửa</button>
                       </div>
                     </td>
                   </tr>
@@ -657,8 +645,9 @@ export default function VoucherAdminPage() {
         <form onSubmit={submitForm} style={{ display: "grid", gap: 14 }}>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Mã voucher</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Mã voucher</label>
               <input
+                className="voucher-input"
                 value={form.code}
                 onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))}
                 style={inputStyle}
@@ -668,8 +657,8 @@ export default function VoucherAdminPage() {
               />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Loại giảm giá</label>
-              <select value={form.discountType} onChange={(e) => setForm((prev) => ({ ...prev, discountType: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Loại giảm giá</label>
+              <select className="voucher-select" value={form.discountType} onChange={(e) => setForm((prev) => ({ ...prev, discountType: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
                 <option value="PERCENT">Phần trăm</option>
                 <option value="FIXED_AMOUNT">Số tiền cố định</option>
               </select>
@@ -678,8 +667,8 @@ export default function VoucherAdminPage() {
 
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Đối tượng áp dụng</label>
-              <select value={form.audienceType} onChange={(e) => setForm((prev) => ({ ...prev, audienceType: e.target.value, targetMembershipId: "", occasionName: "", targetUserIds: [] }))} style={{ ...inputStyle, cursor: "pointer" }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Đối tượng áp dụng</label>
+              <select className="voucher-select" value={form.audienceType} onChange={(e) => setForm((prev) => ({ ...prev, audienceType: e.target.value, targetMembershipId: "", occasionName: "", targetUserIds: [] }))} style={{ ...inputStyle, cursor: "pointer" }}>
                 {AUDIENCE_OPTIONS.map((item) => (
                   <option key={item.value} value={item.value}>{item.label}</option>
                 ))}
@@ -687,8 +676,8 @@ export default function VoucherAdminPage() {
             </div>
             {form.audienceType === "MEMBERSHIP" ? (
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Hạng thành viên</label>
-                <select value={form.targetMembershipId} onChange={(e) => setForm((prev) => ({ ...prev, targetMembershipId: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Hạng thành viên</label>
+                <select className="voucher-select" value={form.targetMembershipId} onChange={(e) => setForm((prev) => ({ ...prev, targetMembershipId: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
                   <option value="">Chọn hạng</option>
                   {memberships.map((item) => (
                     <option key={item.id} value={item.id}>{item.tierName}</option>
@@ -697,11 +686,11 @@ export default function VoucherAdminPage() {
               </div>
             ) : form.audienceType === "HOLIDAY" ? (
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Tên dịp lễ</label>
-                <input value={form.occasionName} onChange={(e) => setForm((prev) => ({ ...prev, occasionName: e.target.value }))} style={inputStyle} placeholder="Tết 2026, 30/4..." />
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Tên dịp lễ</label>
+                <input className="voucher-input" value={form.occasionName} onChange={(e) => setForm((prev) => ({ ...prev, occasionName: e.target.value }))} style={inputStyle} placeholder="Tết 2026, 30/4..." />
               </div>
             ) : (
-              <div style={{ color: "#78716c", fontSize: 13, alignSelf: "end", lineHeight: 1.5 }}>
+              <div style={{ color: "var(--a-text-muted)", fontSize: 13, alignSelf: "end", lineHeight: 1.5 }}>
                 {form.audienceType === "USER"
                   ? "Chọn khách cụ thể ở danh sách bên dưới."
                   : form.audienceType === "BIRTHDAY_MONTH"
@@ -714,25 +703,26 @@ export default function VoucherAdminPage() {
           {form.audienceType === "USER" ? (
             <div style={{ display: "grid", gap: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280" }}>
-                  Khách được áp dụng <span style={{ color: "#1f2937" }}>({form.targetUserIds.length} đã chọn)</span>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)" }}>
+                  Khách được áp dụng <span style={{ color: "var(--a-text)" }}>({form.targetUserIds.length} đã chọn)</span>
                 </label>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button type="button" onClick={selectAllFilteredGuests} style={{ ...secondaryButton, height: 34 }}>Chọn tất cả đang lọc</button>
-                  <button type="button" onClick={clearTargetUsers} style={{ ...secondaryButton, height: 34 }}>Bỏ chọn hết</button>
+                  <button className="voucher-ghost" type="button" onClick={selectAllFilteredGuests} style={{ ...secondaryButton, height: 34 }}>Chọn tất cả đang lọc</button>
+                  <button className="voucher-ghost" type="button" onClick={clearTargetUsers} style={{ ...secondaryButton, height: 34 }}>Bỏ chọn hết</button>
                 </div>
               </div>
               <input
+                className="voucher-input"
                 value={guestSearch}
                 onChange={(e) => setGuestSearch(e.target.value)}
                 style={inputStyle}
                 placeholder="Tìm theo tên, email, số điện thoại..."
               />
-              <div style={{ display: "grid", gap: 8, maxHeight: 220, overflowY: "auto", border: "1px solid #e2e8e1", borderRadius: 12, padding: 10, background: "#fff" }}>
+              <div style={{ display: "grid", gap: 8, maxHeight: 220, overflowY: "auto", border: "1px solid var(--a-border)", borderRadius: 12, padding: 10, background: "var(--a-bg)" }}>
                 {guests.length === 0 ? (
-                  <div style={{ color: "#9ca3af", fontSize: 13 }}>Chưa tải được danh sách khách.</div>
+                  <div style={{ color: "var(--a-text-soft)", fontSize: 13 }}>Chưa tải được danh sách khách.</div>
                 ) : filteredGuests.length === 0 ? (
-                  <div style={{ color: "#9ca3af", fontSize: 13 }}>Không có khách nào khớp từ khóa.</div>
+                  <div style={{ color: "var(--a-text-soft)", fontSize: 13 }}>Không có khách nào khớp từ khóa.</div>
                 ) : filteredGuests.map((guest) => {
                   const isSelectedGuest = form.targetUserIds.includes(Number(guest.id));
                   return (
@@ -742,13 +732,13 @@ export default function VoucherAdminPage() {
                         display: "flex",
                         alignItems: "center",
                         gap: 10,
-                        color: "#57534e",
+                        color: "var(--a-text)",
                         fontSize: 13,
                         fontWeight: 700,
-                        border: isSelectedGuest ? "1px solid #14b8a6" : "1px solid #d6d3d1",
+                        border: isSelectedGuest ? "1px solid var(--a-primary)" : "1px solid var(--a-border)",
                         borderRadius: 10,
                         padding: "10px 12px",
-                        background: isSelectedGuest ? "#f0fdfa" : "#ffffff",
+                        background: isSelectedGuest ? "var(--a-primary-soft)" : "var(--a-surface)",
                         cursor: "pointer",
                         transition: "all 0.15s ease",
                       }}
@@ -773,21 +763,21 @@ export default function VoucherAdminPage() {
                           alignItems: "center",
                           justifyContent: "center",
                           borderRadius: 5,
-                          border: isSelectedGuest ? "1.5px solid #0f766e" : "1.5px solid #94a3b8",
-                          background: isSelectedGuest ? "#0f766e" : "#ffffff",
-                          color: "#ffffff",
+                          border: isSelectedGuest ? "1.5px solid var(--a-primary)" : "1.5px solid var(--a-border-strong)",
+                          background: isSelectedGuest ? "var(--a-primary)" : "var(--a-surface)",
+                          color: "var(--a-text-inverse)",
                           fontSize: 12,
                           lineHeight: 1,
-                          boxShadow: isSelectedGuest ? "0 0 0 3px rgba(20, 184, 166, 0.12)" : "none",
+                          boxShadow: isSelectedGuest ? "0 0 0 3px rgba(165, 214, 167, 0.12)" : "none",
                         }}
                       >
                         {isSelectedGuest ? "✓" : ""}
                       </span>
                       <span>
                         {guest.fullName || guest.email}
-                        <span style={{ color: "#9ca3af", fontWeight: 600 }}> {guest.email}</span>
-                        {guest.phone ? <span style={{ color: "#9ca3af", fontWeight: 600 }}> • {guest.phone}</span> : null}
-                        {guest.roleName ? <span style={{ color: "#94a3b8", fontWeight: 700, textTransform: "uppercase" }}> • {guest.roleName}</span> : null}
+                        <span style={{ color: "var(--a-text-muted)", fontWeight: 600 }}> {guest.email}</span>
+                        {guest.phone ? <span style={{ color: "var(--a-text-muted)", fontWeight: 600 }}> • {guest.phone}</span> : null}
+                        {guest.roleName ? <span style={{ color: "var(--a-info)", fontWeight: 700, textTransform: "uppercase" }}> • {guest.roleName}</span> : null}
                       </span>
                     </label>
                   );
@@ -798,8 +788,9 @@ export default function VoucherAdminPage() {
 
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Giá trị giảm</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Giá trị giảm</label>
               <input
+                className="voucher-input"
                 type="number"
                 min={form.discountType === "PERCENT" ? "1" : "0"}
                 max={form.discountType === "PERCENT" ? "100" : undefined}
@@ -811,19 +802,19 @@ export default function VoucherAdminPage() {
               />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Giảm tối đa</label>
-              <input type="number" min="0" step="1000" value={form.maxDiscountAmount} onChange={(e) => setForm((prev) => ({ ...prev, maxDiscountAmount: e.target.value }))} style={inputStyle} placeholder="Để trống nếu không giới hạn" />
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Giảm tối đa</label>
+              <input className="voucher-input" type="number" min="0" step="1000" value={form.maxDiscountAmount} onChange={(e) => setForm((prev) => ({ ...prev, maxDiscountAmount: e.target.value }))} style={inputStyle} placeholder="Để trống nếu không giới hạn" />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Đơn tối thiểu</label>
-              <input type="number" min="0" step="1000" value={form.minBookingValue} onChange={(e) => setForm((prev) => ({ ...prev, minBookingValue: e.target.value }))} style={inputStyle} placeholder="Không bắt buộc" />
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Đơn tối thiểu</label>
+              <input className="voucher-input" type="number" min="0" step="1000" value={form.minBookingValue} onChange={(e) => setForm((prev) => ({ ...prev, minBookingValue: e.target.value }))} style={inputStyle} placeholder="Không bắt buộc" />
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Hạng phòng áp dụng</label>
-              <select value={form.applicableRoomTypeId} onChange={(e) => setForm((prev) => ({ ...prev, applicableRoomTypeId: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Hạng phòng áp dụng</label>
+              <select className="voucher-select" value={form.applicableRoomTypeId} onChange={(e) => setForm((prev) => ({ ...prev, applicableRoomTypeId: e.target.value }))} style={{ ...inputStyle, cursor: "pointer" }}>
                 <option value="">Tất cả hạng phòng</option>
                 {roomTypes.map((item) => (
                   <option key={item.id} value={item.id}>{item.name}</option>
@@ -831,38 +822,38 @@ export default function VoucherAdminPage() {
               </select>
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Giới hạn lượt dùng</label>
-              <input type="number" min="1" value={form.usageLimit} onChange={(e) => setForm((prev) => ({ ...prev, usageLimit: e.target.value }))} style={inputStyle} placeholder="Để trống nếu không giới hạn" />
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Giới hạn lượt dùng</label>
+              <input className="voucher-input" type="number" min="1" value={form.usageLimit} onChange={(e) => setForm((prev) => ({ ...prev, usageLimit: e.target.value }))} style={inputStyle} placeholder="Để trống nếu không giới hạn" />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Tối đa / người</label>
-              <input type="number" min="1" value={form.maxUsesPerUser} onChange={(e) => setForm((prev) => ({ ...prev, maxUsesPerUser: e.target.value }))} style={inputStyle} required />
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Tối đa / người</label>
+              <input className="voucher-input" type="number" min="1" value={form.maxUsesPerUser} onChange={(e) => setForm((prev) => ({ ...prev, maxUsesPerUser: e.target.value }))} style={inputStyle} required />
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Hiệu lực từ</label>
-              <input type="datetime-local" value={form.validFrom} onChange={(e) => setForm((prev) => ({ ...prev, validFrom: e.target.value }))} style={inputStyle} />
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Hiệu lực từ</label>
+              <input className="voucher-input" type="datetime-local" value={form.validFrom} onChange={(e) => setForm((prev) => ({ ...prev, validFrom: e.target.value }))} style={inputStyle} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6 }}>Hiệu lực đến</label>
-              <input type="datetime-local" value={form.validTo} onChange={(e) => setForm((prev) => ({ ...prev, validTo: e.target.value }))} style={inputStyle} />
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Hiệu lực đến</label>
+              <input className="voucher-input" type="datetime-local" value={form.validTo} onChange={(e) => setForm((prev) => ({ ...prev, validTo: e.target.value }))} style={inputStyle} />
             </div>
           </div>
 
           {editingItem ? (
-            <label style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#57534e", fontWeight: 700 }}>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--a-text-muted)", fontWeight: 700 }}>
               <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))} />
               Voucher đang bật
             </label>
           ) : null}
 
-          {errorMessage ? <div style={{ color: "#b91c1c", fontSize: 14 }}>{errorMessage}</div> : null}
+          {errorMessage ? <div style={{ color: "var(--a-error)", fontSize: 14 }}>{errorMessage}</div> : null}
 
           <div style={{ display: "flex", flexDirection: isMobile ? "column-reverse" : "row", justifyContent: "flex-end", gap: 10, marginTop: 6 }}>
-            <button type="button" onClick={() => setModalOpen(false)} style={{ ...secondaryButton, width: isMobile ? "100%" : "auto", justifyContent: "center" }}>Đóng</button>
-            <button type="submit" disabled={saving} style={{ ...primaryButton, width: isMobile ? "100%" : "auto", justifyContent: "center", opacity: saving ? 0.7 : 1 }}>
+            <button className="voucher-ghost" type="button" onClick={() => setModalOpen(false)} style={{ ...secondaryButton, width: isMobile ? "100%" : "auto", justifyContent: "center" }}>Đóng</button>
+            <button className="voucher-primary" type="submit" disabled={saving} style={{ ...primaryButton, width: isMobile ? "100%" : "auto", justifyContent: "center", opacity: saving ? 0.7 : 1 }}>
               {saving ? "Đang lưu..." : editingItem ? "Lưu thay đổi" : "Tạo voucher"}
             </button>
           </div>

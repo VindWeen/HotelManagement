@@ -13,20 +13,21 @@ const CATEGORY_OPTIONS = ["Di tích", "Ẩm thực", "Giải trí", "Thiên nhi�
 const PAGE_SIZE = 12;
 
 const cardStyle = {
-  background: "white",
+  background: "var(--a-surface)",
   borderRadius: 18,
-  border: "1px solid #f1f0ea",
-  boxShadow: "0 1px 3px rgba(0,0,0,.06)",
+  border: "1px solid var(--a-border)",
+  boxShadow: "var(--a-shadow-sm)",
 };
 
 const inputStyle = {
   width: "100%",
-  background: "#f9f8f3",
-  border: "1.5px solid #e2e8e1",
+  background: "var(--a-surface-raised)",
+  border: "1.5px solid var(--a-border-strong)",
   borderRadius: 12,
   padding: "10px 14px",
   fontSize: 14,
   fontWeight: 600,
+  color: "var(--a-text)",
   outline: "none",
   boxSizing: "border-box",
 };
@@ -37,7 +38,7 @@ const labelStyle = {
   fontWeight: 700,
   letterSpacing: "0.12em",
   textTransform: "uppercase",
-  color: "#6b7280",
+  color: "var(--a-text-muted)",
   marginBottom: 8,
 };
 
@@ -50,12 +51,12 @@ const primaryButtonStyle = {
   height: 42,
   borderRadius: 12,
   border: "none",
-  background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
-  color: "#e7fef3",
+  background: "var(--a-emphasis-bg)",
+  color: "var(--a-emphasis-text)",
   fontWeight: 800,
   fontSize: 14,
   cursor: "pointer",
-  boxShadow: "0 4px 12px rgba(79,100,91,0.2)",
+  boxShadow: "var(--a-shadow-sm)",
   transition: "all 0.15s",
 };
 
@@ -109,8 +110,8 @@ function validateForm(form) {
 
 function getStatusMeta(isActive) {
   return isActive
-    ? { label: "Đang bật", background: "#ecfdf5", color: "#047857" }
-    : { label: "Đang tắt", background: "#fff7ed", color: "#c2410c" };
+    ? { label: "Đang bật", background: "var(--a-success-bg)", color: "var(--a-success)" }
+    : { label: "Đang tắt", background: "var(--a-warning-bg)", color: "var(--a-warning)" };
 }
 
 function FieldError({ message }) {
@@ -121,11 +122,11 @@ function FieldError({ message }) {
 function Overlay({ title, onClose, children }) {
   const { isMobile } = useResponsiveAdmin();
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(28,25,23,0.7)", display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center", padding: isMobile ? 0 : 24, zIndex: 120 }}>
-      <div onClick={(e) => e.stopPropagation()} className="primary-card-p" style={{ width: "min(860px,100%)", maxHeight: "92vh", overflowY: "auto", background: "#fffdf9", borderRadius: isMobile ? "24px 24px 0 0" : 24, border: "1px solid #ede7dd", boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
-        <div style={{ padding: isMobile ? "18px 18px 14px" : "20px 24px 16px", borderBottom: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "#fffdf9", zIndex: 1 }}>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "var(--a-overlay)", display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center", padding: isMobile ? 0 : 24, zIndex: 120 }}>
+      <div onClick={(e) => e.stopPropagation()} className="primary-card-p" style={{ width: "min(860px,100%)", maxHeight: "92vh", overflowY: "auto", background: "var(--a-surface)", borderRadius: isMobile ? "24px 24px 0 0" : 24, border: "1px solid var(--a-border)", boxShadow: "var(--a-shadow-lg)" }}>
+        <div style={{ padding: isMobile ? "18px 18px 14px" : "20px 24px 16px", borderBottom: "1px solid var(--a-border)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "var(--a-surface)", zIndex: 1 }}>
           <h3 className="primary-card-p" style={{ margin: 0, fontSize: 22, border: "none" }}>{title}</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}><span className="material-symbols-outlined">close</span></button>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--a-text-muted)" }}><span className="material-symbols-outlined">close</span></button>
         </div>
         <div style={{ padding: isMobile ? 18 : 24 }}>{children}</div>
       </div>
@@ -136,11 +137,11 @@ function Overlay({ title, onClose, children }) {
 function Pagination({ page, totalPages, onChange, totalItems }) {
   if (totalPages <= 1) return null;
   return (
-    <div style={{ padding: "14px 18px", borderTop: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-      <div style={{ fontSize: 13, color: "#6b7280" }}>Trang <strong>{page}</strong> / {totalPages} · {totalItems} địa điểm</div>
+    <div style={{ padding: "14px 18px", borderTop: "1px solid var(--a-border)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <div style={{ fontSize: 13, color: "var(--a-text-muted)" }}>Trang <strong>{page}</strong> / {totalPages} · {totalItems} địa điểm</div>
       <div style={{ display: "flex", gap: 8 }}>
-        <button type="button" onClick={() => onChange(page - 1)} disabled={page <= 1} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", color: "#57534e", cursor: page <= 1 ? "not-allowed" : "pointer", opacity: page <= 1 ? 0.5 : 1 }}>Trước</button>
-        <button type="button" onClick={() => onChange(page + 1)} disabled={page >= totalPages} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #e7e5e4", background: "white", color: "#57534e", cursor: page >= totalPages ? "not-allowed" : "pointer", opacity: page >= totalPages ? 0.5 : 1 }}>Sau</button>
+        <button type="button" onClick={() => onChange(page - 1)} disabled={page <= 1} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", cursor: page <= 1 ? "not-allowed" : "pointer", opacity: page <= 1 ? 0.5 : 1 }}>Trước</button>
+        <button type="button" onClick={() => onChange(page + 1)} disabled={page >= totalPages} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", cursor: page >= totalPages ? "not-allowed" : "pointer", opacity: page >= totalPages ? 0.5 : 1 }}>Sau</button>
       </div>
     </div>
   );
@@ -155,7 +156,7 @@ function StatusSwitch({ checked, onChange }) {
           width: 42,
           height: 24,
           borderRadius: 999,
-          background: checked ? "#4f645b" : "#d6d3d1",
+          background: checked ? "var(--a-primary)" : "var(--a-border-strong)",
           transition: "background .18s ease",
           display: "inline-flex",
           alignItems: "center",
@@ -174,7 +175,7 @@ function StatusSwitch({ checked, onChange }) {
             width: 18,
             height: 18,
             borderRadius: "50%",
-            background: "white",
+            background: "var(--a-surface)",
             boxShadow: "0 1px 3px rgba(0,0,0,.2)",
             transform: checked ? "translateX(18px)" : "translateX(0)",
             transition: "transform .18s ease",
@@ -386,27 +387,27 @@ export default function AttractionAdminPage() {
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 24, color: "#1c1917", fontWeight: 700 }}>Quản lý địa điểm</h2>
-            <p style={{ margin: "6px 0 0", color: "#6b7280", fontSize: 14 }}>Quản lý điểm đến, tọa độ thực tế và dữ liệu để dùng cho site map.</p>
+            <h2 style={{ margin: 0, fontSize: 24, color: "var(--a-text)", fontWeight: 700 }}>Quản lý địa điểm</h2>
+            <p style={{ margin: "6px 0 0", color: "var(--a-text-muted)", fontSize: 14 }}>Quản lý điểm đến, tọa độ thực tế và dữ liệu để dùng cho site map.</p>
           </div>
           <button onClick={openCreate} style={primaryButtonStyle}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_location_alt</span>Thêm địa điểm</button>
         </div>
 
-        {error ? <div className="sub-card-p" style={{ ...cardStyle, padding: 14, marginBottom: 20, color: "#b91c1c", background: "#fff7f7", borderColor: "#fecaca" }}>{error}</div> : null}
+        {error ? <div className="sub-card-p" style={{ ...cardStyle, padding: 14, marginBottom: 20, color: "var(--a-error)", background: "var(--a-error-bg)", borderColor: "var(--a-error-border)" }}>{error}</div> : null}
 
         <section className="primary-card-p" style={{ ...cardStyle, overflow: "hidden" }}>
-          <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f0ea", display: "flex", gap: 10 }}>
-            <button type="button" onClick={() => setActiveTab("list")} className={activeTab === "list" ? "" : "sub-card-p"} style={{ padding: "10px 14px", borderRadius: 12, border: activeTab === "list" ? "1px solid #4f645b" : "1px solid #e7e5e4", background: activeTab === "list" ? "#4f645b" : "white", color: activeTab === "list" ? "#ecfdf5" : "#57534e", fontWeight: 700, cursor: "pointer" }}>Danh sách địa điểm</button>
-            <button type="button" onClick={() => setActiveTab("map")} className={activeTab === "map" ? "" : "sub-card-p"} style={{ padding: "10px 14px", borderRadius: 12, border: activeTab === "map" ? "1px solid #4f645b" : "1px solid #e7e5e4", background: activeTab === "map" ? "#4f645b" : "white", color: activeTab === "map" ? "#ecfdf5" : "#57534e", fontWeight: 700, cursor: "pointer" }}>Site Map</button>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--a-border)", display: "flex", gap: 10 }}>
+            <button type="button" onClick={() => setActiveTab("list")} className={activeTab === "list" ? "" : "sub-card-p"} style={{ padding: "10px 14px", borderRadius: 12, border: activeTab === "list" ? "1px solid var(--a-primary)" : "1px solid var(--a-border)", background: activeTab === "list" ? "var(--a-primary)" : "var(--a-surface)", color: activeTab === "list" ? "var(--a-text-inverse)" : "var(--a-text-muted)", fontWeight: 700, cursor: "pointer" }}>Danh sách địa điểm</button>
+            <button type="button" onClick={() => setActiveTab("map")} className={activeTab === "map" ? "" : "sub-card-p"} style={{ padding: "10px 14px", borderRadius: 12, border: activeTab === "map" ? "1px solid var(--a-primary)" : "1px solid var(--a-border)", background: activeTab === "map" ? "var(--a-primary)" : "var(--a-surface)", color: activeTab === "map" ? "var(--a-text-inverse)" : "var(--a-text-muted)", fontWeight: 700, cursor: "pointer" }}>Site Map</button>
           </div>
           {activeTab === "list" ? (
             <>
-              <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--a-border)", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                 <div>
-                  <strong style={{ color: "#1c1917" }}>Danh sách địa điểm</strong>
-                  <p style={{ margin: "4px 0 0", color: "#78716c", fontSize: 13 }}>Tổng cộng {items.length} địa điểm.</p>
+                  <strong style={{ color: "var(--a-text)" }}>Danh sách địa điểm</strong>
+                  <p style={{ margin: "4px 0 0", color: "var(--a-text-muted)", fontSize: 13 }}>Tổng cộng {items.length} địa điểm.</p>
                 </div>
-                {!isMobile && <div style={{ display: "flex", gap: 2, background: "#f1f0ea", padding: 4, borderRadius: 12 }}>
+                {!isMobile && <div style={{ display: "flex", gap: 2, background: "var(--a-surface-raised)", padding: 4, borderRadius: 12 }}>
                   {["table", "grid"].map((mode) => (
                     <button
                       key={mode}
@@ -415,16 +416,16 @@ export default function AttractionAdminPage() {
                       style={{
                         padding: "7px 14px",
                         borderRadius: 9,
-                        background: viewMode === mode ? "white" : "transparent",
+                        background: viewMode === mode ? "var(--a-surface)" : "transparent",
                         border: "none",
                         cursor: "pointer",
-                        color: viewMode === mode ? "#1c1917" : "#9ca3af",
+                        color: viewMode === mode ? "var(--a-text)" : "var(--a-text-soft)",
                         display: "flex",
                         alignItems: "center",
                         gap: 5,
                         fontSize: 12,
                         fontWeight: 700,
-                        boxShadow: viewMode === mode ? "0 1px 4px rgba(0,0,0,.1)" : "none",
+                        boxShadow: viewMode === mode ? "var(--a-shadow-sm)" : "none",
                         transition: "all .15s",
                         fontFamily: "Manrope, sans-serif",
                       }}
@@ -442,26 +443,26 @@ export default function AttractionAdminPage() {
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
-                      <tr style={{ background: "#faf8f3", borderBottom: "1px solid #f1f0ea" }}>
+                      <tr style={{ background: "var(--a-surface-raised)", borderBottom: "1px solid var(--a-border)" }}>
                         {["Địa điểm", "Danh mục", "Tọa độ", "Khoảng cách", "Trạng thái", "Thao tác"].map((heading, idx) => (
-                          <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 5 ? "right" : "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>{heading}</th>
+                          <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 5 ? "right" : "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)" }}>{heading}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {loading ? (
-                        <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Đang tải dữ liệu...</td></tr>
+                        <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--a-text-soft)" }}>Đang tải dữ liệu...</td></tr>
                       ) : paginatedItems.length === 0 ? (
-                        <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Chưa có địa điểm nào.</td></tr>
+                        <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "var(--a-text-soft)" }}>Chưa có địa điểm nào.</td></tr>
                       ) : (
                         paginatedItems.map((item) => {
                           const statusMeta = getStatusMeta(item.isActive !== false);
                           return (
-                            <tr key={item.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
-                              <td style={{ padding: "16px 18px" }}><div style={{ fontWeight: 700, color: "#1c1917" }}>{item.name}</div><div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>{item.address || "-"}</div></td>
-                              <td style={{ padding: "16px 18px", color: "#57534e" }}>{item.category || "-"}</td>
-                              <td style={{ padding: "16px 18px", color: "#57534e" }}>{item.latitude ?? "-"}, {item.longitude ?? "-"}</td>
-                              <td style={{ padding: "16px 18px", color: "#57534e" }}>{item.distanceKm ?? "-"} km</td>
+                            <tr key={item.id} style={{ borderBottom: "1px solid var(--a-divider)" }}>
+                              <td style={{ padding: "16px 18px" }}><div style={{ fontWeight: 700, color: "var(--a-text)" }}>{item.name}</div><div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>{item.address || "-"}</div></td>
+                              <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>{item.category || "-"}</td>
+                              <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>{item.latitude ?? "-"}, {item.longitude ?? "-"}</td>
+                              <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>{item.distanceKm ?? "-"} km</td>
                               <td style={{ padding: "16px 18px" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                   <StatusSwitch checked={item.isActive !== false} onChange={() => handleToggleActive(item)} />
@@ -477,13 +478,13 @@ export default function AttractionAdminPage() {
                                     width: 38,
                                     height: 38,
                                     borderRadius: 10,
-                                    border: "1px solid #e7e5e4",
-                                    background: "white",
+                                    border: "1px solid var(--a-border)",
+                                    background: "var(--a-surface)",
                                     cursor: "pointer",
                                     display: "inline-flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    color: "#57534e",
+                                    color: "var(--a-text-muted)",
                                   }}
                                 >
                                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
@@ -499,24 +500,24 @@ export default function AttractionAdminPage() {
               ) : (
                 <div style={{ padding: 18 }}>
                   {loading ? (
-                    <div style={{ padding: 32, textAlign: "center", color: "#9ca3af" }}>Đang tải dữ liệu...</div>
+                    <div style={{ padding: 32, textAlign: "center", color: "var(--a-text-soft)" }}>Đang tải dữ liệu...</div>
                   ) : paginatedItems.length === 0 ? (
-                    <div style={{ padding: 32, textAlign: "center", color: "#9ca3af" }}>Chưa có địa điểm nào.</div>
+                    <div style={{ padding: 32, textAlign: "center", color: "var(--a-text-soft)" }}>Chưa có địa điểm nào.</div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                       {paginatedItems.map((item) => {
                         const statusMeta = getStatusMeta(item.isActive !== false);
                         return (
-                          <div key={item.id} className="sub-card-p" style={{ border: "1px solid #f1f0ea", borderRadius: 16, overflow: "hidden", background: "white" }}>
-                            <div style={{ height: 170, background: "#f8fafc", borderBottom: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              {item.imageUrl ? <img src={item.imageUrl} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ color: "#94a3b8", fontWeight: 700, fontSize: 13 }}>Chưa có ảnh</div>}
+                          <div key={item.id} className="sub-card-p" style={{ border: "1px solid var(--a-border)", borderRadius: 16, overflow: "hidden", background: "var(--a-surface)" }}>
+                            <div style={{ height: 170, background: "var(--a-surface-raised)", borderBottom: "1px solid var(--a-border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              {item.imageUrl ? <img src={item.imageUrl} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ color: "var(--a-text-soft)", fontWeight: 700, fontSize: 13 }}>Chưa có ảnh</div>}
                             </div>
                             <div style={{ padding: 16 }}>
                               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
-                                <div><div style={{ fontWeight: 800, color: "#1c1917" }}>{item.name}</div><div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>{item.category || "-"}</div></div>
+                                <div><div style={{ fontWeight: 800, color: "var(--a-text)" }}>{item.name}</div><div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>{item.category || "-"}</div></div>
                                 <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "6px 10px", borderRadius: 999, background: statusMeta.background, color: statusMeta.color, fontWeight: 700, fontSize: 12 }}>{statusMeta.label}</span>
                               </div>
-                              <div style={{ marginTop: 12, fontSize: 13, color: "#57534e", lineHeight: 1.6 }}>
+                              <div style={{ marginTop: 12, fontSize: 13, color: "var(--a-text-muted)", lineHeight: 1.6 }}>
                                 <div>{item.address || "-"}</div>
                                 <div style={{ marginTop: 6 }}>Tọa độ: {item.latitude ?? "-"}, {item.longitude ?? "-"}</div>
                                 <div>Khoảng cách: {item.distanceKm ?? "-"} km</div>
@@ -534,13 +535,13 @@ export default function AttractionAdminPage() {
                                     width: 38,
                                     height: 38,
                                     borderRadius: 10,
-                                    border: "1px solid #e7e5e4",
-                                    background: "white",
+                                    border: "1px solid var(--a-border)",
+                                    background: "var(--a-surface)",
                                     cursor: "pointer",
                                     display: "inline-flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    color: "#57534e",
+                                    color: "var(--a-text-muted)",
                                   }}
                                 >
                                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
@@ -559,14 +560,14 @@ export default function AttractionAdminPage() {
             </>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] gap-6 p-5">
-              <div className="sub-card-p" style={{ border: "1px solid #f1f0ea", borderRadius: 16, overflow: "hidden" }}>
-                <div style={{ padding: 16, borderBottom: "1px solid #f1f0ea" }}>
+              <div className="sub-card-p" style={{ border: "1px solid var(--a-border)", borderRadius: 16, overflow: "hidden", background: "var(--a-surface)" }}>
+                <div style={{ padding: 16, borderBottom: "1px solid var(--a-border)" }}>
                   <strong style={{ color: "inherit" }}>Danh sách điểm đến</strong>
                   <input value={mapKeyword} onChange={(e) => setMapKeyword(e.target.value)} placeholder="Tìm theo tên, địa chỉ, danh mục..." style={{ ...inputStyle, marginTop: 12 }} />
                 </div>
                 <div style={{ maxHeight: 560, overflowY: "auto" }}>
-                  {filteredMapItems.length === 0 ? <div style={{ padding: 24, textAlign: "center", color: "#9ca3af" }}>Không có địa điểm phù hợp.</div> : filteredMapItems.map((item) => (
-                    <button key={item.id} type="button" onClick={() => setSelectedId(item.id)} className={selectedId === item.id ? "" : "sub-card-p"} style={{ width: "100%", textAlign: "left", padding: 16, border: "none", borderBottom: "1px solid #f7f4ee", background: selectedId === item.id ? "#f8fafc" : "white", cursor: "pointer" }}>
+                  {filteredMapItems.length === 0 ? <div style={{ padding: 24, textAlign: "center", color: "var(--a-text-soft)" }}>Không có địa điểm phù hợp.</div> : filteredMapItems.map((item) => (
+                    <button key={item.id} type="button" onClick={() => setSelectedId(item.id)} className={selectedId === item.id ? "" : "sub-card-p"} style={{ width: "100%", textAlign: "left", padding: 16, border: "none", borderBottom: "1px solid var(--a-divider)", background: selectedId === item.id ? "var(--a-surface-raised)" : "var(--a-surface)", color: "var(--a-text)", cursor: "pointer" }}>
                       <div style={{ fontWeight: 700, color: "inherit" }}>{item.name}</div>
                       <div style={{ marginTop: 4, fontSize: 12, color: "inherit", opacity: 0.8 }}>{item.category || "-"} • {item.distanceKm ?? "-"} km</div>
                       <div style={{ marginTop: 4, fontSize: 12, color: "inherit", opacity: 0.6 }}>{item.address || "-"}</div>
@@ -575,21 +576,21 @@ export default function AttractionAdminPage() {
                 </div>
               </div>
 
-              <div className="sub-card-p" style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 18 }}>
-                {loadingDetail ? <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Đang tải chi tiết địa điểm...</div> : selectedDetail ? (
+              <div className="sub-card-p" style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 18, background: "var(--a-surface)" }}>
+                {loadingDetail ? <div style={{ padding: 40, textAlign: "center", color: "var(--a-text-soft)" }}>Đang tải chi tiết địa điểm...</div> : selectedDetail ? (
                   <>
                     <div style={{ marginBottom: 18 }}>
                       <h3 style={{ margin: 0, fontSize: 22, color: "inherit" }}>{selectedDetail.name}</h3>
-                      <p style={{ margin: "8px 0 0", color: "inherit", opacity: 0.7, fontSize: 14 }}>{selectedDetail.address || "Chưa có địa chỉ."}</p>
+                      <p style={{ margin: "8px 0 0", color: "var(--a-text-muted)", fontSize: 14 }}>{selectedDetail.address || "Chưa có địa chỉ."}</p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                      <div className="sub-card-p" style={{ padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0" }}><div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "inherit", opacity: 0.6, fontWeight: 700 }}>Latitude</div><div style={{ marginTop: 6, fontWeight: 700 }}>{selectedDetail.latitude ?? "-"}</div></div>
-                      <div className="sub-card-p" style={{ padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0" }}><div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "inherit", opacity: 0.6, fontWeight: 700 }}>Longitude</div><div style={{ marginTop: 6, fontWeight: 700 }}>{selectedDetail.longitude ?? "-"}</div></div>
-                      <div className="sub-card-p" style={{ padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0" }}><div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "inherit", opacity: 0.6, fontWeight: 700 }}>Khoảng cách</div><div style={{ marginTop: 6, fontWeight: 700 }}>{selectedDetail.distanceKm ?? "-"} km</div></div>
+                      <div className="sub-card-p" style={{ padding: 14, borderRadius: 14, background: "var(--a-surface-raised)", border: "1px solid var(--a-border)" }}><div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)", fontWeight: 700 }}>Latitude</div><div style={{ marginTop: 6, fontWeight: 700 }}>{selectedDetail.latitude ?? "-"}</div></div>
+                      <div className="sub-card-p" style={{ padding: 14, borderRadius: 14, background: "var(--a-surface-raised)", border: "1px solid var(--a-border)" }}><div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)", fontWeight: 700 }}>Longitude</div><div style={{ marginTop: 6, fontWeight: 700 }}>{selectedDetail.longitude ?? "-"}</div></div>
+                      <div className="sub-card-p" style={{ padding: 14, borderRadius: 14, background: "var(--a-surface-raised)", border: "1px solid var(--a-border)" }}><div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)", fontWeight: 700 }}>Khoảng cách</div><div style={{ marginTop: 6, fontWeight: 700 }}>{selectedDetail.distanceKm ?? "-"} km</div></div>
                     </div>
-                    {mapEmbedUrl ? <iframe title={`map-${selectedDetail.id}`} src={mapEmbedUrl} style={{ width: "100%", height: 420, border: "1px solid #e5e7eb", borderRadius: 18, background: "#fff" }} loading="lazy" /> : <div className="sub-card-p" style={{ padding: 32, textAlign: "center", border: "1px dashed #cbd5e1", borderRadius: 18, color: "#94a3b8" }}>Địa điểm này chưa có `mapEmbedLink` hoặc tọa độ đầy đủ để hiển thị bản đồ.</div>}
+                    {mapEmbedUrl ? <iframe title={`map-${selectedDetail.id}`} src={mapEmbedUrl} style={{ width: "100%", height: 420, border: "1px solid var(--a-border)", borderRadius: 18, background: "var(--a-surface)" }} loading="lazy" /> : <div className="sub-card-p" style={{ padding: 32, textAlign: "center", border: "1px dashed var(--a-border-strong)", borderRadius: 18, color: "var(--a-text-soft)" }}>Địa điểm này chưa có `mapEmbedLink` hoặc tọa độ đầy đủ để hiển thị bản đồ.</div>}
                   </>
-                ) : <div style={{ padding: 32, textAlign: "center", color: "#94a3af" }}>Chọn một địa điểm để xem site map.</div>}
+                ) : <div style={{ padding: 32, textAlign: "center", color: "var(--a-text-soft)" }}>Chọn một địa điểm để xem site map.</div>}
               </div>
             </div>
           )}
@@ -601,7 +602,7 @@ export default function AttractionAdminPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label style={labelStyle}>Tên địa điểm</label>
-                <input value={form.name} onChange={(e) => handleFieldChange("name", e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.name ? "#fca5a5" : "#e2e8e1" }} />
+                <input value={form.name} onChange={(e) => handleFieldChange("name", e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.name ? "var(--a-error-border)" : "var(--a-border-strong)" }} />
                 <FieldError message={fieldErrors.name} />
               </div>
               <div>
@@ -614,17 +615,17 @@ export default function AttractionAdminPage() {
               </div>
               <div>
                 <label style={labelStyle}>Latitude (-90 - 90)</label>
-                <input value={form.latitude} onChange={(e) => handleFieldChange("latitude", e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.latitude ? "#fca5a5" : "#e2e8e1" }} />
+                <input value={form.latitude} onChange={(e) => handleFieldChange("latitude", e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.latitude ? "var(--a-error-border)" : "var(--a-border-strong)" }} />
                 <FieldError message={fieldErrors.latitude} />
               </div>
               <div>
                 <label style={labelStyle}>Longitude (-180 - 180)</label>
-                <input value={form.longitude} onChange={(e) => handleFieldChange("longitude", e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.longitude ? "#fca5a5" : "#e2e8e1" }} />
+                <input value={form.longitude} onChange={(e) => handleFieldChange("longitude", e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.longitude ? "var(--a-error-border)" : "var(--a-border-strong)" }} />
                 <FieldError message={fieldErrors.longitude} />
               </div>
               <div>
                 <label style={labelStyle}>Khoảng cách (km)</label>
-                <input value={form.distanceKm} onChange={(e) => handleFieldChange("distanceKm", e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.distanceKm ? "#fca5a5" : "#e2e8e1" }} />
+                <input value={form.distanceKm} onChange={(e) => handleFieldChange("distanceKm", e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.distanceKm ? "var(--a-error-border)" : "var(--a-border-strong)" }} />
                 <FieldError message={fieldErrors.distanceKm} />
               </div>
               <div>
@@ -632,7 +633,7 @@ export default function AttractionAdminPage() {
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleChooseImage} style={{ display: "none" }} />
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                   <button type="button" onClick={() => fileInputRef.current?.click()} style={{ ...primaryButtonStyle, padding: "10px 14px" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>image</span>{selectedImagePreview || form.imageUrl ? "Đổi ảnh địa điểm" : "Chọn ảnh địa điểm"}</button>
-                  {(selectedImagePreview || form.imageUrl) ? <button type="button" onClick={handleRemoveImage} style={{ padding: "10px 14px", borderRadius: 12, border: "1px solid #e7e5e4", background: "white", color: "#57534e", fontWeight: 700, cursor: "pointer" }}>Gỡ ảnh</button> : null}
+                  {(selectedImagePreview || form.imageUrl) ? <button type="button" onClick={handleRemoveImage} style={{ padding: "10px 14px", borderRadius: 12, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", fontWeight: 700, cursor: "pointer" }}>Gỡ ảnh</button> : null}
                 </div>
                 {selectedImagePreview || form.imageUrl ? <div style={{ marginTop: 12 }}><img src={selectedImagePreview || form.imageUrl} alt="preview" style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 14, border: "1px solid #e5e7eb" }} /></div> : null}
               </div>
@@ -645,8 +646,8 @@ export default function AttractionAdminPage() {
                 <textarea value={form.description} onChange={(e) => handleFieldChange("description", e.target.value)} style={{ ...inputStyle, minHeight: 120, resize: "vertical" }} />
               </div>
             </div>
-            <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end", gap: 12, flexWrap: "wrap", position: "sticky", bottom: 0, background: "#fffdf9", paddingTop: 14 }}>
-              <button type="button" className="sub-card-p" onClick={() => setModalOpen(false)} style={{ padding: "10px 16px", borderRadius: 12, border: "1px solid #e7e5e4", background: "white", color: "#57534e", fontWeight: 600, cursor: "pointer" }}>Đóng</button>
+            <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end", gap: 12, flexWrap: "wrap", position: "sticky", bottom: 0, background: "var(--a-surface)", paddingTop: 14 }}>
+              <button type="button" className="sub-card-p" onClick={() => setModalOpen(false)} style={{ padding: "10px 16px", borderRadius: 12, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", fontWeight: 600, cursor: "pointer" }}>Đóng</button>
               <button type="submit" disabled={submitting} style={{ ...primaryButtonStyle, padding: "10px 18px", opacity: submitting ? 0.7 : 1 }}>{submitting ? "Đang lưu..." : "Lưu địa điểm"}</button>
             </div>
           </form>

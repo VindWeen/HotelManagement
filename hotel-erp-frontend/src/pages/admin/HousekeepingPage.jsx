@@ -8,11 +8,11 @@ const INPUT_STYLE = {
   width: "100%",
   padding: "10px 14px",
   borderRadius: 12,
-  border: "1.5px solid #e2e8e1",
-  background: "#f9f8f3",
+  border: "1.5px solid var(--a-border)",
+  background: "var(--a-surface-raised)",
   fontSize: 14,
   fontWeight: 600,
-  color: "#1c1917",
+  color: "var(--a-text)",
   outline: "none",
   fontFamily: "'Manrope', sans-serif",
   transition: "all 0.2s",
@@ -37,9 +37,9 @@ const PRIMARY_BUTTON = {
 const SECONDARY_BUTTON = {
   padding: "10px 22px",
   borderRadius: 12,
-  border: "1.5px solid #e2e8e1",
-  background: "white",
-  color: "#57534e",
+  border: "1.5px solid var(--a-border)",
+  background: "var(--a-surface-raised)",
+  color: "var(--a-text-muted)",
   fontSize: 14,
   fontWeight: 800,
   cursor: "pointer",
@@ -358,11 +358,11 @@ export default function HousekeepingPage() {
         @keyframes fadeRow { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
         @keyframes toastProgress { from{width:100%} to{width:0} }
         @keyframes modalScaleIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
-        .hk-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,.08) !important; z-index: 10; }
+        .hk-card:hover { transform: translateY(-3px); box-shadow: var(--a-shadow-md) !important; z-index: 10; }
         .check-container { display:flex; align-items:center; position:relative; padding-left:28px; cursor:pointer; font-size:14px; user-select:none; margin: 0; }
         .check-container input { position:absolute; opacity:0; cursor:pointer; height:0; width:0; }
-        .checkmark { position:absolute; top:2px; left:0; height:20px; width:20px; background-color:#f1f0ea; border:1px solid #d1d5db; border-radius:4px; transition:all .2s; }
-        .check-container:hover input ~ .checkmark { background-color:#e5e7eb; }
+        .checkmark { position:absolute; top:2px; left:0; height:20px; width:20px; background-color:var(--a-surface-raised); border:1px solid var(--a-border); border-radius:4px; transition:all .2s; }
+        .check-container:hover input ~ .checkmark { background-color:color-mix(in srgb, var(--a-surface-raised) 70%, var(--a-border)); }
         .check-container input:checked ~ .checkmark { background-color:#e11d48; border-color:#e11d48; }
         .checkmark:after { content:""; position:absolute; display:none; }
         .check-container input:checked ~ .checkmark:after { display:block; }
@@ -375,10 +375,10 @@ export default function HousekeepingPage() {
 
       <div style={{ maxWidth: 1400, margin: "0 auto", animation: "fadeRow .3s ease" }}>
         <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: 28, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.02em", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: "var(--a-text)", letterSpacing: "-0.02em", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>
             Nghiệp vụ Buồng phòng
           </h2>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+          <p style={{ fontSize: 13, color: "var(--a-text-muted)", margin: 0 }}>
             Danh sách các phòng đang trong trạng thái cần dọn dẹp. Có thể dọn nhanh hàng loạt với các phòng bẩn, còn phòng bảo trì xử lý riêng theo từng phòng.
           </p>
         </div>
@@ -432,26 +432,26 @@ export default function HousekeepingPage() {
         </div>
 
         {selectableRooms.length > 0 && (
-          <div style={{ marginBottom: 18, background: "#fff", border: "1px solid #f1f0ea", borderRadius: 16, padding: "14px 18px", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <label className="check-container" style={{ fontWeight: 800, color: "#1c1917" }}>
+          <div style={{ marginBottom: 18, background: "var(--a-surface)", border: "1px solid var(--a-border)", borderRadius: 16, padding: "14px 18px", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <label className="check-container" style={{ fontWeight: 800, color: "var(--a-text)" }}>
               Chọn tất cả phòng bẩn có thể dọn nhanh
               <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
               <span className="checkmark"></span>
             </label>
-            <div style={{ fontSize: 13, color: "#6b7280" }}>
-              Đã chọn <strong style={{ color: "#1c1917" }}>{selectedCount}</strong> / {selectableRooms.length} phòng.
+            <div style={{ fontSize: 13, color: "var(--a-text-muted)" }}>
+              Đã chọn <strong style={{ color: "var(--a-text)" }}>{selectedCount}</strong> / {selectableRooms.length} phòng.
               <span style={{ marginLeft: 8 }}>Dọn nhanh sẽ chuyển trực tiếp sang <strong>Clean</strong> và bỏ qua bước kiểm kê thất thoát.</span>
             </div>
           </div>
         )}
 
         {loading ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Đang tải dữ liệu phòng...</div>
+          <div style={{ padding: 40, textAlign: "center", color: "var(--a-text-muted)" }}>Đang tải dữ liệu phòng...</div>
         ) : visibleRooms.length === 0 ? (
-          <div style={{ padding: "80px 0", textAlign: "center", background: "white", borderRadius: 18, border: "1px dashed #cbd5e1" }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 64, color: "#9ca3af", marginBottom: 16 }}>celebration</span>
-            <p style={{ fontSize: 16, fontWeight: 700, color: "#4b5563", margin: "0 0 4px" }}>Không còn phòng nào cần dọn</p>
-            <p style={{ fontSize: 13, color: "#6b7280" }}>Khu vực của bạn đang rất gọn gàng!</p>
+          <div style={{ padding: "80px 0", textAlign: "center", background: "var(--a-surface)", borderRadius: 18, border: "1px dashed var(--a-border-strong)" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 64, color: "var(--a-text-soft)", marginBottom: 16 }}>celebration</span>
+            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--a-text)", margin: "0 0 4px" }}>Không còn phòng nào cần dọn</p>
+            <p style={{ fontSize: 13, color: "var(--a-text-muted)" }}>Khu vực của bạn đang rất gọn gàng!</p>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
@@ -461,13 +461,13 @@ export default function HousekeepingPage() {
                 className="hk-card"
                 onClick={() => handleOpenRoom(room)}
                 style={{
-                  background: "white",
-                  border: "1px solid #f1f0ea",
+                  background: "var(--a-surface)",
+                  border: "1px solid var(--a-border)",
                   borderRadius: 16,
                   padding: "20px 24px",
                   cursor: "pointer",
                   transition: "all .2s ease",
-                  boxShadow: "0 4px 12px rgba(0,0,0,.03)"
+                  boxShadow: "var(--a-shadow-sm)"
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
@@ -489,7 +489,7 @@ export default function HousekeepingPage() {
                       <span
                         className="material-symbols-outlined"
                         title="Phòng này cần xử lý riêng, không nằm trong dọn nhanh hàng loạt."
-                        style={{ fontSize: 18, color: "#94a3b8" }}
+                        style={{ fontSize: 18, color: "var(--a-text-soft)" }}
                         onClick={(e) => e.stopPropagation()}
                       >
                         block
@@ -503,10 +503,10 @@ export default function HousekeepingPage() {
                   </span>
                 </div>
 
-                <p style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Tầng {room.floor} • {room.roomTypeName || "Hạng phòng chung"}
                 </p>
-                <p style={{ fontSize: 12, color: "#78716c", margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 12, color: "var(--a-text-soft)", margin: 0, lineHeight: 1.5 }}>
                   {room.cleaningStatus === "Dirty" && room.businessStatus !== "Disabled"
                     ? "Có thể chọn để dọn nhanh hàng loạt hoặc bấm vào để kiểm kê chi tiết."
                     : "Phòng này nên xử lý riêng theo từng phòng, không nên dọn nhanh hàng loạt."}
@@ -520,23 +520,23 @@ export default function HousekeepingPage() {
       {/* POPUP DỌN PHÒNG (wizard như cũ) */}
       {selectedRoom && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.55)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-          <div style={{ background: "white", borderRadius: isMobile ? "24px 24px 0 0" : 24, width: "100%", maxWidth: wizardStep === 1 ? 520 : 900, maxHeight: isMobile ? "92vh" : "none", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", animation: "modalScaleIn .2s ease-out", display: "flex", flexDirection: "column", overflow: "hidden", transition: "max-width .3s cubic-bezier(0.4, 0, 0.2, 1)" }}>
+          <div style={{ background: "var(--a-surface)", border: "1px solid var(--a-border)", borderRadius: isMobile ? "24px 24px 0 0" : 24, width: "100%", maxWidth: wizardStep === 1 ? 520 : 900, maxHeight: isMobile ? "92vh" : "none", boxShadow: "var(--a-shadow-lg)", animation: "modalScaleIn .2s ease-out", display: "flex", flexDirection: "column", overflow: "hidden", transition: "max-width .3s cubic-bezier(0.4, 0, 0.2, 1)" }}>
 
-            <div style={{ padding: "20px 32px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: wizardStep === 1 ? "#fafaf9" : "#fff1f2", transition: "background .3s" }}>
+            <div style={{ padding: "20px 32px", borderBottom: "1px solid var(--a-border)", display: "flex", justifyContent: "space-between", alignItems: "center", background: wizardStep === 1 ? "var(--a-surface-raised)" : "color-mix(in srgb, var(--a-error-bg) 82%, var(--a-surface))", transition: "background .3s" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: wizardStep === 1 ? "#4f645b" : "#e11d48", color: "white", display: "flex", alignItems: "center", justifyContent: "center", transition: "background .3s" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: wizardStep === 1 ? "var(--a-primary)" : "var(--a-error)", color: "var(--a-text-inverse)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background .3s" }}>
                   <span className="material-symbols-outlined" style={{ fontSize: 24 }}>{wizardStep === 1 ? "cleaning_services" : "inventory"}</span>
                 </div>
                 <div>
-                  <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0, fontFamily: "Manrope, sans-serif" }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--a-text)", margin: 0, fontFamily: "Manrope, sans-serif" }}>
                     {wizardStep === 1 ? "Bắt đầu dọn phòng" : "Kiểm kê vật tư & Minibar"}
                   </h3>
-                  <p style={{ fontSize: 13, color: "#64748b", margin: "2px 0 0", fontWeight: 600 }}>
+                  <p style={{ fontSize: 13, color: "var(--a-text-muted)", margin: "2px 0 0", fontWeight: 600 }}>
                     Phòng {selectedRoom.roomNumber} - Tầng {selectedRoom.floor}
                   </p>
                 </div>
               </div>
-              <button onClick={() => setSelectedRoom(null)} disabled={isFinishing} style={{ width: 36, height: 36, borderRadius: "50%", border: "none", background: "rgba(0,0,0,.04)", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button onClick={() => setSelectedRoom(null)} disabled={isFinishing} style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--a-border)", background: "var(--a-surface-raised)", cursor: "pointer", color: "var(--a-text-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
               </button>
             </div>
@@ -544,11 +544,11 @@ export default function HousekeepingPage() {
             <div style={{ padding: isMobile ? 16 : 32, maxHeight: isMobile ? "calc(92vh - 86px)" : "75vh", overflowY: "auto" }}>
               {wizardStep === 1 ? (
                 <div style={{ textAlign: "center", animation: "fadeRow .3s ease" }}>
-                  <div style={{ background: "#f9f8f3", width: 100, height: 100, borderRadius: "50%", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 48, color: "#4f645b" }}>door_open</span>
+                  <div style={{ background: "var(--a-surface-raised)", width: 100, height: 100, borderRadius: "50%", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--a-border)" }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 48, color: "var(--a-primary)" }}>door_open</span>
                   </div>
-                  <h4 style={{ fontSize: 20, color: "#1c1917", margin: "0 0 12px", fontWeight: 800 }}>Bạn đã tiến hành dọn dẹp phòng này?</h4>
-                  <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6, marginBottom: 32, padding: "0 20px" }}>
+                  <h4 style={{ fontSize: 20, color: "var(--a-text)", margin: "0 0 12px", fontWeight: 800 }}>Bạn đã tiến hành dọn dẹp phòng này?</h4>
+                  <p style={{ fontSize: 14, color: "var(--a-text-muted)", lineHeight: 1.6, marginBottom: 32, padding: "0 20px" }}>
                     Bấm xác nhận khi bạn đã dọn dẹp sạch sẽ phòng. Sau khi xác nhận, hệ thống sẽ chuyển sang bảng kiểm kê vật tư phòng để ghi nhận xem khách có dùng/làm mất vật tư nào không trước khi hoàn tất bước housekeeping.
                   </p>
                   <button
@@ -561,22 +561,22 @@ export default function HousekeepingPage() {
                 </div>
               ) : (
                 <div style={{ animation: "fadeRow .3s ease" }}>
-                  <div style={{ background: "#eff6ff", padding: "16px 20px", borderRadius: 12, marginBottom: 24, borderLeft: "4px solid #2563eb" }}>
-                    <p style={{ margin: 0, fontSize: 14, color: "#1d4ed8", fontWeight: 600, lineHeight: 1.5 }}>
+                  <div style={{ background: "var(--a-info-bg)", padding: "16px 20px", borderRadius: 12, marginBottom: 24, borderLeft: "4px solid var(--a-info)", border: "1px solid var(--a-info-border)" }}>
+                    <p style={{ margin: 0, fontSize: 14, color: "var(--a-info)", fontWeight: 600, lineHeight: 1.5 }}>
                       <span className="material-symbols-outlined" style={{ fontSize: 18, marginRight: 8, verticalAlign: "bottom" }}>info</span>
                       Nếu khách đã sử dụng dịch vụ hoặc làm mất vật tư, <strong>hãy tick chọn vật tư đó ở cột Mất/Sử dụng</strong> để hệ thống lưu biên bản thất thoát ở trạng thái chờ xử lý. Sau khi hoàn tất bước này, phòng sẽ chuyển sang <strong>cleaning_status = PendingLoss</strong> để chờ xử lý thất thoát. Nếu không có thất thoát, phòng sẽ về <strong>Clean</strong>.
                     </p>
                   </div>
 
                   {loadingInv ? (
-                    <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>
+                    <div style={{ padding: 40, textAlign: "center", color: "var(--a-text-muted)" }}>
                       Đang lấy danh mục Vật tư trong phòng...
                     </div>
                   ) : inventories.length === 0 ? (
                     <div style={{ textAlign: "center", padding: "40px 0" }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 48, color: "#cbd5e1", marginBottom: 12 }}>inbox</span>
-                      <p style={{ color: "#64748b", margin: 0, fontSize: 15, fontWeight: 600 }}>Phòng này không có khai báo danh mục vật tư/minibar.</p>
-                      <p style={{ color: "#9ca3af", margin: "4px 0 0", fontSize: 13 }}>Bạn có thể trực tiếp ấn Hoàn tất.</p>
+                      <span className="material-symbols-outlined" style={{ fontSize: 48, color: "var(--a-text-soft)", marginBottom: 12 }}>inbox</span>
+                      <p style={{ color: "var(--a-text-muted)", margin: 0, fontSize: 15, fontWeight: 600 }}>Phòng này không có khai báo danh mục vật tư/minibar.</p>
+                      <p style={{ color: "var(--a-text-soft)", margin: "4px 0 0", fontSize: 13 }}>Bạn có thể trực tiếp ấn Hoàn tất.</p>
                     </div>
                   ) : (
                     isMobile ? (
@@ -584,11 +584,11 @@ export default function HousekeepingPage() {
                       {inventories.map((inv) => {
                         const isMissing = missingItems[inv.id]?.isMissing;
                         return (
-                          <article key={inv.id} style={{ border: `1.5px solid ${isMissing ? "#fca5a5" : "#e2e8f0"}`, borderRadius: 16, padding: 14, background: isMissing ? "#fff1f2" : "white", display: "grid", gap: 12 }}>
+                          <article key={inv.id} style={{ border: `1.5px solid ${isMissing ? "#fca5a5" : "var(--a-border)"}`, borderRadius: 16, padding: 14, background: isMissing ? "color-mix(in srgb, var(--a-error-bg) 76%, var(--a-surface))" : "var(--a-surface-raised)", display: "grid", gap: 12 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
                               <div>
-                                <div style={{ fontSize: 15, fontWeight: 900, color: isMissing ? "#b91c1c" : "#1e293b" }}>{inv.equipmentName}</div>
-                                <span style={{ display: "inline-flex", marginTop: 6, padding: "4px 8px", borderRadius: 999, background: inv.itemType === "Minibar" ? "#e0f2fe" : "#f1f5f9", color: inv.itemType === "Minibar" ? "#0284c7" : "#475569", fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>
+                                <div style={{ fontSize: 15, fontWeight: 900, color: isMissing ? "var(--a-error)" : "var(--a-text)" }}>{inv.equipmentName}</div>
+                                <span style={{ display: "inline-flex", marginTop: 6, padding: "4px 8px", borderRadius: 999, background: inv.itemType === "Minibar" ? "var(--a-info-bg)" : "var(--a-surface-soft)", color: inv.itemType === "Minibar" ? "var(--a-info)" : "var(--a-text-muted)", border: `1px solid ${inv.itemType === "Minibar" ? "var(--a-info-border)" : "var(--a-border)"}`, fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>
                                   {inv.itemType || "Asset"}
                                 </span>
                               </div>
@@ -600,9 +600,9 @@ export default function HousekeepingPage() {
                             </div>
                             {isMissing && (
                               <div style={{ display: "grid", gap: 8, animation: "modalScaleIn .2s ease" }}>
-                                <input type="number" min="1" max={inv.quantity || 99} value={missingItems[inv.id]?.quantity || 1} onChange={(e) => updateMissingQuantity(inv.id, e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid #fca5a5", outline: "none", fontSize: 13, background: "white", fontWeight: 800, color: "#1c1917" }} />
-                                <input type="text" value={missingItems[inv.id]?.note || ""} onChange={(e) => updateMissingNote(inv.id, e.target.value)} placeholder="Nhập ghi chú chi tiết..." style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid #fca5a5", outline: "none", fontSize: 13, background: "white", boxSizing: "border-box" }} />
-                                <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 40, borderRadius: 10, background: "#fef2f2", border: "1.5px solid #fca5a5", color: "#ef4444", cursor: "pointer", position: "relative", flexShrink: 0, fontWeight: 800, fontSize: 13 }} title="Chụp/Tải ảnh bằng chứng">
+                                <input type="number" min="1" max={inv.quantity || 99} value={missingItems[inv.id]?.quantity || 1} onChange={(e) => updateMissingQuantity(inv.id, e.target.value)} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid #fca5a5", outline: "none", fontSize: 13, background: "var(--a-surface)", fontWeight: 800, color: "var(--a-text)" }} />
+                                <input type="text" value={missingItems[inv.id]?.note || ""} onChange={(e) => updateMissingNote(inv.id, e.target.value)} placeholder="Nhập ghi chú chi tiết..." style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1.5px solid #fca5a5", outline: "none", fontSize: 13, background: "var(--a-surface)", boxSizing: "border-box", color: "var(--a-text)" }} />
+                                <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 40, borderRadius: 10, background: "var(--a-error-bg)", border: "1.5px solid #fca5a5", color: "var(--a-error)", cursor: "pointer", position: "relative", flexShrink: 0, fontWeight: 800, fontSize: 13 }} title="Chụp/Tải ảnh bằng chứng">
                                   <span className="material-symbols-outlined" style={{ fontSize: 20 }}>photo_camera</span>
                                   Ảnh bằng chứng {missingItems[inv.id]?.files?.length > 0 ? `(${missingItems[inv.id].files.length})` : ""}
                                   <input type="file" multiple accept="image/*" style={{ display: "none" }} onChange={(e) => updateMissingFiles(inv.id, e.target.files)} />
@@ -614,25 +614,25 @@ export default function HousekeepingPage() {
                       })}
                     </div>
                     ) : (
-                    <div style={{ border: "1px solid #e2e8f0", borderRadius: 16, overflow: "hidden" }}>
+                    <div style={{ border: "1px solid var(--a-border)", borderRadius: 16, overflow: "hidden", background: "var(--a-surface-raised)" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                        <thead style={{ background: "#f8fafc" }}>
+                        <thead style={{ background: "color-mix(in srgb, var(--a-surface-raised) 92%, transparent)" }}>
                           <tr>
-                            <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#64748b", width: 60 }}>STT</th>
-                            <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#64748b" }}>Tên vật tư phòng</th>
-                            <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#64748b", width: 100 }}>Loại</th>
-                            <th style={{ padding: "14px 20px", textAlign: "center", fontSize: 12, fontWeight: 700, color: "#64748b", width: 280 }}>Ghi nhận Mất / Sử dụng</th>
+                            <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", width: 60 }}>STT</th>
+                            <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)" }}>Tên vật tư phòng</th>
+                            <th style={{ padding: "14px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", width: 100 }}>Loại</th>
+                            <th style={{ padding: "14px 20px", textAlign: "center", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", width: 280 }}>Ghi nhận Mất / Sử dụng</th>
                           </tr>
                         </thead>
                         <tbody>
                           {inventories.map((inv, idx) => {
                             const isMissing = missingItems[inv.id]?.isMissing;
                             return (
-                              <tr key={inv.id} style={{ borderTop: "1px solid #e2e8f0", background: isMissing ? "#fff1f2" : "white", transition: "background .2s" }}>
-                                <td style={{ padding: "16px 20px", fontSize: 14, fontWeight: 800, color: "#94a3b8" }}>{idx + 1}</td>
-                                <td style={{ padding: "16px 20px", fontSize: 15, fontWeight: 700, color: isMissing ? "#b91c1c" : "#1e293b", fontFamily: "Manrope, sans-serif" }}>{inv.equipmentName}</td>
-                                <td style={{ padding: "16px 20px", fontSize: 14, color: "#64748b" }}>
-                                  <span style={{ padding: "4px 8px", borderRadius: 6, background: inv.itemType === "Minibar" ? "#e0f2fe" : "#f1f5f9", color: inv.itemType === "Minibar" ? "#0284c7" : "#475569", fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
+                              <tr key={inv.id} style={{ borderTop: "1px solid var(--a-border)", background: isMissing ? "color-mix(in srgb, var(--a-error-bg) 76%, var(--a-surface))" : "var(--a-surface)", transition: "background .2s" }}>
+                                <td style={{ padding: "16px 20px", fontSize: 14, fontWeight: 800, color: "var(--a-text-soft)" }}>{idx + 1}</td>
+                                <td style={{ padding: "16px 20px", fontSize: 15, fontWeight: 700, color: isMissing ? "var(--a-error)" : "var(--a-text)", fontFamily: "Manrope, sans-serif" }}>{inv.equipmentName}</td>
+                                <td style={{ padding: "16px 20px", fontSize: 14, color: "var(--a-text-muted)" }}>
+                                  <span style={{ padding: "4px 8px", borderRadius: 6, background: inv.itemType === "Minibar" ? "var(--a-info-bg)" : "var(--a-surface-soft)", color: inv.itemType === "Minibar" ? "var(--a-info)" : "var(--a-text-muted)", border: `1px solid ${inv.itemType === "Minibar" ? "var(--a-info-border)" : "var(--a-border)"}`, fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
                                     {inv.itemType || "Asset"}
                                   </span>
                                 </td>
@@ -646,7 +646,7 @@ export default function HousekeepingPage() {
 
                                     {isMissing && (
                                       <div style={{ display: "flex", gap: 8, animation: "modalScaleIn .2s ease", position: "relative" }}>
-                                        <div style={{ position: "absolute", width: 2, height: 36, background: "#fca5a5", left: -14, top: 2, borderRadius: 2 }} />
+                                        <div style={{ position: "absolute", width: 2, height: 36, background: "var(--a-error-border)", left: -14, top: 2, borderRadius: 2 }} />
                                         <input
                                           type="number"
                                           min="1"
@@ -654,17 +654,17 @@ export default function HousekeepingPage() {
                                           value={missingItems[inv.id]?.quantity || 1}
                                           onChange={(e) => updateMissingQuantity(inv.id, e.target.value)}
                                           title="Số lượng hao hụt"
-                                          style={{ width: 65, padding: "8px 12px", borderRadius: 8, border: "1.5px solid #fca5a5", outline: "none", fontSize: 13, background: "white", fontWeight: 700, color: "#1c1917" }}
+                                          style={{ width: 65, padding: "8px 12px", borderRadius: 8, border: "1.5px solid #fca5a5", outline: "none", fontSize: 13, background: "var(--a-surface)", fontWeight: 700, color: "var(--a-text)" }}
                                         />
                                         <input
                                           type="text"
                                           value={missingItems[inv.id]?.note || ""}
                                           onChange={(e) => updateMissingNote(inv.id, e.target.value)}
                                           placeholder="Nhập ghi chú chi tiết..."
-                                          style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1.5px solid #fca5a5", outline: "none", fontSize: 13, background: "white" }}
+                                          style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1.5px solid #fca5a5", outline: "none", fontSize: 13, background: "var(--a-surface)", color: "var(--a-text)" }}
                                           autoFocus
                                         />
-                                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 8, background: "#fef2f2", border: "1.5px solid #fca5a5", color: "#ef4444", cursor: "pointer", position: "relative", flexShrink: 0 }} title="Chụp/Tải ảnh bằng chứng">
+                                        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 8, background: "var(--a-error-bg)", border: "1.5px solid #fca5a5", color: "var(--a-error)", cursor: "pointer", position: "relative", flexShrink: 0 }} title="Chụp/Tải ảnh bằng chứng">
                                           <span className="material-symbols-outlined" style={{ fontSize: 20 }}>photo_camera</span>
                                           <input type="file" multiple accept="image/*" style={{ display: "none" }} onChange={(e) => updateMissingFiles(inv.id, e.target.files)} />
                                           {missingItems[inv.id]?.files?.length > 0 && (
@@ -686,7 +686,7 @@ export default function HousekeepingPage() {
                   ))}
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 32 }}>
-                    <button onClick={() => setWizardStep(1)} style={{ padding: "12px 24px", borderRadius: 12, background: "white", border: "1.5px solid #cbd5e1", color: "#475569", fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Manrope, sans-serif" }}>
+                    <button onClick={() => setWizardStep(1)} style={{ padding: "12px 24px", borderRadius: 12, background: "var(--a-surface-raised)", border: "1.5px solid var(--a-border)", color: "var(--a-text-muted)", fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Manrope, sans-serif" }}>
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
                       Quay lại
                     </button>

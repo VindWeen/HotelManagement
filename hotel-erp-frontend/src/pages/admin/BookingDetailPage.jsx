@@ -549,14 +549,14 @@ function ExtendStayModal({ open, detail, loading, form, onChange, onConfirm, onC
 // ─── Nhãn trạng thái ─────────────────────────────────────────────────────────────
 const BookingStatusBadge = ({ status }) => {
   const map = {
-    Pending: { bg: "#fef3c7", text: "#d97706", icon: "schedule" },
-    Confirmed: { bg: "#e0e7ff", text: "#4338ca", icon: "verified" },
-    Checked_in: { bg: "#ecfdf5", text: "#059669", icon: "login" },
-    Checked_out_pending_settlement: { bg: "#fff7ed", text: "#c2410c", icon: "payments" },
-    Completed: { bg: "#f3f4f6", text: "#4b5563", icon: "done_all" },
-    Cancelled: { bg: "#fef2f2", text: "#dc2626", icon: "block" }
+    Pending: { bg: "var(--a-warning-bg)", text: "var(--a-warning)", icon: "schedule" },
+    Confirmed: { bg: "var(--a-info-bg)", text: "var(--a-info)", icon: "verified" },
+    Checked_in: { bg: "var(--a-success-bg)", text: "var(--a-success)", icon: "login" },
+    Checked_out_pending_settlement: { bg: "var(--a-warning-bg)", text: "var(--a-warning)", icon: "payments" },
+    Completed: { bg: "var(--a-surface-soft)", text: "var(--a-text-muted)", icon: "done_all" },
+    Cancelled: { bg: "var(--a-error-bg)", text: "var(--a-error)", icon: "block" }
   };
-  const s = map[status] || { bg: "#f1f5f9", text: "#64748b", icon: "help" };
+  const s = map[status] || { bg: "var(--a-surface-soft)", text: "var(--a-text-muted)", icon: "help" };
   return (
     <span className="badge-p" style={{ background: s.bg, color: s.text }}>
       <span className="material-symbols-outlined" style={{ fontSize: 13, fontWeight: 700 }}>{s.icon}</span>
@@ -913,15 +913,15 @@ export default function BookingDetailPage() {
         @keyframes toastProgress { from{width:100%} to{width:0} }
         @keyframes modalSlideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
         @keyframes spin { to{transform:rotate(360deg)} }
-        .table-row { transition: background 0.1s; border-bottom: 1px solid #f1f0ea; }
-        .table-row:hover { background: #fafaf8 !important; }
+        .table-row { transition: background 0.1s; border-bottom: 1px solid var(--a-border); }
+        .table-row:hover { background: var(--a-surface-soft) !important; }
         .badge-p { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
-        .action-btn { display: inline-flex; alignItems: center; gap: 8px; padding: 10px 22px; borderRadius: 12px; font-size: 14px; font-weight: 800; background: white; color: #1c1917; border: 1.5px solid #e2e8e1; cursor: pointer; transition: all 0.15s; }
-        .action-btn:hover:not(:disabled) { border-color: #4f645b; color: #4f645b; background: #f0faf5; }
+        .action-btn { display: inline-flex; alignItems: center; gap: 8px; padding: 10px 22px; borderRadius: 12px; font-size: 14px; font-weight: 800; background: var(--a-surface-raised); color: var(--a-text); border: 1.5px solid var(--a-border); cursor: pointer; transition: all 0.15s; }
+        .action-btn:hover:not(:disabled) { border-color: var(--a-primary); color: var(--a-primary); background: var(--a-primary-soft); }
         .action-btn.primary { background: linear-gradient(135deg,#4f645b 0%,#43574f 100%); color: #e7fef3; border: none; font-weight: 800; }
         .action-btn.primary:hover:not(:disabled) { box-shadow: 0 4px 14px rgba(79,100,91,0.25); }
-        .action-btn.danger { color: #dc2626; border-color: #fecaca; font-weight: 800; }
-        .action-btn.danger:hover:not(:disabled) { background: #fef2f2; }
+        .action-btn.danger { color: var(--a-error); border-color: var(--a-error-border); font-weight: 800; }
+        .action-btn.danger:hover:not(:disabled) { background: var(--a-error-bg); }
         .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
       `}</style>
 
@@ -988,11 +988,11 @@ export default function BookingDetailPage() {
           style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2100, padding: 20 }}
           onClick={(e) => e.target === e.currentTarget && setExtendStayConflict(null)}
         >
-          <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 760, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.18)", padding: 28 }}>
+          <div style={{ background: "var(--a-surface-raised)", borderRadius: 24, width: "100%", maxWidth: 760, boxShadow: "var(--a-shadow-lg)", border: "1px solid var(--a-border)", padding: 28 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 18 }}>
               <div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>Gợi ý phòng thay thế để ở thêm</h3>
-                <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--a-text)", margin: "0 0 6px" }}>Gợi ý phòng thay thế để ở thêm</h3>
+                <p style={{ fontSize: 13, color: "var(--a-text-muted)", margin: 0 }}>
                   Phòng hiện tại đã bị trùng lịch trong phần ngày ở thêm. Bạn có thể chọn một phòng khác để chuyển sang ở tiếp.
                 </p>
               </div>
@@ -1006,8 +1006,8 @@ export default function BookingDetailPage() {
                 <div
                   key={room.id}
                   style={{
-                    border: "1px solid #dbeafe",
-                    background: "#f8fbff",
+                    border: "1px solid var(--a-info-border)",
+                    background: "var(--a-info-bg)",
                     borderRadius: 16,
                     padding: 16,
                     display: "flex",
@@ -1017,13 +1017,13 @@ export default function BookingDetailPage() {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "#1c1917", marginBottom: 4 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "var(--a-text)", marginBottom: 4 }}>
                       Phòng {room.roomNumber} • {room.roomTypeName}
                     </div>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
+                    <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginBottom: 4 }}>
                       Tầng {room.floor} • {room.sameRoomType ? "Cùng hạng phòng" : "Khác hạng phòng"}
                     </div>
-                    <div style={{ fontSize: 12, color: room.sameRoomType ? "#166534" : "#1d4ed8", fontWeight: 700 }}>
+                    <div style={{ fontSize: 12, color: room.sameRoomType ? "var(--a-success)" : "var(--a-info)", fontWeight: 700 }}>
                       {room.sameRoomType ? "Ưu tiên cùng hạng" : "Có thể đổi sang hạng khác"} • {formatCurrency(room.basePrice)}/đêm
                     </div>
                   </div>
@@ -1044,15 +1044,15 @@ export default function BookingDetailPage() {
       <div style={{ marginBottom: 28 }}>
         <button
           onClick={() => navigate("/admin/bookings")}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#6b7280", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, marginBottom: 12 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "var(--a-text-muted)", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, marginBottom: 12 }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
           Quay lại danh sách
         </button>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.025em", margin: 0 }}>
+          <h2 style={{ fontSize: 26, fontWeight: 800, color: "var(--a-text)", letterSpacing: "-0.025em", margin: 0 }}>
             Chi tiết Đặt phòng
-            {booking && <span style={{ marginLeft: 12, color: "#9ca3af", fontWeight: 600, fontSize: 16 }}>#{booking.bookingCode}</span>}
+            {booking && <span style={{ marginLeft: 12, color: "var(--a-text-soft)", fontWeight: 600, fontSize: 16 }}>#{booking.bookingCode}</span>}
           </h2>
           {booking && <BookingStatusBadge status={booking.status} />}
         </div>
@@ -1063,49 +1063,49 @@ export default function BookingDetailPage() {
           {/* Main Info Column */}
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             {/* Summary Card */}
-            <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: "0 0 20px" }}>Thông tin khách hàng & Báo giá</h3>
+            <div style={{ background: "var(--a-surface-raised)", borderRadius: 18, border: "1px solid var(--a-border)", padding: 24, boxShadow: "var(--a-shadow-sm)" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--a-text)", margin: "0 0 20px" }}>Thông tin khách hàng & Báo giá</h3>
               {booking.status === "Checked_out_pending_settlement" && (
-                <div style={{ marginBottom: 20, padding: "12px 14px", borderRadius: 12, border: "1px solid #fed7aa", background: "#fff7ed", color: "#9a3412", fontSize: 13, fontWeight: 700 }}>
+                <div style={{ marginBottom: 20, padding: "12px 14px", borderRadius: 12, border: "1px solid var(--a-warning-border)", background: "var(--a-warning-bg)", color: "var(--a-warning)", fontSize: 13, fontWeight: 700 }}>
                   Khách đã check-out. Booking này đang chờ quyết toán hóa đơn trước khi chuyển sang Completed.
                 </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
                 <div>
                   <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Tên khách hàng</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#1c1917" }}>{booking.guestName || "-"}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--a-text)" }}>{booking.guestName || "-"}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Số điện thoại</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#1c1917" }}>{booking.guestPhone || "-"}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--a-text)" }}>{booking.guestPhone || "-"}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Email</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#1c1917" }}>{booking.guestEmail || "-"}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--a-text)" }}>{booking.guestEmail || "-"}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Nguồn booking</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#1c1917" }}>{getBookingSourceLabel(booking.source)}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--a-text)" }}>{getBookingSourceLabel(booking.source)}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Tổng dự kiến</div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#16a34a" }}>{formatCurrency(booking.totalEstimatedAmount)}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--a-success)" }}>{formatCurrency(booking.totalEstimatedAmount)}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Đã thu trước lưu trú</div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#4f645b" }}>{formatCurrency(booking.depositAmount)}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "var(--a-primary)" }}>{formatCurrency(booking.depositAmount)}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Mức cần để xác nhận</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#1c1917" }}>{formatCurrency(booking.paymentSummary?.requiredBookingDepositAmount || 0)}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--a-text)" }}>{formatCurrency(booking.paymentSummary?.requiredBookingDepositAmount || 0)}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Mức cần để nhận phòng</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#1c1917" }}>{formatCurrency(booking.paymentSummary?.requiredCheckInAmount || 0)}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--a-text)" }}>{formatCurrency(booking.paymentSummary?.requiredCheckInAmount || 0)}</div>
                 </div>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <div style={{ fontSize: 12, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Tiến độ thanh toán trước lưu trú</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#1c1917" }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--a-text)" }}>
                     {booking.paymentSummary?.canCheckIn
                       ? "Booking đã đủ điều kiện nhận phòng."
                       : booking.status === "Pending"
@@ -1115,41 +1115,41 @@ export default function BookingDetailPage() {
                 </div>
                 {booking.status === "Cancelled" && (
                   <div style={{ gridColumn: "1 / -1" }}>
-                    <div style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Lý do hủy</div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "#b91c1c", background: "#fef2f2", padding: "10px 14px", borderRadius: 10, border: "1px dashed #fecaca" }}>{booking.cancellationReason || "-"}</div>
+                    <div style={{ fontSize: 12, color: "var(--a-error)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}>Lý do hủy</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "var(--a-error)", background: "var(--a-error-bg)", padding: "10px 14px", borderRadius: 10, border: "1px dashed var(--a-error-border)" }}>{booking.cancellationReason || "-"}</div>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Rooms Table */}
-            <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-              <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f0ea", background: "rgba(249,248,243,.6)" }}>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: 0 }}>Danh sách hạng phòng booking</h3>
+            <div style={{ background: "var(--a-surface-raised)", borderRadius: 18, border: "1px solid var(--a-border)", overflow: "hidden", boxShadow: "var(--a-shadow-sm)" }}>
+              <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--a-border)", background: "var(--a-surface-soft)" }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--a-text)", margin: 0 }}>Danh sách hạng phòng booking</h3>
               </div>
               {isMobile && (
                 <div style={{ display: "grid", gap: 12, padding: 14 }}>
                   {(booking.bookingDetails || []).map((detail) => (
-                    <article key={detail.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12 }}>
+                    <article key={detail.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "var(--a-surface)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
                         <div>
-                          <div style={{ fontSize: 16, fontWeight: 900, color: "#1c1917" }}>{detail.roomTypeName || "-"}</div>
-                          <div style={{ marginTop: 6, display: "inline-flex", padding: "4px 10px", borderRadius: 999, background: "#f0faf5", color: "#1a3826", fontWeight: 900, fontSize: 12, border: "1px solid #a7f3d0" }}>
+                          <div style={{ fontSize: 16, fontWeight: 900, color: "var(--a-text)" }}>{detail.roomTypeName || "-"}</div>
+                          <div style={{ marginTop: 6, display: "inline-flex", padding: "4px 10px", borderRadius: 999, background: "var(--a-success-bg)", color: "var(--a-success)", fontWeight: 900, fontSize: 12, border: "1px solid var(--a-success-border)" }}>
                             Phòng {detail.roomName || "N/A"}
                           </div>
                         </div>
-                        <div style={{ color: "#4f645b", fontWeight: 900 }}>{formatCurrency(detail.pricePerNight)}</div>
+                        <div style={{ color: "var(--a-primary)", fontWeight: 900 }}>{formatCurrency(detail.pricePerNight)}</div>
                       </div>
                       {isTransferExtensionDetail(detail) && (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, width: "fit-content", padding: "4px 10px", borderRadius: 999, background: "#eff6ff", color: "#1d4ed8", fontSize: 11, fontWeight: 800, border: "1px solid #bfdbfe" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, width: "fit-content", padding: "4px 10px", borderRadius: 999, background: "var(--a-info-bg)", color: "var(--a-info)", fontSize: 11, fontWeight: 800, border: "1px solid var(--a-info-border)" }}>
                           <span className="material-symbols-outlined" style={{ fontSize: 14 }}>swap_horiz</span>
                           Chặng chuyển phòng
                         </span>
                       )}
-                      <div style={{ display: "grid", gap: 4, fontSize: 13, color: "#57534e" }}>
+                      <div style={{ display: "grid", gap: 4, fontSize: 13, color: "var(--a-text-muted)" }}>
                         <div><strong>In:</strong> {formatDate(detail.checkInDate)}</div>
                         <div><strong>Out:</strong> {formatDate(detail.checkOutDate)}</div>
-                        {detail.note && <div style={{ color: "#6b7280", lineHeight: 1.45 }}>{detail.note}</div>}
+                        {detail.note && <div style={{ color: "var(--a-text-soft)", lineHeight: 1.45 }}>{detail.note}</div>}
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                         {!detail.roomId && (booking.status === "Confirmed" || booking.status === "Checked_in") && (
@@ -1175,19 +1175,19 @@ export default function BookingDetailPage() {
               <div className="overflow-x-auto" style={{ display: isMobile ? "none" : "block" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "white" }}>
-                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Hạng phòng</th>
-                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Phòng (N/A nếu chưa gán)</th>
-                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Thời gian</th>
-                    <th style={{ padding: "14px 24px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Giá/Đêm</th>
-                    <th style={{ padding: "14px 24px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "#6b7280", borderBottom: "1px solid #f1f0ea", textTransform: "uppercase", letterSpacing: ".05em" }}>Nghiệp vụ</th>
+                  <tr style={{ background: "var(--a-surface)" }}>
+                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", borderBottom: "1px solid var(--a-border)", textTransform: "uppercase", letterSpacing: ".05em" }}>Hạng phòng</th>
+                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", borderBottom: "1px solid var(--a-border)", textTransform: "uppercase", letterSpacing: ".05em" }}>Phòng (N/A nếu chưa gán)</th>
+                    <th style={{ padding: "14px 24px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", borderBottom: "1px solid var(--a-border)", textTransform: "uppercase", letterSpacing: ".05em" }}>Thời gian</th>
+                    <th style={{ padding: "14px 24px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", borderBottom: "1px solid var(--a-border)", textTransform: "uppercase", letterSpacing: ".05em" }}>Giá/Đêm</th>
+                    <th style={{ padding: "14px 24px", textAlign: "right", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", borderBottom: "1px solid var(--a-border)", textTransform: "uppercase", letterSpacing: ".05em" }}>Nghiệp vụ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(booking.bookingDetails || []).map((detail) => (
                     <tr key={detail.id} className="table-row">
                       <td style={{ padding: "16px 24px" }}>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{detail.roomTypeName || "-"}</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: "var(--a-text)" }}>{detail.roomTypeName || "-"}</div>
                         {isTransferExtensionDetail(detail) && (
                           <div style={{ marginTop: 8 }}>
                             <span
@@ -1197,11 +1197,11 @@ export default function BookingDetailPage() {
                                 gap: 6,
                                 padding: "4px 10px",
                                 borderRadius: 999,
-                                background: "#eff6ff",
-                                color: "#1d4ed8",
+                                background: "var(--a-info-bg)",
+                                color: "var(--a-info)",
                                 fontSize: 11,
                                 fontWeight: 800,
-                                border: "1px solid #bfdbfe",
+                                border: "1px solid var(--a-info-border)",
                               }}
                             >
                               <span className="material-symbols-outlined" style={{ fontSize: 14 }}>swap_horiz</span>
@@ -1211,20 +1211,20 @@ export default function BookingDetailPage() {
                         )}
                       </td>
                       <td style={{ padding: "16px 24px" }}>
-                        <div style={{ padding: "3px 10px", borderRadius: 8, background: "#f0faf5", color: "#1a3826", fontWeight: 800, fontSize: 14, display: "inline-block", border: "1.5px solid #a7f3d0" }}>
+                        <div style={{ padding: "3px 10px", borderRadius: 8, background: "var(--a-success-bg)", color: "var(--a-success)", fontWeight: 800, fontSize: 14, display: "inline-block", border: "1px solid var(--a-success-border)" }}>
                           {detail.roomName || "-"}
                         </div>
                         {isTransferExtensionDetail(detail) && (
-                          <div style={{ fontSize: 11, color: "#6b7280", marginTop: 8 }}>
+                          <div style={{ fontSize: 11, color: "var(--a-text-muted)", marginTop: 8 }}>
                             Đây là phòng được thêm mới để nối tiếp thời gian ở sau khi đổi phòng.
                           </div>
                         )}
                       </td>
                       <td style={{ padding: "16px 24px" }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1c1917" }}>In: {formatDate(detail.checkInDate)}</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#6b7280", marginTop: 4 }}>Out: {formatDate(detail.checkOutDate)}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--a-text)" }}>In: {formatDate(detail.checkInDate)}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--a-text-muted)", marginTop: 4 }}>Out: {formatDate(detail.checkOutDate)}</div>
                         {detail.note && (
-                          <div style={{ fontSize: 11, color: "#6b7280", marginTop: 8, lineHeight: 1.45 }}>
+                          <div style={{ fontSize: 11, color: "var(--a-text-muted)", marginTop: 8, lineHeight: 1.45 }}>
                             {detail.note}
                           </div>
                         )}
@@ -1262,8 +1262,8 @@ export default function BookingDetailPage() {
           {/* Right Column: Actions & Timeline */}
           <div className="w-full xl:w-[320px] shrink-0 flex flex-col gap-6">
             {/* Actions Card */}
-            <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: "0 0 16px" }}>Hành động</h3>
+            <div style={{ background: "var(--a-surface-raised)", borderRadius: 18, border: "1px solid var(--a-border)", padding: 24, boxShadow: "var(--a-shadow-sm)" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--a-text)", margin: "0 0 16px" }}>Hành động</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <button className="action-btn primary" disabled={!canRun("collect_deposit")} onClick={() => runAction("collect_deposit")}>
                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>payments</span> Thu cọc booking
@@ -1293,23 +1293,23 @@ export default function BookingDetailPage() {
             </div>
 
             {/* Timeline Card */}
-            <div style={{ background: "white", borderRadius: 18, border: "1px solid #f1f0ea", padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,.06)" }}>
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: "0 0 20px" }}>Lịch sử hoạt động</h3>
-              {timelineItems.length === 0 && <div style={{ fontSize: 13, color: "#9ca3af" }}>Chưa có hoạt động nào.</div>}
+            <div style={{ background: "var(--a-surface-raised)", borderRadius: 18, border: "1px solid var(--a-border)", padding: 24, boxShadow: "var(--a-shadow-sm)" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--a-text)", margin: "0 0 20px" }}>Lịch sử hoạt động</h3>
+              {timelineItems.length === 0 && <div style={{ fontSize: 13, color: "var(--a-text-soft)" }}>Chưa có hoạt động nào.</div>}
               <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                 {timelineItems.map((item, index) => (
                   <div key={`${item.type}-${index}`} style={{ display: "flex", gap: 14, position: "relative" }}>
                     {/* Line */}
                     {index < timelineItems.length - 1 && (
-                      <div style={{ position: "absolute", left: 7, top: 20, bottom: -10, width: 2, background: "#f1f0ea" }} />
+                      <div style={{ position: "absolute", left: 7, top: 20, bottom: -10, width: 2, background: "var(--a-border)" }} />
                     )}
                     {/* Dot */}
-                    <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#e7fef3", border: "2px solid #4f645b", flexShrink: 0, marginTop: 4, zIndex: 1 }} />
+                    <div style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--a-primary-soft)", border: "2px solid var(--a-primary)", flexShrink: 0, marginTop: 4, zIndex: 1 }} />
                     {/* Content */}
                     <div style={{ paddingBottom: 20 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "#1c1917" }}>{item.label}</div>
-                      <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>{formatDate(item.at)} • {item.type}</div>
-                      {item.note && <div style={{ fontSize: 13, color: "#4b5563", background: "#f9f8f3", padding: "8px 12px", borderRadius: 8, marginTop: 8 }}>{item.note}</div>}
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--a-text)" }}>{item.label}</div>
+                      <div style={{ fontSize: 12, color: "var(--a-text-soft)", marginTop: 2 }}>{formatDate(item.at)} • {item.type}</div>
+                      {item.note && <div style={{ fontSize: 13, color: "var(--a-text-muted)", background: "var(--a-surface-soft)", padding: "8px 12px", borderRadius: 8, marginTop: 8, border: "1px solid var(--a-border)" }}>{item.note}</div>}
                     </div>
                   </div>
                 ))}

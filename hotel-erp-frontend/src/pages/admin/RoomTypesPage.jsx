@@ -119,10 +119,10 @@ function CreateRoomTypeModal({ onClose, onCreated, showToast }) {
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", backdropFilter: "blur(5px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 220, padding: 16 }}
             onClick={e => e.target === e.currentTarget && onClose()}
         >
-            <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 640, maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,.18)" }}>
-                <div style={{ padding: "22px 28px 16px", borderBottom: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: 0, fontFamily: "Manrope, sans-serif" }}>Thêm hạng phòng</h3>
-                    <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 6, borderRadius: 8, color: "#9ca3af", display: "flex" }}>
+            <div style={{ background: "var(--a-surface)", border: "1px solid var(--a-border)", borderRadius: 24, width: "100%", maxWidth: 640, maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "var(--a-shadow-lg)" }}>
+                <div style={{ padding: "22px 28px 16px", borderBottom: "1px solid var(--a-border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--a-text)", margin: 0, fontFamily: "Manrope, sans-serif" }}>Thêm hạng phòng</h3>
+                    <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 6, borderRadius: 8, color: "var(--a-text-soft)", display: "flex" }}>
                         <span className="material-symbols-outlined">close</span>
                     </button>
                 </div>
@@ -137,21 +137,21 @@ function CreateRoomTypeModal({ onClose, onCreated, showToast }) {
                         ["Loại giường", "bedType", "text", "Vd: King bed"],
                     ].map(([label, key, type, placeholder]) => (
                         <label key={key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            <span style={{ fontSize: 12, color: "#4b5563", fontWeight: 700 }}>{label}</span>
+                            <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 700 }}>{label}</span>
                             <input
                                 type={type}
                                 value={form[key]}
                                 placeholder={placeholder}
                                 onChange={e => updateField(key, e.target.value)}
-                                style={{ height: 40, borderRadius: 10, border: "1.5px solid #d6d3d1", padding: "0 12px", fontSize: 13, outline: "none" }}
+                                style={{ height: 40, borderRadius: 10, border: "1.5px solid var(--a-border)", background: "var(--a-surface-raised)", color: "var(--a-text)", padding: "0 12px", fontSize: 13, outline: "none" }}
                             />
                         </label>
                     ))}
 
                     <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1 / -1" }}>
-                        <span style={{ fontSize: 12, color: "#4b5563", fontWeight: 700 }}>Hình ảnh hạng phòng</span>
+                        <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 700 }}>Hình ảnh hạng phòng</span>
                         <div style={{ display: "flex", gap: 14, alignItems: "stretch" }}>
-                            <label style={{ minWidth: 180, height: 144, borderRadius: 14, border: "1.5px dashed #b8c8be", background: "#f8faf9", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", color: "#4f645b", fontSize: 12, fontWeight: 700 }}>
+                            <label style={{ minWidth: 180, height: 144, borderRadius: 14, border: "1.5px dashed var(--a-border-strong)", background: "var(--a-surface-raised)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", color: "var(--a-primary)", fontSize: 12, fontWeight: 700 }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: 28 }}>upload</span>
                                 Chọn ảnh
                                 <input
@@ -161,11 +161,11 @@ function CreateRoomTypeModal({ onClose, onCreated, showToast }) {
                                     onChange={e => setImageFile(e.target.files?.[0] || null)}
                                 />
                             </label>
-                            <div style={{ flex: 1, height: 144, borderRadius: 14, overflow: "hidden", background: "#f1f5f3", border: "1px solid #e2e8e1", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <div style={{ flex: 1, height: 144, borderRadius: 14, overflow: "hidden", background: "var(--a-surface-soft)", border: "1px solid var(--a-border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 {imagePreview ? (
                                     <img src={imagePreview} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 ) : (
-                                    <div style={{ textAlign: "center", color: "#94a3b8" }}>
+                                    <div style={{ textAlign: "center", color: "var(--a-text-soft)" }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: 34, display: "block", marginBottom: 6 }}>image</span>
                                         <span style={{ fontSize: 12, fontWeight: 600 }}>Chưa chọn ảnh</span>
                                     </div>
@@ -173,32 +173,32 @@ function CreateRoomTypeModal({ onClose, onCreated, showToast }) {
                             </div>
                         </div>
                         {imageFile && (
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "8px 10px", borderRadius: 10, background: "#f5f8f6", border: "1px solid #d9e4dd" }}>
-                                <span style={{ fontSize: 12, color: "#4b5563", fontWeight: 600, wordBreak: "break-all" }}>{imageFile.name}</span>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "8px 10px", borderRadius: 10, background: "var(--a-surface-soft)", border: "1px solid var(--a-border)" }}>
+                                <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 600, wordBreak: "break-all" }}>{imageFile.name}</span>
                                 <button type="button" onClick={() => setImageFile(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 12, fontWeight: 700 }}>
                                     Bỏ ảnh
                                 </button>
                             </div>
                         )}
-                        <span style={{ fontSize: 12, color: "#6b7280" }}>
+                        <span style={{ fontSize: 12, color: "var(--a-text-muted)" }}>
                             Ảnh sẽ được tải lên Cloudinary ngay sau khi thêm hạng phòng thành công.
                         </span>
                     </label>
 
                     <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1 / -1" }}>
-                        <span style={{ fontSize: 12, color: "#4b5563", fontWeight: 700 }}>Mô tả</span>
+                        <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 700 }}>Mô tả</span>
                         <textarea
                             value={form.description}
                             placeholder="Mô tả ngắn về hạng phòng..."
                             onChange={e => updateField("description", e.target.value)}
                             rows={4}
-                            style={{ borderRadius: 10, border: "1.5px solid #d6d3d1", padding: "10px 12px", fontSize: 13, outline: "none", resize: "vertical" }}
+                            style={{ borderRadius: 10, border: "1.5px solid var(--a-border)", background: "var(--a-surface-raised)", color: "var(--a-text)", padding: "10px 12px", fontSize: 13, outline: "none", resize: "vertical" }}
                         />
                     </label>
                 </div>
 
-                <div style={{ padding: "14px 28px 22px", borderTop: "1px solid #f1f0ea", display: "flex", justifyContent: "flex-end", gap: 10, flexShrink: 0 }}>
-                    <button onClick={onClose} disabled={submitting} style={{ padding: "9px 16px", borderRadius: 12, background: "#f5f5f4", border: "1.5px solid #e7e5e4", color: "#57534e", fontWeight: 700, fontSize: 12, cursor: "pointer", opacity: submitting ? 0.6 : 1 }}>
+                <div style={{ padding: "14px 28px 22px", borderTop: "1px solid var(--a-border)", display: "flex", justifyContent: "flex-end", gap: 10, flexShrink: 0 }}>
+                    <button onClick={onClose} disabled={submitting} style={{ padding: "9px 16px", borderRadius: 12, background: "var(--a-surface-raised)", border: "1.5px solid var(--a-border)", color: "var(--a-text-muted)", fontWeight: 700, fontSize: 12, cursor: "pointer", opacity: submitting ? 0.6 : 1 }}>
                         Hủy
                     </button>
                     <button onClick={submit} disabled={submitting} style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "linear-gradient(135deg,#4f645b,#43574f)", color: "#e7fef3", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, opacity: submitting ? 0.6 : 1 }}>
@@ -290,10 +290,10 @@ function EditRoomTypeModal({ roomType, onClose, onUpdated, showToast }) {
             style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", backdropFilter: "blur(5px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 230, padding: 16 }}
             onClick={e => e.target === e.currentTarget && onClose()}
         >
-            <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 640, maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,.18)" }}>
-                <div style={{ padding: "22px 28px 16px", borderBottom: "1px solid #f1f0ea", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: 0, fontFamily: "Manrope, sans-serif" }}>Chỉnh sửa hạng phòng</h3>
-                    <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 6, borderRadius: 8, color: "#9ca3af", display: "flex" }}>
+            <div style={{ background: "var(--a-surface)", border: "1px solid var(--a-border)", borderRadius: 24, width: "100%", maxWidth: 640, maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "var(--a-shadow-lg)" }}>
+                <div style={{ padding: "22px 28px 16px", borderBottom: "1px solid var(--a-border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--a-text)", margin: 0, fontFamily: "Manrope, sans-serif" }}>Chỉnh sửa hạng phòng</h3>
+                    <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 6, borderRadius: 8, color: "var(--a-text-soft)", display: "flex" }}>
                         <span className="material-symbols-outlined">close</span>
                     </button>
                 </div>
@@ -308,21 +308,21 @@ function EditRoomTypeModal({ roomType, onClose, onUpdated, showToast }) {
                         ["Loại giường", "bedType", "text", "Vd: King bed"],
                     ].map(([label, key, type, placeholder]) => (
                         <label key={key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            <span style={{ fontSize: 12, color: "#4b5563", fontWeight: 700 }}>{label}</span>
+                            <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 700 }}>{label}</span>
                             <input
                                 type={type}
                                 value={form[key]}
                                 placeholder={placeholder}
                                 onChange={e => updateField(key, e.target.value)}
-                                style={{ height: 40, borderRadius: 10, border: "1.5px solid #d6d3d1", padding: "0 12px", fontSize: 13, outline: "none" }}
+                                style={{ height: 40, borderRadius: 10, border: "1.5px solid var(--a-border)", background: "var(--a-surface-raised)", color: "var(--a-text)", padding: "0 12px", fontSize: 13, outline: "none" }}
                             />
                         </label>
                     ))}
 
                     <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1 / -1" }}>
-                        <span style={{ fontSize: 12, color: "#4b5563", fontWeight: 700 }}>Hình ảnh hạng phòng</span>
+                        <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 700 }}>Hình ảnh hạng phòng</span>
                         <div style={{ display: "flex", gap: 14, alignItems: "stretch" }}>
-                            <label style={{ minWidth: 180, height: 144, borderRadius: 14, border: "1.5px dashed #b8c8be", background: "#f8faf9", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", color: "#4f645b", fontSize: 12, fontWeight: 700 }}>
+                            <label style={{ minWidth: 180, height: 144, borderRadius: 14, border: "1.5px dashed var(--a-border-strong)", background: "var(--a-surface-raised)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", color: "var(--a-primary)", fontSize: 12, fontWeight: 700 }}>
                                 <span className="material-symbols-outlined" style={{ fontSize: 28 }}>upload</span>
                                 Chọn ảnh mới
                                 <input
@@ -332,13 +332,13 @@ function EditRoomTypeModal({ roomType, onClose, onUpdated, showToast }) {
                                     onChange={e => setImageFile(e.target.files?.[0] || null)}
                                 />
                             </label>
-                            <div style={{ flex: 1, height: 144, borderRadius: 14, overflow: "hidden", background: "#f1f5f3", border: "1px solid #e2e8e1", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <div style={{ flex: 1, height: 144, borderRadius: 14, overflow: "hidden", background: "var(--a-surface-soft)", border: "1px solid var(--a-border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 {imagePreview ? (
                                     <img src={imagePreview} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 ) : roomType?.images?.[0]?.imageUrl ? (
                                     <img src={roomType.images[0].imageUrl} alt={roomType.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 ) : (
-                                    <div style={{ textAlign: "center", color: "#94a3b8" }}>
+                                    <div style={{ textAlign: "center", color: "var(--a-text-soft)" }}>
                                         <span className="material-symbols-outlined" style={{ fontSize: 34, display: "block", marginBottom: 6 }}>image</span>
                                         <span style={{ fontSize: 12, fontWeight: 600 }}>Ch?a c? ?nh</span>
                                     </div>
@@ -346,32 +346,32 @@ function EditRoomTypeModal({ roomType, onClose, onUpdated, showToast }) {
                             </div>
                         </div>
                         {imageFile && (
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "8px 10px", borderRadius: 10, background: "#f5f8f6", border: "1px solid #d9e4dd" }}>
-                                <span style={{ fontSize: 12, color: "#4b5563", fontWeight: 600, wordBreak: "break-all" }}>{imageFile.name}</span>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "8px 10px", borderRadius: 10, background: "var(--a-surface-soft)", border: "1px solid var(--a-border)" }}>
+                                <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 600, wordBreak: "break-all" }}>{imageFile.name}</span>
                                 <button type="button" onClick={() => setImageFile(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", fontSize: 12, fontWeight: 700 }}>
                                     Bỏ ảnh
                                 </button>
                             </div>
                         )}
-                        <span style={{ fontSize: 12, color: "#6b7280" }}>
+                        <span style={{ fontSize: 12, color: "var(--a-text-muted)" }}>
                             Khi lưu, ảnh mới sẽ được tải lên Cloudinary và thêm vào gallery của hạng phòng này.
                         </span>
                     </label>
 
                     <label style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1 / -1" }}>
-                        <span style={{ fontSize: 12, color: "#4b5563", fontWeight: 700 }}>Mô tả</span>
+                        <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 700 }}>Mô tả</span>
                         <textarea
                             value={form.description}
                             placeholder="Mô tả ngắn về hạng phòng..."
                             onChange={e => updateField("description", e.target.value)}
                             rows={4}
-                            style={{ borderRadius: 10, border: "1.5px solid #d6d3d1", padding: "10px 12px", fontSize: 13, outline: "none", resize: "vertical" }}
+                            style={{ borderRadius: 10, border: "1.5px solid var(--a-border)", background: "var(--a-surface-raised)", color: "var(--a-text)", padding: "10px 12px", fontSize: 13, outline: "none", resize: "vertical" }}
                         />
                     </label>
                 </div>
 
-                <div style={{ padding: "14px 28px 22px", borderTop: "1px solid #f1f0ea", display: "flex", justifyContent: "flex-end", gap: 10, flexShrink: 0 }}>
-                    <button onClick={onClose} disabled={submitting} style={{ padding: "9px 16px", borderRadius: 12, background: "#f5f5f4", border: "1.5px solid #e7e5e4", color: "#57534e", fontWeight: 700, fontSize: 12, cursor: "pointer", opacity: submitting ? 0.6 : 1 }}>
+                <div style={{ padding: "14px 28px 22px", borderTop: "1px solid var(--a-border)", display: "flex", justifyContent: "flex-end", gap: 10, flexShrink: 0 }}>
+                    <button onClick={onClose} disabled={submitting} style={{ padding: "9px 16px", borderRadius: 12, background: "var(--a-surface-raised)", border: "1.5px solid var(--a-border)", color: "var(--a-text-muted)", fontWeight: 700, fontSize: 12, cursor: "pointer", opacity: submitting ? 0.6 : 1 }}>
                         Hủy
                     </button>
                     <button onClick={submit} disabled={submitting} style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "linear-gradient(135deg,#4f645b,#43574f)", color: "#e7fef3", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, opacity: submitting ? 0.6 : 1 }}>
@@ -526,7 +526,7 @@ function RoomTypeDetailModal({ roomTypeId, onClose, onUpdated, showToast }) {
                                             ))}
                                         </div>
                                     )}
-                                    <p style={{ fontSize: 12, color: "#6b7280", margin: "8px 0 0" }}>
+                                    <p style={{ fontSize: 12, color: "var(--a-text-muted)", margin: "8px 0 0" }}>
                                         Chọn ảnh nhỏ bên dưới để xem nhanh và đặt làm ảnh chính cho thẻ hạng phòng.
                                         {settingPrimaryId && " Đang cập nhật ảnh chính..."}
                                     </p>
@@ -542,9 +542,9 @@ function RoomTypeDetailModal({ roomTypeId, onClose, onUpdated, showToast }) {
                                     ["Sức chứa người lớn", rt.capacityAdults || "—"],
                                     ["Sức chứa trẻ em", rt.capacityChildren != null ? rt.capacityChildren : "—"],
                                 ].map(([k, v]) => (
-                                    <div key={k} style={{ padding: "10px 14px", background: "#f9f8f3", borderRadius: 12 }}>
-                                        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "#9ca3af", margin: "0 0 3px" }}>{k}</p>
-                                        <p style={{ fontSize: 14, fontWeight: 600, color: "#1c1917", margin: 0 }}>{v}</p>
+                                    <div key={k} style={{ padding: "10px 14px", background: "var(--a-surface-raised)", border: "1px solid var(--a-border)", borderRadius: 12 }}>
+                                        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-soft)", margin: "0 0 3px" }}>{k}</p>
+                                        <p style={{ fontSize: 14, fontWeight: 600, color: "var(--a-text)", margin: 0 }}>{v}</p>
                                     </div>
                                 ))}
                             </div>
@@ -552,12 +552,12 @@ function RoomTypeDetailModal({ roomTypeId, onClose, onUpdated, showToast }) {
                             {/* Amenities */}
                             {rt.amenities && rt.amenities.length > 0 && (
                                 <div style={{ marginBottom: 16 }}>
-                                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "#9ca3af", margin: "0 0 10px" }}>
+                                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--a-text-soft)", margin: "0 0 10px" }}>
                                         Tiện nghi ({rt.amenities.length})
                                     </p>
                                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                                         {rt.amenities.map(a => (
-                                            <span key={a.id} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", background: "#e8f5f0", color: "#2f433c", borderRadius: 9999, fontSize: 12, fontWeight: 600 }}>
+                                            <span key={a.id} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", background: "var(--a-success-bg)", color: "var(--a-success)", border: "1px solid var(--a-success-border)", borderRadius: 9999, fontSize: 12, fontWeight: 600 }}>
                                                 <span className="material-symbols-outlined" style={{ fontSize: 14, fontVariationSettings: "'FILL' 1" }}>
                                                     {a.iconUrl || "star"}
                                                 </span>
@@ -570,9 +570,9 @@ function RoomTypeDetailModal({ roomTypeId, onClose, onUpdated, showToast }) {
 
                             {/* Description */}
                             {rt.description && (
-                                <div style={{ padding: "12px 14px", background: "#f9f8f3", borderRadius: 12, marginBottom: 16 }}>
-                                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "#9ca3af", margin: "0 0 6px" }}>Mô tả</p>
-                                    <p style={{ fontSize: 13, color: "#374151", margin: 0, lineHeight: 1.6 }}>{rt.description}</p>
+                                <div style={{ padding: "12px 14px", background: "var(--a-surface-raised)", border: "1px solid var(--a-border)", borderRadius: 12, marginBottom: 16 }}>
+                                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-soft)", margin: "0 0 6px" }}>Mô tả</p>
+                                    <p style={{ fontSize: 13, color: "var(--a-text-muted)", margin: 0, lineHeight: 1.6 }}>{rt.description}</p>
                                 </div>
                             )}
 
@@ -582,10 +582,10 @@ function RoomTypeDetailModal({ roomTypeId, onClose, onUpdated, showToast }) {
 
                 {/* Footer */}
                 {!loading && rt && (
-                    <div style={{ padding: "14px 28px 22px", borderTop: "1px solid #f1f0ea", display: "flex", justifyContent: "flex-end", gap: 10, flexShrink: 0 }}>
+                    <div style={{ padding: "14px 28px 22px", borderTop: "1px solid var(--a-border)", display: "flex", justifyContent: "flex-end", gap: 10, flexShrink: 0 }}>
                         <button
                             onClick={() => setEditOpen(true)}
-                            style={{ padding: "9px 18px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "#eef7f1", color: "#355347", border: "1.5px solid #b8d1c3", cursor: "pointer", display: "flex", alignItems: "center", gap: 7 }}
+                            style={{ padding: "9px 18px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: "var(--a-success-bg)", color: "var(--a-success)", border: "1.5px solid var(--a-success-border)", cursor: "pointer", display: "flex", alignItems: "center", gap: 7 }}
                         >
                             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
                             Chỉnh sửa
@@ -593,7 +593,7 @@ function RoomTypeDetailModal({ roomTypeId, onClose, onUpdated, showToast }) {
                         <button
                             onClick={handleToggle}
                             disabled={toggling}
-                            style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: rt.isActive ? "#fff7ed" : "linear-gradient(135deg,#4f645b,#43574f)", color: rt.isActive ? "#ea580c" : "#e7fef3", border: rt.isActive ? "1.5px solid #fed7aa" : "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, opacity: toggling ? 0.6 : 1 }}
+                            style={{ padding: "9px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700, background: rt.isActive ? "var(--a-warning-bg)" : "linear-gradient(135deg,#4f645b,#43574f)", color: rt.isActive ? "var(--a-warning)" : "#e7fef3", border: rt.isActive ? "1.5px solid var(--a-warning-border)" : "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, opacity: toggling ? 0.6 : 1 }}
                         >
                             {toggling && <div style={{ width: 13, height: 13, border: "2px solid rgba(255,255,255,.3)", borderTopColor: "currentColor", borderRadius: "50%", animation: "spin .65s linear infinite" }} />}
                             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{rt.isActive ? "toggle_off" : "toggle_on"}</span>
@@ -689,11 +689,11 @@ export default function RoomTypesPage() {
                 {/* Page Header */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
                     <div>
-                        <h2 style={{ fontSize: 26, fontWeight: 800, color: "#1c1917", letterSpacing: "-0.025em", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>
+                        <h2 style={{ fontSize: 26, fontWeight: 800, color: "var(--a-text)", letterSpacing: "-0.025em", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>
                             Hạng phòng
                         </h2>
-                        <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-                            Tổng <span style={{ fontWeight: 700, color: "#1c1917" }}>{stats.total}</span> hạng phòng
+                        <p style={{ fontSize: 13, color: "var(--a-text-muted)", margin: 0 }}>
+                            Tổng <span style={{ fontWeight: 700, color: "var(--a-text)" }}>{stats.total}</span> hạng phòng
                         </p>
                     </div>
                     <button
@@ -708,9 +708,9 @@ export default function RoomTypesPage() {
                 {/* Stat Cards */}
                 <div className="grid grid-cols-1 min-[420px]:grid-cols-3 gap-3 mb-6">
                     {[
-                        { label: "TỔNG", value: stats.total, bg: "#f8f9fa", color: "#6b7280", border: "#f1f0ea", filter: "all" },
-                        { label: "ĐANG HOẠT ĐỘNG", value: stats.active, bg: "#ecfdf5", color: "#059669", border: "#a7f3d0", filter: "active" },
-                        { label: "ĐÃ TẮT", value: stats.inactive, bg: "#f9fafb", color: "#9ca3af", border: "#e5e7eb", filter: "inactive" },
+                        { label: "TỔNG", value: stats.total, bg: "var(--a-surface-raised)", color: "var(--a-text-muted)", border: "var(--a-border)", filter: "all" },
+                        { label: "ĐANG HOẠT ĐỘNG", value: stats.active, bg: "var(--a-success-bg)", color: "var(--a-success)", border: "var(--a-success-border)", filter: "active" },
+                        { label: "ĐÃ TẮT", value: stats.inactive, bg: "var(--a-surface-soft)", color: "var(--a-text-soft)", border: "var(--a-border)", filter: "inactive" },
                     ].map(s => (
                         <div
                             key={s.label}
@@ -736,8 +736,8 @@ export default function RoomTypesPage() {
                     </div>
                 ) : filtered.length === 0 ? (
                     <div style={{ textAlign: "center", padding: "80px 0" }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 52, color: "#d1d5db", display: "block", marginBottom: 12 }}>category</span>
-                        <p style={{ color: "#9ca3af", fontWeight: 600, fontSize: 14 }}>Không có hạng phòng nào</p>
+                        <span className="material-symbols-outlined" style={{ fontSize: 52, color: "var(--a-text-soft)", display: "block", marginBottom: 12 }}>category</span>
+                        <p style={{ color: "var(--a-text-muted)", fontWeight: 600, fontSize: 14 }}>Không có hạng phòng nào</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -749,26 +749,26 @@ export default function RoomTypesPage() {
                                     className="rt-card"
                                     onClick={() => setDetailId(rt.id)}
                                     style={{
-                                        background: "white", borderRadius: 20, overflow: "hidden",
-                                        border: "1.5px solid #f1f0ea", boxShadow: "0 2px 8px rgba(0,0,0,.04)",
+                                        background: "var(--a-surface)", borderRadius: 20, overflow: "hidden",
+                                        border: "1.5px solid var(--a-border)", boxShadow: "var(--a-shadow-sm)",
                                         opacity: rt.isActive ? 1 : 0.65,
                                     }}
                                 >
                                     {/* Image */}
-                                    <div style={{ height: 140, background: "linear-gradient(135deg,#d1e8dd,#c3dacf)", position: "relative", overflow: "hidden" }}>
+                                    <div style={{ height: 140, background: "linear-gradient(135deg, color-mix(in srgb, var(--a-primary) 24%, var(--a-surface-raised)) 0%, color-mix(in srgb, var(--a-primary) 14%, var(--a-surface-soft)) 100%)", position: "relative", overflow: "hidden" }}>
                                         {primaryImg ? (
                                             <img src={primaryImg} alt={rt.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = "none"; }} />
                                         ) : (
                                             <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                                <span className="material-symbols-outlined" style={{ fontSize: 44, color: "#4f645b", opacity: 0.5 }}>bed</span>
+                                                <span className="material-symbols-outlined" style={{ fontSize: 44, color: "var(--a-primary)", opacity: 0.5 }}>bed</span>
                                             </div>
                                         )}
                                         {/* Status badge */}
                                         <div style={{ position: "absolute", top: 10, right: 10 }}>
                                             <span style={{
                                                 fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 9999,
-                                                background: rt.isActive ? "#ecfdf5" : "#f3f4f6",
-                                                color: rt.isActive ? "#059669" : "#6b7280",
+                                                background: rt.isActive ? "var(--a-success-bg)" : "var(--a-surface-soft)",
+                                                color: rt.isActive ? "var(--a-success)" : "var(--a-text-muted)",
                                                 backdropFilter: "blur(6px)",
                                             }}>
                                                 {rt.isActive ? "Hoạt động" : "Đã tắt"}
@@ -778,17 +778,17 @@ export default function RoomTypesPage() {
 
                                     {/* Info */}
                                     <div style={{ padding: "14px 16px 16px" }}>
-                                        <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>{rt.name}</h3>
-                                        <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 10px" }}>
+                                        <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--a-text)", margin: "0 0 4px", fontFamily: "Manrope, sans-serif" }}>{rt.name}</h3>
+                                        <p style={{ fontSize: 12, color: "var(--a-text-muted)", margin: "0 0 10px" }}>
                                             {rt.bedType} · {rt.areaSqm}m²
                                         </p>
                                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                            <span style={{ fontSize: 15, fontWeight: 800, color: "#4f645b", fontFamily: "Manrope, sans-serif" }}>
+                                            <span style={{ fontSize: 15, fontWeight: 800, color: "var(--a-primary)", fontFamily: "Manrope, sans-serif" }}>
                                                 {new Intl.NumberFormat("vi-VN").format(rt.basePrice)}đ
-                                                <span style={{ fontSize: 10, fontWeight: 500, color: "#9ca3af" }}>/đêm</span>
+                                                <span style={{ fontSize: 10, fontWeight: 500, color: "var(--a-text-soft)" }}>/đêm</span>
                                             </span>
                                             {rt.amenities && rt.amenities.length > 0 && (
-                                                <span style={{ fontSize: 11, color: "#6b7280", background: "#f9f8f3", padding: "3px 8px", borderRadius: 8 }}>
+                                                <span style={{ fontSize: 11, color: "var(--a-text-muted)", background: "var(--a-surface-raised)", border: "1px solid var(--a-border)", padding: "3px 8px", borderRadius: 8 }}>
                                                     {rt.amenities.length} tiện nghi
                                                 </span>
                                             )}

@@ -24,9 +24,9 @@ import {
 const secondaryButtonStyle = {
   padding: "10px 14px",
   borderRadius: 12,
-  border: "1px solid #e7e5e4",
-  background: "white",
-  color: "#57534e",
+  border: "1px solid var(--a-border)",
+  background: "var(--a-surface)",
+  color: "var(--a-text-muted)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -287,22 +287,22 @@ export default function OrderServicePage() {
         }
       >
         {errorMessage ? (
-          <div style={{ ...panelStyle, padding: 14, marginBottom: 20, color: "#b91c1c", background: "#fff7f7" }}>
+          <div style={{ ...panelStyle, padding: 14, marginBottom: 20, color: "var(--a-error)", background: "var(--a-error-bg)", borderColor: "var(--a-error-border)" }}>
             {errorMessage}
           </div>
         ) : null}
 
         <section style={{ ...panelStyle, overflow: "hidden" }}>
-          <div style={{ padding: "18px 20px", borderBottom: "1px solid #f1f0ea" }}>
-            <strong style={{ color: "#1c1917" }}>Danh sách đơn dịch vụ</strong>
-            <p style={{ margin: "4px 0 0", color: "#78716c", fontSize: 13 }}>Tổng cộng {rows.length} đơn.</p>
+          <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--a-border)" }}>
+            <strong style={{ color: "var(--a-text)" }}>Danh sách đơn dịch vụ</strong>
+            <p style={{ margin: "4px 0 0", color: "var(--a-text-muted)", fontSize: 13 }}>Tổng cộng {rows.length} đơn.</p>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "#faf8f3", borderBottom: "1px solid #f1f0ea" }}>
+                <tr style={{ background: "var(--a-surface-raised)", borderBottom: "1px solid var(--a-border)" }}>
                   {["Booking", "Khách / Phòng", "Ngày tạo", "Tổng tiền", "Trạng thái", "Thao tác"].map((heading, idx) => (
-                    <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 5 ? "right" : "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>
+                    <th key={heading} style={{ padding: "16px 18px", textAlign: idx === 5 ? "right" : "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)" }}>
                       {heading}
                     </th>
                   ))}
@@ -310,22 +310,22 @@ export default function OrderServicePage() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} style={{ padding: 48, textAlign: "center", color: "#9ca3af" }}>Đang tải dữ liệu...</td></tr>
+                  <tr><td colSpan={6} style={{ padding: 48, textAlign: "center", color: "var(--a-text-soft)" }}>Đang tải dữ liệu...</td></tr>
                 ) : rows.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: 48, textAlign: "center", color: "#9ca3af" }}>Chưa có đơn dịch vụ nào.</td></tr>
+                  <tr><td colSpan={6} style={{ padding: 48, textAlign: "center", color: "var(--a-text-soft)" }}>Chưa có đơn dịch vụ nào.</td></tr>
                 ) : (
                   rows.map((item) => (
-                    <tr key={item.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
+                    <tr key={item.id} style={{ borderBottom: "1px solid var(--a-border)" }}>
                       <td style={{ padding: "16px 18px" }}>
-                        <strong style={{ color: "#1c1917" }}>{item.bookingCode || `#${item.bookingId || "-"}`}</strong>
-                        <div style={{ marginTop: 4, fontSize: 12, color: "#78716c" }}>Order #{item.id}</div>
+                        <strong style={{ color: "var(--a-text)" }}>{item.bookingCode || `#${item.bookingId || "-"}`}</strong>
+                        <div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>Order #{item.id}</div>
                       </td>
-                      <td style={{ padding: "16px 18px", color: "#57534e" }}>
+                      <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>
                         <div>{item.guestName || "-"}</div>
-                        <div style={{ fontSize: 12, color: "#78716c", marginTop: 4 }}>Phòng: {item.roomNumber || "-"}</div>
+                        <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginTop: 4 }}>Phòng: {item.roomNumber || "-"}</div>
                       </td>
-                      <td style={{ padding: "16px 18px", color: "#57534e" }}>{formatDate(item.orderDate)}</td>
-                      <td style={{ padding: "16px 18px", fontWeight: 700, color: "#1f2937" }}>{formatCurrency(item.totalAmount)}</td>
+                      <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>{formatDate(item.orderDate)}</td>
+                      <td style={{ padding: "16px 18px", fontWeight: 700, color: "var(--a-text)" }}>{formatCurrency(item.totalAmount)}</td>
                       <td style={{ padding: "16px 18px" }}>
                         <select
                           value={item.status || ""}
@@ -380,7 +380,7 @@ export default function OrderServicePage() {
             </div>
 
             {selectedBookingDetail ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-3" style={{ padding: 14, borderRadius: 14, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-3" style={{ padding: 14, borderRadius: 14, background: "var(--a-bg)", border: "1px solid var(--a-border)" }}>
                 <InfoChip label="Booking" value={selectedBookingDetail.bookingCode || `#${selectedBookingDetail.bookingId || "—"}`} />
                 <InfoChip label="Khách" value={selectedBookingDetail.guestName || "—"} />
                 <InfoChip label="Phòng" value={selectedBookingDetail.roomNumber || "—"} />
@@ -390,12 +390,12 @@ export default function OrderServicePage() {
 
             <div style={{ marginTop: 18 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <strong style={{ color: "#1c1917" }}>Dòng dịch vụ</strong>
+                <strong style={{ color: "var(--a-text)" }}>Dòng dịch vụ</strong>
                 <button type="button" onClick={addLine} style={secondaryButtonStyle}>Thêm dòng</button>
               </div>
               <div style={{ display: "grid", gap: 12 }}>
                 {form.items.map((item, index) => (
-                  <div key={`${index}-${item.serviceId}`} className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr_0.7fr_0.9fr_auto] gap-3 items-end" style={{ padding: 14, borderRadius: 14, border: "1px solid #f1ede7", background: "#fffdfa" }}>
+                  <div key={`${index}-${item.serviceId}`} className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr_0.7fr_0.9fr_auto] gap-3 items-end" style={{ padding: 14, borderRadius: 14, border: "1px solid var(--a-border)", background: "var(--a-surface-raised)" }}>
                     <div>
                       <label style={labelStyle}>Nhóm dịch vụ</label>
                       <select value={item.categoryId} onChange={(e) => updateItemField(index, "categoryId", e.target.value)} style={inputStyle}>
@@ -426,7 +426,7 @@ export default function OrderServicePage() {
                       Xóa dòng
                     </button>
                     {item.serviceId ? (
-                      <div style={{ gridColumn: "1 / span 5", fontSize: 12, color: "#6b7280", marginTop: -2 }}>
+                      <div style={{ gridColumn: "1 / span 5", fontSize: 12, color: "var(--a-text-muted)", marginTop: -2 }}>
                         Đơn giá gốc: {formatCurrency(activeServiceOptions.find((service) => String(service.id) === String(item.serviceId))?.price || 0)}
                       </div>
                     ) : null}
@@ -435,7 +435,7 @@ export default function OrderServicePage() {
               </div>
             </div>
 
-            {errorMessage ? <p style={{ color: "#b91c1c", marginTop: 12 }}>{errorMessage}</p> : null}
+            {errorMessage ? <p style={{ color: "var(--a-error)", marginTop: 12 }}>{errorMessage}</p> : null}
             <FormFooter submitting={submitting} onClose={() => setModalOpen(false)} />
           </form>
         </SharedModal>
@@ -452,17 +452,17 @@ export default function OrderServicePage() {
             <DetailGrid label="Trạng thái" value={getOrderStatusLabelShort(detailItem.status)} />
             <DetailGrid label="Tổng tiền" value={formatCurrency(detailItem.totalAmount)} />
             <div style={{ marginTop: 8 }}>
-              <strong style={{ color: "#1c1917" }}>Dòng dịch vụ</strong>
+              <strong style={{ color: "var(--a-text)" }}>Dòng dịch vụ</strong>
               <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
                 {(detailItem.details || []).map((line) => (
-                  <div key={line.id} style={{ padding: 14, borderRadius: 14, border: "1px solid #f1ede7", background: "#fffdfa", display: "flex", justifyContent: "space-between", gap: 12 }}>
+                  <div key={line.id} style={{ padding: 14, borderRadius: 14, border: "1px solid var(--a-border)", background: "var(--a-surface-raised)", display: "flex", justifyContent: "space-between", gap: 12 }}>
                     <div>
-                      <div style={{ fontWeight: 700, color: "#1c1917" }}>{line.serviceName || `#${line.serviceId}`}</div>
-                      <div style={{ color: "#78716c", fontSize: 12, marginTop: 4 }}>
+                      <div style={{ fontWeight: 700, color: "var(--a-text)" }}>{line.serviceName || `#${line.serviceId}`}</div>
+                      <div style={{ color: "var(--a-text-muted)", fontSize: 12, marginTop: 4 }}>
                         Số lượng: {line.quantity} · Đơn giá: {formatCurrency(line.unitPrice)}
                       </div>
                     </div>
-                    <strong style={{ color: "#1f2937" }}>{formatCurrency(line.lineTotal)}</strong>
+                    <strong style={{ color: "var(--a-text)" }}>{formatCurrency(line.lineTotal)}</strong>
                   </div>
                 ))}
               </div>
@@ -476,18 +476,18 @@ export default function OrderServicePage() {
 
 function InfoChip({ label, value }) {
   return (
-    <div style={{ padding: 12, borderRadius: 12, background: "white", border: "1px solid #e2e8f0" }}>
-      <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#64748b" }}>{label}</div>
-      <div style={{ marginTop: 6, fontWeight: 700, color: "#0f172a" }}>{value}</div>
+    <div style={{ padding: 12, borderRadius: 12, background: "var(--a-surface)", border: "1px solid var(--a-border)" }}>
+      <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)" }}>{label}</div>
+      <div style={{ marginTop: 6, fontWeight: 700, color: "var(--a-text)" }}>{value}</div>
     </div>
   );
 }
 
 function DetailGrid({ label, value }) {
   return (
-    <div style={{ padding: 14, borderRadius: 14, border: "1px solid #f1ede7", background: "#fffdfa" }}>
-      <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "#78716c" }}>{label}</div>
-      <div style={{ marginTop: 6, fontWeight: 700, color: "#1c1917" }}>{value}</div>
+    <div style={{ padding: 14, borderRadius: 14, border: "1px solid var(--a-border)", background: "var(--a-surface-raised)" }}>
+      <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--a-text-muted)" }}>{label}</div>
+      <div style={{ marginTop: 6, fontWeight: 700, color: "var(--a-text)" }}>{value}</div>
     </div>
   );
 }

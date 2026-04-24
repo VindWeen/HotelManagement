@@ -165,8 +165,25 @@ function RoomCard({ room, onDetail }) {
 
 // ─── Status Dropdown ────────────────────────────────────────────────────────────
 function StatusDropdown({ options, current, onSelect, configMap }) {
+    const resolveThemeToken = (value, resolvedVars = {}) => {
+        if (!value || typeof value !== "string") return value;
+        const match = value.match(/^var\((--[^)]+)\)$/);
+        if (!match) return value;
+        return resolvedVars[match[1]] || value;
+    };
+
     const [open, setOpen] = useState(false);
     const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+    const [menuTheme, setMenuTheme] = useState({
+        surfaceStrong: "#eef2ef",
+        surfaceBright: "#f8f9fa",
+        border: "#e5e7eb",
+        borderStrong: "#d6d9d4",
+        text: "#1c1917",
+        primary: "#1a3826",
+        shadow: "0 18px 44px rgba(15, 23, 42, 0.1)",
+        vars: {},
+    });
     const btnRef = useRef(null);
     const menuRef = useRef(null);
     const cfg = configMap[current] || {};
@@ -174,10 +191,43 @@ function StatusDropdown({ options, current, onSelect, configMap }) {
     const openMenu = () => {
         if (btnRef.current) {
             const rect = btnRef.current.getBoundingClientRect();
-            // position: absolute trên body → cần cộng scroll
+            const portalRoot = btnRef.current.closest(".admin-portal");
+            if (portalRoot) {
+                const styles = getComputedStyle(portalRoot);
+                const resolvedVars = {
+                    "--a-success": styles.getPropertyValue("--a-success").trim(),
+                    "--a-success-bg": styles.getPropertyValue("--a-success-bg").trim(),
+                    "--a-success-border": styles.getPropertyValue("--a-success-border").trim(),
+                    "--a-warning": styles.getPropertyValue("--a-warning").trim(),
+                    "--a-warning-bg": styles.getPropertyValue("--a-warning-bg").trim(),
+                    "--a-warning-border": styles.getPropertyValue("--a-warning-border").trim(),
+                    "--a-error": styles.getPropertyValue("--a-error").trim(),
+                    "--a-error-bg": styles.getPropertyValue("--a-error-bg").trim(),
+                    "--a-error-border": styles.getPropertyValue("--a-error-border").trim(),
+                    "--a-info": styles.getPropertyValue("--a-info").trim(),
+                    "--a-info-bg": styles.getPropertyValue("--a-info-bg").trim(),
+                    "--a-info-border": styles.getPropertyValue("--a-info-border").trim(),
+                    "--a-primary": styles.getPropertyValue("--a-primary").trim(),
+                    "--a-text": styles.getPropertyValue("--a-text").trim(),
+                    "--a-border": styles.getPropertyValue("--a-border").trim(),
+                    "--a-border-strong": styles.getPropertyValue("--a-border-strong").trim(),
+                    "--a-surface-bright": styles.getPropertyValue("--a-surface-bright").trim(),
+                    "--a-surface-strong": styles.getPropertyValue("--a-surface-strong").trim(),
+                };
+                setMenuTheme({
+                    surfaceStrong: styles.getPropertyValue("--a-surface-strong").trim() || "#eef2ef",
+                    surfaceBright: styles.getPropertyValue("--a-surface-bright").trim() || "#f8f9fa",
+                    border: styles.getPropertyValue("--a-border").trim() || "#e5e7eb",
+                    borderStrong: styles.getPropertyValue("--a-border-strong").trim() || "#d6d9d4",
+                    text: styles.getPropertyValue("--a-text").trim() || "#1c1917",
+                    primary: styles.getPropertyValue("--a-primary").trim() || "#1a3826",
+                    shadow: styles.getPropertyValue("--a-shadow-md").trim() || "0 18px 44px rgba(15, 23, 42, 0.1)",
+                    vars: resolvedVars,
+                });
+            }
             setMenuPos({
-                top: rect.bottom + window.scrollY + 4,
-                left: rect.left + window.scrollX,
+                top: rect.bottom + 4,
+                left: rect.left,
             });
         }
         setOpen(true);
@@ -204,32 +254,72 @@ function StatusDropdown({ options, current, onSelect, configMap }) {
         <div
             ref={menuRef}
             style={{
-                position: "absolute",
+                position: "fixed",
                 top: menuPos.top,
                 left: menuPos.left,
                 zIndex: 9999,
-                background: "var(--a-surface)",
+                backgroundColor: menuTheme.surfaceStrong,
+                display: "flex",
+                flexDirection: "column",
                 borderRadius: 12,
-                boxShadow: "var(--a-shadow-md)",
-                border: "1px solid var(--a-border)",
+                boxShadow: menuTheme.shadow,
+                border: `1px solid ${menuTheme.border}`,
                 minWidth: 150,
                 overflow: "hidden",
+                padding: 6,
+                opacity: 1,
+                backdropFilter: "none",
+                isolation: "isolate",
+                outline: `1px solid ${menuTheme.borderStrong}`,
+                outlineOffset: -1,
+                transform: "translateZ(0)",
             }}
         >
             {options.map((opt) => {
                 const optCfg = configMap[opt] || {};
+                const optionBg = resolveThemeToken(optCfg.bg, menuTheme.vars) || menuTheme.surfaceStrong;
+                const optionBorder = resolveThemeToken(optCfg.border, menuTheme.vars) || menuTheme.border;
+                const optionText = resolveThemeToken(optCfg.color, menuTheme.vars) || menuTheme.text;
+                const optionDot = resolveThemeToken(optCfg.dot, menuTheme.vars) || optionText;
                 return (
                     <button
                         key={opt}
                         onClick={() => { onSelect(opt); setOpen(false); }}
-                        style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", width: "100%", background: opt === current ? "var(--a-surface-raised)" : "transparent", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, color: optCfg.color || "var(--a-text)", textAlign: "left", fontFamily: "Manrope, sans-serif" }}
-                        onMouseEnter={e => e.currentTarget.style.background = "var(--a-surface-raised)"}
-                        onMouseLeave={e => e.currentTarget.style.background = opt === current ? "var(--a-surface-raised)" : "transparent"}
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: "9px 14px",
+                            width: "100%",
+                            backgroundColor: optionBg,
+                            border: `1px solid ${optionBorder}`,
+                            marginTop: opt === options[0] ? 0 : 6,
+                            borderRadius: 8,
+                            cursor: "pointer",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: optionText,
+                            textAlign: "left",
+                            fontFamily: "Manrope, sans-serif",
+                            boxSizing: "border-box",
+                            opacity: 1,
+                            boxShadow: opt === current ? `inset 0 0 0 1px ${optionText}` : "none",
+                        }}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.backgroundColor = optionBg;
+                            e.currentTarget.style.borderColor = optionText;
+                            e.currentTarget.style.boxShadow = `inset 0 0 0 1px ${optionText}`;
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.backgroundColor = optionBg;
+                            e.currentTarget.style.borderColor = optionBorder;
+                            e.currentTarget.style.boxShadow = opt === current ? `inset 0 0 0 1px ${optionText}` : "none";
+                        }}
                     >
-                        {optCfg.dot && <span style={{ width: 7, height: 7, borderRadius: "50%", background: optCfg.dot, flexShrink: 0 }} />}
-                        {optCfg.icon && <span className="material-symbols-outlined" style={{ fontSize: 14, fontVariationSettings: "'FILL' 1", color: optCfg.color }}>{optCfg.icon}</span>}
+                        {optCfg.dot && <span style={{ width: 7, height: 7, borderRadius: "50%", background: optionDot, flexShrink: 0 }} />}
+                        {optCfg.icon && <span className="material-symbols-outlined" style={{ fontSize: 14, fontVariationSettings: "'FILL' 1", color: optionText }}>{optCfg.icon}</span>}
                         {optCfg.label || opt}
-                        {opt === current && <span className="material-symbols-outlined" style={{ fontSize: 14, marginLeft: "auto", color: "var(--a-primary)" }}>check</span>}
+                        {opt === current && <span className="material-symbols-outlined" style={{ fontSize: 14, marginLeft: "auto", color: menuTheme.primary }}>check</span>}
                     </button>
                 );
             })}

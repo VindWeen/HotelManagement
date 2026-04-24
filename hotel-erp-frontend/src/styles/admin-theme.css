@@ -565,18 +565,55 @@
 .admin-notification-trigger {
   width: 40px;
   height: 40px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   border: 1px solid var(--a-border);
   background: var(--a-surface);
   color: var(--a-text-muted);
   cursor: pointer;
   box-shadow: var(--a-shadow-sm);
+  overflow: visible;
 }
 
 .admin-notification-trigger:hover {
   background: var(--a-primary-muted);
   color: var(--a-primary);
   border-color: var(--a-border-strong);
+}
+
+.admin-notification-trigger .ant-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.admin-notification-trigger .ant-badge-count {
+  min-width: 18px;
+  height: 18px;
+  padding-inline: 5px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px var(--a-surface);
+  pointer-events: none;
+  font-size: 10px;
+  line-height: 18px;
+}
+
+.admin-notification-bell,
+.admin-notification-trigger .anticon {
+  color: var(--a-text-muted) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.admin-notification-trigger:hover .admin-notification-bell,
+.admin-notification-trigger:hover .anticon {
+  color: var(--a-primary) !important;
 }
 
 .admin-notification-panel {

@@ -17,16 +17,16 @@ import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
 const panelStyle = {
-  background: "white",
+  background: "var(--a-surface)",
   borderRadius: 16,
-  border: "1px solid #f1f0ea",
-  boxShadow: "0 1px 3px rgba(0,0,0,.06)",
+  border: "1px solid var(--a-border)",
+  boxShadow: "none",
 };
 
 const inputStyle = {
   width: "100%",
-  background: "#f9f8f3",
-  border: "1.5px solid #e2e8e1",
+  background: "var(--a-bg)",
+  border: "1px solid var(--a-surface-bright)",
   borderRadius: 12,
   padding: "10px 14px",
   fontSize: 14,
@@ -41,7 +41,7 @@ const labelStyle = {
   fontWeight: 700,
   letterSpacing: "0.12em",
   textTransform: "uppercase",
-  color: "#6b7280",
+  color: "var(--a-text-muted)",
   marginBottom: 8,
 };
 
@@ -52,7 +52,7 @@ function Modal({ open, title, onClose, children }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(28,25,23,.35)",
+        background: "var(--a-overlay)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -66,31 +66,31 @@ function Modal({ open, title, onClose, children }) {
           width: "min(760px, 100%)",
           maxHeight: "90vh",
           overflowY: "auto",
-          background: "white",
+          background: "var(--a-surface)",
           borderRadius: 24,
-          border: "1px solid #ede7dd",
-          boxShadow: "0 24px 60px rgba(28,25,23,.18)",
+          border: "1px solid var(--a-border)",
+          boxShadow: "var(--a-shadow-lg)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
           style={{
             padding: "22px 24px 16px",
-            borderBottom: "1px solid #f1f0ea",
+            borderBottom: "1px solid var(--a-border)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
           <div>
-            <h3 style={{ margin: 0, fontSize: 22, color: "#1c1917" }}>{title}</h3>
-            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#78716c" }}>
+            <h3 style={{ margin: 0, fontSize: 22, color: "var(--a-text)" }}>{title}</h3>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--a-text-muted)" }}>
               Giao diện đồng bộ với admin hiện tại.
             </p>
           </div>
           <button
             onClick={onClose}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#78716c" }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--a-text-muted)" }}
           >
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -317,10 +317,10 @@ export default function ServicePage() {
           }}
         >
           <div>
-            <h2 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: "#1c1917" }}>
+            <h2 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: "var(--a-text)" }}>
               Quản lý Dịch vụ
             </h2>
-            <p style={{ margin: "6px 0 0", fontSize: 14, color: "#6b7280" }}>
+            <p style={{ margin: "6px 0 0", fontSize: 14, color: "var(--a-text-muted)" }}>
               Quản lý đồng thời nhóm dịch vụ và dịch vụ phát sinh theo cùng theme admin.
             </p>
           </div>
@@ -343,7 +343,7 @@ export default function ServicePage() {
         </div>
 
         {errorMessage ? (
-          <div style={{ ...panelStyle, marginBottom: 20, padding: 16, color: "#b91c1c", background: "#fff7f7" }}>
+          <div style={{ ...panelStyle, marginBottom: 20, padding: 16, color: "var(--a-error)", background: "var(--a-error-bg)", borderColor: "var(--a-error-border)" }}>
             {errorMessage}
           </div>
         ) : null}
@@ -375,7 +375,7 @@ export default function ServicePage() {
                 alignItems: "center",
                 gap: 10,
                 fontSize: 14,
-                color: "#44403c",
+                color: "var(--a-text-muted)",
                 paddingBottom: 10,
               }}
             >
@@ -407,10 +407,10 @@ export default function ServicePage() {
                     <div key={category.id} style={rowCardStyle(category.isActive)}>
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <strong style={{ fontSize: 15, color: "#1c1917" }}>{category.name}</strong>
+                          <strong style={{ fontSize: 15, color: "var(--a-text)" }}>{category.name}</strong>
                           <StatusChip active={category.isActive} />
                         </div>
-                        <p style={{ margin: "6px 0 0", fontSize: 12, color: "#78716c" }}>
+                        <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--a-text-muted)" }}>
                           {category.serviceCount ?? 0} dịch vụ đang hoạt động
                         </p>
                       </div>
@@ -454,27 +454,27 @@ export default function ServicePage() {
                 ) : serviceRows.length === 0 ? (
                   <EmptyState label="Chưa có dịch vụ phù hợp bộ lọc." icon="search_off" />
                 ) : serviceRows.map((service) => (
-                  <article key={service.id} style={{ border: "1px solid #f1f0ea", borderRadius: 16, padding: 14, display: "grid", gap: 12 }}>
+                  <article key={service.id} style={{ border: "1px solid var(--a-border)", borderRadius: 16, padding: 14, display: "grid", gap: 12, background: "var(--a-surface-raised)" }}>
                     <ServiceImage imageUrl={service.imageUrl} name={service.name} height={150} />
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 900, color: "#1c1917", fontSize: 16 }}>{service.name}</div>
-                        <div style={{ color: "#78716c", fontSize: 12, marginTop: 4 }}>{service.description || "Chưa có mô tả"}</div>
+                        <div style={{ fontWeight: 900, color: "var(--a-text)", fontSize: 16 }}>{service.name}</div>
+                        <div style={{ color: "var(--a-text-muted)", fontSize: 12, marginTop: 4 }}>{service.description || "Chưa có mô tả"}</div>
                       </div>
                       <StatusChip active={service.isActive} label={service.isActive ? "Đang bán" : "Đã ẩn"} />
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
-                        <div style={{ fontSize: 10, color: "#78716c", fontWeight: 900 }}>Nhóm</div>
-                        <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 800 }}>{service.categoryName || "Chưa gán"}</div>
+                      <div style={{ background: "var(--a-bg)", borderRadius: 12, padding: 10, border: "1px solid var(--a-border)" }}>
+                        <div style={{ fontSize: 10, color: "var(--a-text-muted)", fontWeight: 900 }}>Nhóm</div>
+                        <div style={{ fontSize: 13, color: "var(--a-text)", fontWeight: 800 }}>{service.categoryName || "Chưa gán"}</div>
                       </div>
-                      <div style={{ background: "#f8fafc", borderRadius: 12, padding: 10 }}>
-                        <div style={{ fontSize: 10, color: "#78716c", fontWeight: 900 }}>Giá</div>
-                        <div style={{ fontSize: 13, color: "#1c1917", fontWeight: 900 }}>{formatCurrency(service.price)}</div>
+                      <div style={{ background: "var(--a-bg)", borderRadius: 12, padding: 10, border: "1px solid var(--a-border)" }}>
+                        <div style={{ fontSize: 10, color: "var(--a-text-muted)", fontWeight: 900 }}>Giá</div>
+                        <div style={{ fontSize: 13, color: "var(--a-text)", fontWeight: 900 }}>{formatCurrency(service.price)}</div>
                       </div>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
-                      <span style={{ color: "#57534e", fontSize: 13 }}>{service.unit || "-"}</span>
+                      <span style={{ color: "var(--a-text-muted)", fontSize: 13 }}>{service.unit || "-"}</span>
                       <div style={{ display: "inline-flex", gap: 8 }}>
                         <IconButton icon="edit" title="Sửa" onClick={() => openServiceModal(service)} />
                         <IconButton icon={service.isActive ? "visibility_off" : "visibility"} title={service.isActive ? "Ẩn" : "Hiện"} onClick={() => handleServiceAction(toggleService, service.id)} />
@@ -488,7 +488,7 @@ export default function ServicePage() {
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "#faf8f3", borderBottom: "1px solid #f1f0ea" }}>
+                  <tr style={{ background: "var(--a-surface-raised)", borderBottom: "1px solid var(--a-border)" }}>
                     {["Dịch vụ", "Nhóm", "Giá", "Đơn vị", "Trạng thái", "Thao tác"].map((heading, idx) => (
                       <th
                         key={heading}
@@ -498,7 +498,7 @@ export default function ServicePage() {
                           fontSize: 11,
                           textTransform: "uppercase",
                           letterSpacing: ".08em",
-                          color: "#78716c",
+                          color: "var(--a-text-muted)",
                         }}
                       >
                         {heading}
@@ -521,22 +521,22 @@ export default function ServicePage() {
                     </tr>
                   ) : (
                     serviceRows.map((service) => (
-                      <tr key={service.id} style={{ borderBottom: "1px solid #f7f4ee" }}>
+                      <tr key={service.id} style={{ borderBottom: "1px solid var(--a-border)" }}>
                         <td style={{ padding: "16px 18px" }}>
                           <div>
-                            <div style={{ fontWeight: 800, color: "#1c1917", fontSize: 14 }}>{service.name}</div>
-                            <div style={{ color: "#78716c", fontSize: 12, marginTop: 4 }}>
+                            <div style={{ fontWeight: 800, color: "var(--a-text)", fontSize: 14 }}>{service.name}</div>
+                            <div style={{ color: "var(--a-text-muted)", fontSize: 12, marginTop: 4 }}>
                               {service.description || "Chưa có mô tả"}
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: "16px 18px", color: "#57534e", fontSize: 14 }}>
+                        <td style={{ padding: "16px 18px", color: "var(--a-text-muted)", fontSize: 14 }}>
                           {service.categoryName || "Chưa gán nhóm"}
                         </td>
-                        <td style={{ padding: "16px 18px", color: "#1f2937", fontWeight: 700 }}>
+                        <td style={{ padding: "16px 18px", color: "var(--a-text)", fontWeight: 700 }}>
                           {formatCurrency(service.price)}
                         </td>
-                        <td style={{ padding: "16px 18px", color: "#57534e" }}>
+                        <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>
                           {service.unit || "—"}
                         </td>
                         <td style={{ padding: "16px 18px" }}>
@@ -582,7 +582,7 @@ export default function ServicePage() {
         <form onSubmit={submitCategory}>
           <label style={labelStyle}>Tên nhóm</label>
           <input value={categoryName} onChange={(e) => setCategoryName(e.target.value)} style={inputStyle} placeholder="Ví dụ: Spa & Massage" />
-          {errorMessage ? <p style={{ color: "#b91c1c", marginTop: 12 }}>{errorMessage}</p> : null}
+          {errorMessage ? <p style={{ color: "var(--a-error)", marginTop: 12 }}>{errorMessage}</p> : null}
           <FormFooter submitting={submitting} onClose={() => setCategoryModalOpen(false)} />
         </form>
       </Modal>
@@ -657,7 +657,7 @@ export default function ServicePage() {
               />
             </div>
           </div>
-          {errorMessage ? <p style={{ color: "#b91c1c", marginTop: 12 }}>{errorMessage}</p> : null}
+          {errorMessage ? <p style={{ color: "var(--a-error)", marginTop: 12 }}>{errorMessage}</p> : null}
           <FormFooter submitting={submitting} onClose={() => setServiceModalOpen(false)} />
         </form>
       </Modal>
@@ -667,7 +667,7 @@ export default function ServicePage() {
 
 function ServiceImage({ imageUrl, name, height = 120, width = "100%" }) {
   return (
-    <div style={{ width, height, borderRadius: 14, overflow: "hidden", background: "linear-gradient(135deg,#eef7f1,#f7efe3)", border: "1px solid #f1f0ea", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f645b", flexShrink: 0 }}>
+    <div style={{ width, height, borderRadius: 14, overflow: "hidden", background: "linear-gradient(135deg, color-mix(in srgb, var(--a-primary) 14%, var(--a-surface)) 0%, color-mix(in srgb, var(--a-warning-bg) 36%, var(--a-surface-raised)) 100%)", border: "1px solid var(--a-border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--a-primary)", flexShrink: 0 }}>
       {imageUrl ? (
         <img src={imageUrl} alt={name || "Dịch vụ"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       ) : (
@@ -688,12 +688,12 @@ function ImagePicker({ preview, fileName, onPick, onRemove }) {
           <input type="file" accept="image/*" onChange={(e) => onPick(e.target.files?.[0] || null)} style={{ display: "none" }} />
         </label>
         {preview ? (
-          <button type="button" onClick={onRemove} style={{ padding: "10px 14px", borderRadius: 12, border: "1px solid #fecaca", background: "#fff7f7", color: "#dc2626", fontWeight: 800, cursor: "pointer" }}>
+          <button type="button" onClick={onRemove} style={{ padding: "10px 14px", borderRadius: 12, border: "1px solid var(--a-error-border)", background: "var(--a-error-bg)", color: "var(--a-error)", fontWeight: 800, cursor: "pointer" }}>
             Gỡ ảnh
           </button>
         ) : null}
       </div>
-      {fileName ? <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 700, wordBreak: "break-word" }}>{fileName}</div> : null}
+      {fileName ? <div style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 700, wordBreak: "break-word" }}>{fileName}</div> : null}
     </div>
   );
 }
@@ -702,15 +702,15 @@ function primaryButton(soft) {
   return {
     padding: "10px 18px",
     borderRadius: 12,
-    border: soft ? "1px solid #d8dfd7" : "none",
-    background: soft ? "white" : "#4f645b",
-    color: soft ? "#1c1917" : "#e7fef3",
+    border: soft ? "1px solid var(--a-border)" : "none",
+    background: soft ? "var(--a-surface)" : "var(--a-primary)",
+    color: soft ? "var(--a-text)" : "var(--a-text-inverse)",
     display: "flex",
     alignItems: "center",
     gap: 8,
     fontWeight: 600,
     cursor: "pointer",
-    boxShadow: soft ? "0 1px 3px rgba(0,0,0,.06)" : "0 8px 18px rgba(79,100,91,.18)",
+    boxShadow: "none",
   };
 }
 
@@ -719,7 +719,7 @@ function SectionHeader({ icon, title, subtitle }) {
     <div
       style={{
         padding: "18px 20px",
-        borderBottom: "1px solid #f1f0ea",
+        borderBottom: "1px solid var(--a-border)",
         display: "flex",
         alignItems: "center",
         gap: 14,
@@ -730,8 +730,8 @@ function SectionHeader({ icon, title, subtitle }) {
           width: 42,
           height: 42,
           borderRadius: 14,
-          background: "rgba(79,100,91,.12)",
-          color: "#4f645b",
+          background: "var(--a-brand-bg)",
+          color: "var(--a-brand-ink)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -740,8 +740,8 @@ function SectionHeader({ icon, title, subtitle }) {
         <span className="material-symbols-outlined">{icon}</span>
       </div>
       <div>
-        <div style={{ fontWeight: 800, color: "#1c1917" }}>{title}</div>
-        <div style={{ fontSize: 12, color: "#78716c", marginTop: 2 }}>{subtitle}</div>
+        <div style={{ fontWeight: 800, color: "var(--a-text)" }}>{title}</div>
+        <div style={{ fontSize: 12, color: "var(--a-text-muted)", marginTop: 2 }}>{subtitle}</div>
       </div>
     </div>
   );
@@ -749,7 +749,7 @@ function SectionHeader({ icon, title, subtitle }) {
 
 function EmptyState({ label, icon }) {
   return (
-    <div style={{ textAlign: "center", color: "#9ca3af" }}>
+    <div style={{ textAlign: "center", color: "var(--a-text-soft)" }}>
       <span className="material-symbols-outlined" style={{ fontSize: 42 }}>{icon}</span>
       <p style={{ margin: "10px 0 0", fontWeight: 500 }}>{label}</p>
     </div>
@@ -762,8 +762,8 @@ function StatusChip({ active, label }) {
       style={{
         padding: "5px 10px",
         borderRadius: 999,
-        background: active ? "#ecfdf5" : "#f5f5f4",
-        color: active ? "#047857" : "#78716c",
+        background: active ? "var(--a-success-bg)" : "var(--a-surface-bright)",
+        color: active ? "var(--a-success)" : "var(--a-text-muted)",
         fontSize: 11,
         fontWeight: 700,
         textTransform: "uppercase",
@@ -785,9 +785,9 @@ function IconButton({ icon, title, onClick, danger = false }) {
         width: 36,
         height: 36,
         borderRadius: 10,
-        border: "1px solid #f1f0ea",
-        background: danger ? "#fff7f7" : "white",
-        color: danger ? "#dc2626" : "#57534e",
+        border: "1px solid var(--a-border)",
+        background: danger ? "var(--a-error-bg)" : "var(--a-surface)",
+        color: danger ? "var(--a-error)" : "var(--a-text-muted)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -806,8 +806,8 @@ function rowCardStyle(active) {
     alignItems: "center",
     padding: 14,
     borderRadius: 14,
-    border: "1px solid #f1ede7",
-    background: active ? "#fffdfa" : "#f8fafc",
+    border: "1px solid var(--a-border)",
+    background: active ? "color-mix(in srgb, var(--a-primary) 8%, var(--a-surface-raised))" : "var(--a-bg)",
     gap: 12,
   };
 }
@@ -828,9 +828,9 @@ function FormFooter({ submitting, onClose }) {
         style={{
           padding: "10px 16px",
           borderRadius: 12,
-          border: "1px solid #e7e5e4",
-          background: "white",
-          color: "#57534e",
+          border: "1px solid var(--a-border)",
+          background: "var(--a-surface)",
+          color: "var(--a-text-muted)",
           fontWeight: 800,
           cursor: "pointer",
         }}
@@ -844,8 +844,8 @@ function FormFooter({ submitting, onClose }) {
           padding: "10px 18px",
           borderRadius: 12,
           border: "none",
-          background: "#4f645b",
-          color: "#e7fef3",
+          background: "var(--a-primary)",
+          color: "var(--a-text-inverse)",
           fontWeight: 800,
           cursor: "pointer",
           opacity: submitting ? 0.7 : 1,
