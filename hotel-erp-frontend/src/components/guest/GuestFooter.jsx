@@ -3,19 +3,16 @@ import { Link } from 'react-router-dom';
 const FOOTER_LINKS = {
   'Khám phá': [
     { label: 'Trang chủ',     to: '/' },
+    { label: 'Hạng phòng',    to: '/rooms' },
     { label: 'Địa điểm',      to: '/attractions' },
     { label: 'Bài viết',      to: '/articles' },
-    { label: 'Đánh giá',      to: '/reviews' },
   ],
   'Dịch vụ': [
     { label: 'Đặt phòng',     to: '/booking' },
-    { label: 'Hạng phòng',    to: '/rooms' },
-    { label: 'Ưu đãi',        to: '/offers' },
-    { label: 'Thành viên',    to: '/membership' },
+    { label: 'Dịch vụ',       to: '/services' },
+    { label: 'Đánh giá',      to: '/reviews' },
   ],
   'Thông tin': [
-    { label: 'Về chúng tôi',  to: '/about' },
-    { label: 'Liên hệ',       to: '/contact' },
     { label: 'Chính sách',    to: '/policy' },
     { label: 'FAQ',           to: '/faq' },
   ],

@@ -5,10 +5,11 @@ import { isGuestRole } from '../../routes/permissionRouting';
 
 const NAV_LINKS = [
   { to: '/',            label: 'Trang chủ',      exact: true },
-  { to: '/attractions', label: 'Khám phá',        exact: false },
+  { to: '/rooms',       label: 'Hạng phòng',     exact: true },
+  { to: '/services',    label: 'Dịch vụ',        exact: true },
+  { to: '/attractions', label: 'Khám phá',        exact: true },
   { to: '/articles',    label: 'Bài viết',        exact: false },
-  { to: '/reviews',     label: 'Đánh giá',        exact: false },
-  { to: '/guest/services', label: 'Dịch vụ',      exact: false },
+  { to: '/reviews',     label: 'Đánh giá',        exact: true },
 ];
 
 export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
@@ -646,7 +647,7 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
                       role="menuitem"
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>rate_review</span>
-                      Review c???a t??i
+                      Review của tôi
                     </Link>
                     <Link
                       to="/guest/profile"
@@ -775,7 +776,7 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
                 tabIndex={menuOpen ? 0 : -1}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>rate_review</span>
-                Review c???a t??i
+                Review của tôi
               </Link>
               <Link
                 to="/guest/profile"
