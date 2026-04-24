@@ -796,8 +796,12 @@ export default function BookingPage() {
     if (!guestName.trim()) errs.guestName = "Vui lòng nhập họ tên.";
     if (!/^\d{9,12}$/.test(guestPhone.replace(/\s+/g, "")))
       errs.guestPhone = "Số điện thoại không hợp lệ (9–12 chữ số).";
-    if (guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail))
+    
+    if (!isGuest && !guestEmail.trim()) {
+      errs.guestEmail = "Vui lòng nhập email để nhận thông tin đặt phòng.";
+    } else if (guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
       errs.guestEmail = "Email không hợp lệ.";
+    }
     setGuestErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -1327,7 +1331,7 @@ export default function BookingPage() {
                     {guestErrors.guestPhone && <span className="bp-field-error">{guestErrors.guestPhone}</span>}
                   </div>
                   <div className="bp-field">
-                    <label className="bp-label">Email</label>
+                    <label className="bp-label">Email {!isGuest && <span className="bp-required">*</span>}</label>
                     <input
                       type="email"
                       className={`bp-input${guestErrors.guestEmail ? " error" : ""}`}
