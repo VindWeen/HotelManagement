@@ -164,7 +164,8 @@ public async Task<IActionResult> GetAll(
                 .ThenInclude(b => b!.BookingDetails)
                     .ThenInclude(d => d.RoomType)
             .Include(r => r.RoomType)
-            .OrderByDescending(r => r.CreatedAt ?? DateTime.MinValue)
+            .OrderByDescending(r => r.CreatedAt.HasValue)
+            .ThenByDescending(r => r.CreatedAt)
             .ThenByDescending(r => r.Id)
             .Select(r => new
             {
@@ -197,7 +198,8 @@ public async Task<IActionResult> GetAll(
             .Where(b => b.UserId == userId && b.Status == "Completed" && !reviewedBookingIds.Contains(b.Id))
             .Include(b => b.BookingDetails)
                 .ThenInclude(d => d.RoomType)
-            .OrderByDescending(b => b.CheckOutTime ?? DateTime.MinValue)
+            .OrderByDescending(b => b.CheckOutTime.HasValue)
+            .ThenByDescending(b => b.CheckOutTime)
             .ThenByDescending(b => b.Id)
             .Select(b => new
             {
