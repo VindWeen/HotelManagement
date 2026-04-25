@@ -103,15 +103,15 @@ const DETAIL_GRID_CARD = {
 function getUserStatusBadgeStyle(active) {
   return active
     ? {
-        background: "var(--a-success-bg)",
-        color: "var(--a-success)",
-        border: "1px solid var(--a-success-border)",
-      }
+      background: "var(--a-success-bg)",
+      color: "var(--a-success)",
+      border: "1px solid var(--a-success-border)",
+    }
     : {
-        background: "var(--a-warning-bg)",
-        color: "var(--a-warning)",
-        border: "1px solid var(--a-warning-border)",
-      };
+      background: "var(--a-warning-bg)",
+      color: "var(--a-warning)",
+      border: "1px solid var(--a-warning-border)",
+    };
 }
 
 // Thành phần thông báo ──────────────────────────────────────────────────────────
@@ -413,7 +413,7 @@ export default function UserListPage() {
     try {
       const res = await getRoles();
       setRoles(res.data?.data || []);
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => {
@@ -928,134 +928,134 @@ export default function UserListPage() {
                   ];
 
                   return (
-                <>
-                  <div
-                    style={{
-                      background: "var(--a-emphasis-bg)",
-                      border: "1px solid color-mix(in srgb, var(--a-primary) 20%, transparent)",
-                      borderRadius: 18,
-                      padding: 18,
-                      marginBottom: 18,
-                    }}
-                  >
-                    <div className="flex items-start gap-4">
+                    <>
                       <div
-                        className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl"
                         style={{
-                          background: "color-mix(in srgb, var(--a-surface) 20%, transparent)",
-                          color: "var(--a-emphasis-text)",
-                          border: "1px solid color-mix(in srgb, var(--a-emphasis-text) 16%, transparent)",
-                          flexShrink: 0,
+                          background: "var(--a-emphasis-bg)",
+                          border: "1px solid color-mix(in srgb, var(--a-primary) 20%, transparent)",
+                          borderRadius: 18,
+                          padding: 18,
+                          marginBottom: 18,
                         }}
                       >
-                        {(detailUser.fullName || "?")[0].toUpperCase()}
-                      </div>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--a-emphasis-muted)" }}>
-                          Hồ sơ người dùng
-                        </div>
-                        <div style={{ marginTop: 6, fontSize: 22, fontWeight: 800, color: "var(--a-emphasis-text)", lineHeight: 1.2 }}>
-                          {detailUser.fullName || "—"}
-                        </div>
-                        <div style={{ marginTop: 6, fontSize: 13, color: "var(--a-emphasis-muted)", overflowWrap: "anywhere" }}>
-                          {detailUser.email || "—"}
-                        </div>
-                        <div className="flex items-center gap-2 mt-3 flex-wrap">
-                          <span
+                        <div className="flex items-start gap-4">
+                          <div
+                            className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl"
                             style={{
-                              ...statusStyle,
-                              padding: "5px 10px",
-                              borderRadius: 999,
-                              fontSize: 11,
-                              fontWeight: 800,
-                              textTransform: "uppercase",
-                              letterSpacing: ".04em",
-                            }}
-                          >
-                            {active ? "Hoạt động" : "Đã khóa"}
-                          </span>
-                          <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase ${ROLE_BADGE[detailUser.roleName] || "bg-stone-100 text-stone-500"}`}>
-                            {detailUser.roleName || "—"}
-                          </span>
-                          <span
-                            style={{
-                              padding: "5px 10px",
-                              borderRadius: 999,
-                              fontSize: 11,
-                              fontWeight: 700,
+                              background: "color-mix(in srgb, var(--a-surface) 20%, transparent)",
                               color: "var(--a-emphasis-text)",
-                              background: "color-mix(in srgb, var(--a-surface) 18%, transparent)",
-                              border: "1px solid color-mix(in srgb, var(--a-emphasis-text) 14%, transparent)",
+                              border: "1px solid color-mix(in srgb, var(--a-emphasis-text) 16%, transparent)",
+                              flexShrink: 0,
                             }}
                           >
-                            ID #{detailUser.id}
-                          </span>
+                            {(detailUser.fullName || "?")[0].toUpperCase()}
+                          </div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--a-emphasis-muted)" }}>
+                              Hồ sơ người dùng
+                            </div>
+                            <div style={{ marginTop: 6, fontSize: 22, fontWeight: 800, color: "var(--a-emphasis-text)", lineHeight: 1.2 }}>
+                              {detailUser.fullName || "—"}
+                            </div>
+                            <div style={{ marginTop: 6, fontSize: 13, color: "var(--a-emphasis-muted)", overflowWrap: "anywhere" }}>
+                              {detailUser.email || "—"}
+                            </div>
+                            <div className="flex items-center gap-2 mt-3 flex-wrap">
+                              <span
+                                style={{
+                                  ...statusStyle,
+                                  padding: "5px 10px",
+                                  borderRadius: 999,
+                                  fontSize: 11,
+                                  fontWeight: 800,
+                                  textTransform: "uppercase",
+                                  letterSpacing: ".04em",
+                                }}
+                              >
+                                {active ? "Hoạt động" : "Đã khóa"}
+                              </span>
+                              <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase ${ROLE_BADGE[detailUser.roleName] || "bg-stone-100 text-stone-500"}`}>
+                                {detailUser.roleName || "—"}
+                              </span>
+                              <span
+                                style={{
+                                  padding: "5px 10px",
+                                  borderRadius: 999,
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  color: "var(--a-emphasis-text)",
+                                  background: "color-mix(in srgb, var(--a-surface) 18%, transparent)",
+                                  border: "1px solid color-mix(in srgb, var(--a-emphasis-text) 14%, transparent)",
+                                }}
+                              >
+                                ID #{detailUser.id}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                      gap: 12,
-                    }}
-                  >
-                    {infoRows.map(([k, v], i) => (
-                      <div key={i} style={DETAIL_GRID_CARD}>
-                        <div
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 800,
-                            textTransform: "uppercase",
-                            letterSpacing: ".12em",
-                            color: "var(--a-text-soft)",
-                            marginBottom: 8,
-                          }}
-                        >
-                          {k}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 700,
-                            color: "var(--a-text)",
-                            lineHeight: 1.45,
-                            wordBreak: "break-word",
-                          }}
-                          title={String(v)}
-                        >
-                          {String(v)}
-                        </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                          gap: 12,
+                        }}
+                      >
+                        {infoRows.map(([k, v], i) => (
+                          <div key={i} style={DETAIL_GRID_CARD}>
+                            <div
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 800,
+                                textTransform: "uppercase",
+                                letterSpacing: ".12em",
+                                color: "var(--a-text-soft)",
+                                marginBottom: 8,
+                              }}
+                            >
+                              {k}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 700,
+                                color: "var(--a-text)",
+                                lineHeight: 1.45,
+                                wordBreak: "break-word",
+                              }}
+                              title={String(v)}
+                            >
+                              {String(v)}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
 
-                  <div className="flex justify-end gap-3 mt-5 pt-4" style={{ borderTop: "1px solid var(--a-border)" }}>
-                    <button
-                      onClick={() => handleResetPassword(detailUser.id)}
-                      disabled={resetPasswordLoading}
-                      className="px-4 py-2 text-sm font-bold rounded-xl hover:opacity-90 transition-all flex items-center gap-1.5 disabled:opacity-50"
-                      style={{ background: "var(--a-error-bg)", color: "var(--a-error)", border: "1px solid var(--a-error-border)" }}
-                    >
-                      {resetPasswordLoading ? (
-                        <span className="spinner-dark" style={{ borderColor: "color-mix(in srgb, var(--a-error) 20%, transparent)", borderTopColor: "var(--a-error)", width: 16, height: 16 }} />
-                      ) : (
-                        <span className="material-symbols-outlined text-base">key</span>
-                      )}
-                      Quên mật khẩu
-                    </button>
-                    <button
-                      onClick={() => { setDetailModalOpen(false); openEdit(detailUser.id); }}
-                      className="px-4 py-2 text-sm font-bold rounded-xl hover:opacity-90 transition-all flex items-center gap-1.5"
-                      style={{ background: "var(--a-emphasis-bg)", color: "var(--a-emphasis-text)" }}
-                    >
-                      <span className="material-symbols-outlined text-base">edit_square</span>
-                      Chỉnh sửa
-                    </button>
-                  </div>
-                </>
+                      <div className="flex justify-end gap-3 mt-5 pt-4" style={{ borderTop: "1px solid var(--a-border)" }}>
+                        <button
+                          onClick={() => handleResetPassword(detailUser.id)}
+                          disabled={resetPasswordLoading}
+                          className="px-4 py-2 text-sm font-bold rounded-xl hover:opacity-90 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                          style={{ background: "var(--a-error-bg)", color: "var(--a-error)", border: "1px solid var(--a-error-border)" }}
+                        >
+                          {resetPasswordLoading ? (
+                            <span className="spinner-dark" style={{ borderColor: "color-mix(in srgb, var(--a-error) 20%, transparent)", borderTopColor: "var(--a-error)", width: 16, height: 16 }} />
+                          ) : (
+                            <span className="material-symbols-outlined text-base">key</span>
+                          )}
+                          Quên mật khẩu
+                        </button>
+                        <button
+                          onClick={() => { setDetailModalOpen(false); openEdit(detailUser.id); }}
+                          className="px-4 py-2 text-sm font-bold rounded-xl hover:opacity-90 transition-all flex items-center gap-1.5"
+                          style={{ background: "var(--a-emphasis-bg)", color: "var(--a-emphasis-text)" }}
+                        >
+                          <span className="material-symbols-outlined text-base">edit_square</span>
+                          Chỉnh sửa
+                        </button>
+                      </div>
+                    </>
                   );
                 })()
               ) : null}
@@ -1106,9 +1106,9 @@ export default function UserListPage() {
           SkeletonRows={SkeletonRows}
         />
       </div>
-      </>
-    );
-  }
+    </>
+  );
+}
 
 
 
@@ -1400,166 +1400,166 @@ export function UserListTable({
           )}
         </div>
       ) : (
-      <div style={{ overflowX: "auto" }}>
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            textAlign: "left",
-          }}
-        >
-          <thead>
-            <tr
-              style={{
-                background: "var(--a-surface-raised)",
-                borderBottom: "1px solid var(--a-border)",
-              }}
-            >
-              {["Họ và tên", "Email", "Số điện thoại", "Vai trò", "Trạng thái", "Thao tác"].map((h, i) => (
-                <th
-                  key={h}
-                  style={{
-                    padding: "16px 24px",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    color: "var(--a-text-muted)",
-                    textAlign: i === 5 ? "right" : "left",
-                  }}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody style={{ borderTop: "1px solid var(--a-border)" }}>
-            {loading ? (
-              <SkeletonRows />
-            ) : paginatedUsers.length === 0 ? null : (
-              paginatedUsers.map((u, i) => {
-                const active = u.status === true || u.status === 1;
-                const initial = (u.fullName || "?")[0].toUpperCase();
-                const roleClass = ROLE_BADGE[u.roleName] || "bg-stone-100 text-stone-500";
-                return (
-                  <tr
-                    key={u.id}
-                    className="fade-row"
+        <div style={{ overflowX: "auto" }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              textAlign: "left",
+            }}
+          >
+            <thead>
+              <tr
+                style={{
+                  background: "var(--a-surface-raised)",
+                  borderBottom: "1px solid var(--a-border)",
+                }}
+              >
+                {["Họ và tên", "Email", "Số điện thoại", "Vai trò", "Trạng thái", "Thao tác"].map((h, i) => (
+                  <th
+                    key={h}
                     style={{
-                      borderBottom: "1px solid var(--a-divider)",
-                      animationDelay: `${Math.min(i * 25, 200)}ms`,
+                      padding: "16px 24px",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      color: "var(--a-text-muted)",
+                      textAlign: i === 5 ? "right" : "left",
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "color-mix(in srgb, var(--a-primary) 6%, var(--a-surface))")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                   >
-                    <td style={{ padding: "16px 24px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        {u.avatarUrl ? (
-                          <img
-                            alt=""
-                            src={u.avatarUrl}
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody style={{ borderTop: "1px solid var(--a-border)" }}>
+              {loading ? (
+                <SkeletonRows />
+              ) : paginatedUsers.length === 0 ? null : (
+                paginatedUsers.map((u, i) => {
+                  const active = u.status === true || u.status === 1;
+                  const initial = (u.fullName || "?")[0].toUpperCase();
+                  const roleClass = ROLE_BADGE[u.roleName] || "bg-stone-100 text-stone-500";
+                  return (
+                    <tr
+                      key={u.id}
+                      className="fade-row"
+                      style={{
+                        borderBottom: "1px solid var(--a-divider)",
+                        animationDelay: `${Math.min(i * 25, 200)}ms`,
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "color-mix(in srgb, var(--a-primary) 6%, var(--a-surface))")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                    >
+                      <td style={{ padding: "16px 24px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          {u.avatarUrl ? (
+                            <img
+                              alt=""
+                              src={u.avatarUrl}
+                              style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: "50%",
+                                background: "var(--a-primary-soft)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "var(--a-primary)",
+                                fontWeight: 700,
+                                fontSize: 14,
+                              }}
+                            >
+                              {initial}
+                            </div>
+                          )}
+                          <div>
+                            <span style={{ fontWeight: 500, color: "var(--a-text)", fontSize: 14 }}>
+                              {u.fullName || "—"}
+                            </span>
+                            <p style={{ fontSize: 12, color: "var(--a-text-soft)", margin: 0 }}>#{u.id}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: "16px 24px", fontSize: 14, color: "var(--a-text-muted)" }}>
+                        {u.email || "—"}
+                      </td>
+                      <td style={{ padding: "16px 24px", fontSize: 14, color: "var(--a-text-muted)" }}>
+                        {u.phone || "—"}
+                      </td>
+                      <td style={{ padding: "16px 24px" }}>
+                        <span className={`px-3 py-1 ${roleClass} text-[10px] font-extrabold rounded-full uppercase`}>
+                          {u.roleName || "—"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "16px 24px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span
                             style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: "50%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        ) : (
-                          <div
-                            style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: "50%",
-                              background: "var(--a-primary-soft)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              color: "var(--a-primary)",
-                              fontWeight: 700,
-                              fontSize: 14,
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: active ? "var(--a-success)" : "var(--a-text-soft)",
                             }}
                           >
-                            {initial}
-                          </div>
-                        )}
-                        <div>
-                          <span style={{ fontWeight: 500, color: "var(--a-text)", fontSize: 14 }}>
-                            {u.fullName || "—"}
+                            {active ? "Hoạt động" : "Đã khóa"}
                           </span>
-                          <p style={{ fontSize: 12, color: "var(--a-text-soft)", margin: 0 }}>#{u.id}</p>
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              checked={active}
+                              disabled={togglingIds.has(u.id)}
+                              onChange={() => handleToggle(u.id)}
+                            />
+                            <span className="slider" />
+                          </label>
                         </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: "16px 24px", fontSize: 14, color: "var(--a-text-muted)" }}>
-                      {u.email || "—"}
-                    </td>
-                    <td style={{ padding: "16px 24px", fontSize: 14, color: "var(--a-text-muted)" }}>
-                      {u.phone || "—"}
-                    </td>
-                    <td style={{ padding: "16px 24px" }}>
-                      <span className={`px-3 py-1 ${roleClass} text-[10px] font-extrabold rounded-full uppercase`}>
-                        {u.roleName || "—"}
-                      </span>
-                    </td>
-                    <td style={{ padding: "16px 24px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 500,
-                            color: active ? "var(--a-success)" : "var(--a-text-soft)",
-                          }}
-                        >
-                          {active ? "Hoạt động" : "Đã khóa"}
-                        </span>
-                        <label className="toggle-switch">
-                          <input
-                            type="checkbox"
-                            checked={active}
-                            disabled={togglingIds.has(u.id)}
-                            onChange={() => handleToggle(u.id)}
-                          />
-                          <span className="slider" />
-                        </label>
-                      </div>
-                    </td>
-                    <td style={{ padding: "16px 24px", textAlign: "right" }}>
-                      <div style={{ display: "flex", justifyContent: "flex-end", gap: 4 }}>
-                        <button
-                          onClick={() => openDetail(u.id)}
-                          style={{
-                            padding: 8,
-                            color: "var(--a-text-soft)",
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            borderRadius: 8,
-                            transition: "all .15s",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = "var(--a-surface-raised)";
-                            e.currentTarget.style.color = "var(--a-primary)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "";
-                            e.currentTarget.style.color = "var(--a-text-soft)";
-                          }}
-                          title="Xem chi tiết"
-                        >
-                          <span className="material-symbols-outlined" style={{ fontSize: 22 }}>
-                            visibility
-                          </span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                      </td>
+                      <td style={{ padding: "16px 24px", textAlign: "right" }}>
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: 4 }}>
+                          <button
+                            onClick={() => openDetail(u.id)}
+                            style={{
+                              padding: 8,
+                              color: "var(--a-text-soft)",
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              borderRadius: 8,
+                              transition: "all .15s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "var(--a-surface-raised)";
+                              e.currentTarget.style.color = "var(--a-primary)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "";
+                              e.currentTarget.style.color = "var(--a-text-soft)";
+                            }}
+                            title="Xem chi tiết"
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: 22 }}>
+                              visibility
+                            </span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {!loading && paginatedUsers.length === 0 && (

@@ -1,4 +1,4 @@
-﻿using HotelManagement.Core.Authorization;
+using HotelManagement.Core.Authorization;
 using HotelManagement.Core.DTOs;
 using HotelManagement.Core.Entities;
 using HotelManagement.Core.Helpers;
@@ -178,7 +178,7 @@ public class UserManagementController : ControllerBase
     [RequirePermission(PermissionCodes.CreateUsers)]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
-        var actorRoleName = User.FindFirst("role")?.Value;
+        var actorRoleName = User.FindFirst(ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value;
         var actorLevel = GetRoleLevel(actorRoleName);
 
         var emailExists = await _db.Users
@@ -370,7 +370,7 @@ public class UserManagementController : ControllerBase
     public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeRoleRequest request)
     {
         var actorId = JwtHelper.GetUserId(User);
-        var actorRoleName = User.FindFirst("role")?.Value;
+        var actorRoleName = User.FindFirst(ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value;
         var actorLevel = GetRoleLevel(actorRoleName);
 
         var user = await _db.Users.FindAsync(id);

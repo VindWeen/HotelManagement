@@ -893,7 +893,7 @@ export default function BookingPage() {
     if (!guestName.trim()) errs.guestName = "Vui lòng nhập họ tên.";
     if (!/^\d{9,12}$/.test(guestPhone.replace(/\s+/g, "")))
       errs.guestPhone = "Số điện thoại không hợp lệ (9–12 chữ số).";
-    
+
     if (!isGuest && !guestEmail.trim()) {
       errs.guestEmail = "Vui lòng nhập email để nhận thông tin đặt phòng.";
     } else if (guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
@@ -1052,9 +1052,9 @@ export default function BookingPage() {
             </button>
             <button
               className="g-btn-primary"
-              onClick={() => { 
+              onClick={() => {
                 const bookingId = successBooking?.id;
-                handleSuccessClose(); 
+                handleSuccessClose();
                 if (bookingId) {
                   navigate(`/guest/payment/deposit/${bookingId}`);
                 } else {
@@ -1626,43 +1626,43 @@ export default function BookingPage() {
                         <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
                           <div className="bp-label">Ưu đãi có thể chọn</div>
                           <div style={{ display: "grid", gap: 8, maxHeight: 306, overflowY: "auto", paddingRight: 4 }}>
-                          {availableVouchers.map((voucher) => {
-                            const disabledReason = getVoucherDisabledReason(voucher);
-                            const disabled = Boolean(disabledReason) || voucherLoading;
-                            return (
-                              <button
-                                key={voucher.id}
-                                type="button"
-                                onClick={() => handleApplyVoucher(voucher.code)}
-                                disabled={disabled}
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  gap: 12,
-                                  padding: "10px 12px",
-                                  minHeight: 54,
-                                  borderRadius: "var(--g-radius-md)",
-                                  border: "1px solid var(--g-border-light)",
-                                  background: voucherInfo?.voucherId === voucher.id ? "var(--g-success-bg)" : "var(--g-bg-card)",
-                                  color: disabled ? "var(--g-text-muted)" : "var(--g-text)",
-                                  cursor: disabled ? "not-allowed" : "pointer",
-                                  textAlign: "left",
-                                  fontFamily: "var(--g-font-body)",
-                                }}
-                              >
-                                <span>
-                                  <strong>{voucher.code}</strong>
-                                  <span style={{ display: "block", fontSize: "var(--g-text-xs)", color: "var(--g-text-muted)", marginTop: 2 }}>
-                                    {getVoucherAudienceLabel(voucher)} - {voucher.discountType === "PERCENT" ? `Giảm ${voucher.discountValue}%` : `Giảm ${formatCurrency(voucher.discountValue)}`}
-                                    {disabledReason ? ` - ${disabledReason}` : ""}
+                            {availableVouchers.map((voucher) => {
+                              const disabledReason = getVoucherDisabledReason(voucher);
+                              const disabled = Boolean(disabledReason) || voucherLoading;
+                              return (
+                                <button
+                                  key={voucher.id}
+                                  type="button"
+                                  onClick={() => handleApplyVoucher(voucher.code)}
+                                  disabled={disabled}
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    gap: 12,
+                                    padding: "10px 12px",
+                                    minHeight: 54,
+                                    borderRadius: "var(--g-radius-md)",
+                                    border: "1px solid var(--g-border-light)",
+                                    background: voucherInfo?.voucherId === voucher.id ? "var(--g-success-bg)" : "var(--g-bg-card)",
+                                    color: disabled ? "var(--g-text-muted)" : "var(--g-text)",
+                                    cursor: disabled ? "not-allowed" : "pointer",
+                                    textAlign: "left",
+                                    fontFamily: "var(--g-font-body)",
+                                  }}
+                                >
+                                  <span>
+                                    <strong>{voucher.code}</strong>
+                                    <span style={{ display: "block", fontSize: "var(--g-text-xs)", color: "var(--g-text-muted)", marginTop: 2 }}>
+                                      {getVoucherAudienceLabel(voucher)} - {voucher.discountType === "PERCENT" ? `Giảm ${voucher.discountValue}%` : `Giảm ${formatCurrency(voucher.discountValue)}`}
+                                      {disabledReason ? ` - ${disabledReason}` : ""}
+                                    </span>
                                   </span>
-                                </span>
-                                <span style={{ fontSize: "var(--g-text-xs)", color: "var(--g-primary)", fontWeight: 700 }}>
-                                  {disabledReason ? "Chưa đủ" : "Chọn"}
-                                </span>
-                              </button>
-                            );
-                          })}
+                                  <span style={{ fontSize: "var(--g-text-xs)", color: "var(--g-primary)", fontWeight: 700 }}>
+                                    {disabledReason ? "Chưa đủ" : "Chọn"}
+                                  </span>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       ) : null}
