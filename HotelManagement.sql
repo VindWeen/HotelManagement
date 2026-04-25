@@ -1,4 +1,4 @@
-﻿--============================================== TẠO DATABASE ============================================
+--============================================== TẠO DATABASE ============================================
 use master
 if exists(select * from sys.databases where name = 'HotelManagementDB')
     drop database [HotelManagementDB]
@@ -759,6 +759,34 @@ CREATE INDEX [ix_activity_log_reads_user_id] ON [dbo].[Activity_Log_Reads] ([use
 GO
 
 -- ============================================================
+-- BẢNG Dashboard_Snapshots
+-- Lưu kết quả tổng hợp dashboard đã tính sẵn theo role.
+-- Mỗi role có 1 snapshot / ngày, tự động refresh khi dữ liệu
+-- thay đổi (event-driven invalidation từ các controller).
+-- Khi load dashboard chỉ cần đọc 1 row thay vì join 6-7 bảng.
+-- ============================================================
+
+CREATE TABLE [dbo].[Dashboard_Snapshots] (
+    [id]            [int]           IDENTITY(1,1) NOT NULL,
+    [role_name]     [nvarchar](100) NOT NULL,                      -- 'Admin', 'Manager', 'Accountant', 'Receptionist', 'Housekeeping', ...
+    [snapshot_date] [date]          NOT NULL,                      -- Ngày UTC của snapshot
+    [snapshot_data] [nvarchar](max) NOT NULL,                      -- JSON payload tương ứng với role
+    [computed_at]   [datetime]      NOT NULL DEFAULT GETUTCDATE(), -- Thời điểm tính gần nhất (UTC)
+    PRIMARY KEY CLUSTERED ([id] ASC)
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+-- Unique index: mỗi role chỉ có 1 snapshot mỗi ngày — dùng MERGE / UPSERT
+CREATE UNIQUE NONCLUSTERED INDEX [UQ_Dashboard_Snapshots_Role_Date]
+    ON [dbo].[Dashboard_Snapshots] ([role_name] ASC, [snapshot_date] ASC)
+GO
+
+-- Index tra cứu nhanh theo role (dùng nhất khi load dashboard)
+CREATE NONCLUSTERED INDEX [IX_Dashboard_Snapshots_RoleName]
+    ON [dbo].[Dashboard_Snapshots] ([role_name] ASC, [computed_at] DESC)
+GO
+
+-- ============================================================
 -- SEED DATA — THỨ TỰ CHA TRƯỚC CON
 -- ============================================================
 
@@ -1378,4 +1406,5 @@ VALUES (9,  N'Trung Tâm Thương Mại',  N'Giải trí', N'321 Đường Mua S
 INSERT [dbo].[Attractions] ([id],[name],[category],[address],[latitude],[longitude],[distance_km],[description],[image_url],[map_embed_link],[is_active])
 VALUES (10, N'Điểm Ngắm Hoàng Hôn',  N'Thiên nhiên',N'Mũi Đất Phía Nam',      CAST(16.020000 AS Decimal(9,6)), CAST(108.215000 AS Decimal(9,6)), CAST(4.00  AS Decimal(5,2)), N'Nơi có view biển đẹp nhất',             NULL, N'link_map_10', 1)
 SET IDENTITY_INSERT [dbo].[Attractions] OFF
+-- Hệ thống backend sẽ tự động tổng hợp Dashboard Snapshot từ các bảng thực tế khi người dùng truy cập lần đầu trong ngày, hoặc khi có các tương tác mới cần refresh snapshot.
 GO

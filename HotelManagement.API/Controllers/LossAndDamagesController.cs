@@ -23,17 +23,20 @@ public class LossAndDamagesController : ControllerBase
     private readonly Cloudinary _cloudinary;
     private readonly INotificationService _notificationService;
     private readonly IAuditLogGroupService _auditLogGroup;
+    private readonly IDashboardAggregationService _dashboard;
 
     public LossAndDamagesController(
         AppDbContext db,
         Cloudinary cloudinary,
         INotificationService notificationService,
-        IAuditLogGroupService auditLogGroup)
+        IAuditLogGroupService auditLogGroup,
+        IDashboardAggregationService dashboard)
     {
         _db = db;
         _cloudinary = cloudinary;
         _notificationService = notificationService;
         _auditLogGroup = auditLogGroup;
+        _dashboard = dashboard;
     }
 
     private class ImageItem
@@ -472,6 +475,10 @@ public class LossAndDamagesController : ControllerBase
 
         _ = _notificationService.SendToRolesAsync(new[] { "Admin", "Manager" }, notification.Title, notification.Message, notification.Action.ToString());
 
+        // Fire-and-forget: refresh snapshot (Housekeeping report pending loss, Receptionist report damages, Admin/Acct see penalty)
+        _ = _dashboard.RefreshSnapshotsAsync(
+            [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist, SnapshotRoles.Housekeeping]);
+
         return StatusCode(201, new
         {
             message = record.Status == "Confirmed"
@@ -567,6 +574,10 @@ public class LossAndDamagesController : ControllerBase
             Type = NotificationType.Success,
             Action = NotificationAction.UpdateLossReport
         };
+
+        // Fire-and-forget: refresh snapshot
+        _ = _dashboard.RefreshSnapshotsAsync(
+            [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist, SnapshotRoles.Housekeeping]);
 
         return Ok(new
         {
@@ -702,6 +713,10 @@ public class LossAndDamagesController : ControllerBase
             Type = NotificationType.Success,
             Action = NotificationAction.DeleteLossReport
         };
+
+        // Fire-and-forget: refresh snapshot
+        _ = _dashboard.RefreshSnapshotsAsync(
+            [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist, SnapshotRoles.Housekeeping]);
 
         return Ok(new
         {

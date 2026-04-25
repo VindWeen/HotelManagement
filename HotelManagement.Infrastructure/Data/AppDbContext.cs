@@ -18,6 +18,7 @@ public class AppDbContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<ActivityLogRead> ActivityLogReads => Set<ActivityLogRead>();
+    public DbSet<DashboardSnapshot> DashboardSnapshots => Set<DashboardSnapshot>();
 
     // ── Cluster 2: Room Management ───────────────────────────────
     public DbSet<Amenity> Amenities => Set<Amenity>();
@@ -150,6 +151,17 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // ── DashboardSnapshot ─────────────────────────────────────
+        modelBuilder.Entity<DashboardSnapshot>().ToTable("Dashboard_Snapshots");
+        modelBuilder.Entity<DashboardSnapshot>()
+            .HasIndex(s => new { s.RoleName, s.SnapshotDate })
+            .IsUnique();
+        modelBuilder.Entity<DashboardSnapshot>()
+            .HasIndex(s => new { s.RoleName, s.ComputedAt });
+        modelBuilder.Entity<DashboardSnapshot>()
+            .Property(s => s.SnapshotDate)
+            .HasColumnType("date");
 
         // ── 2. Composite Primary Keys cho bảng join ──────────────
         modelBuilder.Entity<RolePermission>()

@@ -52,13 +52,20 @@ public class PaymentsController : ControllerBase
     private readonly IPaymentService _paymentService;
     private readonly IInvoiceService _invoiceService;
     private readonly IMomoService _momoService;
+    private readonly IDashboardAggregationService _dashboard;
 
-    public PaymentsController(AppDbContext db, IPaymentService paymentService, IInvoiceService invoiceService, IMomoService momoService)
+    public PaymentsController(
+        AppDbContext db, 
+        IPaymentService paymentService, 
+        IInvoiceService invoiceService, 
+        IMomoService momoService,
+        IDashboardAggregationService dashboard)
     {
         _db = db;
         _paymentService = paymentService;
         _invoiceService = invoiceService;
         _momoService = momoService;
+        _dashboard = dashboard;
     }
 
     // ─── GUEST ENDPOINTS ──────────────────────────────────────────────────
@@ -180,6 +187,10 @@ public class PaymentsController : ControllerBase
 
                 await _db.SaveChangesAsync();
                 await _invoiceService.CreateFromBookingAsync(booking.Id);
+
+                // Fire-and-forget: refresh snapshot
+                _ = _dashboard.RefreshSnapshotsAsync(
+                    [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist]);
             }
         }
 
@@ -293,6 +304,10 @@ public class PaymentsController : ControllerBase
                 await _invoiceService.CreateFromBookingAsync(booking.Id);
             }
 
+            // Fire-and-forget: refresh snapshot
+            _ = _dashboard.RefreshSnapshotsAsync(
+                [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist]);
+
             return Ok(new
             {
                 success = true,
@@ -392,6 +407,10 @@ public class PaymentsController : ControllerBase
         }
 
         var finalized = await _invoiceService.FinalizeAsync(invoice.Id);
+
+        // Fire-and-forget: refresh snapshot
+        _ = _dashboard.RefreshSnapshotsAsync(
+            [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist]);
 
         return Ok(new
         {
