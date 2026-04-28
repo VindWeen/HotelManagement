@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using ClosedXML.Excel;
 using HotelManagement.Core.Authorization;
+using HotelManagement.Core.DTOs;
 using HotelManagement.Core.Entities;
 using HotelManagement.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -52,7 +53,7 @@ public class AuditLogsController : ControllerBase
                 RoleName = x.RoleName,
                 LogDate = x.LogDate,
                 LogData = x.LogData,
-                UserName = x.User != null ? x.User.FullName : "Hệ thống"
+                UserName = x.User != null ? x.User.FullName : "He thong"
             })
             .ToListAsync(cancellationToken);
 
@@ -131,7 +132,7 @@ public class AuditLogsController : ControllerBase
                 RoleName = x.RoleName,
                 LogDate = x.LogDate,
                 LogData = x.LogData,
-                UserName = x.User != null ? x.User.FullName : "Hệ thống"
+                UserName = x.User != null ? x.User.FullName : "He thong"
             })
             .ToListAsync(cancellationToken);
 
@@ -164,7 +165,7 @@ public class AuditLogsController : ControllerBase
                 RoleName = x.RoleName,
                 LogDate = x.LogDate,
                 LogData = x.LogData,
-                UserName = x.User != null ? x.User.FullName : "Hệ thống"
+                UserName = x.User != null ? x.User.FullName : "He thong"
             })
             .ToListAsync(cancellationToken);
 
@@ -225,15 +226,24 @@ public class AuditLogsController : ControllerBase
         foreach (var row in rows)
         {
             var payload = ParsePayload((string)row.LogData);
-            foreach (var evt in payload.Events.OrderBy(x => x.Timestamp))
+            foreach (var action in payload.Actions.OrderBy(x => x.Timestamp))
             {
-                worksheet.Cell(rowIndex, 1).Value = ((DateTime)row.LogDate).ToString("dd/MM/yyyy");
-                worksheet.Cell(rowIndex, 2).Value = (string)row.UserName;
-                worksheet.Cell(rowIndex, 3).Value = (string)row.RoleName;
-                worksheet.Cell(rowIndex, 4).Value = evt.Timestamp.ToLocalTime().ToString("HH:mm:ss");
-                worksheet.Cell(rowIndex, 5).Value = NormalizeActionLabel(evt.ActionType);
-                worksheet.Cell(rowIndex, 6).Value = evt.Message;
-                rowIndex++;
+                var details = action.Details.Count == 0
+                    ? [new AuditLogDetailPayload { Message = action.Message, Timestamp = action.Timestamp }]
+                    : action.Details.OrderBy(x => x.Timestamp).ToList();
+
+                foreach (var detail in details)
+                {
+                    worksheet.Cell(rowIndex, 1).Value = ((DateTime)row.LogDate).ToString("dd/MM/yyyy");
+                    worksheet.Cell(rowIndex, 2).Value = (string)row.UserName;
+                    worksheet.Cell(rowIndex, 3).Value = (string)row.RoleName;
+                    worksheet.Cell(rowIndex, 4).Value = action.Timestamp.ToLocalTime().ToString("HH:mm:ss");
+                    worksheet.Cell(rowIndex, 5).Value = string.IsNullOrWhiteSpace(action.ActionLabel)
+                        ? NormalizeActionLabel(action.ActionCode)
+                        : action.ActionLabel;
+                    worksheet.Cell(rowIndex, 6).Value = detail.Message;
+                    rowIndex++;
+                }
             }
         }
 
@@ -255,17 +265,26 @@ public class AuditLogsController : ControllerBase
         foreach (var row in rows)
         {
             var payload = ParsePayload((string)row.LogData);
-            foreach (var evt in payload.Events.OrderBy(x => x.Timestamp))
+            foreach (var action in payload.Actions.OrderBy(x => x.Timestamp))
             {
-                worksheet.Cell(rowIndex, 1).Value = (int)row.Id;
-                worksheet.Cell(rowIndex, 2).Value = ((DateTime)row.LogDate).ToString("dd/MM/yyyy");
-                worksheet.Cell(rowIndex, 3).Value = (string)row.UserName;
-                worksheet.Cell(rowIndex, 4).Value = (string)row.RoleName;
-                worksheet.Cell(rowIndex, 5).Value = evt.Timestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
-                worksheet.Cell(rowIndex, 6).Value = NormalizeActionLabel(evt.ActionType);
-                worksheet.Cell(rowIndex, 7).Value = evt.EntityType;
-                worksheet.Cell(rowIndex, 8).Value = evt.Message;
-                rowIndex++;
+                var details = action.Details.Count == 0
+                    ? [new AuditLogDetailPayload { Message = action.Message, Timestamp = action.Timestamp }]
+                    : action.Details.OrderBy(x => x.Timestamp).ToList();
+
+                foreach (var detail in details)
+                {
+                    worksheet.Cell(rowIndex, 1).Value = (int)row.Id;
+                    worksheet.Cell(rowIndex, 2).Value = ((DateTime)row.LogDate).ToString("dd/MM/yyyy");
+                    worksheet.Cell(rowIndex, 3).Value = (string)row.UserName;
+                    worksheet.Cell(rowIndex, 4).Value = (string)row.RoleName;
+                    worksheet.Cell(rowIndex, 5).Value = action.Timestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
+                    worksheet.Cell(rowIndex, 6).Value = string.IsNullOrWhiteSpace(action.ActionLabel)
+                        ? NormalizeActionLabel(action.ActionCode)
+                        : action.ActionLabel;
+                    worksheet.Cell(rowIndex, 7).Value = action.EntityType;
+                    worksheet.Cell(rowIndex, 8).Value = detail.Message;
+                    rowIndex++;
+                }
             }
         }
 
@@ -275,7 +294,7 @@ public class AuditLogsController : ControllerBase
     private object? ParseHistoryItem(AuditLogRow row)
     {
         var payload = ParsePayload((string)row.LogData);
-        if (payload.Events.Count == 0 && string.IsNullOrWhiteSpace(payload.Summary.Text))
+        if (payload.Actions.Count == 0 && string.IsNullOrWhiteSpace(payload.Summary.Text))
         {
             return null;
         }
@@ -288,50 +307,75 @@ public class AuditLogsController : ControllerBase
             roleName = (string)row.RoleName,
             logDate = ((DateTime)row.LogDate).ToString("yyyy-MM-dd"),
             summary = payload.Summary.Text,
-            totalEvents = payload.TotalEvents,
-            events = payload.Events
+            totalActions = payload.TotalActions,
+            actions = payload.Actions
                 .OrderBy(x => x.Timestamp)
                 .Select(x => new
                 {
-                    eventId = x.EventId,
+                    actionId = x.ActionId,
                     time = x.Timestamp.ToLocalTime().ToString("HH:mm:ss"),
                     timestamp = x.Timestamp,
-                    actionType = NormalizeActionLabel(x.ActionType),
+                    actionCode = x.ActionCode,
+                    actionType = NormalizeActionLabel(x.ActionCode),
+                    actionLabel = x.ActionLabel,
                     entityType = x.EntityType,
-                    message = x.Message
+                    message = x.Message,
+                    detailCount = x.DetailCount,
+                    details = x.Details
+                        .OrderBy(d => d.Timestamp)
+                        .Select(d => new
+                        {
+                            detailId = d.DetailId,
+                            time = d.Timestamp.ToLocalTime().ToString("HH:mm:ss"),
+                            timestamp = d.Timestamp,
+                            message = d.Message
+                        })
                 })
         };
     }
 
-    private static AuditLogPayloadDto ParsePayload(string logData)
+    private static AuditLogDayPayload ParsePayload(string logData)
     {
         if (string.IsNullOrWhiteSpace(logData))
         {
-            return new AuditLogPayloadDto();
+            return new AuditLogDayPayload();
         }
 
         try
         {
-            return JsonSerializer.Deserialize<AuditLogPayloadDto>(logData, new JsonSerializerOptions
+            var payload = JsonSerializer.Deserialize<AuditLogDayPayload>(logData, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
-            }) ?? new AuditLogPayloadDto();
+            }) ?? new AuditLogDayPayload();
+
+            payload.Actions ??= [];
+            payload.TotalActions = payload.Actions.Count;
+            foreach (var action in payload.Actions)
+            {
+                action.Details ??= [];
+                action.DetailCount = action.Details.Count;
+            }
+
+            return payload;
         }
         catch
         {
-            return new AuditLogPayloadDto
+            return new AuditLogDayPayload
             {
-                TotalEvents = 1,
-                Summary = new AuditLogSummaryDto { Text = "Không thể phân tích log_data." },
-                Events =
+                TotalActions = 1,
+                Summary = new AuditLogSummaryPayload { Text = "Không thể phân tích log_data." },
+                Actions =
                 [
-                    new AuditLogEventDto
+                    new AuditLogActionPayload
                     {
-                        EventId = Guid.NewGuid().ToString(),
+                        ActionId = Guid.NewGuid().ToString(),
                         Timestamp = DateTime.UtcNow,
-                        ActionType = "UPDATE",
+                        ActionCode = "UPDATE",
+                        ActionLabel = "UPDATE",
                         EntityType = "System",
-                        Message = logData
+                        Message = logData,
+                        DetailCount = 0,
+                        Details = []
                     }
                 ]
             };
@@ -364,30 +408,10 @@ public class AuditLogsController : ControllerBase
 
     private static string NormalizeActionLabel(string actionType)
     {
+        if (string.IsNullOrWhiteSpace(actionType)) return "UPDATE";
         if (string.Equals(actionType, "CREATE", StringComparison.OrdinalIgnoreCase)) return "POST";
         if (string.Equals(actionType, "UPDATE", StringComparison.OrdinalIgnoreCase)) return "PUT";
-        return actionType?.ToUpperInvariant() ?? "PUT";
-    }
-
-    private sealed class AuditLogPayloadDto
-    {
-        public int TotalEvents { get; set; }
-        public AuditLogSummaryDto Summary { get; set; } = new();
-        public List<AuditLogEventDto> Events { get; set; } = [];
-    }
-
-    private sealed class AuditLogSummaryDto
-    {
-        public string Text { get; set; } = string.Empty;
-    }
-
-    private sealed class AuditLogEventDto
-    {
-        public string EventId { get; set; } = Guid.NewGuid().ToString();
-        public DateTime Timestamp { get; set; }
-        public string ActionType { get; set; } = "UPDATE";
-        public string EntityType { get; set; } = "System";
-        public string Message { get; set; } = string.Empty;
+        return actionType.ToUpperInvariant();
     }
 
     private sealed class AuditLogRow

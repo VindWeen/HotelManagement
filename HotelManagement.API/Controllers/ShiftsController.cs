@@ -4,6 +4,7 @@ using HotelManagement.Core.DTOs;
 using HotelManagement.Core.Entities;
 using HotelManagement.Core.Helpers;
 using HotelManagement.Infrastructure.Data;
+using HotelManagement.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,10 +17,12 @@ namespace HotelManagement.API.Controllers;
 public class ShiftsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IAuditTrailService _auditTrail;
 
-    public ShiftsController(AppDbContext db)
+    public ShiftsController(AppDbContext db, IAuditTrailService auditTrail)
     {
         _db = db;
+        _auditTrail = auditTrail;
     }
 
     [HttpGet]
@@ -111,6 +114,20 @@ public class ShiftsController : ControllerBase
             .FirstAsync();
         var created = MapShift(createdShift);
 
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "CREATE_SHIFT",
+            ActionLabel = "Tạo ca làm việc",
+            Message = $"Đã tạo ca làm việc cho nhân sự '{user.FullName}' ({shift.ShiftType}, {shift.Department}): {shift.PlannedStart:dd/MM/yyyy HH:mm} - {shift.PlannedEnd:HH:mm}.",
+            EntityType = "Shift",
+            EntityId = shift.Id,
+            EntityLabel = $"{user.FullName} - {shift.ShiftType}",
+            Severity = "Success",
+            TableName = "Shifts",
+            RecordId = shift.Id,
+            NewValue = $"{{\"userId\":{shift.UserId},\"shiftType\":\"{shift.ShiftType}\",\"department\":\"{shift.Department}\",\"plannedStart\":\"{shift.PlannedStart:yyyy-MM-ddTHH:mm}\",\"plannedEnd\":\"{shift.PlannedEnd:yyyy-MM-ddTHH:mm}\"}}"
+        });
+
         return StatusCode(201, new { message = "Tạo ca làm việc thành công.", data = created });
     }
 
@@ -136,6 +153,20 @@ public class ShiftsController : ControllerBase
         shift.Status = ShiftStatuses.Active;
         await _db.SaveChangesAsync();
 
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "START_SHIFT",
+            ActionLabel = "Bắt đầu ca làm việc",
+            Message = $"Ca #{id} đã được bắt đầu. Trễ {shift.LateMinutes} phút so với kế hoạch.",
+            EntityType = "Shift",
+            EntityId = id,
+            EntityLabel = $"Shift #{id}",
+            Severity = shift.LateMinutes > 10 ? "Warning" : "Info",
+            TableName = "Shifts",
+            RecordId = id,
+            NewValue = $"{{\"status\":\"{shift.Status}\",\"actualStart\":\"{shift.ActualStart:yyyy-MM-ddTHH:mm}\",\"lateMinutes\":{shift.LateMinutes}}}"
+        });
+
         return Ok(new { message = "Đã bắt đầu ca làm việc.", data = new { shift.Id, shift.Status, shift.ActualStart, shift.LateMinutes } });
     }
 
@@ -153,6 +184,20 @@ public class ShiftsController : ControllerBase
         shift.CashAtHandover = request.CashAtHandover;
         await _db.SaveChangesAsync();
 
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "SHIFT_HANDOVER",
+            ActionLabel = "Bàn giao ca làm việc",
+            Message = $"Đã lưu ghi chú bàn giao ca #{id}.",
+            EntityType = "Shift",
+            EntityId = id,
+            EntityLabel = $"Shift #{id}",
+            Severity = "Info",
+            TableName = "Shifts",
+            RecordId = id,
+            NewValue = $"{{\"handoverNote\":\"{shift.HandoverNote}\",\"cashAtHandover\":{shift.CashAtHandover ?? 0}}}"
+        });
+
         return Ok(new { message = "Đã lưu thông tin bàn giao ca." });
     }
 
@@ -168,6 +213,21 @@ public class ShiftsController : ControllerBase
         shift.ActualEnd = DateTime.UtcNow;
         shift.Status = ShiftStatuses.Completed;
         await _db.SaveChangesAsync();
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "COMPLETE_SHIFT",
+            ActionLabel = "Hoàn tất ca làm việc",
+            Message = $"Ca #{id} đã được hoàn tất lúc {shift.ActualEnd:HH:mm dd/MM/yyyy}.",
+            EntityType = "Shift",
+            EntityId = id,
+            EntityLabel = $"Shift #{id}",
+            Severity = "Success",
+            TableName = "Shifts",
+            RecordId = id,
+            NewValue = $"{{\"status\":\"{shift.Status}\",\"actualEnd\":\"{shift.ActualEnd:yyyy-MM-ddTHH:mm}\"}}"
+        });
+
         return Ok(new { message = "Đã hoàn tất ca làm việc.", data = new { shift.Id, shift.Status, shift.ActualEnd } });
     }
 
@@ -180,6 +240,21 @@ public class ShiftsController : ControllerBase
 
         shift.ConfirmedBy = JwtHelper.GetUserId(User);
         await _db.SaveChangesAsync();
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "CONFIRM_SHIFT_HANDOVER",
+            ActionLabel = "Xác nhận bàn giao ca",
+            Message = $"Ca #{id} đã được xác nhận bàn giao bởi userId {shift.ConfirmedBy}.",
+            EntityType = "Shift",
+            EntityId = id,
+            EntityLabel = $"Shift #{id}",
+            Severity = "Success",
+            TableName = "Shifts",
+            RecordId = id,
+            NewValue = $"{{\"confirmedBy\":{shift.ConfirmedBy}}}"
+        });
+
         return Ok(new { message = "Đã xác nhận bàn giao ca.", data = new { shift.Id, shift.ConfirmedBy } });
     }
 

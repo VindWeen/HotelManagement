@@ -52,13 +52,15 @@ public class PaymentsController : ControllerBase
     private readonly IPaymentService _paymentService;
     private readonly IInvoiceService _invoiceService;
     private readonly IMomoService _momoService;
+    private readonly IAuditTrailService _auditTrail;
 
-    public PaymentsController(AppDbContext db, IPaymentService paymentService, IInvoiceService invoiceService, IMomoService momoService)
+    public PaymentsController(AppDbContext db, IPaymentService paymentService, IInvoiceService invoiceService, IMomoService momoService, IAuditTrailService auditTrail)
     {
         _db = db;
         _paymentService = paymentService;
         _invoiceService = invoiceService;
         _momoService = momoService;
+        _auditTrail = auditTrail;
     }
 
     // ─── GUEST ENDPOINTS ──────────────────────────────────────────────────
@@ -100,6 +102,19 @@ public class PaymentsController : ControllerBase
 
         if (!result.Success)
             return BadRequest(new { success = false, message = result.Message ?? "Tạo thanh toán MoMo thất bại." });
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "GUEST_DEPOSIT_REQUEST",
+            ActionLabel = "Khách tạo yêu cầu đặt cọc MoMo",
+            Message = $"Khách hàng (userId: {userId}) đã tạo yêu cầu đặt cọc MoMo cho booking {booking.BookingCode} số tiền {remaining:N0}d.",
+            EntityType = "Payment",
+            EntityId = booking.Id,
+            EntityLabel = booking.BookingCode,
+            Severity = "Info",
+            TableName = "Payments",
+            NewValue = $"{{\"bookingId\":{booking.Id},\"bookingCode\":\"{booking.BookingCode}\",\"amount\":{remaining},\"method\":\"MoMo\",\"orderId\":\"{result.OrderId}\"}}"
+        });
 
         return Ok(new
         {
@@ -180,6 +195,19 @@ public class PaymentsController : ControllerBase
 
                 await _db.SaveChangesAsync();
                 await _invoiceService.CreateFromBookingAsync(booking.Id);
+
+                await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+                {
+                    ActionCode = "MOMO_IPN_SUCCESS",
+                    ActionLabel = "Thanh toán MoMo thành công",
+                    Message = $"Thanh toán MoMo thành công cho booking #{bookingId}. Số tiền: {ipn.Amount:N0}d. TransId: {ipn.TransId}.",
+                    EntityType = "Payment",
+                    EntityId = bookingId,
+                    EntityLabel = booking.BookingCode,
+                    Severity = "Success",
+                    TableName = "Payments",
+                    NewValue = $"{{\"bookingId\":{bookingId},\"amount\":{ipn.Amount},\"transId\":\"{ipn.TransId}\",\"orderId\":\"{ipn.OrderId}\",\"newStatus\":\"{booking.Status}\"}}"
+                });
             }
         }
 
@@ -293,6 +321,20 @@ public class PaymentsController : ControllerBase
                 await _invoiceService.CreateFromBookingAsync(booking.Id);
             }
 
+            await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+            {
+                ActionCode = normalizedType == PaymentTypes.Refund ? "RECORD_BOOKING_REFUND" : "RECORD_BOOKING_PAYMENT",
+                ActionLabel = normalizedType == PaymentTypes.Refund ? "Ghi nhận hoàn tiền booking" : "Ghi nhận thanh toán booking",
+                Message = $"{(normalizedType == PaymentTypes.Refund ? "Hoàn tiền" : "Thu tiền")} booking {booking.BookingCode}: {request.AmountPaid:N0}d qua {payment.PaymentMethod}.",
+                EntityType = "Payment",
+                EntityId = payment.Id,
+                EntityLabel = booking.BookingCode,
+                Severity = normalizedType == PaymentTypes.Refund ? "Warning" : "Success",
+                TableName = "Payments",
+                RecordId = payment.Id,
+                NewValue = $"{{\"bookingId\":{booking.Id},\"bookingCode\":\"{booking.BookingCode}\",\"amount\":{request.AmountPaid},\"method\":\"{payment.PaymentMethod}\",\"type\":\"{normalizedType}\",\"depositTotal\":{booking.DepositAmount}}}"
+            });
+
             return Ok(new
             {
                 success = true,
@@ -392,6 +434,20 @@ public class PaymentsController : ControllerBase
         }
 
         var finalized = await _invoiceService.FinalizeAsync(invoice.Id);
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "RECORD_INVOICE_PAYMENT",
+            ActionLabel = "Ghi nhận thanh toán hóa đơn",
+            Message = $"Đã ghi nhận thanh toán hóa đơn #{invoiceId}: {request.AmountPaid:N0}d qua {invoicePayment.PaymentMethod}.",
+            EntityType = "Payment",
+            EntityId = invoicePayment.Id,
+            EntityLabel = $"Invoice #{invoiceId}",
+            Severity = "Success",
+            TableName = "Payments",
+            RecordId = invoicePayment.Id,
+            NewValue = $"{{\"invoiceId\":{invoiceId},\"amount\":{request.AmountPaid},\"method\":\"{invoicePayment.PaymentMethod}\",\"type\":\"{invoicePayment.PaymentType}\"}}"
+        });
 
         return Ok(new
         {

@@ -1,4 +1,4 @@
-﻿using HotelManagement.API.Services;
+using HotelManagement.API.Services;
 using HotelManagement.Core.Authorization;
 using HotelManagement.Core.DTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -10,10 +10,14 @@ namespace HotelManagement.API.Controllers;
 public class InvoicesController : ControllerBase
 {
     private readonly IInvoiceService _invoiceService;
+    private readonly IAuditTrailService _auditTrail;
+    private readonly Infrastructure.Data.AppDbContext _db;
 
-    public InvoicesController(IInvoiceService invoiceService)
+    public InvoicesController(IInvoiceService invoiceService, IAuditTrailService auditTrail, Infrastructure.Data.AppDbContext db)
     {
         _invoiceService = invoiceService;
+        _auditTrail = auditTrail;
+        _db = db;
     }
 
     [RequirePermission(PermissionCodes.ManageInvoices)]
@@ -53,6 +57,20 @@ public class InvoicesController : ControllerBase
         try
         {
             var result = await _invoiceService.CreateFromBookingAsync(bookingId);
+
+            await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+            {
+                ActionCode = "CREATE_INVOICE_FROM_BOOKING",
+                ActionLabel = "Tạo hóa đơn từ booking",
+                Message = $"Đã tạo hóa đơn từ booking #{bookingId}.",
+                EntityType = "Invoice",
+                EntityId = bookingId,
+                EntityLabel = $"Booking #{bookingId}",
+                Severity = "Success",
+                TableName = "Invoices",
+                NewValue = $"{{\"bookingId\":{bookingId}}}"
+            });
+
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -76,6 +94,20 @@ public class InvoicesController : ControllerBase
         if (result == null)
             return NotFound(new { message = $"Không tìm thấy hóa đơn #{id}." });
 
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "FINALIZE_INVOICE",
+            ActionLabel = "Chốt hóa đơn",
+            Message = $"Đã chốt hóa đơn #{id}.",
+            EntityType = "Invoice",
+            EntityId = id,
+            EntityLabel = $"Invoice #{id}",
+            Severity = "Success",
+            TableName = "Invoices",
+            RecordId = id,
+            NewValue = $"{{\"invoiceId\":{id},\"status\":\"Finalized\"}}"
+        });
+
         return Ok(new { message = "Chốt hóa đơn thành công.", data = result });
     }
 
@@ -88,6 +120,20 @@ public class InvoicesController : ControllerBase
             var result = await _invoiceService.AddAdjustmentAsync(id, request);
             if (result == null)
                 return NotFound(new { message = $"Không tìm thấy hóa đơn #{id}." });
+
+            await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+            {
+                ActionCode = "ADD_INVOICE_ADJUSTMENT",
+                ActionLabel = "Thêm điều chỉnh hóa đơn",
+                Message = $"Đã thêm điều chỉnh '{request.Reason}' ({(request.AdjustmentType == "Discount" ? "-" : "+")}{request.Amount:N0}d) vào hóa đơn #{id}.",
+                EntityType = "Invoice",
+                EntityId = id,
+                EntityLabel = $"Invoice #{id}",
+                Severity = "Info",
+                TableName = "InvoiceAdjustments",
+                RecordId = id,
+                NewValue = $"{{\"invoiceId\":{id},\"reason\":\"{request.Reason}\",\"amount\":{request.Amount},\"adjustmentType\":\"{request.AdjustmentType}\"}}"
+            });
 
             return Ok(new { message = "Đã thêm điều chỉnh hóa đơn thành công.", data = result });
         }
@@ -106,6 +152,20 @@ public class InvoicesController : ControllerBase
             var result = await _invoiceService.RemoveAdjustmentAsync(id, adjustmentId);
             if (result == null)
                 return NotFound(new { message = $"Không tìm thấy hóa đơn #{id}." });
+
+            await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+            {
+                ActionCode = "REMOVE_INVOICE_ADJUSTMENT",
+                ActionLabel = "Xóa điều chỉnh hóa đơn",
+                Message = $"Đã xóa điều chỉnh #{adjustmentId} khỏi hóa đơn #{id}.",
+                EntityType = "Invoice",
+                EntityId = id,
+                EntityLabel = $"Invoice #{id}",
+                Severity = "Warning",
+                TableName = "InvoiceAdjustments",
+                RecordId = adjustmentId,
+                OldValue = $"{{\"adjustmentId\":{adjustmentId},\"invoiceId\":{id}}}"
+            });
 
             return Ok(new { message = "Đã xóa điều chỉnh hóa đơn thành công.", data = result });
         }

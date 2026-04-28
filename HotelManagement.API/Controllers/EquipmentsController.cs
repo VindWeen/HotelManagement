@@ -1,5 +1,6 @@
 using HotelManagement.Core.Authorization;
 using HotelManagement.Infrastructure.Data;
+using HotelManagement.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,12 +18,14 @@ public class EquipmentsController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly Cloudinary _cloudinary;
+    private readonly IAuditTrailService _auditTrail;
     private static readonly JsonSerializerOptions SnapshotJsonOptions = new(JsonSerializerDefaults.Web);
 
-    public EquipmentsController(AppDbContext db, Cloudinary cloudinary)
+    public EquipmentsController(AppDbContext db, Cloudinary cloudinary, IAuditTrailService auditTrail)
     {
         _db = db;
         _cloudinary = cloudinary;
+        _auditTrail = auditTrail;
     }
 
     private sealed class RoomSnapshotItem
@@ -136,6 +139,20 @@ public class EquipmentsController : ControllerBase
             return HandleDbUpdateException(ex);
         }
 
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "CREATE_EQUIPMENT",
+            ActionLabel = "Tạo vật tư mới",
+            Message = $"Đã tạo vật tư '{equipment.Name}' (mã: {equipment.ItemCode}).",
+            EntityType = "Equipment",
+            EntityId = equipment.Id,
+            EntityLabel = equipment.Name,
+            Severity = "Success",
+            TableName = "Equipments",
+            RecordId = equipment.Id,
+            NewValue = $"{{\"itemCode\":\"{equipment.ItemCode}\",\"name\":\"{equipment.Name}\",\"totalQuantity\":{equipment.TotalQuantity},\"basePrice\":{equipment.BasePrice}}}"
+        });
+
         return StatusCode(201, new
         {
             message = "Tạo vật tư thành công.",
@@ -201,6 +218,21 @@ public class EquipmentsController : ControllerBase
         {
             return HandleDbUpdateException(ex);
         }
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "UPDATE_EQUIPMENT",
+            ActionLabel = "Cập nhật vật tư",
+            Message = $"Đã cập nhật vật tư '{equipment.Name}' (mã: {equipment.ItemCode}).",
+            EntityType = "Equipment",
+            EntityId = id,
+            EntityLabel = equipment.Name,
+            Severity = "Info",
+            TableName = "Equipments",
+            RecordId = id,
+            NewValue = $"{{\"itemCode\":\"{equipment.ItemCode}\",\"name\":\"{equipment.Name}\",\"totalQuantity\":{equipment.TotalQuantity},\"basePrice\":{equipment.BasePrice}}}"
+        });
+
         return Ok(new { message = "Cập nhật vật tư thành công." });
     }
 
@@ -212,9 +244,25 @@ public class EquipmentsController : ControllerBase
         if (equipment is null)
             return NotFound(new { message = $"Không tìm thấy vật tư #{id}." });
 
+        var oldActive = equipment.IsActive;
         equipment.IsActive = !equipment.IsActive;
         equipment.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = equipment.IsActive ? "ENABLE_EQUIPMENT" : "DISABLE_EQUIPMENT",
+            ActionLabel = equipment.IsActive ? "Kích hoạt vật tư" : "Vô hiệu hóa vật tư",
+            Message = $"Vật tư '{equipment.Name}' đã {(equipment.IsActive ? "được kích hoạt" : "bị vô hiệu hóa")}.",
+            EntityType = "Equipment",
+            EntityId = id,
+            EntityLabel = equipment.Name,
+            Severity = "Info",
+            TableName = "Equipments",
+            RecordId = id,
+            OldValue = $"{{\"isActive\":{oldActive.ToString().ToLower()}}}",
+            NewValue = $"{{\"isActive\":{equipment.IsActive.ToString().ToLower()}}}"
+        });
 
         return Ok(new
         {
@@ -345,9 +393,20 @@ public class EquipmentsController : ControllerBase
         if (changed > 0)
             await _db.SaveChangesAsync();
 
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "SYNC_EQUIPMENT_INUSE",
+            ActionLabel = "Đồng bộ số lượng vật tư đang sử dụng",
+            Message = $"Đã đồng bộ {changed}/{equipments.Count} vật tư và snapshot {rooms.Count} phòng.",
+            EntityType = "Equipment",
+            Severity = changed > 0 ? "Success" : "Info",
+            TableName = "Equipments",
+            NewValue = $"{{\"changedEquipments\":{changed},\"totalEquipments\":{equipments.Count},\"syncedRooms\":{rooms.Count}}}"
+        });
+
         return Ok(new
         {
-            message = $"Da dong bo vat tu thanh cong. Da cap nhat snapshot tung phong va {changed} equipment.",
+            message = $"Đã đồng bộ vật tư thành công. Đã cập nhật snapshot từng phòng và {changed} equipment.",
             changedEquipments = changed,
             totalEquipments = equipments.Count,
             syncedRooms = rooms.Count,

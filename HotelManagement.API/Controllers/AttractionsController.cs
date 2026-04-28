@@ -1,4 +1,4 @@
-﻿using HotelManagement.Core.Authorization;
+using HotelManagement.Core.Authorization;
 using HotelManagement.Core.Entities;
 using HotelManagement.Core.Helpers;
 using HotelManagement.Core.Models.Enums;
@@ -19,12 +19,14 @@ public class AttractionsController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IActivityLogService _activityLog;
     private readonly Cloudinary _cloudinary;
+    private readonly IAuditTrailService _auditTrail;
 
-    public AttractionsController(AppDbContext db, IActivityLogService activityLog, Cloudinary cloudinary)
+    public AttractionsController(AppDbContext db, IActivityLogService activityLog, Cloudinary cloudinary, IAuditTrailService auditTrail)
     {
         _db = db;
         _activityLog = activityLog;
         _cloudinary = cloudinary;
+        _auditTrail = auditTrail;
     }
 
     // GET /api/Attractions
@@ -331,6 +333,15 @@ public class AttractionsController : ControllerBase
 
         if (uploadResult.Error is not null)
             return StatusCode(502, new { message = $"Upload thất bại: {uploadResult.Error.Message}" });
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "UPLOAD_ATTRACTION_IMAGE",
+            ActionLabel = "Tải lên ảnh địa điểm",
+            Message = $"Đã tải lên 1 ảnh mới cho mục địa điểm tham quan (publicId: {uploadResult.PublicId}).",
+            EntityType = "AttractionImage",
+            Severity = "Info"
+        });
 
         return Ok(new
         {

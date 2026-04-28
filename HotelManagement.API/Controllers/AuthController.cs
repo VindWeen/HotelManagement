@@ -218,6 +218,19 @@ public class AuthController : ControllerBase
         var roleName = user.Role?.Name ?? "Guest";
         var token = _jwt.GenerateToken(user, roleName, permissionCodes);
 
+        _context.AuditLogs.Add(new AuditLog
+        {
+            UserId = user.Id,
+            Action = "REFRESH_TOKEN",
+            TableName = "Users",
+            RecordId = user.Id,
+            OldValue = null,
+            NewValue = $"{{\"email\":\"{user.Email}\"}}",
+            UserAgent = Request.Headers["User-Agent"].ToString(),
+            CreatedAt = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+
         return Ok(new
         {
             token,

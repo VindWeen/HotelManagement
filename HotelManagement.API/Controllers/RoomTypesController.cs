@@ -243,6 +243,19 @@ public class RoomTypesController : ControllerBase
 
         _context.RoomTypes.Add(roomType);
         await _context.SaveChangesAsync();
+        await _auditTrail.WriteAsync(_context, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "CREATE_ROOM_TYPE",
+            ActionLabel = "Tạo loại phòng",
+            Message = $"Đã tạo loại phòng '{roomType.Name}'.",
+            EntityType = "RoomType",
+            EntityId = roomType.Id,
+            EntityLabel = roomType.Name,
+            Severity = "Success",
+            TableName = "RoomTypes",
+            RecordId = roomType.Id,
+            NewValue = $"{{\"name\":\"{roomType.Name}\",\"basePrice\":{roomType.BasePrice}}}"
+        });
 
         return StatusCode(201, new { message = "Tạo loại phòng thành công.", id = roomType.Id });
     }
@@ -271,6 +284,19 @@ public class RoomTypesController : ControllerBase
         roomType.Description = request.Description?.Trim();
 
         await _context.SaveChangesAsync();
+        await _auditTrail.WriteAsync(_context, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "UPDATE_ROOM_TYPE",
+            ActionLabel = "Cập nhật loại phòng",
+            Message = $"Đã cập nhật loại phòng '{roomType.Name}'.",
+            EntityType = "RoomType",
+            EntityId = roomType.Id,
+            EntityLabel = roomType.Name,
+            Severity = "Info",
+            TableName = "RoomTypes",
+            RecordId = roomType.Id,
+            NewValue = $"{{\"name\":\"{roomType.Name}\",\"basePrice\":{roomType.BasePrice}}}"
+        });
 
         return Ok(new { message = "Cập nhật loại phòng thành công." });
     }
@@ -450,6 +476,20 @@ public class RoomTypesController : ControllerBase
         );
 
         await _context.SaveChangesAsync(); // Changed _db.SaveChangesAsync() to _context.SaveChangesAsync()
+        await _auditTrail.WriteAsync(_context, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "DELETE_ROOM_IMAGE",
+            ActionLabel = "Xóa ảnh loại phòng",
+            Message = $"Đã xóa ảnh của loại phòng #{image.RoomTypeId}.",
+            EntityType = "RoomImage",
+            EntityId = imageId,
+            EntityLabel = image.ImageUrl,
+            Severity = "Warning",
+            TableName = "RoomImages",
+            RecordId = imageId,
+            OldValue = $"{{\"url\":\"{image.ImageUrl}\"}}",
+            NewValue = "{\"isActive\":false}"
+        });
 
         return Ok(new { message = "Đã xóa ảnh thành công." });
     }
@@ -505,6 +545,19 @@ public class RoomTypesController : ControllerBase
                 userId: currentUserId,
                 roleName: User.FindFirst("role")?.Value
             );
+            await _auditTrail.WriteAsync(_context, User, Request, new AuditTrailEntry
+            {
+                ActionCode = "SET_PRIMARY_ROOM_IMAGE",
+                ActionLabel = "Đặt ảnh chính loại phòng",
+                Message = $"Đã đặt ảnh chính cho loại phòng '{roomType.Name}'.",
+                EntityType = "RoomImage",
+                EntityId = imageId,
+                EntityLabel = targetImage.ImageUrl,
+                Severity = "Info",
+                TableName = "RoomImages",
+                RecordId = imageId,
+                NewValue = $"{{\"roomTypeId\":{roomTypeId},\"imageId\":{imageId},\"isPrimary\":true}}"
+            });
 
             await transaction.CommitAsync();
         }
@@ -567,6 +620,20 @@ public class RoomTypesController : ControllerBase
         );
 
         await _context.SaveChangesAsync(); // Changed _db.SaveChangesAsync() to _context.SaveChangesAsync()
+        await _auditTrail.WriteAsync(_context, User, Request, new AuditTrailEntry
+        {
+            ActionCode = roomType.IsActive ? "ENABLE_ROOM_TYPE" : "DISABLE_ROOM_TYPE",
+            ActionLabel = roomType.IsActive ? "Kích hoạt loại phòng" : "Vô hiệu hóa loại phòng",
+            Message = $"Loại phòng '{roomType.Name}' đã {(roomType.IsActive ? "được kích hoạt" : "bị vô hiệu hóa")}.",
+            EntityType = "RoomType",
+            EntityId = id,
+            EntityLabel = roomType.Name,
+            Severity = "Info",
+            TableName = "RoomTypes",
+            RecordId = id,
+            OldValue = $"{{\"isActive\":{oldActive.ToString().ToLower()}}}",
+            NewValue = $"{{\"isActive\":{roomType.IsActive.ToString().ToLower()}}}"
+        });
 
         var action = roomType.IsActive ? "kích hoạt" : "vô hiệu hóa";
         return Ok(new

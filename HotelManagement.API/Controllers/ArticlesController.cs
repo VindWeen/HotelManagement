@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.RegularExpressions;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
@@ -21,12 +21,14 @@ public class ArticlesController : ControllerBase
     private readonly AppDbContext _db;
     private readonly Cloudinary   _cloudinary;
     private readonly IActivityLogService _activityLog;
+    private readonly IAuditTrailService _auditTrail;
 
-    public ArticlesController(AppDbContext db, Cloudinary cloudinary, IActivityLogService activityLog)
+    public ArticlesController(AppDbContext db, Cloudinary cloudinary, IActivityLogService activityLog, IAuditTrailService auditTrail)
     {
         _db    = db;
         _cloudinary = cloudinary;
         _activityLog = activityLog;
+        _auditTrail = auditTrail;
     }
 
     // GET /api/Articles
@@ -479,6 +481,20 @@ public class ArticlesController : ControllerBase
         article.CloudinaryPublicId = uploadResult.PublicId;
         await _db.SaveChangesAsync();
 
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "UPLOAD_ARTICLE_THUMBNAIL",
+            ActionLabel = "Tải lên ảnh bìa bài viết",
+            Message = $"Đã tải lên ảnh bìa mới cho bài viết #{id} ({article.Title}).",
+            EntityType = "Article",
+            EntityId = id,
+            EntityLabel = article.Title,
+            Severity = "Info",
+            TableName = "Articles",
+            RecordId = id,
+            NewValue = $"{{\"thumbnailUrl\":\"{article.ThumbnailUrl}\",\"cloudinaryPublicId\":\"{article.CloudinaryPublicId}\"}}"
+        });
+
         var notification = new Notification
         {
             Title   = "Ảnh bìa đã được cập nhật",
@@ -515,6 +531,15 @@ public class ArticlesController : ControllerBase
 
         if (uploadResult.Error is not null)
             return StatusCode(502, new { message = $"Upload thất bại: {uploadResult.Error.Message}" });
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "UPLOAD_ARTICLE_CONTENT_IMAGE",
+            ActionLabel = "Tải lên ảnh nội dung bài viết",
+            Message = $"Đã tải lên 1 ảnh nội dung mới (publicId: {uploadResult.PublicId}).",
+            EntityType = "ArticleImage",
+            Severity = "Info"
+        });
 
         return Ok(new
         {

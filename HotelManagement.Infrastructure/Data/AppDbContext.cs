@@ -1,5 +1,7 @@
 using HotelManagement.Core.Entities;
+using HotelManagement.Core.DTOs;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Text.RegularExpressions;
 using System.Text.Json;
 
@@ -315,33 +317,40 @@ public class AppDbContext : DbContext
         return Regex.Replace(name, @"([a-z0-9])([A-Z])", "$1_$2").ToLower();
     }
 
+    private static readonly TimeSpan AuditLogBusinessOffset = TimeSpan.FromHours(7);
+    private static readonly JsonSerializerOptions AuditLogJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     private void NormalizeAuditLogs()
     {
-        var pending = ChangeTracker.Entries<AuditLog>()
+        var pendingEntries = ChangeTracker.Entries<AuditLog>()
             .Where(x => x.State == EntityState.Added)
-            .Select(x => x.Entity)
-            .Where(x => string.IsNullOrWhiteSpace(x.LogData) || string.IsNullOrWhiteSpace(x.RoleName))
             .ToList();
 
-        if (pending.Count == 0) return;
+        if (pendingEntries.Count == 0) return;
 
+        var pending = pendingEntries.Select(x => x.Entity).ToList();
         var rolesByUserId = BuildAuditRoleLookup(pending.Select(x => x.UserId).Where(x => x.HasValue).Select(x => x!.Value));
 
         foreach (var auditLog in pending)
         {
             NormalizeAuditLog(auditLog, rolesByUserId);
         }
+
+        MergePendingAuditLogs(pendingEntries);
     }
 
     private async Task NormalizeAuditLogsAsync(CancellationToken cancellationToken)
     {
-        var pending = ChangeTracker.Entries<AuditLog>()
+        var pendingEntries = ChangeTracker.Entries<AuditLog>()
             .Where(x => x.State == EntityState.Added)
-            .Select(x => x.Entity)
-            .Where(x => string.IsNullOrWhiteSpace(x.LogData) || string.IsNullOrWhiteSpace(x.RoleName))
             .ToList();
 
-        if (pending.Count == 0) return;
+        if (pendingEntries.Count == 0) return;
+
+        var pending = pendingEntries.Select(x => x.Entity).ToList();
 
         var userIds = pending
             .Select(x => x.UserId)
@@ -360,6 +369,8 @@ public class AppDbContext : DbContext
         {
             NormalizeAuditLog(auditLog, rolesByUserId);
         }
+
+        await MergePendingAuditLogsAsync(pendingEntries, cancellationToken);
     }
 
     private Dictionary<int, string> BuildAuditRoleLookup(IEnumerable<int> userIds)
@@ -384,46 +395,263 @@ public class AppDbContext : DbContext
         }
 
         var eventTime = auditLog.CreatedAt ?? DateTime.UtcNow;
-        if (auditLog.LogDate == default)
-        {
-            auditLog.LogDate = eventTime.Date;
-        }
+        auditLog.LogDate = ResolveBusinessDate(eventTime);
 
         if (string.IsNullOrWhiteSpace(auditLog.LogData))
         {
             var actionType = string.IsNullOrWhiteSpace(auditLog.Action) ? "UPDATE" : auditLog.Action!.Trim();
-            var payload = new
+            var summary = BuildLegacySummary(auditLog);
+            var detail = new AuditLogDetailPayload
             {
-                TotalEvents = 1,
-                Summary = new
+                DetailId = Guid.NewGuid().ToString(),
+                Timestamp = eventTime,
+                Message = summary,
+                Context = new
                 {
-                    text = BuildLegacySummary(auditLog)
+                    recordId = auditLog.RecordId,
+                    userAgent = auditLog.UserAgent
                 },
-                Events = new[]
+                Changes = new
                 {
-                    new
-                    {
-                        eventId = Guid.NewGuid().ToString(),
-                        timestamp = eventTime,
-                        actionType,
-                        entityType = string.IsNullOrWhiteSpace(auditLog.TableName) ? "System" : auditLog.TableName,
-                        context = new
-                        {
-                            recordId = auditLog.RecordId,
-                            userAgent = auditLog.UserAgent
-                        },
-                        changes = new
-                        {
-                            oldData = TryParseJson(auditLog.OldValue),
-                            newData = TryParseJson(auditLog.NewValue)
-                        },
-                        message = BuildLegacySummary(auditLog)
-                    }
+                    oldData = TryParseJson(auditLog.OldValue),
+                    newData = TryParseJson(auditLog.NewValue)
                 }
             };
 
-            auditLog.LogData = JsonSerializer.Serialize(payload);
+            var action = new AuditLogActionPayload
+            {
+                ActionId = Guid.NewGuid().ToString(),
+                Timestamp = eventTime,
+                ActionCode = actionType,
+                ActionLabel = BuildLegacyActionLabel(auditLog),
+                EntityType = string.IsNullOrWhiteSpace(auditLog.TableName) ? "System" : auditLog.TableName,
+                EntityId = auditLog.RecordId > 0 ? auditLog.RecordId : null,
+                Message = summary,
+                DetailCount = 1,
+                Details = [detail],
+                Context = detail.Context,
+                Changes = detail.Changes
+            };
+
+            var payload = new AuditLogDayPayload
+            {
+                TotalActions = 1,
+                Summary = new AuditLogSummaryPayload { Text = summary },
+                Actions = [action]
+            };
+
+            auditLog.LogData = JsonSerializer.Serialize(payload, AuditLogJsonOptions);
         }
+        else
+        {
+            var payload = ParseAuditLogPayload(auditLog.LogData, eventTime, auditLog);
+            UpdateDaySummary(payload);
+            auditLog.LogData = JsonSerializer.Serialize(payload, AuditLogJsonOptions);
+        }
+    }
+
+    private void MergePendingAuditLogs(List<EntityEntry<AuditLog>> pendingEntries)
+    {
+        var grouped = pendingEntries
+            .GroupBy(x => new AuditLogMergeKey(x.Entity.UserId, x.Entity.LogDate))
+            .ToList();
+
+        var keys = grouped.Select(x => x.Key).ToList();
+        var existingLogs = AuditLogs
+            .Where(x => keys.Select(k => k.LogDate).Contains(x.LogDate))
+            .ToList()
+            .Where(x => keys.Contains(new AuditLogMergeKey(x.UserId, x.LogDate)))
+            .GroupBy(x => new AuditLogMergeKey(x.UserId, x.LogDate))
+            .ToDictionary(x => x.Key, x => x.OrderByDescending(y => y.Id).First());
+
+        MergePendingGroups(grouped, existingLogs);
+    }
+
+    private async Task MergePendingAuditLogsAsync(List<EntityEntry<AuditLog>> pendingEntries, CancellationToken cancellationToken)
+    {
+        var grouped = pendingEntries
+            .GroupBy(x => new AuditLogMergeKey(x.Entity.UserId, x.Entity.LogDate))
+            .ToList();
+
+        var keys = grouped.Select(x => x.Key).ToList();
+        var targetDates = keys.Select(x => x.LogDate).Distinct().ToList();
+
+        var existingRows = await AuditLogs
+            .Where(x => targetDates.Contains(x.LogDate))
+            .ToListAsync(cancellationToken);
+
+        var existingLogs = existingRows
+            .Where(x => keys.Contains(new AuditLogMergeKey(x.UserId, x.LogDate)))
+            .GroupBy(x => new AuditLogMergeKey(x.UserId, x.LogDate))
+            .ToDictionary(x => x.Key, x => x.OrderByDescending(y => y.Id).First());
+
+        MergePendingGroups(grouped, existingLogs);
+    }
+
+    private static void MergePendingGroups(
+        IEnumerable<IGrouping<AuditLogMergeKey, EntityEntry<AuditLog>>> groups,
+        IReadOnlyDictionary<AuditLogMergeKey, AuditLog> existingLogs)
+    {
+        foreach (var group in groups)
+        {
+            var entries = group.ToList();
+            var primaryEntry = entries[0];
+            var primary = primaryEntry.Entity;
+            var mergedPayload = new AuditLogDayPayload();
+
+            foreach (var entry in entries)
+            {
+                var payload = ParseAuditLogPayload(entry.Entity.LogData, entry.Entity.CreatedAt ?? DateTime.UtcNow, entry.Entity);
+                MergeDayPayload(mergedPayload, payload);
+            }
+
+            if (existingLogs.TryGetValue(group.Key, out var existing))
+            {
+                var existingPayload = ParseAuditLogPayload(existing.LogData, existing.LogDate, existing);
+                MergeDayPayload(existingPayload, mergedPayload);
+                UpdateDaySummary(existingPayload);
+                existing.LogData = JsonSerializer.Serialize(existingPayload, AuditLogJsonOptions);
+                if (string.IsNullOrWhiteSpace(existing.RoleName))
+                {
+                    existing.RoleName = primary.RoleName;
+                }
+
+                foreach (var entry in entries)
+                {
+                    entry.State = EntityState.Detached;
+                }
+
+                continue;
+            }
+
+            UpdateDaySummary(mergedPayload);
+            primary.LogData = JsonSerializer.Serialize(mergedPayload, AuditLogJsonOptions);
+            primary.LogDate = group.Key.LogDate;
+            primary.RoleName = primary.RoleName;
+
+            foreach (var entry in entries.Skip(1))
+            {
+                entry.State = EntityState.Detached;
+            }
+        }
+    }
+
+    private static AuditLogDayPayload ParseAuditLogPayload(string? raw, DateTime fallbackTimestamp, AuditLog? sourceAuditLog = null)
+    {
+        if (!string.IsNullOrWhiteSpace(raw))
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<AuditLogDayPayload>(raw, AuditLogJsonOptions);
+                if (parsed is not null && parsed.Actions.Count > 0)
+                {
+                    foreach (var action in parsed.Actions)
+                    {
+                        action.Details ??= [];
+                        action.DetailCount = action.Details.Count;
+                    }
+
+                    UpdateDaySummary(parsed);
+                    return parsed;
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        if (sourceAuditLog is not null)
+        {
+            var legacy = new AuditLogDayPayload();
+            NormalizeLegacyIntoPayload(legacy, sourceAuditLog, fallbackTimestamp);
+            UpdateDaySummary(legacy);
+            return legacy;
+        }
+
+        return new AuditLogDayPayload
+        {
+            TotalActions = 0,
+            Summary = new AuditLogSummaryPayload()
+        };
+    }
+
+    private static void NormalizeLegacyIntoPayload(AuditLogDayPayload payload, AuditLog auditLog, DateTime fallbackTimestamp)
+    {
+        var summary = BuildLegacySummary(auditLog);
+        var detail = new AuditLogDetailPayload
+        {
+            DetailId = Guid.NewGuid().ToString(),
+            Timestamp = fallbackTimestamp,
+            Message = summary,
+            Context = new
+            {
+                recordId = auditLog.RecordId,
+                userAgent = auditLog.UserAgent
+            },
+            Changes = new
+            {
+                oldData = TryParseJson(auditLog.OldValue),
+                newData = TryParseJson(auditLog.NewValue)
+            }
+        };
+
+        payload.Actions.Add(new AuditLogActionPayload
+        {
+            ActionId = Guid.NewGuid().ToString(),
+            Timestamp = fallbackTimestamp,
+            ActionCode = string.IsNullOrWhiteSpace(auditLog.Action) ? "UPDATE" : auditLog.Action!.Trim(),
+            ActionLabel = BuildLegacyActionLabel(auditLog),
+            EntityType = string.IsNullOrWhiteSpace(auditLog.TableName) ? "System" : auditLog.TableName,
+            EntityId = auditLog.RecordId > 0 ? auditLog.RecordId : null,
+            Message = summary,
+            DetailCount = 1,
+            Details = [detail],
+            Context = detail.Context,
+            Changes = detail.Changes
+        });
+    }
+
+    private static void MergeDayPayload(AuditLogDayPayload target, AuditLogDayPayload source)
+    {
+        foreach (var action in source.Actions.OrderBy(x => x.Timestamp))
+        {
+            action.Details ??= [];
+            action.DetailCount = action.Details.Count;
+            target.Actions.Add(action);
+        }
+
+        target.Actions = target.Actions
+            .OrderBy(x => x.Timestamp)
+            .ToList();
+        target.TotalActions = target.Actions.Count;
+    }
+
+    private static void UpdateDaySummary(AuditLogDayPayload payload)
+    {
+        payload.Actions ??= [];
+        foreach (var action in payload.Actions)
+        {
+            action.Details ??= [];
+            action.DetailCount = action.Details.Count;
+        }
+
+        payload.TotalActions = payload.Actions.Count;
+        payload.Summary.Text = payload.Actions.Count switch
+        {
+            0 => string.Empty,
+            1 => payload.Actions[0].Message,
+            2 => $"{payload.Actions[0].Message} và 1 hành động khác.",
+            _ => $"{payload.Actions[0].Message} và {payload.Actions.Count - 1} hành động khác."
+        };
+    }
+
+    private static DateTime ResolveBusinessDate(DateTime timestampUtc)
+    {
+        var utc = timestampUtc.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(timestampUtc, DateTimeKind.Utc)
+            : timestampUtc.ToUniversalTime();
+
+        return utc.Add(AuditLogBusinessOffset).Date;
     }
 
     private static object? TryParseJson(string? raw)
@@ -459,4 +687,21 @@ public class AppDbContext : DbContext
 
         return $"{auditLog.TableName ?? "System"}#{auditLog.RecordId}";
     }
+
+    private static string BuildLegacyActionLabel(AuditLog auditLog)
+    {
+        var action = auditLog.Action?.Trim().ToUpperInvariant();
+        return action switch
+        {
+            "LOGIN" => "Dang nhap he thong",
+            "LOGOUT" => "Dang xuat he thong",
+            "REGISTER" => "Dang ky tai khoan",
+            "FORGOT_PASSWORD_RESET" => "Dat lai mat khau",
+            "GRANT_PERMISSION" => "Cap quyen vai tro",
+            "REVOKE_PERMISSION" => "Thu hoi quyen vai tro",
+            _ => action ?? "Cap nhat du lieu"
+        };
+    }
+
+    private readonly record struct AuditLogMergeKey(int? UserId, DateTime LogDate);
 }

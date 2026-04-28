@@ -78,6 +78,21 @@ public class OrderServicesController : ControllerBase
         _db.OrderServices.Add(order);
         await _db.SaveChangesAsync();
 
+        var guestName = User.FindFirst("full_name")?.Value ?? "Khách hàng";
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "GUEST_CREATE_ORDER_SERVICE",
+            ActionLabel = "Khách đặt dịch vụ",
+            Message = $"{guestName} đã đặt dịch vụ cho phòng (BookingDetail #{order.BookingDetailId}). Tổng: {order.TotalAmount:N0}đ.",
+            EntityType = "OrderService",
+            EntityId = order.Id,
+            EntityLabel = $"OrderService #{order.Id}",
+            Severity = "Success",
+            TableName = "Order_Services",
+            RecordId = order.Id,
+            NewValue = $"{{\"bookingDetailId\":{order.BookingDetailId},\"totalAmount\":{order.TotalAmount},\"status\":\"{order.Status}\"}}"
+        });
+
         return StatusCode(201, new
         {
             success = true,

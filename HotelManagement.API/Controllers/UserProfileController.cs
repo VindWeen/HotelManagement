@@ -17,12 +17,14 @@ public class UserProfileController : ControllerBase
     private readonly AppDbContext    _db;
     private readonly IConfiguration _config;
     private readonly IEmailService _email;
+    private readonly IAuditTrailService _auditTrail;
 
-    public UserProfileController(AppDbContext db, IConfiguration config, IEmailService email)
+    public UserProfileController(AppDbContext db, IConfiguration config, IEmailService email, IAuditTrailService auditTrail)
     {
         _db     = db;
         _config = config;
         _email  = email;
+        _auditTrail = auditTrail;
     }
 
     // GET /api/UserProfile/my-profile
@@ -86,6 +88,20 @@ public class UserProfileController : ControllerBase
         user.UpdatedAt   = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "UPDATE_PROFILE",
+            ActionLabel = "Cập nhật thông tin cá nhân",
+            Message = $"{user.FullName} đã cập nhật thông tin cá nhân.",
+            EntityType = "User",
+            EntityId = userId,
+            EntityLabel = user.Email,
+            Severity = "Info",
+            TableName = "Users",
+            RecordId = userId,
+            NewValue = $"{{\"fullName\":\"{user.FullName}\",\"phone\":\"{user.Phone}\"}}"
+        });
 
         var notification = new Notification
         {

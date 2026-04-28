@@ -36,12 +36,14 @@ public class ReviewsController : ControllerBase
     private readonly AppDbContext _context;
     private readonly Cloudinary _cloudinary;
     private readonly IActivityLogService _activityLog;
+    private readonly IAuditTrailService _auditTrail;
 
-    public ReviewsController(AppDbContext context, Cloudinary cloudinary, IActivityLogService activityLog)
+    public ReviewsController(AppDbContext context, Cloudinary cloudinary, IActivityLogService activityLog, IAuditTrailService auditTrail)
     {
         _context = context;
         _cloudinary = cloudinary;
         _activityLog = activityLog;
+        _auditTrail = auditTrail;
     }
 
     // ================= UPLOAD ẢNH =================
@@ -79,6 +81,15 @@ public class ReviewsController : ControllerBase
 
         if (result.Error != null)
             return BadRequest($"Upload thất bại: {result.Error.Message}");
+
+        await _auditTrail.WriteAsync(_context, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "UPLOAD_REVIEW_IMAGE",
+            ActionLabel = "Tải lên ảnh đánh giá",
+            Message = $"Khách hàng đã tải lên 1 ảnh đánh giá.",
+            EntityType = "ReviewImage",
+            Severity = "Info"
+        });
 
         return Ok(new
         {
@@ -313,6 +324,21 @@ public async Task<IActionResult> Create([FromForm] CreateReviewRequest request)
 
     _context.Reviews.Add(review);
     await _context.SaveChangesAsync();
+
+    var guestName = User.FindFirst("full_name")?.Value ?? "Khách hàng";
+    await _auditTrail.WriteAsync(_context, User, Request, new AuditTrailEntry
+    {
+        ActionCode = "CREATE_REVIEW",
+        ActionLabel = "Gửi đánh giá dịch vụ",
+        Message = $"{guestName} đã gửi đánh giá {request.Rating} sao cho phòng (Booking #{request.BookingId}).",
+        EntityType = "Review",
+        EntityId = review.Id,
+        EntityLabel = $"Review #{review.Id}",
+        Severity = "Info",
+        TableName = "Reviews",
+        RecordId = review.Id,
+        NewValue = $"{{\"bookingId\":{review.BookingId},\"rating\":{review.Rating},\"hasImage\":{(!string.IsNullOrEmpty(review.ImageUrl)).ToString().ToLower()}}}"
+    });
 
     return Ok(new
     {

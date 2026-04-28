@@ -1539,6 +1539,19 @@ public class BookingsController : ControllerBase
                 detail.CheckOutDate = normalizedNewCheckOut;
                 await RecalculateBookingTotalsAsync(booking, cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
+                await _auditTrail.WriteAsync(_context, User, Request, new AuditTrailEntry
+                {
+                    ActionCode = "EXTEND_STAY",
+                    ActionLabel = "Gia hạn lưu trú",
+                    Message = $"{(User.FindFirst("full_name")?.Value ?? "Hệ thống")} đã gia hạn booking {booking.BookingCode}.",
+                    EntityType = "Booking",
+                    EntityId = booking.Id,
+                    EntityLabel = booking.BookingCode,
+                    Severity = "Info",
+                    TableName = "Bookings",
+                    RecordId = booking.Id,
+                    NewValue = $"{{\"bookingDetailId\":{detail.Id},\"newCheckOutDate\":\"{normalizedNewCheckOut:yyyy-MM-dd}\"}}"
+                });
 
                 return BookingActionSuccess("Đã cập nhật ở thêm ngày cho booking thành công.", booking);
             }
@@ -1548,6 +1561,19 @@ public class BookingsController : ControllerBase
             detail.CheckOutDate = normalizedNewCheckOut;
             await RecalculateBookingTotalsAsync(booking, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
+            await _auditTrail.WriteAsync(_context, User, Request, new AuditTrailEntry
+            {
+                ActionCode = "EXTEND_STAY",
+                ActionLabel = "Gia hạn lưu trú",
+                Message = $"{(User.FindFirst("full_name")?.Value ?? "Hệ thống")} đã gia hạn booking {booking.BookingCode}.",
+                EntityType = "Booking",
+                EntityId = booking.Id,
+                EntityLabel = booking.BookingCode,
+                Severity = "Info",
+                TableName = "Bookings",
+                RecordId = booking.Id,
+                NewValue = $"{{\"bookingDetailId\":{detail.Id},\"newCheckOutDate\":\"{normalizedNewCheckOut:yyyy-MM-dd}\"}}"
+            });
 
             return BookingActionSuccess("Đã cập nhật ở thêm ngày cho booking thành công.", booking);
         }
@@ -1589,6 +1615,19 @@ public class BookingsController : ControllerBase
 
             await RecalculateBookingTotalsAsync(booking, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
+            await _auditTrail.WriteAsync(_context, User, Request, new AuditTrailEntry
+            {
+                ActionCode = "EXTEND_STAY_TRANSFER_ROOM",
+                ActionLabel = "Gia hạn lưu trú và chuyển phòng",
+                Message = $"{(User.FindFirst("full_name")?.Value ?? "Hệ thống")} đã gia hạn booking {booking.BookingCode} và chuyển phòng.",
+                EntityType = "Booking",
+                EntityId = booking.Id,
+                EntityLabel = booking.BookingCode,
+                Severity = "Info",
+                TableName = "Bookings",
+                RecordId = booking.Id,
+                NewValue = $"{{\"bookingDetailId\":{detail.Id},\"newCheckOutDate\":\"{normalizedNewCheckOut:yyyy-MM-dd}\",\"targetRoomId\":{request.TargetRoomId.Value}}}"
+            });
 
             return BookingActionSuccess("Đã thêm chặng phòng mới để ở thêm ngày thành công.", booking);
         }
@@ -1811,6 +1850,20 @@ public class BookingsController : ControllerBase
         }
         
         await _context.SaveChangesAsync(ct);
+        if (expired.Count > 0)
+        {
+            await _auditTrail.WriteAsync(_context, User, Request, new AuditTrailEntry
+            {
+                ActionCode = "EXPIRE_PENDING_BOOKINGS",
+                ActionLabel = "Hủy booking hết hạn đặt cọc",
+                Message = $"{(User.FindFirst("full_name")?.Value ?? "Hệ thống")} đã hủy {expired.Count} booking pending hết hạn đặt cọc.",
+                EntityType = "Booking",
+                EntityLabel = "Expired pending bookings",
+                Severity = "Warning",
+                TableName = "Bookings",
+                NewValue = $"{{\"expiredCount\":{expired.Count}}}"
+            });
+        }
         return Ok(new { success = true, expired = expired.Count });
     }
 }

@@ -109,6 +109,19 @@ const getBulkReplenishCandidates = (records, seedItem) => {
     });
 };
 
+const getBulkUpdateStatusCandidates = (records, seedItem) => {
+  if (!seedItem) return [];
+  const groupKey = getReplenishGroupKey(seedItem);
+  return records
+    .filter((item) => getReplenishGroupKey(item) === groupKey)
+    .sort((a, b) => {
+      if ((a.roomNumber || "") !== (b.roomNumber || "")) {
+        return String(a.roomNumber || "").localeCompare(String(b.roomNumber || ""));
+      }
+      return String(a.itemName || "").localeCompare(String(b.itemName || ""));
+    });
+};
+
 const STATUS_CFG = {
   Pending: {
     label: "Chờ xử lý",
@@ -1129,11 +1142,12 @@ function EditModal({ open, item, onClose, onSaved, showToast }) {
               padding: "10px 28px",
               borderRadius: 12,
               border: "none",
-            background: "linear-gradient(135deg,#4f645b 0%,#43574f 100%)",
+              background: saving ? "var(--a-surface-bright)" : "var(--a-emphasis-bg)",
               fontSize: 14,
               fontWeight: 700,
-              color: "#111411",
-              cursor: "pointer",
+              color: "var(--a-emphasis-text)",
+              cursor: saving ? "not-allowed" : "pointer",
+              opacity: saving ? 0.75 : 1,
               display: "flex",
               alignItems: "center",
               gap: 8,
@@ -1223,7 +1237,7 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
           }}
         >
           <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-text-muted)" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Bổ sung vật tư #{item.id}
             </div>
             <h3 style={{ fontSize: 18, fontWeight: 800, color: "var(--a-text)", margin: "4px 0 0" }}>
@@ -1329,6 +1343,319 @@ function ReplenishModal({ open, item, onClose, onSaved, showToast }) {
             }}
           >
             {saving ? "Đang bổ sung..." : "Xác nhận bổ sung"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BatchUpdateStatusModal({ open, seedItem, records, onClose, onSaved, showToast }) {
+  const darkSpec = {
+    primary: "#A5D6A7",
+    secondary: "#FFB74D",
+    surface0: "#111411",
+    surface1: "#1a1c19",
+    surface2: "#232622",
+    surfaceBright: "#373a36",
+    border: "#2C2C2C",
+    textHigh: "#E1E3DE",
+    textMedium: "#A0A39D",
+    textDisabled: "#6C6E6A",
+  };
+  const candidates = useMemo(
+    () => getBulkUpdateStatusCandidates(records, seedItem),
+    [records, seedItem],
+  );
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [status, setStatus] = useState("Confirmed");
+  const [saving, setSaving] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof document === "undefined") return false;
+    return document.querySelector(".admin-portal")?.getAttribute("data-theme") === "dark";
+  });
+
+  useEffect(() => {
+    if (!open || candidates.length === 0) {
+      setSelectedIds([]);
+      setStatus("Confirmed");
+      return;
+    }
+
+    setSelectedIds(candidates.map((item) => item.id));
+    setStatus(seedItem?.status === "Waived" ? "Pending" : "Confirmed");
+  }, [open, candidates, seedItem]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const portal = document.querySelector(".admin-portal");
+    if (!portal) return undefined;
+
+    const syncTheme = () => {
+      setIsDarkMode(portal.getAttribute("data-theme") === "dark");
+    };
+
+    syncTheme();
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(portal, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
+
+  if (!open || !seedItem) return null;
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id],
+    );
+  };
+
+  const canSubmit = selectedIds.length > 0 && !saving;
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setSaving(true);
+    try {
+      const res = await axiosClient.post(`/LossAndDamages/batch-update-status`, {
+        lossAndDamageIds: selectedIds,
+        status,
+      });
+      showToast(
+        res.data?.message ||
+          (selectedIds.length === 1
+            ? "Đã cập nhật trạng thái biên bản."
+            : `Đã cập nhật trạng thái ${selectedIds.length} biên bản.`),
+      );
+      onSaved();
+      onClose();
+    } catch (error) {
+      showToast(
+        error?.response?.data?.message || "Cập nhật trạng thái hàng loạt thất bại.",
+        "error",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      style={modalOverlayStyle}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        style={{
+          ...modalContentStyle,
+          width: "100%",
+          maxWidth: 760,
+          maxHeight: "min(88vh, 920px)",
+          background: isDarkMode ? darkSpec.surface1 : undefined,
+          border: isDarkMode ? `1px solid ${darkSpec.border}` : undefined,
+          boxShadow: isDarkMode ? "none" : undefined,
+        }}
+      >
+        <div
+          style={{
+            padding: "24px 32px",
+            borderBottom: isDarkMode ? `1px solid ${darkSpec.border}` : "1px solid var(--a-border)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 16,
+            background: isDarkMode ? darkSpec.surface2 : "var(--a-surface)",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: isDarkMode ? darkSpec.textMedium : "var(--a-text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Cập nhật trạng thái hàng loạt
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: isDarkMode ? 600 : 800, color: isDarkMode ? darkSpec.textHigh : "var(--a-text)", margin: "4px 0 0" }}>
+              Phòng {seedItem.roomNumber || "-"} · cùng lượt lưu trú
+            </h3>
+            <p style={{ margin: "8px 0 0", color: isDarkMode ? darkSpec.textMedium : "var(--a-text-muted)", fontSize: 13 }}>
+              Chọn các biên bản cần đổi trạng thái trong cùng booking.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 12,
+              border: isDarkMode ? `1px solid ${darkSpec.surfaceBright}` : "1px solid var(--a-border)",
+              background: isDarkMode ? darkSpec.surface1 : "var(--a-surface)",
+              color: isDarkMode ? darkSpec.textHigh : "var(--a-text)",
+              cursor: "pointer",
+            }}
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div
+          style={{
+            padding: 24,
+            display: "grid",
+            gap: 16,
+            overflowY: "auto",
+            flex: 1,
+            background: isDarkMode ? darkSpec.surface0 : "linear-gradient(180deg, var(--a-surface) 0%, var(--a-surface-raised) 100%)",
+          }}
+        >
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: isDarkMode ? 700 : 800, color: isDarkMode ? darkSpec.textMedium : "var(--a-text-muted)", marginBottom: 8 }}>
+              Trạng thái mới
+            </label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              style={{
+                ...inputStyle,
+                ...(isDarkMode
+                  ? {
+                      background: darkSpec.surface0,
+                      border: `1px solid ${darkSpec.surfaceBright}`,
+                      color: darkSpec.textHigh,
+                      boxShadow: "none",
+                    }
+                  : {}),
+              }}
+            >
+              <option value="Pending">Chờ xử lý</option>
+              <option value="Confirmed">Đã xác nhận</option>
+              <option value="Waived">Miễn trừ</option>
+            </select>
+          </div>
+
+          {candidates.length === 0 ? (
+            <div style={{ background: isDarkMode ? darkSpec.surface1 : "#fffdf8", border: isDarkMode ? `1px solid ${darkSpec.border}` : "1px solid var(--a-border)", borderRadius: isDarkMode ? 12 : 16, padding: 20, color: isDarkMode ? darkSpec.textMedium : "var(--a-text-muted)", fontWeight: 600, ...(isDarkMode ? {} : { boxShadow: "var(--a-shadow-sm)" }) }}>
+              Không có biên bản nào trong cùng booking để cập nhật hàng loạt.
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 12 }}>
+              {candidates.map((item) => {
+                const checked = selectedIds.includes(item.id);
+                const statusCfg = STATUS_CFG[item.status] || STATUS_CFG.Pending;
+                return (
+                  <label
+                    key={item.id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "auto 1fr auto",
+                      gap: 12,
+                      alignItems: "center",
+                      padding: 16,
+                      borderRadius: isDarkMode ? 12 : 16,
+                      border: isDarkMode
+                        ? checked ? `1px solid ${darkSpec.primary}` : `1px solid ${darkSpec.border}`
+                        : checked ? "1.5px solid color-mix(in srgb, var(--a-primary) 58%, white)" : "1px solid #d7dfd7",
+                      background: isDarkMode
+                        ? checked ? "rgba(165, 214, 167, 0.10)" : darkSpec.surface1
+                        : checked ? "#f7fbf4" : "#fffefb",
+                      ...(isDarkMode ? {} : {
+                        boxShadow: checked ? "0 8px 22px rgba(79,100,91,0.08)" : "0 4px 14px rgba(15,23,42,0.04)",
+                      }),
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleSelect(item.id)}
+                      style={{
+                        width: 16,
+                        height: 16,
+                        accentColor: isDarkMode ? darkSpec.primary : "var(--a-primary)",
+                        cursor: "pointer",
+                        opacity: checked ? 1 : 0.9,
+                      }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: isDarkMode ? 700 : 800, color: isDarkMode ? darkSpec.textHigh : "var(--a-text)" }}>
+                        #{item.id} · {item.itemName}
+                      </div>
+                      <div style={{ fontSize: 12, color: isDarkMode ? darkSpec.textMedium : "var(--a-text-muted)", marginTop: 4 }}>
+                        Phòng {item.roomNumber || "-"} · Số lượng {item.quantity} · Đền bù {fmtCurrency(item.penaltyAmount)}
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "6px 10px",
+                        borderRadius: 999,
+                        background: statusCfg.bg,
+                        color: statusCfg.color,
+                        fontSize: 12,
+                        fontWeight: 800,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: 999,
+                          background: statusCfg.dot,
+                        }}
+                      />
+                      {statusCfg.label}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+
+          {selectedIds.length === 0 ? (
+            <div style={{ background: isDarkMode ? "rgba(255, 183, 77, 0.10)" : "var(--a-warning-bg)", color: isDarkMode ? darkSpec.secondary : "var(--a-warning)", border: isDarkMode ? `1px solid ${darkSpec.border}` : "1px solid var(--a-warning-border)", borderRadius: isDarkMode ? 12 : 14, padding: "12px 14px", fontSize: 13, fontWeight: 600 }}>
+              Chọn ít nhất một biên bản để cập nhật trạng thái.
+            </div>
+          ) : null}
+        </div>
+
+        <div
+          style={{
+            padding: "20px 32px",
+            borderTop: isDarkMode ? `1px solid ${darkSpec.border}` : "1px solid var(--a-border)",
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 12,
+            background: isDarkMode ? darkSpec.surface2 : "var(--a-surface)",
+            flexShrink: 0,
+          }}
+        >
+          <button
+            onClick={onClose}
+            style={{
+              padding: "10px 18px",
+              borderRadius: isDarkMode ? 8 : 12,
+              border: isDarkMode ? `1px solid ${darkSpec.primary}` : "1px solid var(--a-border)",
+              background: isDarkMode ? "transparent" : "var(--a-surface)",
+              fontWeight: 700,
+              color: isDarkMode ? darkSpec.primary : "var(--a-text-muted)",
+              cursor: "pointer",
+            }}
+          >
+            Đóng
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            style={{
+              padding: isDarkMode ? "12px 24px" : "10px 18px",
+              borderRadius: isDarkMode ? 8 : 12,
+              border: "none",
+              background: isDarkMode
+                ? canSubmit ? darkSpec.primary : darkSpec.surfaceBright
+                : canSubmit ? "var(--a-primary)" : "var(--a-surface-bright)",
+              color: isDarkMode
+                ? canSubmit ? darkSpec.surface0 : darkSpec.textDisabled
+                : "#fff",
+              fontWeight: 800,
+              cursor: canSubmit ? "pointer" : "not-allowed",
+            }}
+          >
+            {saving ? "Đang cập nhật..." : "Cập nhật đã chọn"}
           </button>
         </div>
       </div>
@@ -1495,9 +1822,10 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
                     style={{
                       padding: 16,
                       borderRadius: 16,
-                      border: checked ? "1.5px solid var(--a-primary)" : "1px solid var(--a-border)",
-                      background: disabled ? "var(--a-surface-soft)" : checked ? "var(--a-primary-soft)" : "var(--a-surface)",
+                      border: checked ? "1.5px solid color-mix(in srgb, var(--a-primary) 58%, white)" : "1px solid #d7dfd7",
+                      background: disabled ? "#f4f7f3" : checked ? "#f7fbf4" : "#fffefb",
                       opacity: disabled ? 0.7 : 1,
+                      boxShadow: checked ? "0 8px 22px rgba(79,100,91,0.08)" : "0 4px 14px rgba(15,23,42,0.04)",
                     }}
                   >
                     <input
@@ -1505,6 +1833,13 @@ function BatchReplenishModal({ open, seedItem, records, onClose, onSaved, showTo
                       checked={checked}
                       disabled={disabled}
                       onChange={() => toggleSelect(item.id)}
+                      style={{
+                        width: 16,
+                        height: 16,
+                        accentColor: "var(--a-primary)",
+                        cursor: disabled ? "not-allowed" : "pointer",
+                        opacity: disabled ? 0.55 : 0.9,
+                      }}
                     />
                     <div>
                       <div style={{ fontWeight: 800, color: "var(--a-text)" }}>{item.itemName}</div>
@@ -1751,6 +2086,7 @@ export function LossAndDamageTable({
   fmtCurrency,
   onView,
   onEdit,
+  onBatchUpdateStatus,
   onReplenish,
   onBatchReplenish,
   onPageChange,
@@ -1808,6 +2144,7 @@ export function LossAndDamageTable({
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8 }}>
                   <button className="btn-icon-p" onClick={() => onView(rec)} title="Xem chi tiet" style={{ width: "100%" }}><span className="material-symbols-outlined">visibility</span></button>
                   <button className="btn-icon-p" onClick={() => onEdit(rec)} title="Chinh sua" style={{ width: "100%" }}><span className="material-symbols-outlined">edit_square</span></button>
+                  <button className="btn-icon-p" onClick={() => onBatchUpdateStatus(rec)} title="Cap nhat trang thai hang loat" style={{ width: "100%", color: "#9333ea" }}><span className="material-symbols-outlined">checklist</span></button>
                   <button className="btn-icon-p" onClick={() => onReplenish(rec)} title="Bổ sung lại vào phòng" disabled={!canReplenishRecord(rec)} style={{ width: "100%", ...(!canReplenishRecord(rec) ? { opacity: 0.4, cursor: "not-allowed" } : { color: "#166534" }) }}><span className="material-symbols-outlined">inventory_2</span></button>
                   <button className="btn-icon-p" onClick={() => onBatchReplenish(rec)} title="Bổ sung hàng loạt" disabled={!canBatchReplenish} style={{ width: "100%", ...(!canBatchReplenish ? { opacity: 0.4, cursor: "not-allowed" } : { color: "#1d4ed8" }) }}><span className="material-symbols-outlined">playlist_add_check</span></button>
                 </div>
@@ -1943,6 +2280,9 @@ export function LossAndDamageTable({
                       </button>
                       <button className="btn-icon-p" onClick={() => onEdit(rec)} title="Chỉnh sửa">
                         <span className="material-symbols-outlined">edit_square</span>
+                      </button>
+                      <button className="btn-icon-p" onClick={() => onBatchUpdateStatus(rec)} title="Xác nhận/Cập nhật trạng thái hàng loạt theo booking" style={{ color: "#9333ea" }}>
+                        <span className="material-symbols-outlined">checklist</span>
                       </button>
                       <button
                         className="btn-icon-p"
@@ -2141,6 +2481,7 @@ function LossAndDamageTableUnified({
   fmtCurrency,
   onView,
   onEdit,
+  onBatchUpdateStatus,
   onReplenish,
   onBatchReplenish,
   onPageChange,
@@ -2160,6 +2501,7 @@ function LossAndDamageTableUnified({
         fmtCurrency={fmtCurrency}
         onView={onView}
         onEdit={onEdit}
+        onBatchUpdateStatus={onBatchUpdateStatus}
         onReplenish={onReplenish}
         onBatchReplenish={onBatchReplenish}
         onPageChange={onPageChange}
@@ -2369,6 +2711,13 @@ function LossAndDamageTableUnified({
                           { title: "Xem chi tiết", icon: "visibility", onClick: () => onView(rec), disabled: false },
                           { title: "Chỉnh sửa", icon: "edit_square", onClick: () => onEdit(rec), disabled: false },
                           {
+                            title: "Cập nhật trạng thái hàng loạt theo booking",
+                            icon: "checklist",
+                            onClick: () => onBatchUpdateStatus(rec),
+                            disabled: false,
+                            activeColor: "#9333ea",
+                          },
+                          {
                             title: "Bổ sung lại vào phòng",
                             icon: "inventory_2",
                             onClick: () => onReplenish(rec),
@@ -2482,6 +2831,7 @@ export default function LossAndDamagePage() {
   const [detailItem, setDetailItem] = useState(null);
   const [replenishItem, setReplenishItem] = useState(null);
   const [batchReplenishItem, setBatchReplenishItem] = useState(null);
+  const [batchUpdateStatusItem, setBatchUpdateStatusItem] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -2606,6 +2956,14 @@ export default function LossAndDamagePage() {
         onSaved={() => fetchRecords(true)}
         showToast={showToast}
       />
+      <BatchUpdateStatusModal
+        open={!!batchUpdateStatusItem}
+        seedItem={batchUpdateStatusItem}
+        records={records}
+        onClose={() => setBatchUpdateStatusItem(null)}
+        onSaved={() => fetchRecords(true)}
+        showToast={showToast}
+      />
 
       <div style={{ maxWidth: 1400, margin: "0 auto", position: "relative", zIndex: 0 }}>
         <LossAndDamageHeaderUnified
@@ -2636,6 +2994,7 @@ export default function LossAndDamagePage() {
           fmtCurrency={fmtCurrency}
           onView={setDetailItem}
           onEdit={setEditItem}
+          onBatchUpdateStatus={setBatchUpdateStatusItem}
           onReplenish={setReplenishItem}
           onBatchReplenish={setBatchReplenishItem}
           onPageChange={setPage}
@@ -2644,8 +3003,3 @@ export default function LossAndDamagePage() {
     </>
   );
 }
-
-
-
-
-
