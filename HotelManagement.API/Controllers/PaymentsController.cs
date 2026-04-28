@@ -44,6 +44,8 @@ public class MomoIpnRequest
     public string? Signature { get; set; }
 }
 
+
+
 [ApiController]
 [Route("api/[controller]")]
 public class PaymentsController : ControllerBase
@@ -130,6 +132,8 @@ public class PaymentsController : ControllerBase
             }
         });
     }
+
+
 
     /// <summary>MoMo IPN callback — cập nhật trạng thái booking sau khi thanh toán</summary>
     [AllowAnonymous]
