@@ -224,7 +224,7 @@ export default function AdminLayout() {
                 <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
                   logout
                 </span>
-                Dang xuat
+                Đăng xuất
               </button>
             </div>
           </aside>
@@ -259,7 +259,7 @@ export default function AdminLayout() {
 
             <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 16, marginLeft: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <NavLink to="/" title="Ve Trang Khach" className="admin-icon-btn">
+                <NavLink to="/" title="Về trang Khách" className="admin-icon-btn">
                   <span className="material-symbols-outlined" style={{ fontSize: 19 }}>
                     public
                   </span>
@@ -268,8 +268,8 @@ export default function AdminLayout() {
                 <button
                   className="admin-icon-btn"
                   onClick={() => setThemeMode((prev) => (prev === "dark" ? "light" : "dark"))}
-                  title={themeMode === "dark" ? "Chuyen sang light mode" : "Chuyen sang dark mode"}
-                  aria-label={themeMode === "dark" ? "Chuyen sang light mode" : "Chuyen sang dark mode"}
+                  title={themeMode === "dark" ? "Chuyển sang light mode" : "Chuyển sang dark mode"}
+                  aria-label={themeMode === "dark" ? "Chuyển sang light mode" : "Chuyển sang dark mode"}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: 19 }}>
                     {themeMode === "dark" ? "light_mode" : "dark_mode"}

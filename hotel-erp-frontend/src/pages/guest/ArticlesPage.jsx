@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getArticles } from "../../api/articlesApi";
 import { PageContainer, SectionTitle, LoadingSpinner, EmptyState } from "../../components/guest";
+import { getPlainTextExcerpt, stripHtml } from "../../utils";
 import { getFullImageUrl } from "../../utils/imageUtils";
 
 export default function ArticlesPage() {
@@ -143,7 +144,7 @@ export default function ArticlesPage() {
                   <article className="g-card" style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                     <div style={{ height: 220, position: 'relative', background: 'var(--g-surface)' }}>
                       {article.thumbnailUrl ? (
-                        <img src={getFullImageUrl(article.thumbnailUrl)} alt={article.title} className="g-img-cover" />
+                        <img src={getFullImageUrl(article.thumbnailUrl)} alt={stripHtml(article.title) || "Article thumbnail"} className="g-img-cover" />
                       ) : null}
                     </div>
                     <div style={{ padding: 'var(--g-space-6)', flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -158,7 +159,7 @@ export default function ArticlesPage() {
                         marginTop: 'var(--g-space-3)',
                         marginBottom: 'var(--g-space-3)'
                       }}>
-                        {article.title}
+                        {getPlainTextExcerpt(article.title, 120)}
                       </h3>
                       {article.metaDescription && (
                         <p style={{ 
@@ -168,7 +169,7 @@ export default function ArticlesPage() {
                           flex: 1,
                           margin: 0
                         }}>
-                          {article.metaDescription}
+                          {getPlainTextExcerpt(article.metaDescription, 160)}
                         </p>
                       )}
                     </div>

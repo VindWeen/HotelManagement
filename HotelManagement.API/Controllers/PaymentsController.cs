@@ -24,6 +24,8 @@ public class RecordPaymentRequest
 public class GuestDepositRequest
 {
     public int BookingId { get; set; }
+    public string? BookingCode { get; set; }
+    public string? GuestEmail { get; set; }
 }
 
 public class MomoIpnRequest
@@ -42,6 +44,12 @@ public class MomoIpnRequest
     public long ResponseTime { get; set; }
     public string? ExtraData { get; set; }
     public string? Signature { get; set; }
+}
+
+public class GuestBookingAccessRequest
+{
+    public string? BookingCode { get; set; }
+    public string? GuestEmail { get; set; }
 }
 
 
@@ -65,10 +73,31 @@ public class PaymentsController : ControllerBase
         _auditTrail = auditTrail;
     }
 
+    private static string? NormalizeGuestEmail(string? email)
+        => string.IsNullOrWhiteSpace(email) ? null : email.Trim().ToLowerInvariant();
+
+    private bool CanAccessGuestBooking(Booking booking, string? userId, string? bookingCode, string? guestEmail)
+    {
+        if (!string.IsNullOrWhiteSpace(userId)
+            && booking.UserId != null
+            && booking.UserId.ToString() == userId)
+        {
+            return true;
+        }
+
+        var normalizedCode = bookingCode?.Trim();
+        var normalizedEmail = NormalizeGuestEmail(guestEmail);
+
+        return !string.IsNullOrWhiteSpace(normalizedCode)
+            && !string.IsNullOrWhiteSpace(normalizedEmail)
+            && string.Equals(booking.BookingCode, normalizedCode, StringComparison.Ordinal)
+            && string.Equals(NormalizeGuestEmail(booking.GuestEmail), normalizedEmail, StringComparison.Ordinal);
+    }
+
     // ─── GUEST ENDPOINTS ──────────────────────────────────────────────────
 
     /// <summary>Guest: Tạo yêu cầu thanh toán cọc qua MoMo</summary>
-    [Authorize]
+    [AllowAnonymous]
     [HttpPost("guest/deposit")]
     public async Task<IActionResult> GuestCreateDeposit([FromBody] GuestDepositRequest request)
     {
@@ -76,18 +105,16 @@ public class PaymentsController : ControllerBase
                   ?? User.FindFirstValue("sub")
                   ?? User.FindFirstValue("id");
 
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized(new { success = false, message = "Không xác định được tài khoản." });
-
         var booking = await _db.Bookings
             .FirstOrDefaultAsync(b => b.Id == request.BookingId);
 
         if (booking == null)
-            return NotFound(new { success = false, message = "Không tìm thấy booking." });
+            return NotFound(new { success = false, message = "Booking not found." });
 
-        // Check booking belongs to current user
-        if (booking.UserId == null || booking.UserId.ToString() != userId)
-            return Forbid();
+        if (!CanAccessGuestBooking(booking, userId, request.BookingCode, request.GuestEmail))
+            return string.IsNullOrWhiteSpace(userId)
+                ? Unauthorized(new { success = false, message = "Missing guest booking access data." })
+                : Forbid();
 
         if (booking.Status != BookingStatuses.Pending)
             return BadRequest(new { success = false, message = $"Booking đang ở trạng thái '{booking.Status}', không cần thanh toán cọc." });
@@ -218,10 +245,10 @@ public class PaymentsController : ControllerBase
         return Ok(new { message = "IPN received." });
     }
 
-    /// <summary>Guest: Xem trạng thái thanh toán booking</summary>
-    [Authorize]
+    /// <summary>Guest: Tạo tr?ng thái thanh toán booking</summary>
+    [AllowAnonymous]
     [HttpGet("guest/booking/{bookingId:int}")]
-    public async Task<IActionResult> GuestGetPaymentStatus(int bookingId)
+    public async Task<IActionResult> GuestGetPaymentStatus(int bookingId, [FromQuery] GuestBookingAccessRequest request)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                   ?? User.FindFirstValue("sub")
@@ -233,10 +260,12 @@ public class PaymentsController : ControllerBase
             .FirstOrDefaultAsync(b => b.Id == bookingId);
 
         if (booking == null)
-            return NotFound(new { success = false, message = "Không tìm thấy booking." });
+            return NotFound(new { success = false, message = "Booking not found." });
 
-        if (booking.UserId == null || booking.UserId.ToString() != userId)
-            return Forbid();
+        if (!CanAccessGuestBooking(booking, userId, request.BookingCode, request.GuestEmail))
+            return string.IsNullOrWhiteSpace(userId)
+                ? Unauthorized(new { success = false, message = "Missing guest booking access data." })
+                : Forbid();
 
         var payments = booking.Payments
             .Where(p => p.Status == PaymentStatuses.Success)
@@ -473,3 +502,4 @@ public class PaymentsController : ControllerBase
         });
     }
 }
+

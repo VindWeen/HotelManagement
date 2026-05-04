@@ -181,7 +181,7 @@ function CheckInModal({ open, booking, loading, onConfirm, onCancel }) {
       guestName: booking.guestName || "",
       guestPhone: booking.guestPhone || "",
       guestEmail: booking.guestEmail || "",
-      nationalId: "",
+      nationalId: booking.nationalId || "",
     });
   }, [open, booking]);
 
@@ -583,6 +583,7 @@ export default function BookingDetailPage() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
+  const [checkInDetailTarget, setCheckInDetailTarget] = useState(null);
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
@@ -705,7 +706,8 @@ export default function BookingDetailPage() {
       }
     }
 
-    if (action === "checkin" && !booking?.userId) {
+    if (action === "checkin" && !booking?.nationalId) {
+      setCheckInDetailTarget(null);
       setCheckInModalOpen(true);
       return;
     }
@@ -750,9 +752,15 @@ export default function BookingDetailPage() {
   const executeCheckIn = async (payload) => {
     setCheckInLoading(true);
     try {
-      await checkIn(id, payload);
-      showToast("Đã check-in và cập nhật hồ sơ khách thành công.");
+      if (checkInDetailTarget) {
+        await checkInRoom(id, { bookingDetailId: checkInDetailTarget, ...payload });
+        showToast("Đã check-in phòng và cập nhật hồ sơ khách thành công.");
+      } else {
+        await checkIn(id, payload);
+        showToast("Đã check-in và cập nhật hồ sơ khách thành công.");
+      }
       setCheckInModalOpen(false);
+      setCheckInDetailTarget(null);
       await load();
     } catch (e) {
       showToast(e?.response?.data?.message || "Check-in thất bại.", "error");
@@ -762,6 +770,12 @@ export default function BookingDetailPage() {
   };
 
   const handleCheckInDetail = async (detailId) => {
+    if (!booking?.nationalId) {
+      setCheckInDetailTarget(detailId);
+      setCheckInModalOpen(true);
+      return;
+    }
+
     try {
       await checkInRoom(id, { bookingDetailId: detailId });
       showToast("Đã check-in phòng thành công.");
@@ -942,7 +956,10 @@ export default function BookingDetailPage() {
         open={checkInModalOpen}
         booking={booking}
         onConfirm={executeCheckIn}
-        onCancel={() => setCheckInModalOpen(false)}
+        onCancel={() => {
+          setCheckInModalOpen(false);
+          setCheckInDetailTarget(null);
+        }}
         loading={checkInLoading}
       />
       <BookingPaymentModal
@@ -1153,7 +1170,7 @@ export default function BookingDetailPage() {
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                         {!detail.roomId && (booking.status === "Confirmed" || booking.status === "Checked_in") && (
-                          <button className="action-btn" style={{ justifyContent: "center", padding: "9px 12px", fontSize: 12, gridColumn: "1 / -1" }} onClick={() => handleCheckInDetail(detail.id)} disabled={!booking.userId}>
+                          <button className="action-btn" style={{ justifyContent: "center", padding: "9px 12px", fontSize: 12, gridColumn: "1 / -1" }} onClick={() => handleCheckInDetail(detail.id)}>
                             Check-in phòng
                           </button>
                         )}
@@ -1235,7 +1252,7 @@ export default function BookingDetailPage() {
                       <td style={{ padding: "16px 24px", textAlign: "right" }}>
                         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
                           {!detail.roomId && (booking.status === "Confirmed" || booking.status === "Checked_in") && (
-                            <button className="action-btn" style={{ padding: "8px 12px", fontSize: 12 }} onClick={() => handleCheckInDetail(detail.id)} disabled={!booking.userId}>
+                            <button className="action-btn" style={{ padding: "8px 12px", fontSize: 12 }} onClick={() => handleCheckInDetail(detail.id)}>
                               Check-in phòng
                             </button>
                           )}

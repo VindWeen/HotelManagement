@@ -168,6 +168,7 @@ public class BookingsController : ControllerBase
         GuestName = b.GuestName,
         GuestPhone = b.GuestPhone,
         GuestEmail = b.GuestEmail,
+        NationalId = b.User?.NationalId,
         NumAdults = b.NumAdults,
         NumChildren = b.NumChildren,
         BookingCode = b.BookingCode,
@@ -569,6 +570,7 @@ public class BookingsController : ControllerBase
         string? guestPhone,
         string? guestEmail,
         string? nationalId,
+        bool requireNationalId = false,
         bool sendNewAccountEmail = false,
         CancellationToken cancellationToken = default)
     {
@@ -582,11 +584,19 @@ public class BookingsController : ControllerBase
             var linkedUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == booking.UserId.Value, cancellationToken);
             if (linkedUser != null)
             {
+                if (requireNationalId && string.IsNullOrWhiteSpace(linkedUser.NationalId) && string.IsNullOrWhiteSpace(normalizedNationalId))
+                    throw new InvalidOperationException("Khách này chưa có thông tin CCCD/Hộ chiếu. Vui lòng bổ sung trước khi check-in.");
+
                 linkedUser.FullName = string.IsNullOrWhiteSpace(linkedUser.FullName) ? booking.GuestName ?? linkedUser.FullName : linkedUser.FullName;
                 linkedUser.Phone ??= booking.GuestPhone;
                 linkedUser.Email = NormalizeGuestEmail(linkedUser.Email) ?? booking.GuestEmail ?? linkedUser.Email;
                 linkedUser.NationalId ??= normalizedNationalId;
                 linkedUser.UpdatedAt = DateTime.UtcNow;
+                booking.User = linkedUser;
+            }
+            else if (requireNationalId && string.IsNullOrWhiteSpace(normalizedNationalId))
+            {
+                throw new InvalidOperationException("Khách này chưa có thông tin CCCD/Hộ chiếu. Vui lòng bổ sung trước khi check-in.");
             }
 
             return false;
@@ -605,7 +615,11 @@ public class BookingsController : ControllerBase
 
         if (existingUser != null)
         {
+            if (requireNationalId && string.IsNullOrWhiteSpace(existingUser.NationalId) && string.IsNullOrWhiteSpace(normalizedNationalId))
+                throw new InvalidOperationException("Khách này chưa có thông tin CCCD/Hộ chiếu. Vui lòng bổ sung trước khi check-in.");
+
             booking.UserId = existingUser.Id;
+            booking.User = existingUser;
             booking.GuestName = existingUser.FullName ?? booking.GuestName;
             booking.GuestEmail = existingUser.Email;
             booking.GuestPhone = existingUser.Phone ?? booking.GuestPhone;
@@ -622,6 +636,9 @@ public class BookingsController : ControllerBase
 
         if (guestRole == null)
             throw new InvalidOperationException("Hệ thống chưa cấu hình vai trò Guest để tạo tài khoản khách lưu trú.");
+
+        if (requireNationalId && string.IsNullOrWhiteSpace(normalizedNationalId))
+            throw new InvalidOperationException("Khách này chưa có thông tin CCCD/Hộ chiếu. Vui lòng bổ sung trước khi check-in.");
 
         var plainPassword = PasswordGenerator.GenerateRandomPassword(10);
         var guestUser = new User
@@ -641,6 +658,7 @@ public class BookingsController : ControllerBase
         await _context.SaveChangesAsync(cancellationToken);
 
         booking.UserId = guestUser.Id;
+        booking.User = guestUser;
         if (sendNewAccountEmail)
         {
             _ = _email.SendGuestAccountCreatedAsync(guestUser.Email, guestUser.FullName, plainPassword);
@@ -672,6 +690,7 @@ public class BookingsController : ControllerBase
 
         var bookings = await _context.Bookings
             .AsNoTracking()
+            .Include(b => b.User)
             .Include(b => b.BookingDetails)
                 .ThenInclude(d => d.Room)
             .Include(b => b.BookingDetails)
@@ -855,6 +874,7 @@ public class BookingsController : ControllerBase
     {
         var booking = await _context.Bookings
             .AsNoTracking()
+            .Include(b => b.User)
             .Include(b => b.BookingDetails)
                 .ThenInclude(d => d.Room)
             .Include(b => b.BookingDetails)
@@ -880,6 +900,7 @@ public class BookingsController : ControllerBase
     {
         var booking = await _context.Bookings
             .AsNoTracking()
+            .Include(b => b.User)
             .Include(b => b.BookingDetails)
                 .ThenInclude(d => d.Room)
             .Include(b => b.BookingDetails)
@@ -909,6 +930,7 @@ public class BookingsController : ControllerBase
         var bookings = await _context.Bookings
             .AsNoTracking()
             .Where(b => b.UserId == userId)
+            .Include(b => b.User)
             .Include(b => b.BookingDetails)
                 .ThenInclude(d => d.Room)
             .Include(b => b.BookingDetails)
@@ -946,7 +968,13 @@ public class BookingsController : ControllerBase
 
             int? currentUserId = null;
             if (User.Identity?.IsAuthenticated == true)
-                currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            {
+                var roleName = User.FindFirst("role")?.Value;
+                if (string.Equals(roleName, "Guest", StringComparison.OrdinalIgnoreCase))
+                {
+                    currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+                }
+            }
 
             foreach (var d in request.Details)
             {
@@ -1374,6 +1402,7 @@ public class BookingsController : ControllerBase
     public async Task<IActionResult> CheckInRoom(int id, CheckInBookingDetailRequest request, CancellationToken cancellationToken)
     {
         var booking = await _context.Bookings
+            .Include(x => x.User)
             .Include(x => x.BookingDetails)
                 .ThenInclude(d => d.Room)
             .Include(x => x.BookingDetails)
@@ -1395,7 +1424,7 @@ public class BookingsController : ControllerBase
 
         try
         {
-            await EnsureGuestAccountLinkedAsync(booking, request.GuestName, request.GuestPhone, request.GuestEmail, request.NationalId, sendNewAccountEmail: true, cancellationToken);
+            await EnsureGuestAccountLinkedAsync(booking, request.GuestName, request.GuestPhone, request.GuestEmail, request.NationalId, requireNationalId: true, sendNewAccountEmail: true, cancellationToken: cancellationToken);
             await ApplyCheckInToDetailAsync(booking, detail, request.RoomId, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
         }
@@ -1427,6 +1456,7 @@ public class BookingsController : ControllerBase
     public async Task<IActionResult> CheckInBulk(int id, BulkCheckInBookingRequest? request, CancellationToken cancellationToken)
     {
         var booking = await _context.Bookings
+            .Include(x => x.User)
             .Include(x => x.BookingDetails)
                 .ThenInclude(d => d.Room)
             .Include(x => x.BookingDetails)
@@ -1452,7 +1482,7 @@ public class BookingsController : ControllerBase
 
         try
         {
-            await EnsureGuestAccountLinkedAsync(booking, request?.GuestName, request?.GuestPhone, request?.GuestEmail, request?.NationalId, sendNewAccountEmail: true, cancellationToken);
+            await EnsureGuestAccountLinkedAsync(booking, request?.GuestName, request?.GuestPhone, request?.GuestEmail, request?.NationalId, requireNationalId: true, sendNewAccountEmail: true, cancellationToken: cancellationToken);
         }
         catch (InvalidOperationException ex)
         {

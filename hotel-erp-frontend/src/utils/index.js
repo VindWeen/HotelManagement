@@ -38,3 +38,5 @@ export const buildQueryString = (params) => {
     });
     return query.toString();
 };
+
+export { ensureRichTextValue, getPlainTextExcerpt, stripHtml } from './htmlContent';

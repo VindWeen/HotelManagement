@@ -1,4 +1,5 @@
 using System.Text;
+using HotelManagement.API.Configuration;
 using HotelManagement.API.Hubs;           // ← THÊM MỚI
 using HotelManagement.API.Middleware;
 using HotelManagement.API.Services;       // ← THÊM MỚI
@@ -49,6 +50,8 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 // ── 1. Database ──────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.Configure<HotelLocationOptions>(
+    builder.Configuration.GetSection(HotelLocationOptions.SectionName));
 
 // ── 2. JWT Authentication ────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]!;

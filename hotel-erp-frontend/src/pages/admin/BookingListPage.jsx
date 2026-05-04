@@ -368,7 +368,7 @@ function CheckInModal({ open, booking, loading, onConfirm, onCancel }) {
       guestName: booking.guestName || "",
       guestPhone: booking.guestPhone || "",
       guestEmail: booking.guestEmail || "",
-      nationalId: "",
+      nationalId: booking.nationalId || "",
     });
   }, [open, booking]);
 
@@ -716,7 +716,7 @@ export default function BookingListPage() {
       }
     }
 
-    if (action === "checkin" && !item.userId) {
+    if (action === "checkin" && !item.nationalId) {
       setCheckInTarget(item);
       return;
     }

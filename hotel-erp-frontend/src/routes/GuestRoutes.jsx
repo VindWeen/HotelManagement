@@ -128,11 +128,7 @@ export default function GuestRoutes() {
       />
       <Route
         path="/guest/payment/deposit/:bookingId"
-        element={
-          <GuestProtectedRoute>
-            {withSuspense(<DepositPaymentPage />)}
-          </GuestProtectedRoute>
-        }
+        element={withSuspense(<DepositPaymentPage />)}
       />
       <Route
         path="/guest/payment/result"

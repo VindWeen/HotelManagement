@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   getGuestPaymentStatus,
-  createGuestDepositPayment,
 } from "../../../api/paymentsApi";
 import { PageContainer, SectionTitle, LoadingSpinner, EmptyState } from "../../../components/guest";
 import { formatCurrency } from "../../../utils";
@@ -77,7 +76,8 @@ const PAYMENT_METHODS = [
 export default function DepositPaymentPage() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAdminAuthStore();
+  const [searchParams] = useSearchParams();
+  const { user, token } = useAdminAuthStore();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -87,10 +87,15 @@ export default function DepositPaymentPage() {
   const [showQR, setShowQR] = useState(false);
 
   const pollInterval = useRef(null);
+  const guestAccess = {
+    bookingCode: searchParams.get("code") || undefined,
+    guestEmail: searchParams.get("email") || undefined,
+  };
+  const fallbackUrl = token ? "/guest/my-bookings" : "/booking";
 
   const fetchStatus = async () => {
     try {
-      const res = await getGuestPaymentStatus(bookingId);
+      const res = await getGuestPaymentStatus(bookingId, guestAccess);
       const data = res.data?.data;
       setPaymentInfo(data);
       if (data?.isFullyDeposited) {
@@ -134,7 +139,7 @@ export default function DepositPaymentPage() {
           icon="❌"
           title="Lỗi tải dữ liệu"
           message={error}
-          action={{ label: "Quay lại", onClick: () => navigate("/guest/my-bookings") }}
+          action={{ label: "Quay lại", onClick: () => navigate(fallbackUrl) }}
         />
       </PageContainer>
     );
@@ -210,8 +215,8 @@ export default function DepositPaymentPage() {
             <div style={{ fontSize: "2rem", marginBottom: 12 }}>✅</div>
             <h3 style={{ color: "var(--g-success)", marginBottom: 8 }}>Đã thanh toán đủ tiền cọc</h3>
             <p style={{ color: "var(--g-text-muted)" }}>Cảm ơn bạn. Booking của bạn đã được xác nhận.</p>
-            <button className="g-btn-primary" style={{ marginTop: 16 }} onClick={() => navigate("/guest/my-bookings")}>
-              Về danh sách booking
+            <button className="g-btn-primary" style={{ marginTop: 16 }} onClick={() => navigate(fallbackUrl)}>
+              {token ? "Về danh sách booking" : "Về trang đặt phòng"}
             </button>
           </div>
         ) : showQR ? (
@@ -274,9 +279,9 @@ export default function DepositPaymentPage() {
               <button
                 className="g-btn-primary"
                 style={{ flex: 2, justifyContent: "center", padding: "12px" }}
-                onClick={() => navigate("/guest/my-bookings")}
+                onClick={() => navigate(fallbackUrl)}
               >
-                Về danh sách booking
+                {token ? "Về danh sách booking" : "Về trang đặt phòng"}
               </button>
             </div>
           </div>

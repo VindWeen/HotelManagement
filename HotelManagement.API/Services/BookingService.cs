@@ -25,6 +25,7 @@ public class BookingService : IBookingService
 
         var query = _context.Bookings
             .AsNoTracking()
+            .Include(b => b.User)
             .Include(b => b.BookingDetails)
                 .ThenInclude(d => d.Room)
             .Include(b => b.BookingDetails)
@@ -127,6 +128,7 @@ public class BookingService : IBookingService
         GuestName = b.GuestName,
         GuestPhone = b.GuestPhone,
         GuestEmail = b.GuestEmail,
+        NationalId = b.User?.NationalId,
         NumAdults = b.NumAdults,
         NumChildren = b.NumChildren,
         BookingCode = b.BookingCode,
