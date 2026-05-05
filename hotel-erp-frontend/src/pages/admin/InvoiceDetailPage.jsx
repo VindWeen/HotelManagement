@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { addInvoiceAdjustment, finalizeInvoice, getInvoiceDetail, removeInvoiceAdjustment } from "../../api/invoicesApi";
 import { recordPayment } from "../../api/paymentsApi";
 import { formatCurrency, formatDate } from "../../utils";
-import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
+import { clampMoneyInput, formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
 import { getInvoiceStatusLabel, getPaymentTypeLabel } from "../../utils/statusLabels";
 import { printInvoiceDocument } from "../../utils/printInvoice";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
@@ -341,7 +341,8 @@ export default function InvoiceDetailPage() {
                         placeholder="VD: 1.000.000"
                         value={form.amountPaid}
                         onChange={(e) => {
-                          setForm({ ...form, amountPaid: formatMoneyInput(e.target.value) });
+                          const clampedValue = clampMoneyInput(e.target.value, { max: Math.max(0, outstanding) });
+                          setForm({ ...form, amountPaid: formatMoneyInput(clampedValue) });
                         }}
                         required
                         style={inputStyle}
