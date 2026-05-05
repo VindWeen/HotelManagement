@@ -1,6 +1,6 @@
 // src/pages/admin/DashboardPage.jsx
 // Dashboard thực tế — tích hợp API: Bookings, Rooms, Users, Reviews, Vouchers, LossAndDamages, Equipments
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { getBookings } from "../../api/bookingsApi";
 import { getRooms } from "../../api/roomsApi";
 import { getUsers } from "../../api/userManagementApi";
@@ -225,9 +225,48 @@ function Stars({ rating }) {
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
+// ─── Date Filter Helpers ─────────────────────────────────────────────────────
+const DATE_PRESETS = [
+  { key: "today",   label: "Hôm nay" },
+  { key: "7days",   label: "7 ngày qua" },
+  { key: "month",   label: "Tháng này" },
+  { key: "year",    label: "Năm này" },
+  { key: "all",     label: "Tất cả" },
+  { key: "custom",  label: "Tùy chỉnh" },
+];
+
+function getPresetRange(key) {
+  const now = new Date();
+  const start = new Date(now);
+  switch (key) {
+    case "today":
+      start.setHours(0, 0, 0, 0);
+      return { from: start, to: now };
+    case "7days":
+      start.setDate(now.getDate() - 6);
+      start.setHours(0, 0, 0, 0);
+      return { from: start, to: now };
+    case "month":
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      return { from: start, to: now };
+    case "year":
+      start.setMonth(0, 1);
+      start.setHours(0, 0, 0, 0);
+      return { from: start, to: now };
+    default:
+      return null;
+  }
+}
+
 export default function DashboardPage() {
   const { isMobile } = useResponsiveAdmin();
   const [loading, setLoading] = useState(true);
+
+  // ─── Date filter state ────────────────────────────────────────────────────
+  const [preset, setPreset] = useState("month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo]     = useState("");
 
   const [bookings, setBookings] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -236,6 +275,8 @@ export default function DashboardPage() {
   const [_roomTypes, setRoomTypes] = useState([]);
   const [lossAndDamages, setLossAndDamages] = useState([]);
   const [_equipments, setEquipments] = useState([]);
+  const [allInvoices, setAllInvoices] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
 
   const [stats, setStats] = useState({
     totalRevenue: 0,
@@ -300,58 +341,27 @@ export default function DashboardPage() {
       setRoomTypes(rtList);
       setLossAndDamages(ldList);
       setEquipments(eqList);
+      setAllInvoices(ivList);
+      setAllUsers(usList);
 
       const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-      const paidInvoices = ivList.filter((invoice) => invoice.status === "Paid");
-      const totalRevenue = paidInvoices.reduce((sum, invoice) => sum + (invoice.finalTotal || 0), 0);
-
-      const todayRevenue = paidInvoices
-        .filter((invoice) => isSameDay(getInvoiceRevenueDate(invoice), now))
-        .reduce((sum, invoice) => sum + (invoice.finalTotal || 0), 0);
-
-      const activeBookings = bkList.filter((b) => ["Confirmed", "Checked_in", "Checked_out_pending_settlement", "Pending"].includes(b.status)).length;
-      const pendingBookings = bkList.filter((b) => b.status === "Pending").length;
-
       const ready = rmList.filter((r) => r.businessStatus === "Available" && r.cleaningStatus === "Clean").length;
       const occupied = rmList.filter((r) => r.businessStatus === "Occupied").length;
       const sellableRooms = rmList.filter((r) => r.businessStatus !== "Disabled").length || 1;
       const occupancyRate = Math.round((occupied / sellableRooms) * 100);
 
-      const newUsersThisMonth = usList.filter((u) => {
-        const d = u.createdAt ? new Date(u.createdAt) : null;
-        return d && d >= monthStart;
-      }).length;
-
       const avgRating = approvedReviews.length > 0
         ? approvedReviews.reduce((sum, review) => sum + (review.rating || 0), 0) / approvedReviews.length
         : 0;
-
       const pendingReviews = pendingReviewList.length;
-
       const activeVouchers = vcList.filter((v) => v.isActive).length;
       const activeRoomTypes = rtList.filter((rt) => rt.isActive !== false).length;
-
-      const revenueByDay = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
-        return paidInvoices
-          .filter((invoice) => isSameDay(getInvoiceRevenueDate(invoice), d))
-          .reduce((sum, invoice) => sum + (invoice.finalTotal || 0), 0);
-      });
-
-      const bookingsByStatus = {};
-      bkList.forEach((b) => { bookingsByStatus[b.status] = (bookingsByStatus[b.status] || 0) + 1; });
 
       const roomTypeOccupancy = rtList.map((rt) => {
         const occupiedRt = rmList.filter((r) => r.roomTypeId === rt.id && r.businessStatus === "Occupied").length;
         const sellableRt = rmList.filter((r) => r.roomTypeId === rt.id && r.businessStatus !== "Disabled").length;
         return {
-          id: rt.id,
-          name: rt.name,
-          occupied: occupiedRt,
-          total: sellableRt,
+          id: rt.id, name: rt.name, occupied: occupiedRt, total: sellableRt,
           rate: sellableRt > 0 ? Math.round((occupiedRt / sellableRt) * 100) : 0,
         };
       }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
@@ -364,14 +374,20 @@ export default function DashboardPage() {
       const inUseEquipmentUnits = eqList.reduce((sum, item) => sum + (item.inUseQuantity || 0), 0);
       const damagedEquipmentUnits = eqList.reduce((sum, item) => sum + (item.damagedQuantity || 0), 0);
 
+      // Static base stats (not date-filtered)
       setStats({
-        totalRevenue, todayRevenue, activeBookings, pendingBookings,
         occupancyRate, availableRooms: ready,
-        totalUsers: usList.length, newUsersThisMonth,
-        avgRating, pendingReviews, activeVouchers,
-        revenueByDay, bookingsByStatus, roomTypeOccupancy, activeRoomTypes,
+        totalUsers: usList.length,
+        avgRating, pendingReviews, activeVouchers, activeRoomTypes,
+        roomTypeOccupancy,
         totalLossValue, pendingLoss, confirmedLoss, totalEquipments,
         totalEquipmentUnits, inUseEquipmentUnits, damagedEquipmentUnits,
+        // These will be overridden by filteredStats below:
+        totalRevenue: 0, todayRevenue: 0,
+        activeBookings: 0, pendingBookings: 0,
+        newUsersThisMonth: 0,
+        revenueByDay: Array(7).fill(0),
+        bookingsByStatus: {},
       });
     } catch (err) {
       console.error("Dashboard load error:", err);
@@ -382,14 +398,86 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const recentBookings = [...bookings]
-    .sort((a, b) => {
-      const timeA = getBookingReferenceDate(a)?.getTime() ?? 0;
-      const timeB = getBookingReferenceDate(b)?.getTime() ?? 0;
-      if (timeA !== timeB) return timeB - timeA;
-      return (b.id || 0) - (a.id || 0);
-    })
-    .slice(0, 8);
+  // ─── Compute date-filtered KPIs ──────────────────────────────────────────────
+  const filteredStats = useMemo(() => {
+    const now = new Date();
+    let from = null;
+    let to = now;
+
+    if (preset === "custom") {
+      from = customFrom ? new Date(customFrom + "T00:00:00") : null;
+      to   = customTo   ? new Date(customTo   + "T23:59:59") : now;
+    } else if (preset !== "all") {
+      const range = getPresetRange(preset);
+      if (range) { from = range.from; to = range.to; }
+    }
+
+    const inRange = (date) => {
+      if (!date) return false;
+      if (from && date < from) return false;
+      if (date > to) return false;
+      return true;
+    };
+
+    const paidInvoices = allInvoices.filter((iv) => iv.status === "Paid" && inRange(getInvoiceRevenueDate(iv)));
+    const totalRevenue = paidInvoices.reduce((s, iv) => s + (iv.finalTotal || 0), 0);
+    const todayRevenue = allInvoices
+      .filter((iv) => iv.status === "Paid" && isSameDay(getInvoiceRevenueDate(iv), now))
+      .reduce((s, iv) => s + (iv.finalTotal || 0), 0);
+
+    const filteredBookings = bookings.filter((b) => inRange(getBookingReferenceDate(b)));
+    const activeBookings = filteredBookings.filter((b) => ["Confirmed","Checked_in","Checked_out_pending_settlement","Pending"].includes(b.status)).length;
+    const pendingBookings = filteredBookings.filter((b) => b.status === "Pending").length;
+
+    const newUsersThisMonth = allUsers.filter((u) => {
+      const d = u.createdAt ? new Date(u.createdAt) : null;
+      return inRange(d);
+    }).length;
+
+    // Revenue chart: last 7 days always
+    const revenueByDay = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      return allInvoices
+        .filter((iv) => iv.status === "Paid" && isSameDay(getInvoiceRevenueDate(iv), d))
+        .reduce((s, iv) => s + (iv.finalTotal || 0), 0);
+    });
+
+    const bookingsByStatus = {};
+    filteredBookings.forEach((b) => { bookingsByStatus[b.status] = (bookingsByStatus[b.status] || 0) + 1; });
+
+    return { totalRevenue, todayRevenue, activeBookings, pendingBookings, newUsersThisMonth, revenueByDay, bookingsByStatus };
+  }, [preset, customFrom, customTo, allInvoices, bookings, allUsers]);
+
+  // Merge base stats + filtered stats
+  const mergedStats = { ...stats, ...filteredStats };
+  const filteredBookingList = useMemo(() => {
+    const now = new Date();
+    let from = null, to = now;
+    if (preset === "custom") {
+      from = customFrom ? new Date(customFrom + "T00:00:00") : null;
+      to   = customTo   ? new Date(customTo   + "T23:59:59") : now;
+    } else if (preset !== "all") {
+      const range = getPresetRange(preset);
+      if (range) { from = range.from; to = range.to; }
+    }
+    const inRange = (date) => {
+      if (!date) return preset === "all";
+      if (from && date < from) return false;
+      if (date > to) return false;
+      return true;
+    };
+    return [...bookings]
+      .filter((b) => inRange(getBookingReferenceDate(b)))
+      .sort((a, b) => {
+        const tA = getBookingReferenceDate(a)?.getTime() ?? 0;
+        const tB = getBookingReferenceDate(b)?.getTime() ?? 0;
+        if (tA !== tB) return tB - tA;
+        return (b.id || 0) - (a.id || 0);
+      })
+      .slice(0, 8);
+  }, [preset, customFrom, customTo, bookings]);
+
   const STATUS_ORDER = { Occupied: 0, Cleaning: 1, PendingLoss: 2, Maintenance: 3, Ready: 4 };
   const roomPreview = [...rooms].sort((a, b) => {
     const ka = STATUS_ORDER[getRoomStatusKey(a)] ?? 99;
@@ -397,18 +485,16 @@ export default function DashboardPage() {
     if (ka !== kb) return ka - kb;
     return (a.roomNumber || "").localeCompare(b.roomNumber || "", "vi", { numeric: true });
   });
-  const statusEntries = Object.entries(stats.bookingsByStatus).sort((a, b) => b[1] - a[1]);
-  const totalBk = bookings.length || 1;
+  const statusEntries = Object.entries(mergedStats.bookingsByStatus).sort((a, b) => b[1] - a[1]);
+  const totalBk = Object.values(mergedStats.bookingsByStatus).reduce((s, v) => s + v, 0) || 1;
 
   const weekdays = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-
   const dayLabels = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
     return weekdays[d.getDay()];
   });
 
-  // ─── Đếm phòng theo từng trạng thái ───────────────────────────────────────
   const roomCountByStatus = {
     Ready: rooms.filter(r => r.businessStatus === "Available" && r.cleaningStatus === "Clean").length,
     Occupied: rooms.filter(r => r.businessStatus === "Occupied").length,
@@ -417,28 +503,7 @@ export default function DashboardPage() {
     Maintenance: rooms.filter(r => r.businessStatus === "Disabled").length,
   };
 
-  const _kpiCards = DASH_KPI_CARDS.map((card, index) => ({
-    ...card,
-    value: [
-      fmtCurrency(stats.totalRevenue),
-      fmt(stats.activeBookings),
-      `${stats.occupancyRate}%`,
-      fmt(stats.totalUsers),
-    ][index],
-    sub: [
-      `Hôm nay: ${fmtCurrency(stats.todayRevenue)}`,
-      `${stats.pendingBookings} booking chờ cọc`,
-      `${stats.availableRooms} phòng sẵn sàng`,
-      `+${stats.newUsersThisMonth} tài khoản mới tháng này`,
-    ][index],
-  }));
-
-  const _quickStats = [
-    { ...DASH_KPI_CARDS[1], icon: "local_offer", value: fmt(stats.activeVouchers), sub: `${fmt(vouchers.length)} tổng cộng`, label: "Voucher đang hoạt động", intent: "info" },
-    { ...DASH_KPI_CARDS[0], icon: "bed", value: fmt(stats.availableRooms), sub: `${fmt(rooms.length)} phòng tổng`, label: "Phòng sãn sàng", intent: "success", iconColor: "var(--a-success)" },
-    { ...DASH_KPI_CARDS[0], icon: "category", value: fmt(stats.activeRoomTypes), sub: "Loại phòng đang hoạt động", label: "Loại phòng", intent: "brand" },
-    { ...DASH_KPI_CARDS[3], icon: "people", value: fmt(stats.totalUsers), sub: `+${fmt(stats.newUsersThisMonth)} tháng này`, label: "Tài khoản hệ thống", intent: "warning", iconColor: "var(--a-warning)" },
-  ];
+  const activePresetLabel = DATE_PRESETS.find(p => p.key === preset)?.label ?? "";
 
   return (
     <>
@@ -470,12 +535,18 @@ export default function DashboardPage() {
         .db-subtitle-highlight { color:var(--a-brand-ink); }
         .db-table-head { background:color-mix(in srgb, var(--a-surface-raised) 92%, transparent); }
         .db-border { border-color:var(--a-divider) !important; }
+        .date-filter-bar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:12px 20px; background:var(--a-surface-raised); border-radius:16px; border:1px solid var(--a-border); margin-bottom:24px; box-shadow:var(--a-shadow-xs); }
+        .preset-select { appearance:none; -webkit-appearance:none; padding:7px 32px 7px 14px; border-radius:10px; border:1.5px solid var(--a-border); background:var(--a-surface); color:var(--a-text); font-size:13px; font-family:'Manrope',sans-serif; font-weight:700; cursor:pointer; outline:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; transition:border-color .15s, box-shadow .15s; min-width:150px; }
+        .preset-select:focus { border-color:var(--a-brand-border); box-shadow:0 0 0 3px color-mix(in srgb, var(--a-brand-ink) 15%, transparent); }
+        .preset-select:hover { border-color:var(--a-brand-border); }
+        .date-input { padding:7px 12px; border-radius:10px; border:1.5px solid var(--a-border); background:var(--a-surface); color:var(--a-text); font-size:13px; font-family:'Manrope',sans-serif; font-weight:600; cursor:pointer; outline:none; transition:border-color .15s; }
+        .date-input:focus { border-color:var(--a-brand-border); box-shadow:0 0 0 3px color-mix(in srgb, var(--a-brand-ink) 15%, transparent); }
       `}</style>
 
       <div className="admin-page" style={{ maxWidth: 1400, margin: "0 auto", fontFamily: "Manrope, sans-serif" }}>
 
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
           <div>
             <h2 className="db-title" style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 5px" }}>
               Tổng quan hoạt động
@@ -495,31 +566,70 @@ export default function DashboardPage() {
           </button>
         </div>
 
+        {/* ── Date Filter Bar ── */}
+        <div className="date-filter-bar">
+          <span className="material-symbols-outlined" style={{ fontSize: 18, color: "var(--a-brand-ink)", flexShrink: 0 }}>calendar_month</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--a-text-muted)", whiteSpace: "nowrap" }}>Lọc theo:</span>
+          <select
+            className="preset-select"
+            value={preset}
+            onChange={e => setPreset(e.target.value)}
+          >
+            {DATE_PRESETS.map(p => (
+              <option key={p.key} value={p.key}>{p.label}</option>
+            ))}
+          </select>
+          {preset === "custom" && (
+            <>
+              <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 600, whiteSpace: "nowrap" }}>Từ</span>
+              <input
+                type="date"
+                className="date-input"
+                value={customFrom}
+                max={customTo || new Date().toISOString().slice(0, 10)}
+                onChange={e => setCustomFrom(e.target.value)}
+              />
+              <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 600, whiteSpace: "nowrap" }}>đến</span>
+              <input
+                type="date"
+                className="date-input"
+                value={customTo}
+                min={customFrom}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={e => setCustomTo(e.target.value)}
+              />
+            </>
+          )}
+          <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--a-text-soft)", fontWeight: 600 }}>
+            Đang xem: <strong style={{ color: "var(--a-brand-ink)" }}>{activePresetLabel}</strong>
+          </span>
+        </div>
+
         {/* KPI Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-5">
           {[
             {
               icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)",
-              label: "Tổng doanh thu", value: loading ? null : fmtCurrency(stats.totalRevenue),
-              sub: loading ? null : `Hôm nay: ${fmtCurrency(stats.todayRevenue)}`,
+              label: "Tổng doanh thu", value: loading ? null : fmtCurrency(mergedStats.totalRevenue),
+              sub: loading ? null : `Hôm nay: ${fmtCurrency(mergedStats.todayRevenue)}`,
               subColor: "var(--a-brand-ink)", delay: 0,
             },
             {
               icon: "confirmation_number", intent: "info", iconColor: "var(--a-info)",
-              label: "Booking đang hoạt động", value: loading ? null : fmt(stats.activeBookings),
-              sub: loading ? null : `${stats.pendingBookings} booking chờ cọc`,
+              label: "Booking đang hoạt động", value: loading ? null : fmt(mergedStats.activeBookings),
+              sub: loading ? null : `${mergedStats.pendingBookings} booking chờ cọc`,
               subColor: "var(--a-warning)", delay: 60,
             },
             {
               icon: "meeting_room", intent: "error", iconColor: "var(--a-error)",
-              label: "Tỷ lệ lấp đầy", value: loading ? null : `${stats.occupancyRate}%`,
-              sub: loading ? null : `${stats.availableRooms} phòng sẵn sàng`,
+              label: "Tỷ lệ lấp đầy", value: loading ? null : `${mergedStats.occupancyRate}%`,
+              sub: loading ? null : `${mergedStats.availableRooms} phòng sẵn sàng`,
               subColor: "var(--a-success)", delay: 120,
             },
             {
               icon: "group", intent: "warning", iconColor: "var(--a-warning)",
-              label: "Tài khoản hệ thống", value: loading ? null : fmt(stats.totalUsers),
-              sub: loading ? null : `+${stats.newUsersThisMonth} tài khoản mới tháng này`,
+              label: "Tài khoản hệ thống", value: loading ? null : fmt(mergedStats.totalUsers),
+              sub: loading ? null : `+${mergedStats.newUsersThisMonth} trong kỳ lọc`,
               subColor: "var(--a-text-muted)", delay: 180,
             },
           ].map((kpi, idx) => (
@@ -563,9 +673,9 @@ export default function DashboardPage() {
               <div className="admin-stat-icon">
                 <span className="material-symbols-outlined" style={{ color: "var(--a-error)", fontSize: 22, fontVariationSettings: "'FILL' 1" }}>report</span>
               </div>
-              {!loading && stats.pendingLoss > 0 && (
+              {!loading && mergedStats.pendingLoss > 0 && (
                 <span className="admin-status-badge" data-intent="warning" style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px" }}>
-                  {stats.pendingLoss} chờ xử lý
+                  {mergedStats.pendingLoss} chờ xử lý
                 </span>
               )}
             </div>
@@ -573,14 +683,14 @@ export default function DashboardPage() {
             {loading ? <Skel h={28} w={140} style={{ marginBottom: 6 }} /> : (
               <div className="kpi-val" style={{ animationFillMode: "both" }}>
                 <h3 style={{ fontSize: 24, fontWeight: 800, color: "var(--a-error)", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
-                  {fmtCurrency(stats.totalLossValue)}
+                  {fmtCurrency(mergedStats.totalLossValue)}
                 </h3>
               </div>
             )}
             {loading ? <Skel h={12} w={160} /> : (
               <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "var(--a-error)" }}>
-                  {lossAndDamages.length} biên bản · {stats.confirmedLoss} đã xác nhận
+                  {lossAndDamages.length} biên bản · {mergedStats.confirmedLoss} đã xác nhận
                 </span>
               </div>
             )}
@@ -597,13 +707,13 @@ export default function DashboardPage() {
             {loading ? <Skel h={28} w={80} style={{ marginBottom: 6 }} /> : (
               <div className="kpi-val" style={{ animationFillMode: "both" }}>
                 <h3 style={{ fontSize: 24, fontWeight: 800, color: "var(--a-info)", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
-                  {fmt(stats.totalEquipmentUnits)}
+                  {fmt(mergedStats.totalEquipmentUnits)}
                 </h3>
               </div>
             )}
             {loading ? <Skel h={12} w={160} /> : (
               <p style={{ fontSize: 11, fontWeight: 800, color: "var(--a-info)", margin: 0, opacity: 0.82 }}>
-                {fmt(stats.inUseEquipmentUnits)} đang dùng · {fmt(stats.damagedEquipmentUnits)} hư hỏng
+                {fmt(mergedStats.inUseEquipmentUnits)} đang dùng · {fmt(mergedStats.damagedEquipmentUnits)} hư hỏng
               </p>
             )}
           </div>
@@ -619,7 +729,7 @@ export default function DashboardPage() {
               </div>
               {!loading && (
                 <span className="admin-status-badge" data-intent="success" style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px" }}>
-                  {fmtCurrency(stats.revenueByDay.reduce((s, v) => s + v, 0))}
+                  {fmtCurrency(mergedStats.revenueByDay.reduce((s, v) => s + v, 0))}
                 </span>
               )}
             </div>
@@ -630,7 +740,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <MiniBar data={stats.revenueByDay} labels={dayLabels} color="var(--a-brand-ink)" />
+              <MiniBar data={mergedStats.revenueByDay} labels={dayLabels} color="var(--a-brand-ink)" />
             )}
           </div>
 
@@ -648,11 +758,11 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-            ) : stats.roomTypeOccupancy.length === 0 ? (
+            ) : mergedStats.roomTypeOccupancy.length === 0 ? (
               <p style={{ color: "var(--a-text-muted)", fontSize: 13, textAlign: "center", paddingTop: 16 }}>Không có dữ liệu</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {stats.roomTypeOccupancy.map((rt, i) => (
+                {mergedStats.roomTypeOccupancy.map((rt, i) => (
                   <div key={i}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: "var(--a-text)" }}>{rt.name}</span>
@@ -722,19 +832,19 @@ export default function DashboardPage() {
                   <div>
                     <p style={{ fontSize: 11, color: "rgba(231,254,243,.6)", fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Điểm trung bình</p>
                     <p style={{ fontSize: 32, fontWeight: 800, color: "#e7fef3", margin: 0, lineHeight: 1 }}>
-                      {stats.avgRating.toFixed(1)}
+                      {mergedStats.avgRating.toFixed(1)}
                       <span style={{ fontSize: 14, color: "var(--a-emphasis-muted)", fontWeight: 500 }}>/5</span>
                     </p>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                    <Stars rating={Math.round(stats.avgRating)} />
+                    <Stars rating={Math.round(mergedStats.avgRating)} />
                     <span style={{ fontSize: 11, color: "rgba(231,254,243,.6)" }}>{reviews.length} đánh giá</span>
                   </div>
                 </div>
-                {stats.pendingReviews > 0 && (
+                {mergedStats.pendingReviews > 0 && (
                   <div className="admin-status-badge" data-intent="warning" style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 10, padding: "8px 12px" }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--a-warning)" }}>schedule</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--a-warning)" }}>{stats.pendingReviews} đánh giá chờ duyệt</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--a-warning)" }}>{mergedStats.pendingReviews} đánh giá chờ duyệt</span>
                   </div>
                 )}
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -766,10 +876,10 @@ export default function DashboardPage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
-                  { icon: "local_offer", iconColor: "#1e40af", bg: "#dbeafe", label: "Voucher đang hoạt động", value: fmt(stats.activeVouchers), sub: `${fmt(vouchers.length)} tổng cộng` },
-                  { icon: "bed", iconColor: "#065f46", bg: "#d1fae5", label: "Phòng sẵn sàng", value: fmt(stats.availableRooms), sub: `${fmt(rooms.length)} phòng tổng` },
-                  { icon: "category", iconColor: "#9333ea", bg: "#f3e8ff", label: "Loại phòng", value: fmt(stats.activeRoomTypes), sub: "Loại phòng đang hoạt động" },
-                  { icon: "people", iconColor: "#b45309", bg: "#fef3c7", label: "Tài khoản hệ thống", value: fmt(stats.totalUsers), sub: `+${fmt(stats.newUsersThisMonth)} tháng này` },
+                  { icon: "local_offer", iconColor: "#1e40af", bg: "#dbeafe", label: "Voucher đang hoạt động", value: fmt(mergedStats.activeVouchers), sub: `${fmt(vouchers.length)} tổng cộng` },
+                  { icon: "bed", iconColor: "#065f46", bg: "#d1fae5", label: "Phòng sẵn sàng", value: fmt(mergedStats.availableRooms), sub: `${fmt(rooms.length)} phòng tổng` },
+                  { icon: "category", iconColor: "#9333ea", bg: "#f3e8ff", label: "Loại phòng", value: fmt(mergedStats.activeRoomTypes), sub: "Loại phòng đang hoạt động" },
+                  { icon: "people", iconColor: "#b45309", bg: "#fef3c7", label: "Tài khoản hệ thống", value: fmt(mergedStats.totalUsers), sub: `+${fmt(mergedStats.newUsersThisMonth)} trong kỳ lọc` },
                 ].map((item, i) => (
                   <div
                     key={i}
@@ -804,16 +914,16 @@ export default function DashboardPage() {
           <div style={{ padding: "20px 28px", borderBottom: "1px solid var(--a-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--a-text)", margin: 0 }}>Booking gần đây</h4>
             <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 500 }}>
-              {loading ? "..." : `${recentBookings.length} booking`}
+              {loading ? "..." : `${filteredBookingList.length} booking`}
             </span>
           </div>
           {isMobile ? (
             <div style={{ display: "grid", gap: 12, padding: 14 }}>
               {loading ? (
                 Array.from({ length: 4 }).map((_, i) => <Skel key={i} h={92} r={16} />)
-              ) : recentBookings.length === 0 ? (
-                <div style={{ padding: "28px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 13 }}>Chua co booking nao</div>
-              ) : recentBookings.map((b) => {
+              ) : filteredBookingList.length === 0 ? (
+                <div style={{ padding: "28px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 13 }}>Chưa có booking nào trong kỳ này</div>
+              ) : filteredBookingList.map((b) => {
                 const cfg = DASH_STATUS_CFG[b.status] || DASH_STATUS_CFG.Cancelled;
                 const initial = (b.guestName || "?")[0].toUpperCase();
                 return (
@@ -863,12 +973,12 @@ export default function DashboardPage() {
                       ))}
                     </tr>
                   ))
-                ) : recentBookings.length === 0 ? (
+                ) : filteredBookingList.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ padding: "40px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 13 }}>Chưa có booking nào</td>
+                    <td colSpan={6} style={{ padding: "40px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 13 }}>Chưa có booking nào trong kỳ này</td>
                   </tr>
                 ) : (
-                  recentBookings.map((b) => {
+                  filteredBookingList.map((b) => {
                     const cfg = DASH_STATUS_CFG[b.status] || DASH_STATUS_CFG.Cancelled;
                     const initial = (b.guestName || "?")[0].toUpperCase();
                     return (
