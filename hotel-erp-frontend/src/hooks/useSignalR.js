@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as signalR from '@microsoft/signalr';
 import { useAdminAuthStore } from '../store/adminAuthStore';
 import { useNotificationStore } from '../store/notificationStore';
@@ -6,20 +6,27 @@ import { getMyNotifications } from '../api/activityLogsApi';
 
 export const useSignalR = () => {
     const { token, user } = useAdminAuthStore();
+    const clearAuth = useAdminAuthStore((state) => state.clearAuth);
     const addNotification = useNotificationStore((state) => state.addNotification);
     const setNotifications = useNotificationStore((state) => state.setNotifications);
     const clearNotifications = useNotificationStore((state) => state.clearNotifications);
     const connectionRef = useRef(null);
+    const logoutTimeoutRef = useRef(null);
+    const [forcedLogoutNotice, setForcedLogoutNotice] = useState(null);
     const role = user?.role || "";
     const canUseNotificationCenter = role === "Admin" || role === "Manager";
 
     useEffect(() => {
-        if (!token || !canUseNotificationCenter) {
+        if (!token) {
             if (connectionRef.current) {
                 connectionRef.current.stop();
                 connectionRef.current = null;
             }
             clearNotifications();
+            if (logoutTimeoutRef.current) {
+                clearTimeout(logoutTimeoutRef.current);
+                logoutTimeoutRef.current = null;
+            }
             return;
         }
 
@@ -60,10 +67,13 @@ export const useSignalR = () => {
             }
         };
 
-        fetchHistory();
+        if (canUseNotificationCenter) {
+            fetchHistory();
+        }
         startConnection();
 
         connection.on('ReceiveNotification', (notification) => {
+            if (!canUseNotificationCenter) return;
             addNotification({
                 id: notification.id || Date.now().toString(),
                 message: notification.message || notification,
@@ -73,14 +83,36 @@ export const useSignalR = () => {
             });
         });
 
+        connection.on('ForceLogout', (payload) => {
+            const message = payload?.message || 'Quyen cua ban da thay doi. Vui long dang nhap lai.';
+            setForcedLogoutNotice({
+                id: Date.now(),
+                message
+            });
+
+            if (logoutTimeoutRef.current) {
+                clearTimeout(logoutTimeoutRef.current);
+            }
+
+            logoutTimeoutRef.current = setTimeout(() => {
+                clearNotifications();
+                clearAuth();
+                window.location.href = '/login';
+            }, 1400);
+        });
+
         return () => {
             connection.off('ReceiveNotification');
+            connection.off('ForceLogout');
             connection.stop();
             if (connectionRef.current === connection) {
                 connectionRef.current = null;
             }
         };
-    }, [token, canUseNotificationCenter, addNotification, setNotifications, clearNotifications]);
+    }, [token, canUseNotificationCenter, addNotification, setNotifications, clearNotifications, clearAuth]);
 
-    return { connection: connectionRef.current };
+    return {
+        connection: connectionRef.current,
+        forcedLogoutNotice
+    };
 };

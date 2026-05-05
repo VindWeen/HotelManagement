@@ -65,6 +65,7 @@ CREATE TABLE [dbo].[Users](
     -- Auth
     [password_hash]        [nvarchar](max)  NOT NULL,
     [avatar_url]           [nvarchar](max)  NULL,        -- Cloudinary URL
+    [auth_version]         [int]            NOT NULL DEFAULT 1, -- tăng mỗi lần ép logout toàn session
     -- Loyalty
     [loyalty_points]       [int]            NOT NULL DEFAULT 0,  -- tổng điểm tích lũy
     [loyalty_points_usable][int]            NOT NULL DEFAULT 0,  -- điểm có thể quy đổi thành tiền

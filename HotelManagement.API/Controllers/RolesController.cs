@@ -16,11 +16,16 @@ public class RolesController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IActivityLogService _activityLog;
+    private readonly ISessionInvalidationService _sessionInvalidation;
 
-    public RolesController(AppDbContext db, IActivityLogService activityLog)
+    public RolesController(
+        AppDbContext db,
+        IActivityLogService activityLog,
+        ISessionInvalidationService sessionInvalidation)
     {
         _db = db;
         _activityLog = activityLog;
+        _sessionInvalidation = sessionInvalidation;
     }
 
     [HttpGet]
@@ -129,6 +134,11 @@ public class RolesController : ControllerBase
                     userId: currentUserId,
                     roleName: User.FindFirst("role")?.Value
                 );
+
+                await _sessionInvalidation.InvalidateUsersByRoleAsync(
+                    request.RoleId,
+                    $"Quyền của vai trò '{role.Name}' đã thay đổi. Vui lòng đăng nhập lại.",
+                    "role_permissions_changed");
             }
 
             return Ok(new { message = "Đã gán permission thành công." });
@@ -165,9 +175,117 @@ public class RolesController : ControllerBase
                 userId: currentUserId,
                 roleName: User.FindFirst("role")?.Value
             );
+
+            await _sessionInvalidation.InvalidateUsersByRoleAsync(
+                request.RoleId,
+                $"Quyền của vai trò '{role.Name}' đã thay đổi. Vui lòng đăng nhập lại.",
+                "role_permissions_changed");
         }
 
         return Ok(new { message = "Đã thu hồi permission thành công." });
+    }
+
+    [HttpPut("{id:int}/permissions")]
+    [RequirePermission(PermissionCodes.EditRoles)]
+    public async Task<IActionResult> UpdatePermissions(int id, [FromBody] UpdateRolePermissionsRequest request)
+    {
+        if (request.RoleId != id)
+            return BadRequest(new { message = "RoleId không khớp với route." });
+
+        var role = await _db.Roles
+            .Include(r => r.RolePermissions)
+            .FirstOrDefaultAsync(r => r.Id == id);
+
+        if (role is null)
+            return NotFound(new { message = $"Role #{id} không tồn tại." });
+
+        if (IsSystemProtectedRole(role.Name))
+            return BadRequest(new { message = $"Không cho phép chỉnh phân quyền trực tiếp cho vai trò '{role.Name}'." });
+
+        var requestedPermissionIds = (request.PermissionIds ?? [])
+            .Distinct()
+            .ToList();
+
+        var existingPermissionIds = role.RolePermissions
+            .Select(rp => rp.PermissionId)
+            .ToHashSet();
+
+        var validPermissionIds = await _db.Permissions
+            .Where(p => requestedPermissionIds.Contains(p.Id))
+            .Select(p => p.Id)
+            .ToListAsync();
+
+        if (validPermissionIds.Count != requestedPermissionIds.Count)
+            return BadRequest(new { message = "Danh sách permission chứa giá trị không hợp lệ." });
+
+        var toAdd = requestedPermissionIds
+            .Where(permissionId => !existingPermissionIds.Contains(permissionId))
+            .ToList();
+        var toRemove = existingPermissionIds
+            .Where(permissionId => !requestedPermissionIds.Contains(permissionId))
+            .ToList();
+
+        if (toAdd.Count == 0 && toRemove.Count == 0)
+            return Ok(new { message = "Không có thay đổi permission." });
+
+        if (toAdd.Count > 0)
+        {
+            foreach (var permissionId in toAdd)
+            {
+                _db.RolePermissions.Add(new RolePermission
+                {
+                    RoleId = id,
+                    PermissionId = permissionId
+                });
+            }
+        }
+
+        if (toRemove.Count > 0)
+        {
+            var removableEntries = role.RolePermissions
+                .Where(rp => toRemove.Contains(rp.PermissionId))
+                .ToList();
+            _db.RolePermissions.RemoveRange(removableEntries);
+        }
+
+        var currentUserId = JwtHelper.GetUserId(User);
+        _db.AuditLogs.Add(new AuditLog
+        {
+            UserId = currentUserId,
+            Action = "BULK_UPDATE_ROLE_PERMISSIONS",
+            TableName = "Role_Permissions",
+            RecordId = id,
+            OldValue = $"{{\"permissionIds\": [{string.Join(",", existingPermissionIds.OrderBy(x => x))}]}}",
+            NewValue = $"{{\"permissionIds\": [{string.Join(",", requestedPermissionIds.OrderBy(x => x))}]}}",
+            UserAgent = Request.Headers["User-Agent"].ToString(),
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _db.SaveChangesAsync();
+
+        await _activityLog.LogAsync(
+            actionCode: "BULK_UPDATE_ROLE_PERMISSIONS",
+            actionLabel: "Cập nhật quyền vai trò",
+            message: $"{(User.FindFirst("full_name")?.Value ?? "Hệ thống")} đã cập nhật quyền của vai trò '{role.Name}'.",
+            entityType: "Role",
+            entityId: id,
+            entityLabel: role.Name,
+            severity: "Warning",
+            userId: currentUserId,
+            roleName: User.FindFirst("role")?.Value
+        );
+
+        await _sessionInvalidation.InvalidateUsersByRoleAsync(
+            id,
+            $"Quyền của vai trò '{role.Name}' đã thay đổi. Vui lòng đăng nhập lại.",
+            "role_permissions_changed");
+
+        return Ok(new
+        {
+            message = "Đã cập nhật permission của vai trò thành công.",
+            addedPermissionIds = toAdd,
+            removedPermissionIds = toRemove
+        });
     }
 
     [HttpGet("my-permissions")]
@@ -207,3 +325,4 @@ public class RolesController : ControllerBase
 }
 
 public record AssignPermissionRequest(int RoleId, int PermissionId, bool Grant);
+public record UpdateRolePermissionsRequest(int RoleId, List<int>? PermissionIds);

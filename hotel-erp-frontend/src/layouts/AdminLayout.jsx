@@ -4,7 +4,6 @@ import { useAdminAuthStore } from "../store/adminAuthStore";
 import { useLoadingStore } from "../store/loadingStore";
 import { logout } from "../api/authApi";
 import { getMyProfile } from "../api/userProfileApi";
-import { useSignalR } from "../hooks/useSignalR";
 import { useResponsiveAdmin } from "../hooks/useResponsiveAdmin";
 import NotificationMenu from "../components/NotificationMenu";
 import "../styles/admin-theme.css";
@@ -42,8 +41,6 @@ export default function AdminLayout() {
   const updateUser = useAdminAuthStore((s) => s.updateUser);
   const isLoading = useLoadingStore((s) => s.isLoading);
   const navigate = useNavigate();
-
-  useSignalR();
 
   const [themeMode, setThemeMode] = useState(() => {
     if (typeof window === "undefined") return "light";

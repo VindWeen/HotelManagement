@@ -83,6 +83,7 @@ const defaultForm = {
   targetMembershipId: "",
   occasionName: "",
   targetUserIds: [],
+  sendEmailToRecipients: true,
   isActive: true,
 };
 
@@ -106,6 +107,36 @@ const toDateTimeLocalValue = (value) => {
   if (Number.isNaN(date.getTime())) return "";
   const pad = (num) => String(num).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const sanitizeCodeToken = (value) =>
+  String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z0-9]+/gi, "")
+    .toUpperCase();
+
+const buildVoucherCode = ({
+  audienceType,
+  discountType,
+  targetMembershipId,
+  memberships,
+  occasionName,
+  validFrom,
+}) => {
+  const membership = memberships.find((item) => String(item.id) === String(targetMembershipId || ""));
+  const month = validFrom ? new Date(validFrom).getMonth() + 1 : new Date().getMonth() + 1;
+  const audiencePrefixMap = {
+    PUBLIC: "PUB",
+    USER: "CUS",
+    BIRTHDAY_MONTH: `BD${String(month).padStart(2, "0")}`,
+    MEMBERSHIP: sanitizeCodeToken(membership?.tierName || "MEM"),
+    HOLIDAY: sanitizeCodeToken(occasionName || "HOL"),
+  };
+  const audiencePrefix = audiencePrefixMap[audienceType] || "VOU";
+  const discountPrefix = discountType === "FIXED_AMOUNT" ? "FIX" : "PCT";
+  const randomBlock = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `${audiencePrefix}-${discountPrefix}-${randomBlock}`.slice(0, 30);
 };
 
 function StatusSwitch({ active, onToggle, disabled = false }) {
@@ -200,6 +231,50 @@ function Modal({ open, title, onClose, children }) {
   );
 }
 
+function Toast({ msg, type = "success", onDismiss }) {
+  const styles = {
+    success: {
+      bg: "rgba(236, 253, 245, 0.98)",
+      border: "1px solid #86efac",
+      text: "#166534",
+      prog: "#22c55e",
+    },
+    error: {
+      bg: "rgba(254, 242, 242, 0.98)",
+      border: "1px solid #fca5a5",
+      text: "#b91c1c",
+      prog: "#ef4444",
+    },
+    info: {
+      bg: "rgba(239, 246, 255, 0.98)",
+      border: "1px solid #93c5fd",
+      text: "#1d4ed8",
+      prog: "#3b82f6",
+    },
+  };
+  const s = styles[type] || styles.success;
+  const dur = 4200;
+
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, dur);
+    return () => clearTimeout(timer);
+  }, [onDismiss]);
+
+  return (
+    <div style={{ background: s.bg, border: s.border, color: s.text, borderRadius: 16, overflow: "hidden", boxShadow: "0 18px 40px rgba(15, 23, 42, 0.18)", marginBottom: 10, minWidth: 280, maxWidth: 420, animation: "toastIn .32s cubic-bezier(.22,1,.36,1) forwards" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px" }}>
+        <div style={{ flex: 1, fontSize: 13, fontWeight: 700, lineHeight: 1.5 }}>{msg}</div>
+        <button type="button" onClick={onDismiss} style={{ border: "none", background: "transparent", color: s.text, cursor: "pointer", fontSize: 16, fontWeight: 800, padding: 0, lineHeight: 1 }}>
+          ×
+        </button>
+      </div>
+      <div style={{ height: 4, background: "rgba(255,255,255,.45)" }}>
+        <div style={{ height: "100%", background: s.prog, animation: `toastProgress ${dur}ms linear forwards` }} />
+      </div>
+    </div>
+  );
+}
+
 export default function VoucherAdminPage() {
   const { isMobile, isTablet } = useResponsiveAdmin();
   const [rows, setRows] = useState([]);
@@ -213,6 +288,7 @@ export default function VoucherAdminPage() {
   const [togglingIds, setTogglingIds] = useState({});
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [toasts, setToasts] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [form, setForm] = useState(defaultForm);
@@ -296,9 +372,68 @@ export default function VoucherAdminPage() {
     );
   }, [guestSearch, guests]);
 
+  const guestRecipients = useMemo(
+    () => guests.filter((guest) => guest.roleName === "Guest" && guest.status !== false && guest.email),
+    [guests],
+  );
+
+  const selectedMembership = useMemo(
+    () => memberships.find((item) => String(item.id) === String(form.targetMembershipId || "")) || null,
+    [memberships, form.targetMembershipId],
+  );
+
+  const birthdayTargetMonth = useMemo(() => {
+    if (!form.validFrom) return new Date().getMonth() + 1;
+    const date = new Date(form.validFrom);
+    return Number.isNaN(date.getTime()) ? new Date().getMonth() + 1 : date.getMonth() + 1;
+  }, [form.validFrom]);
+
+  const estimatedRecipientCount = useMemo(() => {
+    if (form.audienceType === "USER") return form.targetUserIds.length;
+    if (form.audienceType === "BIRTHDAY_MONTH") {
+      return guestRecipients.filter((guest) => {
+        if (!guest.dateOfBirth) return false;
+        const date = new Date(guest.dateOfBirth);
+        return !Number.isNaN(date.getTime()) && date.getMonth() + 1 === birthdayTargetMonth;
+      }).length;
+    }
+    if (form.audienceType === "MEMBERSHIP") {
+      return guestRecipients.filter((guest) => String(guest.membershipId || "") === String(form.targetMembershipId || "")).length;
+    }
+    return guestRecipients.length;
+  }, [birthdayTargetMonth, form.audienceType, form.targetMembershipId, form.targetUserIds.length, guestRecipients]);
+
+  const emailAudienceHint = useMemo(() => {
+    if (form.audienceType === "USER") {
+      return `Email sẽ gửi cho ${estimatedRecipientCount} khách đang được chọn.`;
+    }
+    if (form.audienceType === "BIRTHDAY_MONTH") {
+      return `Email sẽ gửi cho khách Guest có tháng sinh là tháng ${birthdayTargetMonth}.`;
+    }
+    if (form.audienceType === "MEMBERSHIP") {
+      return selectedMembership
+        ? `Email sẽ gửi cho thành viên thuộc hạng ${selectedMembership.tierName}.`
+        : "Chọn hạng thành viên để xác định người nhận email.";
+    }
+    if (form.audienceType === "HOLIDAY") {
+      return "Email sẽ gửi cho toàn bộ khách Guest đang hoạt động.";
+    }
+    return "Email sẽ gửi cho toàn bộ khách Guest đang hoạt động.";
+  }, [birthdayTargetMonth, estimatedRecipientCount, form.audienceType, selectedMembership]);
+
   const openCreateModal = () => {
     setEditingItem(null);
-    setForm(defaultForm);
+    setForm({
+      ...defaultForm,
+      code: buildVoucherCode({
+        audienceType: defaultForm.audienceType,
+        discountType: defaultForm.discountType,
+        targetMembershipId: defaultForm.targetMembershipId,
+        memberships,
+        occasionName: defaultForm.occasionName,
+        validFrom: defaultForm.validFrom,
+      }),
+    });
     setGuestSearch("");
     setErrorMessage("");
     setModalOpen(true);
@@ -321,11 +456,26 @@ export default function VoucherAdminPage() {
       targetMembershipId: item.targetMembershipId?.toString() || "",
       occasionName: item.occasionName || "",
       targetUserIds: (item.targetUsers || []).map((target) => Number(target.userId)),
+      sendEmailToRecipients: false,
       isActive: item.isActive !== false,
     });
     setGuestSearch("");
     setErrorMessage("");
     setModalOpen(true);
+  };
+
+  const regenerateVoucherCode = () => {
+    setForm((prev) => ({
+      ...prev,
+      code: buildVoucherCode({
+        audienceType: prev.audienceType,
+        discountType: prev.discountType,
+        targetMembershipId: prev.targetMembershipId,
+        memberships,
+        occasionName: prev.occasionName,
+        validFrom: prev.validFrom,
+      }),
+    }));
   };
 
   const buildPayload = () => ({
@@ -343,6 +493,7 @@ export default function VoucherAdminPage() {
     targetMembershipId: form.audienceType === "MEMBERSHIP" && form.targetMembershipId !== "" ? Number(form.targetMembershipId) : null,
     occasionName: form.audienceType === "HOLIDAY" ? form.occasionName.trim() : null,
     targetUserIds: form.audienceType === "USER" ? form.targetUserIds.map(Number) : [],
+    sendEmailToRecipients: Boolean(form.sendEmailToRecipients),
     isActive: form.isActive,
   });
 
@@ -373,14 +524,24 @@ export default function VoucherAdminPage() {
       return;
     }
 
+    if (!editingItem && form.sendEmailToRecipients && estimatedRecipientCount === 0) {
+      setErrorMessage("Không có người nhận phù hợp để gửi email cho voucher này.");
+      return;
+    }
+
     setSaving(true);
     setErrorMessage("");
     try {
       const payload = buildPayload();
       if (editingItem) {
-        await updateVoucher(editingItem.id, payload);
+        const response = await updateVoucher(editingItem.id, payload);
+        pushToast(response?.data?.message || `Đã cập nhật voucher ${editingItem.code}.`, "success");
       } else {
-        await createVoucher(payload);
+        const response = await createVoucher(payload);
+        pushToast(response?.data?.message || "Tạo voucher thành công.", "success");
+        if (response?.data?.emailWarning) {
+          pushToast(response.data.emailWarning, "info");
+        }
       }
       setModalOpen(false);
       await loadData();
@@ -403,6 +564,7 @@ export default function VoucherAdminPage() {
     );
     try {
       await updateVoucher(item.id, { isActive: nextActive });
+      pushToast(nextActive ? `Đã bật voucher ${item.code}.` : `Đã tắt voucher ${item.code}.`, "success");
     } catch (error) {
       setRows((prev) =>
         prev.map((row) =>
@@ -445,6 +607,15 @@ export default function VoucherAdminPage() {
     setForm((prev) => ({ ...prev, targetUserIds: [] }));
   };
 
+  const pushToast = useCallback((msg, type = "success") => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, msg, type }]);
+  }, []);
+
+  const dismissToast = useCallback((toastId) => {
+    setToasts((prev) => prev.filter((item) => item.id !== toastId));
+  }, []);
+
   return (
     <div style={{ maxWidth: 1360, margin: "0 auto", paddingInline: isMobile ? 4 : 0 }}>
       <style>{`
@@ -467,7 +638,16 @@ export default function VoucherAdminPage() {
           background: color-mix(in srgb, var(--a-surface-raised) 82%, var(--a-surface-bright));
           border-color: var(--a-border-strong);
         }
+        @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+        @keyframes toastProgress { from{width:100%} to{width:0} }
       `}</style>
+      <div style={{ position: "fixed", top: isMobile ? 12 : 20, right: isMobile ? 12 : 20, zIndex: 1400, pointerEvents: "none" }}>
+        {toasts.map((toast) => (
+          <div key={toast.id} style={{ pointerEvents: "auto" }}>
+            <Toast {...toast} onDismiss={() => dismissToast(toast.id)} />
+          </div>
+        ))}
+      </div>
       <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 28, color: "var(--a-text)", fontWeight: 800 }}>Voucher</h2>
@@ -646,15 +826,29 @@ export default function VoucherAdminPage() {
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Mã voucher</label>
+              <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
+              {!editingItem ? (
+                <div style={{ display: "contents" }}>
+                  <button className="voucher-ghost" type="button" onClick={regenerateVoucherCode} style={{ ...secondaryButton, minHeight: 44, padding: "0 14px", fontSize: 12, whiteSpace: "nowrap", order: 2 }}>
+                    Random mã
+                  </button>
+                </div>
+              ) : null}
               <input
                 className="voucher-input"
                 value={form.code}
-                onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))}
-                style={inputStyle}
+                onChange={(e) => setForm((prev) => ({ ...prev, code: sanitizeCodeToken(e.target.value) }))}
+                style={{ ...inputStyle, flex: 1, order: 1 }}
                 placeholder="SUMMER2026"
                 disabled={Boolean(editingItem)}
                 required={!editingItem}
               />
+              </div>
+              {!editingItem ? (
+                <div style={{ marginTop: 6, color: "var(--a-text-soft)", fontSize: 12 }}>
+                  Gợi ý theo loại voucher đang chọn. Bạn có thể sửa lại trước khi lưu.
+                </div>
+              ) : null}
             </div>
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Loại giảm giá</label>
@@ -668,7 +862,7 @@ export default function VoucherAdminPage() {
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
             <div>
               <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Đối tượng áp dụng</label>
-              <select className="voucher-select" value={form.audienceType} onChange={(e) => setForm((prev) => ({ ...prev, audienceType: e.target.value, targetMembershipId: "", occasionName: "", targetUserIds: [] }))} style={{ ...inputStyle, cursor: "pointer" }}>
+              <select className="voucher-select" value={form.audienceType} onChange={(e) => setForm((prev) => ({ ...prev, audienceType: e.target.value, targetMembershipId: "", occasionName: "", targetUserIds: [], code: prev.code ? buildVoucherCode({ audienceType: e.target.value, discountType: prev.discountType, targetMembershipId: "", memberships, occasionName: "", validFrom: prev.validFrom }) : prev.code }))} style={{ ...inputStyle, cursor: "pointer" }}>
                 {AUDIENCE_OPTIONS.map((item) => (
                   <option key={item.value} value={item.value}>{item.label}</option>
                 ))}
@@ -783,6 +977,47 @@ export default function VoucherAdminPage() {
                   );
                 })}
               </div>
+            </div>
+          ) : null}
+
+          {!editingItem ? (
+            <div style={{ display: "grid", gap: 8, padding: 14, borderRadius: 16, border: "1px solid var(--a-border)", background: "var(--a-surface-raised)" }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, color: "var(--a-text)", fontWeight: 700, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={form.sendEmailToRecipients}
+                  onChange={(e) => setForm((prev) => ({ ...prev, sendEmailToRecipients: e.target.checked }))}
+                  style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                />
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 20,
+                    height: 20,
+                    flex: "0 0 20px",
+                    marginTop: 2,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 6,
+                    border: form.sendEmailToRecipients ? "1.5px solid var(--a-primary)" : "1.5px solid var(--a-border-strong)",
+                    background: form.sendEmailToRecipients ? "var(--a-primary)" : "var(--a-surface)",
+                    color: "var(--a-text-inverse)",
+                    fontSize: 13,
+                    lineHeight: 1,
+                    boxShadow: form.sendEmailToRecipients ? "0 0 0 3px rgba(165, 214, 167, 0.12)" : "none",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {form.sendEmailToRecipients ? "✓" : ""}
+                </span>
+                <span>
+                  Gửi voucher qua email ngay sau khi tạo
+                  <span style={{ display: "block", marginTop: 4, color: "var(--a-text-muted)", fontSize: 12, fontWeight: 600 }}>
+                    {emailAudienceHint} Ước tính {estimatedRecipientCount} người nhận.
+                  </span>
+                </span>
+              </label>
             </div>
           ) : null}
 
