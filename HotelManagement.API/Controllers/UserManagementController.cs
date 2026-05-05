@@ -20,12 +20,18 @@ public class UserManagementController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IEmailService _email;
     private readonly IAuditTrailService _auditTrail;
+    private readonly ISessionInvalidationService _sessionInvalidation;
 
-    public UserManagementController(AppDbContext db, IEmailService email, IAuditTrailService auditTrail)
+    public UserManagementController(
+        AppDbContext db,
+        IEmailService email,
+        IAuditTrailService auditTrail,
+        ISessionInvalidationService sessionInvalidation)
     {
         _db = db;
         _email = email;
         _auditTrail = auditTrail;
+        _sessionInvalidation = sessionInvalidation;
     }
 
     // GET /api/UserManagement?roleId=&page=&pageSize=
@@ -396,6 +402,11 @@ public class UserManagementController : ControllerBase
             Type    = NotificationType.Success,
             Action  = NotificationAction.UpdateUser
         };
+
+        await _sessionInvalidation.InvalidateUserAsync(
+            id,
+            "Vai trò của bạn đã thay đổi. Vui lòng đăng nhập lại.",
+            "role_changed");
 
         return Ok(new { oldRoleId, newRoleId = request.NewRoleId, newRoleName = role.Name, notification });
     }

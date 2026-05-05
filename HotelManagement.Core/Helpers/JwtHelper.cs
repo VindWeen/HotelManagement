@@ -9,6 +9,7 @@ namespace HotelManagement.Core.Helpers;
 
 public class JwtHelper
 {
+    public const string AuthVersionClaimType = "auth_version";
     private readonly IConfiguration _config;
 
     public JwtHelper(IConfiguration config)
@@ -33,6 +34,7 @@ public class JwtHelper
             new(JwtRegisteredClaimNames.Jti,   Guid.NewGuid().ToString()),
             new("role",                        roleName),
             new("full_name",                   user.FullName),
+            new(AuthVersionClaimType,          user.AuthVersion.ToString()),
         };
 
         // Mỗi permission_code là 1 claim riêng
@@ -67,4 +69,10 @@ public class JwtHelper
 
     public static string? GetEmail(ClaimsPrincipal principal)
         => principal.FindFirst(JwtRegisteredClaimNames.Email)?.Value;
+
+    public static int GetAuthVersion(ClaimsPrincipal principal)
+    {
+        var raw = principal.FindFirst(AuthVersionClaimType)?.Value;
+        return int.TryParse(raw, out var version) ? version : 0;
+    }
 }

@@ -18,6 +18,7 @@ public class User
     // Auth
     public string PasswordHash { get; set; } = null!;
     public string? AvatarUrl { get; set; }
+    public int AuthVersion { get; set; } = 1;
 
     // Refresh Token — lưu server-side để validate và revoke khi logout
     public string? RefreshToken { get; set; }

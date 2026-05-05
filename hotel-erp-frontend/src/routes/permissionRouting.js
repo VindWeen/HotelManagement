@@ -19,6 +19,10 @@ export function isGuestRole(role) {
   return role === "Customer" || role === "Guest";
 }
 
+export function canAccessGuestPortal(role) {
+  return Boolean(role);
+}
+
 export function getDefaultAdminPath(role, permissions = []) {
   const permissionSet = getPermissionSet(permissions);
 

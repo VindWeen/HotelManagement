@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminAuthStore } from '../../store/adminAuthStore';
-import { isGuestRole } from '../../routes/permissionRouting';
+import { canAccessGuestPortal } from '../../routes/permissionRouting';
 
 const NAV_LINKS = [
   { to: '/',            label: 'Trang chủ',      exact: true },
@@ -26,7 +26,7 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
   const clearAuth = useAdminAuthStore((s) => s.clearAuth);
 
   const isStaff = token && user?.role && user.role !== 'Customer' && user.role !== 'Guest';
-  const isGuestUser = token && isGuestRole(user?.role);
+  const canUseGuestPortal = token && canAccessGuestPortal(user?.role);
   const closeMenu = () => setMenuOpen(false);
   const displayName = (user?.fullName || 'Bạn').trim().split(/\s+/).slice(-1)[0];
 
@@ -536,7 +536,7 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
               </Link>
             )}
             {token ? (
-              !isGuestUser ? (
+              !canUseGuestPortal ? (
                 <button
                   onClick={handleLogout}
                   className="gh-nav-link"
@@ -568,7 +568,7 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
             <Link to="/booking" className="gh-cta" onClick={closeMenu}>
               Đặt phòng
             </Link>
-            {isGuestUser && (
+            {canUseGuestPortal && (
               <div className={`gh-account${accountMenuOpen ? ' open' : ''}`} ref={accountMenuRef}>
                 <button
                   type="button"
@@ -722,7 +722,7 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
               Trang Quản Trị
             </Link>
           )}
-          {isGuestUser && (
+          {canUseGuestPortal && (
             <>
               <Link
                 to="/guest/dashboard"

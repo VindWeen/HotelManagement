@@ -87,6 +87,41 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 }
                 return Task.CompletedTask;
             },
+            OnTokenValidated = async ctx =>
+            {
+                var principal = ctx.Principal;
+                if (principal is null)
+                {
+                    ctx.Fail("Missing principal.");
+                    return;
+                }
+
+                var userId = JwtHelper.GetUserId(principal);
+                var tokenAuthVersion = JwtHelper.GetAuthVersion(principal);
+                if (userId <= 0)
+                {
+                    ctx.Fail("Invalid token subject.");
+                    return;
+                }
+
+                var db = ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+                var user = await db.Users
+                    .AsNoTracking()
+                    .Where(u => u.Id == userId)
+                    .Select(u => new { u.Id, u.AuthVersion })
+                    .FirstOrDefaultAsync(ctx.HttpContext.RequestAborted);
+
+                if (user is null)
+                {
+                    ctx.Fail("User no longer exists.");
+                    return;
+                }
+
+                if (tokenAuthVersion != user.AuthVersion)
+                {
+                    ctx.Fail("Session has been invalidated.");
+                }
+            },
 
             OnChallenge = ctx =>
             {
@@ -114,6 +149,7 @@ builder.Services.AddAuthorization();
 // ── 4. Helpers & Services ────────────────────────────────────────
 builder.Services.AddScoped<JwtHelper>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ISessionInvalidationService, SessionInvalidationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 builder.Services.AddScoped<IAuditLogGroupService, AuditLogGroupService>();
