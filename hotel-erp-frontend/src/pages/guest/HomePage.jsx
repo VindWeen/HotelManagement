@@ -5,6 +5,7 @@ import { getRoomTypes } from '../../api/roomTypesApi';
 import { getReviews } from '../../api/reviewsApi';
 import { getArticles } from '../../api/articlesApi';
 import { getGuestServiceCatalog } from '../../api/guestServicesApi';
+import { getPlainTextExcerpt, stripHtml } from '../../utils';
 import { getFullImageUrl } from '../../utils/imageUtils';
 
 /* ── Formatters ── */
@@ -143,7 +144,7 @@ function ArticleCard({ article }) {
           {article.thumbnailUrl ? (
             <img
               src={getFullImageUrl(article.thumbnailUrl)}
-              alt={article.title}
+              alt={stripHtml(article.title) || 'Article thumbnail'}
               style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s var(--g-ease)' }}
               onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
@@ -161,11 +162,11 @@ function ArticleCard({ article }) {
         </div>
         <div style={{ padding: '18px 20px 20px' }}>
           <h3 style={{ fontFamily: 'var(--g-font-heading)', fontWeight: 700, fontSize: '1rem', color: 'var(--g-text)', margin: '0 0 8px', lineHeight: 1.4 }}>
-            {article.title}
+            {getPlainTextExcerpt(article.title, 96)}
           </h3>
           {article.metaDescription && (
             <p style={{ fontSize: '0.82rem', color: 'var(--g-text-muted)', lineHeight: 1.6, margin: 0 }}>
-              {article.metaDescription.slice(0, 120)}{article.metaDescription.length > 120 ? '…' : ''}
+              {getPlainTextExcerpt(article.metaDescription, 120)}
             </p>
           )}
           <div style={{ marginTop: 12, fontSize: '0.78rem', color: 'var(--g-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>

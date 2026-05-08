@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getArticleBySlug } from "../api/articlesApi";
+import { stripHtml } from "../utils";
 
 function getPreviewData() {
   if (typeof window === "undefined") return null;
@@ -170,6 +171,24 @@ export default function ArticlePreviewPage() {
         fontFamily: "'Manrope', sans-serif",
       }}
     >
+      <style>{`
+        .article-preview-rich-title,
+        .article-preview-rich-meta {
+          color: inherit;
+        }
+        .article-preview-rich-title > *:first-child,
+        .article-preview-rich-meta > *:first-child {
+          margin-top: 0;
+        }
+        .article-preview-rich-title > *:last-child,
+        .article-preview-rich-meta > *:last-child {
+          margin-bottom: 0;
+        }
+        .article-preview-rich-title p,
+        .article-preview-rich-meta p {
+          margin: 0;
+        }
+      `}</style>
       <header
         style={{
           maxWidth: 980,
@@ -200,17 +219,21 @@ export default function ArticlePreviewPage() {
           <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 14 }}>
             {article.categoryName || "Chưa chọn danh mục"} • {article.status || "Draft"}
           </div>
-          <h1
+          <div
+            role="heading"
+            aria-level={1}
+            className="article-preview-rich-title"
             style={{
               margin: 0,
               fontSize: "clamp(34px, 5vw, 56px)",
               lineHeight: 1.05,
               letterSpacing: "-0.04em",
               color: "#111827",
+              fontWeight: 800,
             }}
           >
             {article.title || "Bài viết chưa có tiêu đề"}
-          </h1>
+          </div>
           {article.metaDescription ? (
             <p
               style={{
@@ -307,7 +330,7 @@ export default function ArticlePreviewPage() {
                         {attraction.imageUrl ? (
                           <img
                             src={attraction.imageUrl}
-                            alt={attraction.name}
+                            alt={stripHtml(attraction.name) || "Attraction image"}
                             style={{ width: "100%", height: 200, objectFit: "cover", borderRadius: 18, border: "1px solid #ede7dd" }}
                           />
                         ) : null}

@@ -23,6 +23,9 @@ export const getRoleById = (id) => axiosClient.get(`/Roles/${id}`);
 export const assignPermission = (roleId, permissionId, grant) =>
   axiosClient.post("/Roles/assign-permission", { roleId, permissionId, grant });
 
+export const updateRolePermissions = (roleId, permissionIds) =>
+  axiosClient.put(`/Roles/${roleId}/permissions`, { roleId, permissionIds });
+
 /**
  * GET /api/Roles/my-permissions  [Authorize]
  * Permissions của user hiện tại — dùng để ẩn/hiện menu

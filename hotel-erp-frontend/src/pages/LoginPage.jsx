@@ -58,6 +58,7 @@ export default function LoginPage() {
       const data = res.data;
       setAuth({
         token: data.token,
+        refreshToken: data.refreshToken,
         user: {
           id: data.userId,
           fullName: data.fullName,
@@ -106,6 +107,7 @@ export default function LoginPage() {
       const data = res.data;
       setAuth({
         token: data.token,
+        refreshToken: data.refreshToken,
         user: {
           id: data.userId,
           fullName: data.fullName,

@@ -2,6 +2,7 @@ using HotelManagement.Core.Authorization;
 using HotelManagement.Core.Entities;
 using HotelManagement.Core.Helpers;
 using HotelManagement.Infrastructure.Data;
+using HotelManagement.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,11 +16,13 @@ namespace HotelManagement.API.Controllers;
 public class RoomInventoriesController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IAuditTrailService _auditTrail;
     private static readonly JsonSerializerOptions SnapshotJsonOptions = new(JsonSerializerDefaults.Web);
 
-    public RoomInventoriesController(AppDbContext db)
+    public RoomInventoriesController(AppDbContext db, IAuditTrailService auditTrail)
     {
         _db = db;
+        _auditTrail = auditTrail;
     }
 
     private sealed class SnapshotItem
@@ -561,6 +564,22 @@ public class RoomInventoriesController : ControllerBase
             await _db.SaveChangesAsync();
         }
 
+        if (totalClonedItems > 0)
+        {
+            await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+            {
+                ActionCode = "CLONE_ROOM_INVENTORY",
+                ActionLabel = "Nhân bản vật tư phòng",
+                Message = $"Đã nhân bản {totalClonedItems} vật tư từ phòng #{request.SourceRoomId} vào {clonedTo.Count} phòng đích.",
+                EntityType = "RoomInventory",
+                EntityId = request.SourceRoomId,
+                EntityLabel = $"Room #{request.SourceRoomId}",
+                Severity = "Success",
+                TableName = "RoomInventories",
+                NewValue = $"{{\"sourceRoomId\":{request.SourceRoomId},\"clonedItems\":{totalClonedItems},\"targetRooms\":{clonedTo.Count},\"skipped\":{totalSkippedItems}}}"
+            });
+        }
+
         return StatusCode(201, new
         {
             message = $"Đã clone {totalClonedItems} vật tư còn thiếu vào {clonedTo.Count} phòng.",
@@ -653,6 +672,20 @@ public class RoomInventoriesController : ControllerBase
         room.InventoryLastSyncedAt = now;
 
         await _db.SaveChangesAsync();
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "SYNC_ROOM_INVENTORY_STOCK",
+            ActionLabel = "Đồng bộ tồn kho vật tư phòng",
+            Message = $"Đã đồng bộ tồn kho vật tư phòng #{room.Id}: {preview.Count(x => x.IsEquipmentActive)} vật tư thay đổi.",
+            EntityType = "RoomInventory",
+            EntityId = room.Id,
+            EntityLabel = $"Room #{room.Id}",
+            Severity = "Success",
+            TableName = "Equipments",
+            RecordId = room.Id,
+            NewValue = $"{{\"roomId\":{room.Id},\"updatedEquipments\":{preview.Count(x => x.IsEquipmentActive)},\"skipped\":{skippedDisabledItems.Count}}}"
+        });
 
         return Ok(new
         {
@@ -762,6 +795,20 @@ public class RoomInventoriesController : ControllerBase
         room.InventoryLastSyncedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "SAVE_ROOM_INVENTORY_SNAPSHOT",
+            ActionLabel = "Lưu snapshot vật tư phòng",
+            Message = $"Đã lưu snapshot vật tư hiện tại cho phòng #{room.Id}.",
+            EntityType = "Room",
+            EntityId = room.Id,
+            EntityLabel = $"Room #{room.Id}",
+            Severity = "Info",
+            TableName = "Rooms",
+            RecordId = room.Id,
+            NewValue = $"{{\"roomId\":{room.Id},\"snapshotAt\":\"{room.InventoryLastSyncedAt:yyyy-MM-ddTHH:mm}\"}}"
+        });
 
         return Ok(new
         {

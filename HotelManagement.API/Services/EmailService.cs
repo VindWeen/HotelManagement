@@ -14,7 +14,28 @@ public interface IEmailService
     Task SendPasswordChangedAsync(string toEmail, string fullName);
     Task SendForgotPasswordResetAsync(string toEmail, string fullName, string newPassword);
     Task SendPasswordResetByAdminAsync(string toEmail, string fullName, string newPassword);
+    Task<int> SendVoucherCampaignAsync(IEnumerable<VoucherEmailRecipient> recipients, VoucherEmailPayload payload);
 }
+
+public sealed record VoucherEmailRecipient(
+    int UserId,
+    string FullName,
+    string Email);
+
+public sealed record VoucherEmailPayload(
+    string VoucherCode,
+    string AudienceType,
+    string DiscountType,
+    decimal DiscountValue,
+    decimal? MaxDiscountAmount,
+    decimal? MinBookingValue,
+    DateTime? ValidFrom,
+    DateTime? ValidTo,
+    string? RoomTypeName,
+    string? RoomImageUrl,
+    string? MembershipTierName,
+    string? OccasionName,
+    string? FrontendBaseUrl);
 
 public class EmailService : IEmailService
 {
@@ -219,6 +240,127 @@ public class EmailService : IEmailService
             """;
 
         return SendAsync(toEmail, fullName, subject, body);
+    }
+
+    public async Task<int> SendVoucherCampaignAsync(IEnumerable<VoucherEmailRecipient> recipients, VoucherEmailPayload payload)
+    {
+        var sentCount = 0;
+        foreach (var recipient in recipients
+            .Where(x => !string.IsNullOrWhiteSpace(x.Email))
+            .GroupBy(x => x.Email.Trim().ToLowerInvariant())
+            .Select(g => g.First()))
+        {
+            var subject = BuildVoucherSubject(payload);
+            var body = BuildVoucherEmailBody(recipient.FullName, payload);
+            await SendAsync(recipient.Email, recipient.FullName, subject, body);
+            sentCount++;
+        }
+
+        return sentCount;
+    }
+
+    private static string BuildVoucherSubject(VoucherEmailPayload payload)
+    {
+        var headline = payload.AudienceType switch
+        {
+            "BIRTHDAY_MONTH" => "Ưu đãi sinh nhật dành cho bạn",
+            "MEMBERSHIP" => $"Ưu đãi thành viên {payload.MembershipTierName ?? string.Empty}".Trim(),
+            "HOLIDAY" => $"Ưu đãi {payload.OccasionName ?? "đặc biệt"}",
+            "USER" => "Voucher ưu đãi dành riêng cho bạn",
+            _ => "Voucher ưu đãi mới từ khách sạn"
+        };
+
+        return $"[Hotel] {headline} - {payload.VoucherCode}";
+    }
+
+    private static string BuildVoucherEmailBody(string fullName, VoucherEmailPayload payload)
+    {
+        var roomImageBlock = string.IsNullOrWhiteSpace(payload.RoomImageUrl)
+            ? string.Empty
+            : $"""
+                <div style="margin: 0 0 18px;">
+                    <img src="{WebUtility.HtmlEncode(payload.RoomImageUrl)}" alt="Room" style="display:block;width:100%;height:220px;object-fit:cover;border-radius:18px;" />
+                </div>
+                """;
+
+        var audienceBadge = payload.AudienceType switch
+        {
+            "BIRTHDAY_MONTH" => "Sinh nhật",
+            "MEMBERSHIP" => $"Thành viên {payload.MembershipTierName ?? string.Empty}".Trim(),
+            "HOLIDAY" => payload.OccasionName ?? "Dịp đặc biệt",
+            "USER" => "Ưu đãi riêng",
+            _ => "Ưu đãi mới"
+        };
+
+        var discountText = payload.DiscountType == "PERCENT"
+            ? $"{payload.DiscountValue:N0}%"
+            : $"{payload.DiscountValue:N0} VNĐ";
+
+        var maxDiscountText = payload.MaxDiscountAmount.HasValue
+            ? $"{payload.MaxDiscountAmount.Value:N0} VNĐ"
+            : "Không giới hạn";
+
+        var minBookingText = payload.MinBookingValue.HasValue
+            ? $"{payload.MinBookingValue.Value:N0} VNĐ"
+            : "Không yêu cầu";
+
+        var validFromText = payload.ValidFrom.HasValue ? payload.ValidFrom.Value.ToString("dd/MM/yyyy HH:mm") : "Ngay khi nhận";
+        var validToText = payload.ValidTo.HasValue ? payload.ValidTo.Value.ToString("dd/MM/yyyy HH:mm") : "Cho đến khi hết lượt";
+        var roomTypeText = string.IsNullOrWhiteSpace(payload.RoomTypeName) ? "Tất cả hạng phòng" : payload.RoomTypeName;
+
+        var websiteBlock = string.IsNullOrWhiteSpace(payload.FrontendBaseUrl)
+            ? string.Empty
+            : $"""
+                <div style="margin-top:20px;text-align:center;">
+                    <a href="{WebUtility.HtmlEncode(payload.FrontendBaseUrl)}" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#4f645b;color:#ffffff;text-decoration:none;font-weight:700;">Đặt phòng ngay</a>
+                </div>
+                """;
+
+        return $"""
+            <div style="font-family:Arial,sans-serif;background:#f7f5ef;padding:24px;color:#1f2937;">
+                <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:24px;padding:24px;border:1px solid #ebe7dc;">
+                    {roomImageBlock}
+                    <div style="display:inline-block;padding:6px 12px;border-radius:999px;background:#eef6f1;color:#4f645b;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;">{WebUtility.HtmlEncode(audienceBadge)}</div>
+                    <h2 style="margin:14px 0 8px;color:#18212b;font-size:28px;line-height:1.2;">Mã ưu đãi mới dành cho bạn</h2>
+                    <p style="margin:0 0 18px;font-size:15px;line-height:1.7;">Xin chào <strong>{WebUtility.HtmlEncode(fullName)}</strong>, khách sạn vừa phát hành voucher mới. Bạn có thể dùng mã bên dưới để nhận ưu đãi cho lần đặt phòng tiếp theo.</p>
+
+                    <div style="padding:18px;border-radius:20px;background:linear-gradient(135deg,#18212b 0%,#4f645b 100%);color:#ffffff;">
+                        <div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.78;">Mã voucher</div>
+                        <div style="margin-top:8px;font-size:30px;font-weight:800;letter-spacing:.14em;">{WebUtility.HtmlEncode(payload.VoucherCode)}</div>
+                        <div style="margin-top:12px;font-size:16px;">Ưu đãi: <strong>{discountText}</strong></div>
+                    </div>
+
+                    <table style="width:100%;border-collapse:separate;border-spacing:0 10px;margin:18px 0 6px;">
+                        <tr>
+                            <td style="width:42%;padding:12px 14px;background:#f9f8f3;border-radius:12px 0 0 12px;font-weight:700;">Giảm tối đa</td>
+                            <td style="padding:12px 14px;background:#f9f8f3;border-radius:0 12px 12px 0;">{maxDiscountText}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:12px 14px;background:#f9f8f3;border-radius:12px 0 0 12px;font-weight:700;">Đơn tối thiểu</td>
+                            <td style="padding:12px 14px;background:#f9f8f3;border-radius:0 12px 12px 0;">{minBookingText}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:12px 14px;background:#f9f8f3;border-radius:12px 0 0 12px;font-weight:700;">Áp dụng cho</td>
+                            <td style="padding:12px 14px;background:#f9f8f3;border-radius:0 12px 12px 0;">{WebUtility.HtmlEncode(roomTypeText)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:12px 14px;background:#f9f8f3;border-radius:12px 0 0 12px;font-weight:700;">Hiệu lực từ</td>
+                            <td style="padding:12px 14px;background:#f9f8f3;border-radius:0 12px 12px 0;">{validFromText}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:12px 14px;background:#f9f8f3;border-radius:12px 0 0 12px;font-weight:700;">Hiệu lực đến</td>
+                            <td style="padding:12px 14px;background:#f9f8f3;border-radius:0 12px 12px 0;">{validToText}</td>
+                        </tr>
+                    </table>
+
+                    <div style="margin-top:18px;padding:16px 18px;border-radius:16px;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;font-size:14px;line-height:1.7;">
+                        Lưu ý: mỗi khách chỉ sử dụng theo giới hạn được cấu hình trên voucher. Vui lòng nhập chính xác mã khi đặt phòng.
+                    </div>
+                    {websiteBlock}
+                    <p style="margin:18px 0 0;color:#6b7280;font-size:13px;line-height:1.6;">Trân trọng,<br /><strong>Hotel Management Team</strong></p>
+                </div>
+            </div>
+            """;
     }
 
     private async Task SendAsync(string toEmail, string toName, string subject, string htmlBody)

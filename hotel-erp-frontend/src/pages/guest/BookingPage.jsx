@@ -1054,9 +1054,14 @@ export default function BookingPage() {
               className="g-btn-primary"
               onClick={() => { 
                 const bookingId = successBooking?.id;
+                const bookingCode = successBooking?.bookingCode;
+                const accessEmail = successBooking?.guestEmail || guestEmail.trim();
                 handleSuccessClose(); 
                 if (bookingId) {
-                  navigate(`/guest/payment/deposit/${bookingId}`);
+                  const search = new URLSearchParams();
+                  if (bookingCode) search.set("code", bookingCode);
+                  if (accessEmail) search.set("email", accessEmail);
+                  navigate(`/guest/payment/deposit/${bookingId}${search.toString() ? `?${search.toString()}` : ""}`);
                 } else {
                   navigate("/guest/my-bookings");
                 }

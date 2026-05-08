@@ -1,6 +1,6 @@
 // src/pages/admin/RolePermissionPage.jsx
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { getRoles, getRoleById, assignPermission } from "../../api/rolesApi";
+import { getRoles, getRoleById, updateRolePermissions } from "../../api/rolesApi";
 import { getPermissions } from "../../api/permissionsApi";
 import { useAdminAuthStore } from "../../store/adminAuthStore";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
@@ -299,7 +299,6 @@ function PermissionModal({
   onSaved,
   showToast,
 }) {
-  const [currentPerms] = useState(initialPerms || []);
   const canEditRole = canEdit && !isProtectedRole(role?.name);
   const [checked, setChecked] = useState(() => {
     const map = {};
@@ -416,17 +415,11 @@ function PermissionModal({
     setSaving(true);
 
     try {
-      const promises = [];
-      permissionsCatalog.forEach((p) => {
-        const shouldHave = !!checked[p.id];
-        const hasNow = currentPerms.some(
-          (cp) => cp.permissionCode === p.permissionCode || cp.id === p.id,
-        );
-        if (shouldHave !== hasNow) {
-          promises.push(assignPermission(role.id, p.id, shouldHave));
-        }
-      });
-      await Promise.all(promises);
+      const permissionIds = permissionsCatalog
+        .filter((permission) => !!checked[permission.id])
+        .map((permission) => permission.id);
+
+      await updateRolePermissions(role.id, permissionIds);
       showToast(
         `Đã cập nhật quyền cho vai trò "${role.name}" thành công.`,
         "success",

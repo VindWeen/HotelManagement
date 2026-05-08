@@ -1,6 +1,6 @@
 // src/pages/admin/staff/UserListPage.jsx
 // Giao diện khớp 1:1 với UserManagement.html + tích hợp API thực tế
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   getUsers,
   getUserById,
@@ -11,23 +11,8 @@ import {
   resetUserPassword,
 } from "../../api/userManagementApi";
 import { getRoles } from "../../api/rolesApi";
-import { useAdminAuthStore } from "../../store/adminAuthStore";
 import { useNavigate } from "react-router-dom";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
-
-const PROTECTED_ASSIGN_ROLES = new Set(["Guest"]);
-const ROLE_LEVELS = {
-  Guest: 0,
-  Housekeeping: 20,
-  Receptionist: 30,
-  Accountant: 30,
-  Security: 30,
-  Chef: 30,
-  Waiter: 30,
-  "IT Support": 40,
-  Manager: 80,
-  Admin: 100,
-};
 
 const ROLE_BADGE = {
   Admin: "bg-purple-50 text-purple-600",
@@ -305,7 +290,6 @@ function SkeletonRows() {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function UserListPage() {
-  const { permissions, user: currentUser } = useAdminAuthStore();
   const navigate = useNavigate();
 
   const [allUsers, setAllUsers] = useState([]);
@@ -342,16 +326,6 @@ export default function UserListPage() {
 
   const [topSearch, setTopSearch] = useState("");
   const debounceRef = useRef(null);
-  const currentRoleLevel = ROLE_LEVELS[currentUser?.role] ?? 10;
-
-  const assignableRoles = useMemo(
-    () =>
-      roles.filter((role) => {
-        if (PROTECTED_ASSIGN_ROLES.has(role.name)) return false;
-        return (ROLE_LEVELS[role.name] ?? 10) <= currentRoleLevel;
-      }),
-    [currentRoleLevel, roles],
-  );
 
   // ── Toast helpers ──
   const showToast = useCallback(
@@ -835,7 +809,7 @@ export default function UserListPage() {
                   style={INPUT_STYLE}
                 >
                   <option value="">-- Chọn vai trò --</option>
-                  {assignableRoles.map((r) => (
+                  {roles.map((r) => (
                     <option key={r.id} value={r.id}>{r.name}</option>
                   ))}
                 </select>

@@ -4,7 +4,6 @@ import { useAdminAuthStore } from "../store/adminAuthStore";
 import { useLoadingStore } from "../store/loadingStore";
 import { logout } from "../api/authApi";
 import { getMyProfile } from "../api/userProfileApi";
-import { useSignalR } from "../hooks/useSignalR";
 import { useResponsiveAdmin } from "../hooks/useResponsiveAdmin";
 import NotificationMenu from "../components/NotificationMenu";
 import "../styles/admin-theme.css";
@@ -42,8 +41,6 @@ export default function AdminLayout() {
   const updateUser = useAdminAuthStore((s) => s.updateUser);
   const isLoading = useLoadingStore((s) => s.isLoading);
   const navigate = useNavigate();
-
-  useSignalR();
 
   const [themeMode, setThemeMode] = useState(() => {
     if (typeof window === "undefined") return "light";
@@ -224,7 +221,7 @@ export default function AdminLayout() {
                 <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
                   logout
                 </span>
-                Dang xuat
+                Đăng xuất
               </button>
             </div>
           </aside>
@@ -259,7 +256,7 @@ export default function AdminLayout() {
 
             <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 16, marginLeft: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <NavLink to="/" title="Ve Trang Khach" className="admin-icon-btn">
+                <NavLink to="/" title="Về trang Khách" className="admin-icon-btn">
                   <span className="material-symbols-outlined" style={{ fontSize: 19 }}>
                     public
                   </span>
@@ -268,8 +265,8 @@ export default function AdminLayout() {
                 <button
                   className="admin-icon-btn"
                   onClick={() => setThemeMode((prev) => (prev === "dark" ? "light" : "dark"))}
-                  title={themeMode === "dark" ? "Chuyen sang light mode" : "Chuyen sang dark mode"}
-                  aria-label={themeMode === "dark" ? "Chuyen sang light mode" : "Chuyen sang dark mode"}
+                  title={themeMode === "dark" ? "Chuyển sang light mode" : "Chuyển sang dark mode"}
+                  aria-label={themeMode === "dark" ? "Chuyển sang light mode" : "Chuyển sang dark mode"}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: 19 }}>
                     {themeMode === "dark" ? "light_mode" : "dark_mode"}

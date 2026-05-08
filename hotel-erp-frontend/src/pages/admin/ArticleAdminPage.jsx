@@ -18,6 +18,15 @@ import {
 } from "../../api/articleCategoriesApi";
 import { getAttractions } from "../../api/attractionsApi";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
+import { ensureRichTextValue, getPlainTextExcerpt, stripHtml } from "../../utils";
+
+const Font = Quill.import("formats/font");
+Font.whitelist = ["sans-serif", "serif", "monospace"];
+Quill.register(Font, true);
+
+const Size = Quill.import("attributors/style/size");
+Size.whitelist = ["12px", "14px", "16px", "18px", "24px", "32px", "42px"];
+Quill.register(Size, true);
 
 const cardStyle = {
   background: "var(--a-surface)",
@@ -149,7 +158,17 @@ function VisibilitySwitch({ checked, onChange }) {
   );
 }
 
-function QuillEditor({ value, onChange, onUploadImage, onOpenPreviewPage, editorRef }) {
+function QuillEditor({
+  value,
+  onChange,
+  onUploadImage,
+  onOpenPreviewPage,
+  editorRef,
+  placeholder,
+  minHeight = 180,
+  showPreviewButton = false,
+  allowImages = false,
+}) {
   const editorHostRef = useRef(null);
   const quillRef = useRef(null);
   const imageInputRef = useRef(null);
@@ -162,28 +181,36 @@ function QuillEditor({ value, onChange, onUploadImage, onOpenPreviewPage, editor
       modules: {
         toolbar: {
           container: [
-            [{ header: [2, 3, false] }],
-            ["bold", "italic", "underline", "blockquote"],
-            [{ list: "ordered" }, { list: "bullet" }],
-            ["link", "image"],
+            [{ font: Font.whitelist }, { size: Size.whitelist }],
+            [{ header: [1, 2, 3, 4, 5, 6, false] }],
+            ["bold", "italic", "underline", "strike"],
+            [{ color: [] }, { background: [] }],
+            [{ script: "super" }, { script: "sub" }],
+            [{ list: "ordered" }, { list: "bullet" }, { list: "check" }],
+            [{ indent: "-1" }, { indent: "+1" }, { align: [] }, { direction: "rtl" }],
+            ["blockquote", "code-block"],
+            allowImages ? ["link", "image", "video"] : ["link", "video"],
             ["clean"],
           ],
-          handlers: {
-            image: () => imageInputRef.current?.click(),
-          },
+          handlers: allowImages
+            ? {
+                image: () => imageInputRef.current?.click(),
+              }
+            : {},
         },
       },
       placeholder: "Nhập nội dung bài viết...",
     });
 
     quillRef.current.on("text-change", () => {
-      onChange(quillRef.current.root.innerHTML);
+      const html = quillRef.current.root.innerHTML;
+      onChange(stripHtml(html) ? html : "");
     });
 
     if (editorRef) {
       editorRef.current = quillRef.current;
     }
-  }, [onChange]);
+  }, [allowImages, editorRef, onChange, placeholder]);
 
   useEffect(() => {
     if (!quillRef.current) return;
@@ -194,9 +221,16 @@ function QuillEditor({ value, onChange, onUploadImage, onOpenPreviewPage, editor
     }
   }, [value]);
 
+  useEffect(() => {
+    const editorElement = editorHostRef.current?.querySelector(".ql-editor");
+    if (editorElement) {
+      editorElement.dataset.placeholder = placeholder || "";
+    }
+  }, [placeholder]);
+
   const handleImageChange = async (event) => {
     const file = event.target.files?.[0];
-    if (!file || !quillRef.current) return;
+    if (!allowImages || !file || !quillRef.current) return;
     try {
       const imageUrl = await onUploadImage(file);
       if (!imageUrl) return;
@@ -217,6 +251,7 @@ function QuillEditor({ value, onChange, onUploadImage, onOpenPreviewPage, editor
           onClick={onOpenPreviewPage}
           className="sub-card-p"
           style={{
+            display: showPreviewButton ? "inline-flex" : "none",
             marginBottom: 10,
             padding: "8px 14px",
             borderRadius: 10,
@@ -230,8 +265,10 @@ function QuillEditor({ value, onChange, onUploadImage, onOpenPreviewPage, editor
           Mở trang preview
         </button>
       </div>
-      <div ref={editorHostRef} style={{ minHeight: 320 }} />
-      <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageChange} style={{ display: "none" }} />
+      <div ref={editorHostRef} style={{ minHeight }} />
+      {allowImages ? (
+        <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageChange} style={{ display: "none" }} />
+      ) : null}
     </div>
   );
 }
@@ -263,13 +300,15 @@ export default function ArticleAdminPage() {
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState("");
   const [form, setForm] = useState({
-    title: "",
+    title: ensureRichTextValue(""),
     categoryId: "",
     attractionId: "",
-    metaDescription: "",
-    content: "",
+    metaDescription: ensureRichTextValue(""),
+    content: ensureRichTextValue(""),
   });
   const thumbnailInputRef = useRef(null);
+  const titleEditorRef = useRef(null);
+  const metaDescriptionEditorRef = useRef(null);
   const articleEditorRef = useRef(null);
 
   const selectedCategoryName = useMemo(
@@ -321,7 +360,7 @@ export default function ArticleAdminPage() {
 
       if (!normalizedSearch) return true;
 
-      const title = article.title?.toLowerCase() || "";
+      const title = stripHtml(article.title || "").toLowerCase();
       const slug = article.slug?.toLowerCase() || "";
       const categoryName = article.category?.name?.toLowerCase() || "";
       return (
@@ -384,11 +423,11 @@ export default function ArticleAdminPage() {
     setThumbnailFile(null);
     setThumbnailPreviewUrl("");
     setForm({
-      title: "",
+      title: ensureRichTextValue(""),
       categoryId: "",
       attractionId: "",
-      metaDescription: "",
-      content: "",
+      metaDescription: ensureRichTextValue(""),
+      content: ensureRichTextValue(""),
     });
     setError("");
     setModalOpen(true);
@@ -401,11 +440,11 @@ export default function ArticleAdminPage() {
       const detail = res.data;
       setEditingArticle(article);
       setForm({
-        title: detail.title || "",
+        title: ensureRichTextValue(detail.title || ""),
         categoryId: detail.category?.id ? String(detail.category.id) : "",
         attractionId: detail.attraction?.id ? String(detail.attraction.id) : "",
-        metaDescription: detail.metaDescription || "",
-        content: detail.content || "",
+        metaDescription: ensureRichTextValue(detail.metaDescription || ""),
+        content: ensureRichTextValue(detail.content || ""),
       });
       setThumbnailFile(null);
       setThumbnailPreviewUrl(detail.thumbnailUrl || article.thumbnailUrl || "");
@@ -435,15 +474,20 @@ export default function ArticleAdminPage() {
 
   const submitArticle = async (e) => {
     e.preventDefault();
+    const plainTitle = stripHtml(form.title);
+    if (!plainTitle) {
+      setError("Tiêu đề bài viết không được để trống.");
+      return;
+    }
     setSaving(true);
     setError("");
     const payload = {
-      title: form.title,
+      title: plainTitle,
       categoryId: form.categoryId ? Number(form.categoryId) : null,
       attractionId: form.attractionId ? Number(form.attractionId) : null,
       clearAttraction: !form.attractionId,
-      content: form.content,
-      metaDescription: form.metaDescription || null,
+      content: form.content || null,
+      metaDescription: stripHtml(form.metaDescription) || null,
     };
     try {
       let articleId = editingArticle?.id;
@@ -591,7 +635,7 @@ export default function ArticleAdminPage() {
   };
 
   const handleAiSuggest = async () => {
-    const title = form.title?.trim();
+    const title = stripHtml(form.title || "");
     const currentContent = form.content || "";
     if (!title) {
       setAiFeedback({ type: "warn", text: "⚠️ Vui lòng nhập tiêu đề trước khi dùng AI gợi ý." });
@@ -991,7 +1035,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                       paginatedArticles.map((article) => (
                         <tr key={article.id} style={{ borderBottom: "1px solid var(--a-divider)" }}>
                           <td style={{ padding: "16px 18px" }}>
-                            <div style={{ fontWeight: 700, color: "var(--a-text)" }}>{article.title}</div>
+                            <div style={{ fontWeight: 700, color: "var(--a-text)" }}>{getPlainTextExcerpt(article.title, 120) || "-"}</div>
                             <div style={{ marginTop: 4, fontSize: 12, color: "var(--a-text-muted)" }}>{article.slug}</div>
                           </td>
                           <td style={{ padding: "16px 18px", color: "var(--a-text-muted)" }}>{article.category?.name || "-"}</td>
@@ -1031,7 +1075,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                     <article key={article.id} style={{ background: "var(--a-surface)", border: "1px solid var(--a-border)", borderRadius: 18, overflow: "hidden", boxShadow: "var(--a-shadow-sm)" }}>
                         <div style={{ position: "relative", height: 180, background: "linear-gradient(135deg, color-mix(in srgb, var(--a-surface-raised) 88%, transparent), color-mix(in srgb, var(--a-surface) 92%, transparent))" }}>
                           {article.thumbnailUrl ? (
-                            <img src={article.thumbnailUrl} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                            <img src={article.thumbnailUrl} alt={stripHtml(article.title) || "Article thumbnail"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                           ) : (
                             <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--a-text-soft)" }}>
                               <span className="material-symbols-outlined" style={{ fontSize: 44 }}>article</span>
@@ -1046,7 +1090,7 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
 
                         <div style={{ padding: 16, display: "grid", gap: 12 }}>
                           <div>
-                            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--a-text)", lineHeight: 1.4 }}>{article.title}</div>
+                            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--a-text)", lineHeight: 1.4 }}>{getPlainTextExcerpt(article.title, 120) || "-"}</div>
                             <div style={{ marginTop: 6, fontSize: 12, color: "var(--a-text-muted)" }}>{article.slug}</div>
                           </div>
 
@@ -1250,7 +1294,13 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
               <div style={{ display: "grid", gap: 16 }}>
                 <div>
                   <label style={labelStyle}>Tiêu đề</label>
-                  <input value={form.title} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} style={inputStyle} />
+                  <QuillEditor
+                    value={form.title}
+                    onChange={(html) => setForm((prev) => ({ ...prev, title: html }))}
+                    editorRef={titleEditorRef}
+                    placeholder="Nhập tiêu đề bài viết..."
+                    minHeight={120}
+                  />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -1280,7 +1330,13 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                 </div>
                 <div>
                   <label style={labelStyle}>Meta description</label>
-                  <textarea value={form.metaDescription} onChange={(e) => setForm((prev) => ({ ...prev, metaDescription: e.target.value }))} style={{ ...inputStyle, minHeight: 90, resize: "vertical" }} />
+                  <QuillEditor
+                    value={form.metaDescription}
+                    onChange={(html) => setForm((prev) => ({ ...prev, metaDescription: html }))}
+                    editorRef={metaDescriptionEditorRef}
+                    placeholder="Nhập meta description..."
+                    minHeight={140}
+                  />
                 </div>
                 <div>
                   <label style={labelStyle}>Nội dung bài viết</label>
@@ -1290,6 +1346,10 @@ Nội dung hiện tại: ${currentContent.replace(/<[^>]*>/g, "").slice(0, 500)}
                     onUploadImage={handleUploadContentImage}
                     onOpenPreviewPage={openPreviewPage}
                     editorRef={articleEditorRef}
+                    placeholder="Nhập nội dung bài viết..."
+                    minHeight={320}
+                    showPreviewButton
+                    allowImages
                   />
                 </div>
               </div>

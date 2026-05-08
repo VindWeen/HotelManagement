@@ -29,6 +29,7 @@ public class CreateVoucherRequest
     public int? TargetMembershipId { get; set; }
     public string? OccasionName { get; set; }
     public List<int> TargetUserIds { get; set; } = new();
+    public bool SendEmailToRecipients { get; set; }
 }
 
 public class UpdateVoucherRequest
@@ -64,17 +65,23 @@ public class VouchersController : ControllerBase
     private readonly IActivityLogService _activityLog;
     private readonly IVoucherValidationService _voucherValidationService;
     private readonly IVoucherAudienceService _voucherAudienceService;
+    private readonly IEmailService _emailService;
+    private readonly IConfiguration _configuration;
 
     public VouchersController(
         AppDbContext context,
         IActivityLogService activityLog,
         IVoucherValidationService voucherValidationService,
-        IVoucherAudienceService voucherAudienceService)
+        IVoucherAudienceService voucherAudienceService,
+        IEmailService emailService,
+        IConfiguration configuration)
     {
         _context = context;
         _activityLog = activityLog;
         _voucherValidationService = voucherValidationService;
         _voucherAudienceService = voucherAudienceService;
+        _emailService = emailService;
+        _configuration = configuration;
     }
 
     private static string NormalizeAudienceType(string? value)
@@ -140,6 +147,123 @@ public class VouchersController : ControllerBase
                 CreatedAt = DateTime.UtcNow
             });
         }
+    }
+
+    private int ResolveBirthdayTargetMonth(Voucher voucher)
+    {
+        if (voucher.ValidFrom.HasValue)
+            return voucher.ValidFrom.Value.Month;
+
+        if (voucher.ValidTo.HasValue)
+            return voucher.ValidTo.Value.Month;
+
+        return DateTime.Now.Month;
+    }
+
+    private string? BuildAbsoluteAssetUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return null;
+
+        if (Uri.TryCreate(url, UriKind.Absolute, out var absoluteUri))
+            return absoluteUri.ToString();
+
+        var requestBaseUrl = $"{Request.Scheme}://{Request.Host.Value}";
+        if (string.IsNullOrWhiteSpace(requestBaseUrl))
+            return url;
+
+        if (!Uri.TryCreate(requestBaseUrl, UriKind.Absolute, out var requestUri))
+            return url;
+
+        if (url.StartsWith('/'))
+            return new Uri(requestUri, url).ToString();
+
+        return new Uri(requestUri, "/" + url).ToString();
+    }
+
+    private async Task<List<VoucherEmailRecipient>> ResolveVoucherRecipientsAsync(Voucher voucher)
+    {
+        var guestBaseQuery = _context.Users
+            .AsNoTracking()
+            .Include(u => u.Role)
+            .Where(u => u.Status == true
+                && !string.IsNullOrWhiteSpace(u.Email)
+                && u.Role != null
+                && u.Role.Name == "Guest");
+
+        if (voucher.AudienceType == VoucherAudienceTypes.User)
+        {
+            var userIds = await _context.VoucherTargetUsers
+                .AsNoTracking()
+                .Where(x => x.VoucherId == voucher.Id)
+                .Select(x => x.UserId)
+                .ToListAsync();
+
+            guestBaseQuery = guestBaseQuery.Where(u => userIds.Contains(u.Id));
+        }
+        else if (voucher.AudienceType == VoucherAudienceTypes.BirthdayMonth)
+        {
+            var targetMonth = ResolveBirthdayTargetMonth(voucher);
+            guestBaseQuery = guestBaseQuery.Where(u => u.DateOfBirth.HasValue && u.DateOfBirth.Value.Month == targetMonth);
+        }
+        else if (voucher.AudienceType == VoucherAudienceTypes.Membership && voucher.TargetMembershipId.HasValue)
+        {
+            guestBaseQuery = guestBaseQuery.Where(u => u.MembershipId == voucher.TargetMembershipId.Value);
+        }
+
+        return await guestBaseQuery
+            .OrderBy(u => u.FullName)
+            .Select(u => new VoucherEmailRecipient(
+                u.Id,
+                u.FullName,
+                u.Email))
+            .ToListAsync();
+    }
+
+    private async Task<int> SendVoucherCampaignAsync(Voucher voucher)
+    {
+        var recipients = await ResolveVoucherRecipientsAsync(voucher);
+        if (recipients.Count == 0)
+            return 0;
+
+        var roomType = voucher.ApplicableRoomTypeId.HasValue
+            ? await _context.RoomTypes
+                .AsNoTracking()
+                .Include(rt => rt.RoomImages)
+                .FirstOrDefaultAsync(rt => rt.Id == voucher.ApplicableRoomTypeId.Value)
+            : null;
+
+        var membershipTierName = voucher.TargetMembershipId.HasValue
+            ? await _context.Memberships
+                .AsNoTracking()
+                .Where(m => m.Id == voucher.TargetMembershipId.Value)
+                .Select(m => m.TierName)
+                .FirstOrDefaultAsync()
+            : null;
+
+        var primaryRoomImage = roomType?.RoomImages
+            .Where(img => img.IsActive)
+            .OrderByDescending(img => img.IsPrimary == true)
+            .ThenBy(img => img.SortOrder)
+            .Select(img => img.ImageUrl)
+            .FirstOrDefault();
+
+        var payload = new VoucherEmailPayload(
+            voucher.Code,
+            voucher.AudienceType,
+            voucher.DiscountType,
+            voucher.DiscountValue,
+            voucher.MaxDiscountAmount,
+            voucher.MinBookingValue,
+            voucher.ValidFrom,
+            voucher.ValidTo,
+            roomType?.Name,
+            BuildAbsoluteAssetUrl(primaryRoomImage),
+            membershipTierName,
+            voucher.OccasionName,
+            _configuration["Frontend:BaseUrl"]);
+
+        return await _emailService.SendVoucherCampaignAsync(recipients, payload);
     }
 
     // ================= GET AVAILABLE FOR GUEST =================
@@ -438,6 +562,20 @@ public class VouchersController : ControllerBase
             await _context.SaveChangesAsync();
         }
 
+        int emailSentCount = 0;
+        string? emailWarning = null;
+        if (request.SendEmailToRecipients)
+        {
+            try
+            {
+                emailSentCount = await SendVoucherCampaignAsync(voucher);
+            }
+            catch (Exception ex)
+            {
+                emailWarning = $"Voucher đã tạo nhưng gửi email thất bại: {ex.Message}";
+            }
+        }
+
         var currentUserId = JwtHelper.GetUserId(User);
         // Ghi Activity Log
         await _activityLog.LogAsync(
@@ -466,7 +604,17 @@ public class VouchersController : ControllerBase
         });
         await _context.SaveChangesAsync();
 
-        return Ok(voucher);
+        return Ok(new
+        {
+            voucher,
+            emailSentCount,
+            emailWarning,
+            message = request.SendEmailToRecipients
+                ? emailWarning == null
+                    ? $"Tạo voucher thành công và đã gửi email cho {emailSentCount} người nhận."
+                    : "Tạo voucher thành công nhưng có lỗi khi gửi email."
+                : "Tạo voucher thành công."
+        });
     }
 
     // ================= UPDATE =================

@@ -43,7 +43,7 @@ export const lockUser = (id) =>
     axiosClient.delete(`/UserManagement/${id}`);
 
 /**
- * PUT /api/UserManagement/{id}/change-role  [MANAGE_USERS + MANAGE_ROLES]
+ * PUT /api/UserManagement/{id}/change-role  [MANAGE_USERS]
  * Body: { newRoleId }
  * Response: { oldRoleId, newRoleId, newRoleName, notification }
  */

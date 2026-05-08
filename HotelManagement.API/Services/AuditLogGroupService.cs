@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using HotelManagement.Core.DTOs;
 using HotelManagement.Core.Helpers;
 using HotelManagement.Core.Entities;
 
@@ -26,12 +27,11 @@ public sealed class AuditLogGroupEvent
 
 public sealed class AuditLogGroupPayload
 {
-    [JsonPropertyName("TotalEvents")]
-    public int TotalEvents { get; set; }
-    [JsonPropertyName("Summary")]
-    public AuditLogSummary Summary { get; set; } = new();
-    [JsonPropertyName("Events")]
-    public List<AuditLogGroupEvent> Events { get; set; } = [];
+    [JsonPropertyName("actionLabel")]
+    public string ActionLabel { get; set; } = string.Empty;
+
+    [JsonPropertyName("payload")]
+    public AuditLogDayPayload Payload { get; set; } = new();
 }
 
 public sealed class AuditLogSummary
@@ -106,16 +106,41 @@ public class AuditLogGroupService : IAuditLogGroupService
         DateTime? logDateOverride = null)
     {
         var materializedEvents = events.ToList();
-        var firstTimestamp = materializedEvents
+        var firstEvent = materializedEvents
             .OrderBy(x => x.Timestamp)
-            .Select(x => x.Timestamp)
             .FirstOrDefault();
 
-        var payload = new AuditLogGroupPayload
+        var details = materializedEvents
+            .OrderBy(x => x.Timestamp)
+            .Select(x => new AuditLogDetailPayload
+            {
+                DetailId = x.EventId,
+                Timestamp = x.Timestamp,
+                Message = x.Message,
+                Context = x.Context,
+                Changes = x.Changes
+            })
+            .ToList();
+
+        var action = new AuditLogActionPayload
         {
-            TotalEvents = materializedEvents.Count,
-            Summary = new AuditLogSummary { Text = summary },
-            Events = materializedEvents
+            ActionId = Guid.NewGuid().ToString(),
+            Timestamp = firstEvent?.Timestamp ?? DateTime.UtcNow,
+            ActionCode = firstEvent?.ActionType ?? "UPDATE",
+            ActionLabel = summary,
+            EntityType = firstEvent?.EntityType ?? "System",
+            Message = summary,
+            DetailCount = details.Count,
+            Details = details,
+            Context = firstEvent?.Context,
+            Changes = firstEvent?.Changes
+        };
+
+        var payload = new AuditLogDayPayload
+        {
+            TotalActions = 1,
+            Summary = new AuditLogSummaryPayload { Text = summary },
+            Actions = [action]
         };
 
         var userId = userIdOverride;
@@ -130,8 +155,15 @@ public class AuditLogGroupService : IAuditLogGroupService
             ?? "System";
 
         var sourceDate = logDateOverride
-            ?? (firstTimestamp == default ? DateTime.UtcNow : firstTimestamp);
-        var effectiveDate = sourceDate.Date;
+            ?? (firstEvent?.Timestamp ?? DateTime.UtcNow);
+
+        // Tính ngày theo múi giờ UTC+7 (Việt Nam) để log đúng ngày nghiệp vụ
+        var vnTz = TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "SE Asia Standard Time" : "Asia/Ho_Chi_Minh");
+        var sourceUtc = sourceDate.Kind == DateTimeKind.Utc
+            ? sourceDate
+            : DateTime.SpecifyKind(sourceDate, DateTimeKind.Utc);
+        var effectiveDate = TimeZoneInfo.ConvertTimeFromUtc(sourceUtc, vnTz).Date;
 
         return new AuditLog
         {

@@ -42,3 +42,6 @@ docs/
 Plans/
 update.txt
 .editorconfig
+.repomixignore
+repomix-output.xml
+.dotnet-home

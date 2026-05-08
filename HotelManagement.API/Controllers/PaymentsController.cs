@@ -24,6 +24,8 @@ public class RecordPaymentRequest
 public class GuestDepositRequest
 {
     public int BookingId { get; set; }
+    public string? BookingCode { get; set; }
+    public string? GuestEmail { get; set; }
 }
 
 public class MomoIpnRequest
@@ -44,6 +46,14 @@ public class MomoIpnRequest
     public string? Signature { get; set; }
 }
 
+public class GuestBookingAccessRequest
+{
+    public string? BookingCode { get; set; }
+    public string? GuestEmail { get; set; }
+}
+
+
+
 [ApiController]
 [Route("api/[controller]")]
 public class PaymentsController : ControllerBase
@@ -52,6 +62,7 @@ public class PaymentsController : ControllerBase
     private readonly IPaymentService _paymentService;
     private readonly IInvoiceService _invoiceService;
     private readonly IMomoService _momoService;
+<<<<<<< HEAD
     private readonly IDashboardAggregationService _dashboard;
 
     public PaymentsController(
@@ -60,18 +71,48 @@ public class PaymentsController : ControllerBase
         IInvoiceService invoiceService, 
         IMomoService momoService,
         IDashboardAggregationService dashboard)
+=======
+    private readonly IAuditTrailService _auditTrail;
+
+    public PaymentsController(AppDbContext db, IPaymentService paymentService, IInvoiceService invoiceService, IMomoService momoService, IAuditTrailService auditTrail)
+>>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
     {
         _db = db;
         _paymentService = paymentService;
         _invoiceService = invoiceService;
         _momoService = momoService;
+<<<<<<< HEAD
         _dashboard = dashboard;
+=======
+        _auditTrail = auditTrail;
+    }
+
+    private static string? NormalizeGuestEmail(string? email)
+        => string.IsNullOrWhiteSpace(email) ? null : email.Trim().ToLowerInvariant();
+
+    private bool CanAccessGuestBooking(Booking booking, string? userId, string? bookingCode, string? guestEmail)
+    {
+        if (!string.IsNullOrWhiteSpace(userId)
+            && booking.UserId != null
+            && booking.UserId.ToString() == userId)
+        {
+            return true;
+        }
+
+        var normalizedCode = bookingCode?.Trim();
+        var normalizedEmail = NormalizeGuestEmail(guestEmail);
+
+        return !string.IsNullOrWhiteSpace(normalizedCode)
+            && !string.IsNullOrWhiteSpace(normalizedEmail)
+            && string.Equals(booking.BookingCode, normalizedCode, StringComparison.Ordinal)
+            && string.Equals(NormalizeGuestEmail(booking.GuestEmail), normalizedEmail, StringComparison.Ordinal);
+>>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
     }
 
     // ─── GUEST ENDPOINTS ──────────────────────────────────────────────────
 
     /// <summary>Guest: Tạo yêu cầu thanh toán cọc qua MoMo</summary>
-    [Authorize]
+    [AllowAnonymous]
     [HttpPost("guest/deposit")]
     public async Task<IActionResult> GuestCreateDeposit([FromBody] GuestDepositRequest request)
     {
@@ -79,18 +120,16 @@ public class PaymentsController : ControllerBase
                   ?? User.FindFirstValue("sub")
                   ?? User.FindFirstValue("id");
 
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized(new { success = false, message = "Không xác định được tài khoản." });
-
         var booking = await _db.Bookings
             .FirstOrDefaultAsync(b => b.Id == request.BookingId);
 
         if (booking == null)
-            return NotFound(new { success = false, message = "Không tìm thấy booking." });
+            return NotFound(new { success = false, message = "Booking not found." });
 
-        // Check booking belongs to current user
-        if (booking.UserId == null || booking.UserId.ToString() != userId)
-            return Forbid();
+        if (!CanAccessGuestBooking(booking, userId, request.BookingCode, request.GuestEmail))
+            return string.IsNullOrWhiteSpace(userId)
+                ? Unauthorized(new { success = false, message = "Missing guest booking access data." })
+                : Forbid();
 
         if (booking.Status != BookingStatuses.Pending)
             return BadRequest(new { success = false, message = $"Booking đang ở trạng thái '{booking.Status}', không cần thanh toán cọc." });
@@ -108,6 +147,19 @@ public class PaymentsController : ControllerBase
         if (!result.Success)
             return BadRequest(new { success = false, message = result.Message ?? "Tạo thanh toán MoMo thất bại." });
 
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "GUEST_DEPOSIT_REQUEST",
+            ActionLabel = "Khách tạo yêu cầu đặt cọc MoMo",
+            Message = $"Khách hàng (userId: {userId}) đã tạo yêu cầu đặt cọc MoMo cho booking {booking.BookingCode} số tiền {remaining:N0}d.",
+            EntityType = "Payment",
+            EntityId = booking.Id,
+            EntityLabel = booking.BookingCode,
+            Severity = "Info",
+            TableName = "Payments",
+            NewValue = $"{{\"bookingId\":{booking.Id},\"bookingCode\":\"{booking.BookingCode}\",\"amount\":{remaining},\"method\":\"MoMo\",\"orderId\":\"{result.OrderId}\"}}"
+        });
+
         return Ok(new
         {
             success = true,
@@ -122,6 +174,8 @@ public class PaymentsController : ControllerBase
             }
         });
     }
+
+
 
     /// <summary>MoMo IPN callback — cập nhật trạng thái booking sau khi thanh toán</summary>
     [AllowAnonymous]
@@ -188,19 +242,34 @@ public class PaymentsController : ControllerBase
                 await _db.SaveChangesAsync();
                 await _invoiceService.CreateFromBookingAsync(booking.Id);
 
+<<<<<<< HEAD
                 // Fire-and-forget: refresh snapshot
                 _ = _dashboard.RefreshSnapshotsAsync(
                     [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist]);
+=======
+                await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+                {
+                    ActionCode = "MOMO_IPN_SUCCESS",
+                    ActionLabel = "Thanh toán MoMo thành công",
+                    Message = $"Thanh toán MoMo thành công cho booking #{bookingId}. Số tiền: {ipn.Amount:N0}d. TransId: {ipn.TransId}.",
+                    EntityType = "Payment",
+                    EntityId = bookingId,
+                    EntityLabel = booking.BookingCode,
+                    Severity = "Success",
+                    TableName = "Payments",
+                    NewValue = $"{{\"bookingId\":{bookingId},\"amount\":{ipn.Amount},\"transId\":\"{ipn.TransId}\",\"orderId\":\"{ipn.OrderId}\",\"newStatus\":\"{booking.Status}\"}}"
+                });
+>>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
             }
         }
 
         return Ok(new { message = "IPN received." });
     }
 
-    /// <summary>Guest: Xem trạng thái thanh toán booking</summary>
-    [Authorize]
+    /// <summary>Guest: Tạo tr?ng thái thanh toán booking</summary>
+    [AllowAnonymous]
     [HttpGet("guest/booking/{bookingId:int}")]
-    public async Task<IActionResult> GuestGetPaymentStatus(int bookingId)
+    public async Task<IActionResult> GuestGetPaymentStatus(int bookingId, [FromQuery] GuestBookingAccessRequest request)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                   ?? User.FindFirstValue("sub")
@@ -212,10 +281,12 @@ public class PaymentsController : ControllerBase
             .FirstOrDefaultAsync(b => b.Id == bookingId);
 
         if (booking == null)
-            return NotFound(new { success = false, message = "Không tìm thấy booking." });
+            return NotFound(new { success = false, message = "Booking not found." });
 
-        if (booking.UserId == null || booking.UserId.ToString() != userId)
-            return Forbid();
+        if (!CanAccessGuestBooking(booking, userId, request.BookingCode, request.GuestEmail))
+            return string.IsNullOrWhiteSpace(userId)
+                ? Unauthorized(new { success = false, message = "Missing guest booking access data." })
+                : Forbid();
 
         var payments = booking.Payments
             .Where(p => p.Status == PaymentStatuses.Success)
@@ -304,9 +375,25 @@ public class PaymentsController : ControllerBase
                 await _invoiceService.CreateFromBookingAsync(booking.Id);
             }
 
+<<<<<<< HEAD
             // Fire-and-forget: refresh snapshot
             _ = _dashboard.RefreshSnapshotsAsync(
                 [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist]);
+=======
+            await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+            {
+                ActionCode = normalizedType == PaymentTypes.Refund ? "RECORD_BOOKING_REFUND" : "RECORD_BOOKING_PAYMENT",
+                ActionLabel = normalizedType == PaymentTypes.Refund ? "Ghi nhận hoàn tiền booking" : "Ghi nhận thanh toán booking",
+                Message = $"{(normalizedType == PaymentTypes.Refund ? "Hoàn tiền" : "Thu tiền")} booking {booking.BookingCode}: {request.AmountPaid:N0}d qua {payment.PaymentMethod}.",
+                EntityType = "Payment",
+                EntityId = payment.Id,
+                EntityLabel = booking.BookingCode,
+                Severity = normalizedType == PaymentTypes.Refund ? "Warning" : "Success",
+                TableName = "Payments",
+                RecordId = payment.Id,
+                NewValue = $"{{\"bookingId\":{booking.Id},\"bookingCode\":\"{booking.BookingCode}\",\"amount\":{request.AmountPaid},\"method\":\"{payment.PaymentMethod}\",\"type\":\"{normalizedType}\",\"depositTotal\":{booking.DepositAmount}}}"
+            });
+>>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
 
             return Ok(new
             {
@@ -382,16 +469,16 @@ public class PaymentsController : ControllerBase
         _db.Payments.Add(invoicePayment);
         await _db.SaveChangesAsync();
 
-        // [MỚI] Đồng bộ lại DepositAmount cho Booking liên quan
+        // DepositAmount của booking chỉ phản ánh các khoản thu gắn trực tiếp với booking,
+        // không cộng thêm các khoản thanh toán quyết toán của invoice.
         if (invoice.BookingId.HasValue)
         {
             var bId = invoice.BookingId.Value;
             var relatedBooking = await _db.Bookings.FirstOrDefaultAsync(b => b.Id == bId);
             if (relatedBooking != null)
             {
-                // Tính tổng tất cả payment thành công liên quan đến booking này (trực tiếp hoặc qua invoice)
                 var totalPaid = await _db.Payments
-                    .Where(p => (p.BookingId == bId || (p.InvoiceId != null && _db.Invoices.Any(i => i.Id == p.InvoiceId && i.BookingId == bId))) && p.Status == PaymentStatuses.Success)
+                    .Where(p => p.BookingId == bId && p.Status == PaymentStatuses.Success)
                     .SumAsync(p => p.PaymentType == PaymentTypes.Refund ? -p.AmountPaid : p.AmountPaid);
 
                 relatedBooking.DepositAmount = Math.Max(0m, totalPaid);
@@ -408,9 +495,25 @@ public class PaymentsController : ControllerBase
 
         var finalized = await _invoiceService.FinalizeAsync(invoice.Id);
 
+<<<<<<< HEAD
         // Fire-and-forget: refresh snapshot
         _ = _dashboard.RefreshSnapshotsAsync(
             [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist]);
+=======
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "RECORD_INVOICE_PAYMENT",
+            ActionLabel = "Ghi nhận thanh toán hóa đơn",
+            Message = $"Đã ghi nhận thanh toán hóa đơn #{invoiceId}: {request.AmountPaid:N0}d qua {invoicePayment.PaymentMethod}.",
+            EntityType = "Payment",
+            EntityId = invoicePayment.Id,
+            EntityLabel = $"Invoice #{invoiceId}",
+            Severity = "Success",
+            TableName = "Payments",
+            RecordId = invoicePayment.Id,
+            NewValue = $"{{\"invoiceId\":{invoiceId},\"amount\":{request.AmountPaid},\"method\":\"{invoicePayment.PaymentMethod}\",\"type\":\"{invoicePayment.PaymentType}\"}}"
+        });
+>>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
 
         return Ok(new
         {
@@ -432,3 +535,4 @@ public class PaymentsController : ControllerBase
         });
     }
 }
+

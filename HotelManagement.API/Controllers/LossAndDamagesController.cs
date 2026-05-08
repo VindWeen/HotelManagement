@@ -23,20 +23,32 @@ public class LossAndDamagesController : ControllerBase
     private readonly Cloudinary _cloudinary;
     private readonly INotificationService _notificationService;
     private readonly IAuditLogGroupService _auditLogGroup;
+<<<<<<< HEAD
     private readonly IDashboardAggregationService _dashboard;
+=======
+    private readonly IAuditTrailService _auditTrail;
+>>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
 
     public LossAndDamagesController(
         AppDbContext db,
         Cloudinary cloudinary,
         INotificationService notificationService,
         IAuditLogGroupService auditLogGroup,
+<<<<<<< HEAD
         IDashboardAggregationService dashboard)
+=======
+        IAuditTrailService auditTrail)
+>>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
     {
         _db = db;
         _cloudinary = cloudinary;
         _notificationService = notificationService;
         _auditLogGroup = auditLogGroup;
+<<<<<<< HEAD
         _dashboard = dashboard;
+=======
+        _auditTrail = auditTrail;
+>>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
     }
 
     private class ImageItem
@@ -189,17 +201,17 @@ public class LossAndDamagesController : ControllerBase
         }
     }
 
-    private async Task SyncEquipmentForLossRecordAsync(LossAndDamage record, int userId, string userAgent)
+    private async Task<AuditLogGroupEvent?> SyncEquipmentForLossRecordAsync(LossAndDamage record)
     {
         if (record.IsStockSynced || !record.RoomInventoryId.HasValue)
-            return;
+            return null;
 
         var roomInventory = await _db.RoomInventories
             .Include(ri => ri.Equipment)
             .FirstOrDefaultAsync(ri => ri.Id == record.RoomInventoryId.Value);
 
         if (roomInventory?.Equipment is null)
-            return;
+            return null;
 
         var equipment = roomInventory.Equipment;
         var quantity = Math.Max(1, record.Quantity);
@@ -213,30 +225,29 @@ public class LossAndDamagesController : ControllerBase
         equipment.UpdatedAt = DateTime.UtcNow;
         record.IsStockSynced = true;
 
-        _db.AuditLogs.Add(new AuditLog
+        return new AuditLogGroupEvent
         {
-            UserId = userId,
-            Action = "CONFIRM_LOSS_DAMAGE_SYNC_STOCK",
-            TableName = "Equipments",
-            RecordId = equipment.Id,
-            OldValue = null,
-            NewValue = $"{{\"quantity\": {quantity}, \"reason\": \"Xác nhận biên bản mất/hỏng #{record.Id}\"}}",
-            UserAgent = userAgent,
-            CreatedAt = DateTime.UtcNow
-        });
+            EventId = Guid.NewGuid().ToString(),
+            Timestamp = DateTime.UtcNow,
+            ActionType = "UPDATE",
+            EntityType = "Equipment",
+            Message = $"Đã cập nhật tồn kho {equipment.Name} (Giảm {shortageQuantity} đang sử dụng, Tăng {quantity} hỏng).",
+            Context = new { equipmentId = equipment.Id, reason = $"Xác nhận biên bản mất/hỏng #{record.Id}" },
+            Changes = new { quantityAddedToDamaged = quantity, quantityRemovedFromUse = shortageQuantity }
+        };
     }
 
-    private async Task RestoreEquipmentForLossRecordAsync(LossAndDamage record, int userId, string userAgent)
+    private async Task<AuditLogGroupEvent?> RestoreEquipmentForLossRecordAsync(LossAndDamage record)
     {
         if (!record.IsStockSynced || !record.RoomInventoryId.HasValue)
-            return;
+            return null;
 
         var roomInventory = await _db.RoomInventories
             .Include(ri => ri.Equipment)
             .FirstOrDefaultAsync(ri => ri.Id == record.RoomInventoryId.Value);
 
         if (roomInventory?.Equipment is null)
-            return;
+            return null;
 
         var equipment = roomInventory.Equipment;
         var quantity = Math.Max(1, record.Quantity);
@@ -249,17 +260,16 @@ public class LossAndDamagesController : ControllerBase
         equipment.UpdatedAt = DateTime.UtcNow;
         record.IsStockSynced = false;
 
-        _db.AuditLogs.Add(new AuditLog
+        return new AuditLogGroupEvent
         {
-            UserId = userId,
-            Action = "RESTORE_LOSS_DAMAGE_SYNC_STOCK",
-            TableName = "Equipments",
-            RecordId = equipment.Id,
-            OldValue = null,
-            NewValue = $"{{\"quantity\": {quantity}, \"reason\": \"Hoàn tác biên bản mất/hỏng #{record.Id}\"}}",
-            UserAgent = userAgent,
-            CreatedAt = DateTime.UtcNow
-        });
+            EventId = Guid.NewGuid().ToString(),
+            Timestamp = DateTime.UtcNow,
+            ActionType = "UPDATE",
+            EntityType = "Equipment",
+            Message = $"Đã hoàn tác kho {equipment.Name} (Tăng {shortageQuantity} đang sử dụng, Giảm {quantity} hỏng).",
+            Context = new { equipmentId = equipment.Id, reason = $"Hoàn tác biên bản mất/hỏng #{record.Id}" },
+            Changes = new { quantityRemovedFromDamaged = quantity, quantityAddedToUse = shortageQuantity }
+        };
     }
 
     [HttpGet]
@@ -449,8 +459,9 @@ public class LossAndDamagesController : ControllerBase
             record.BookingDetailId = await ResolveBookingDetailIdForRoomInventoryAsync(record.RoomInventoryId.Value);
 
         _db.LossAndDamages.Add(record);
+        AuditLogGroupEvent? syncEvent = null;
         if (record.Status == "Confirmed")
-            await SyncEquipmentForLossRecordAsync(record, userId, userAgent);
+            syncEvent = await SyncEquipmentForLossRecordAsync(record);
 
         await _db.SaveChangesAsync();
         await SyncRoomCleaningStatusForLossAsync(record);
@@ -502,8 +513,6 @@ public class LossAndDamagesController : ControllerBase
         if (record is null)
             return NotFound(new { message = $"Không tìm thấy biên bản #{id}." });
 
-        var userId = JwtHelper.GetUserId(User);
-        var userAgent = Request.Headers["User-Agent"].ToString();
         var oldStatus = record.Status;
         var oldQuantity = record.Quantity;
 
@@ -547,8 +556,12 @@ public class LossAndDamagesController : ControllerBase
             }
         }
 
+        var events = new List<AuditLogGroupEvent>();
         if (record.IsStockSynced)
-            await RestoreEquipmentForLossRecordAsync(record, userId, userAgent);
+        {
+            var restoreEvent = await RestoreEquipmentForLossRecordAsync(record);
+            if (restoreEvent != null) events.Add(restoreEvent);
+        }
 
         record.Quantity = request.Quantity;
         record.PenaltyAmount = request.PenaltyAmount;
@@ -561,7 +574,10 @@ public class LossAndDamagesController : ControllerBase
         record.ImgUrl = finalImages.Any() ? JsonSerializer.Serialize(finalImages) : null;
 
         if (record.Status == "Confirmed")
-            await SyncEquipmentForLossRecordAsync(record, userId, userAgent);
+        {
+            var syncEvent = await SyncEquipmentForLossRecordAsync(record);
+            if (syncEvent != null) events.Add(syncEvent);
+        }
 
         await _db.SaveChangesAsync();
         await SyncRoomCleaningStatusForLossAsync(record);
@@ -575,9 +591,29 @@ public class LossAndDamagesController : ControllerBase
             Action = NotificationAction.UpdateLossReport
         };
 
+<<<<<<< HEAD
         // Fire-and-forget: refresh snapshot
         _ = _dashboard.RefreshSnapshotsAsync(
             [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist, SnapshotRoles.Housekeeping]);
+=======
+        events.Add(new AuditLogGroupEvent
+        {
+            EventId = Guid.NewGuid().ToString(),
+            Timestamp = DateTime.UtcNow,
+            ActionType = "UPDATE",
+            EntityType = "LossAndDamage",
+            Context = new { damageId = id },
+            Changes = new { oldStatus, newStatus = record.Status, oldQuantity, newQuantity = record.Quantity },
+            Message = $"Đã cập nhật biên bản #{id}" + (oldStatus != record.Status ? $" (trạng thái: {oldStatus} -> {record.Status})" : "") + "."
+        });
+
+        var auditLog = _auditLogGroup.CreateGroup(
+            User,
+            $"Cập nhật biên bản mất/hỏng #{id} (trạng thái: {record.Status})." + (events.Count > 1 ? $" (và {events.Count - 1} sự kiện đồng bộ kho)" : ""),
+            events);
+        _db.AuditLogs.Add(auditLog);
+        await _db.SaveChangesAsync();
+>>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
 
         return Ok(new
         {
@@ -588,6 +624,93 @@ public class LossAndDamagesController : ControllerBase
             isStockSynced = record.IsStockSynced,
             notification
         });
+    }
+
+    [HttpPost("batch-update-status")]
+    [RequirePermission(PermissionCodes.ManageInventory)]
+    public async Task<IActionResult> BatchUpdateStatus([FromBody] BatchUpdateStatusRequest request)
+    {
+        if (request.LossAndDamageIds == null || !request.LossAndDamageIds.Any())
+            return BadRequest(new { message = "Danh sách biên bản không hợp lệ." });
+
+        var newStatus = NormalizeStatus(request.Status);
+
+        var records = await _db.LossAndDamages
+            .Include(x => x.RoomInventory)
+                .ThenInclude(ri => ri!.Equipment)
+            .Include(x => x.RoomInventory)
+                .ThenInclude(ri => ri!.Room)
+            .Where(x => request.LossAndDamageIds.Contains(x.Id))
+            .ToListAsync();
+
+        if (records.Count == 0)
+            return NotFound(new { message = "Không tìm thấy biên bản nào." });
+
+        var events = new List<AuditLogGroupEvent>();
+        int updatedCount = 0;
+
+        foreach (var record in records)
+        {
+            var oldStatus = record.Status;
+            if (oldStatus == newStatus) continue;
+
+            if (newStatus == "Waived" && await IsPenaltySettledAsync(record))
+                continue; 
+
+            if (record.IsStockSynced && newStatus != "Confirmed")
+            {
+                var restoreEvent = await RestoreEquipmentForLossRecordAsync(record);
+                if (restoreEvent != null) events.Add(restoreEvent);
+            }
+
+            record.Status = newStatus;
+
+            if (record.Status == "Confirmed")
+            {
+                var syncEvent = await SyncEquipmentForLossRecordAsync(record);
+                if (syncEvent != null) events.Add(syncEvent);
+            }
+
+            events.Add(new AuditLogGroupEvent
+            {
+                EventId = Guid.NewGuid().ToString(),
+                Timestamp = DateTime.UtcNow,
+                ActionType = "UPDATE",
+                EntityType = "LossAndDamage",
+                Context = new { damageId = record.Id, roomNumber = record.RoomInventory?.Room?.RoomNumber },
+                Changes = new { oldStatus, newStatus = record.Status },
+                Message = $"Đã cập nhật biên bản #{record.Id} (trạng thái: {oldStatus} -> {record.Status})."
+            });
+            
+            updatedCount++;
+        }
+
+        if (updatedCount == 0)
+            return BadRequest(new { message = "Không có biên bản nào đủ điều kiện để cập nhật trạng thái hoặc tất cả đã ở trạng thái này." });
+
+        await _db.SaveChangesAsync();
+
+        foreach (var record in records)
+        {
+            await SyncRoomCleaningStatusForLossAsync(record);
+        }
+        await _db.SaveChangesAsync();
+
+        var distinctRooms = records
+            .Where(r => r.RoomInventory?.Room != null)
+            .Select(r => r.RoomInventory!.Room!.RoomNumber)
+            .Distinct()
+            .ToList();
+        var roomText = distinctRooms.Count > 0 ? $" tại phòng {string.Join(", ", distinctRooms)}" : "";
+
+        var auditLog = _auditLogGroup.CreateGroup(
+            User,
+            $"Cập nhật trạng thái hàng loạt {updatedCount} biên bản đền bù{roomText} thành {newStatus}.",
+            events);
+        _db.AuditLogs.Add(auditLog);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = $"Đã cập nhật trạng thái thành công cho {updatedCount} biên bản." });
     }
 
     [HttpPost("housekeeping-audit-group")]
@@ -679,11 +802,12 @@ public class LossAndDamagesController : ControllerBase
         if (record is null)
             return NotFound(new { message = $"Không tìm thấy biên bản #{id}." });
 
-        var userId = JwtHelper.GetUserId(User);
-        var userAgent = Request.Headers["User-Agent"].ToString();
-
+        var events = new List<AuditLogGroupEvent>();
         if (record.IsStockSynced)
-            await RestoreEquipmentForLossRecordAsync(record, userId, userAgent);
+        {
+            var restoreEvent = await RestoreEquipmentForLossRecordAsync(record);
+            if (restoreEvent != null) events.Add(restoreEvent);
+        }
 
         if (!string.IsNullOrEmpty(record.ImgUrl))
         {
@@ -714,9 +838,29 @@ public class LossAndDamagesController : ControllerBase
             Action = NotificationAction.DeleteLossReport
         };
 
+<<<<<<< HEAD
         // Fire-and-forget: refresh snapshot
         _ = _dashboard.RefreshSnapshotsAsync(
             [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist, SnapshotRoles.Housekeeping]);
+=======
+        events.Add(new AuditLogGroupEvent
+        {
+            EventId = Guid.NewGuid().ToString(),
+            Timestamp = DateTime.UtcNow,
+            ActionType = "DELETE",
+            EntityType = "LossAndDamage",
+            Context = new { damageId = id },
+            Changes = new { oldStatus = record.Status, oldQuantity = record.Quantity },
+            Message = $"Xóa biên bản #{id} khỏi hệ thống."
+        });
+
+        var auditLog = _auditLogGroup.CreateGroup(
+            User,
+            $"Xóa biên bản mất/hỏng #{id} khỏi hệ thống." + (events.Count > 1 ? $" (và {events.Count - 1} sự kiện đồng bộ kho)" : ""),
+            events);
+        _db.AuditLogs.Add(auditLog);
+        await _db.SaveChangesAsync();
+>>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
 
         return Ok(new
         {
@@ -785,6 +929,21 @@ public class LossAndDamagesController : ControllerBase
         await _db.SaveChangesAsync();
 
         var remainingAfter = ComputeRemainingToReplenish(record);
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "REPLENISH_LOSS_DAMAGE",
+            ActionLabel = "Bổ sung vật tư cho biên bản mất/hỏng",
+            Message = $"Đã bổ sung {actualQuantity} vật tư cho biên bản #{id}. Tổng đã bổ sung: {record.ReplenishedQuantity}/{record.Quantity}. Còn thiếu: {remainingAfter}.",
+            EntityType = "LossAndDamage",
+            EntityId = id,
+            EntityLabel = $"Biên bản #{id}",
+            Severity = remainingAfter == 0 ? "Success" : "Info",
+            TableName = "LossAndDamages",
+            RecordId = id,
+            NewValue = $"{{\"replenishedQuantity\":{actualQuantity},\"totalReplenished\":{record.ReplenishedQuantity},\"remaining\":{remainingAfter},\"note\":\"{request.Note ?? ""}\"}}"
+        });
+
         return Ok(new
         {
             message = remainingAfter == 0
@@ -796,6 +955,103 @@ public class LossAndDamagesController : ControllerBase
             roomInventoryQuantity = roomInventory.Quantity,
             availableStock = Math.Max(0, equipment.InStockQuantity)
         });
+    }
+
+    [HttpPost("batch-replenish")]
+    [RequirePermission(PermissionCodes.ManageInventory)]
+    public async Task<IActionResult> BatchReplenish([FromBody] BatchReplenishRequest request)
+    {
+        if (request.Items is null || request.Items.Count == 0)
+            return BadRequest(new { message = "Danh sách vật tư không hợp lệ." });
+
+        var lossIds = request.Items.Select(x => x.LossAndDamageId).Distinct().ToList();
+        var records = await _db.LossAndDamages
+            .Include(x => x.RoomInventory)
+                .ThenInclude(ri => ri!.Equipment)
+            .Include(x => x.RoomInventory)
+                .ThenInclude(ri => ri!.Room)
+            .Where(x => lossIds.Contains(x.Id))
+            .ToListAsync();
+
+        var events = new List<AuditLogGroupEvent>();
+        int totalReplenished = 0;
+
+        foreach (var reqItem in request.Items)
+        {
+            var record = records.FirstOrDefault(x => x.Id == reqItem.LossAndDamageId);
+            if (record == null) continue;
+
+            if (record.Status != "Confirmed") continue;
+            if (!record.RoomInventoryId.HasValue || record.RoomInventory?.Equipment is null) continue;
+            if (!record.RoomInventory.Equipment.IsActive) continue;
+
+            var remaining = ComputeRemainingToReplenish(record);
+            if (remaining <= 0) continue;
+
+            var roomInventory = record.RoomInventory;
+            var equipment = roomInventory.Equipment;
+            var availableStock = Math.Max(0, equipment.InStockQuantity);
+            if (availableStock <= 0) continue;
+
+            var actualQuantity = Math.Min(reqItem.Quantity, Math.Min(remaining, availableStock));
+            if (actualQuantity <= 0) continue;
+
+            roomInventory.Quantity = Math.Max(0, roomInventory.Quantity ?? 0) + actualQuantity;
+            roomInventory.IsActive = true;
+            if (!string.IsNullOrWhiteSpace(reqItem.Note))
+                roomInventory.Note = reqItem.Note.Trim();
+
+            equipment.InUseQuantity += actualQuantity;
+            equipment.UpdatedAt = DateTime.UtcNow;
+
+            record.ReplenishedQuantity += actualQuantity;
+            if (record.ReplenishedQuantity >= Math.Max(1, record.Quantity))
+                record.ReplenishedAt = DateTime.UtcNow;
+            if (!string.IsNullOrWhiteSpace(reqItem.Note))
+                record.ReplenishmentNote = reqItem.Note.Trim();
+            
+            totalReplenished += actualQuantity;
+
+            var roomNumber = roomInventory.Room?.RoomNumber ?? "N/A";
+
+            events.Add(new AuditLogGroupEvent
+            {
+                EventId = Guid.NewGuid().ToString(),
+                Timestamp = DateTime.UtcNow,
+                ActionType = "UPDATE",
+                EntityType = "LossAndDamage",
+                Context = new { damageId = record.Id, equipmentId = equipment.Id, itemName = equipment.Name, roomNumber },
+                Changes = new { quantityAdded = actualQuantity, note = reqItem.Note },
+                Message = $"Bổ sung {actualQuantity} {equipment.Name} vào phòng {roomNumber}."
+            });
+        }
+
+        if (totalReplenished == 0)
+            return BadRequest(new { message = "Không có vật tư nào đủ điều kiện hoặc kho đã hết để bổ sung." });
+
+        await _db.SaveChangesAsync();
+        
+        foreach (var record in records)
+        {
+            await SyncRoomCleaningStatusForLossAsync(record);
+        }
+        await _db.SaveChangesAsync();
+
+        var distinctRooms = records
+            .Where(r => r.RoomInventory?.Room != null)
+            .Select(r => r.RoomInventory!.Room!.RoomNumber)
+            .Distinct()
+            .ToList();
+        var roomText = distinctRooms.Count > 0 ? $" tại phòng {string.Join(", ", distinctRooms)}" : "";
+
+        var auditLog = _auditLogGroup.CreateGroup(
+            User,
+            $"Bổ sung hàng loạt {totalReplenished} vật tư cho các biên bản đền bù{roomText}.",
+            events);
+        _db.AuditLogs.Add(auditLog);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = $"Đã bổ sung thành công {totalReplenished} vật tư." });
     }
 
 }
@@ -840,4 +1096,22 @@ public class ReplenishLossAndDamageRequest
 {
     public int Quantity { get; set; }
     public string? Note { get; set; }
+}
+
+public class BatchReplenishRequest
+{
+    public List<BatchReplenishItemRequest> Items { get; set; } = [];
+}
+
+public class BatchReplenishItemRequest
+{
+    public int LossAndDamageId { get; set; }
+    public int Quantity { get; set; }
+    public string? Note { get; set; }
+}
+
+public class BatchUpdateStatusRequest
+{
+    public List<int> LossAndDamageIds { get; set; } = [];
+    public string Status { get; set; } = null!;
 }

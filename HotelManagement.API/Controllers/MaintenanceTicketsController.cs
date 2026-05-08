@@ -4,6 +4,7 @@ using HotelManagement.Core.DTOs;
 using HotelManagement.Core.Entities;
 using HotelManagement.Core.Helpers;
 using HotelManagement.Infrastructure.Data;
+using HotelManagement.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,10 +17,12 @@ namespace HotelManagement.API.Controllers;
 public class MaintenanceTicketsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IAuditTrailService _auditTrail;
 
-    public MaintenanceTicketsController(AppDbContext db)
+    public MaintenanceTicketsController(AppDbContext db, IAuditTrailService auditTrail)
     {
         _db = db;
+        _auditTrail = auditTrail;
     }
 
     [HttpGet]
@@ -86,6 +89,21 @@ public class MaintenanceTicketsController : ControllerBase
 
         _db.MaintenanceTickets.Add(ticket);
         await _db.SaveChangesAsync();
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "CREATE_MAINTENANCE_TICKET",
+            ActionLabel = "Tạo phiếu bảo trì",
+            Message = $"Đã tạo phiếu bảo trì '{ticket.Title}' cho phòng #{ticket.RoomId} (ưu tiên: {ticket.Priority}).",
+            EntityType = "MaintenanceTicket",
+            EntityId = ticket.Id,
+            EntityLabel = ticket.Title,
+            Severity = "Warning",
+            TableName = "MaintenanceTickets",
+            RecordId = ticket.Id,
+            NewValue = $"{{\"roomId\":{ticket.RoomId},\"title\":\"{ticket.Title}\",\"priority\":\"{ticket.Priority}\",\"blocksRoom\":{ticket.BlocksRoom.ToString().ToLower()},\"status\":\"{ticket.Status}\"}}"
+        });
+
         return StatusCode(201, new { message = "Đã tạo phiếu bảo trì.", data = await BuildTicketById(ticket.Id) });
     }
 
@@ -118,6 +136,21 @@ public class MaintenanceTicketsController : ControllerBase
         }
 
         await _db.SaveChangesAsync();
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = "UPDATE_MAINTENANCE_TICKET",
+            ActionLabel = "Cập nhật phiếu bảo trì",
+            Message = $"Đã cập nhật phiếu bảo trì '{ticket.Title}' (phòng #{ticket.RoomId}).",
+            EntityType = "MaintenanceTicket",
+            EntityId = id,
+            EntityLabel = ticket.Title,
+            Severity = "Info",
+            TableName = "MaintenanceTickets",
+            RecordId = id,
+            NewValue = $"{{\"title\":\"{ticket.Title}\",\"priority\":\"{ticket.Priority}\",\"blocksRoom\":{ticket.BlocksRoom.ToString().ToLower()}}}"
+        });
+
         return Ok(new { message = "Đã cập nhật phiếu bảo trì.", data = await BuildTicketById(ticket.Id) });
     }
 
@@ -165,6 +198,31 @@ public class MaintenanceTicketsController : ControllerBase
         }
 
         await _db.SaveChangesAsync();
+
+        var (actionCode, actionLabel, severity) = ticket.Status switch
+        {
+            MaintenanceStatuses.InProgress => ("MAINTENANCE_START", "Bắt đầu xử lý bảo trì", "Info"),
+            MaintenanceStatuses.Resolved   => ("MAINTENANCE_RESOLVED", "Đã xử lý xong bảo trì", "Success"),
+            MaintenanceStatuses.Closed     => ("MAINTENANCE_CLOSED", "Đóng phiếu bảo trì", "Success"),
+            MaintenanceStatuses.Cancelled  => ("MAINTENANCE_CANCELLED", "Hủy phiếu bảo trì", "Warning"),
+            _                              => ("UPDATE_MAINTENANCE_STATUS", "Cập nhật trạng thái bảo trì", "Info")
+        };
+
+        await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
+        {
+            ActionCode = actionCode,
+            ActionLabel = actionLabel,
+            Message = $"Phiếu bảo trì '{ticket.Title}' (phòng #{ticket.RoomId}) chuyển sang trạng thái '{ticket.Status}'.",
+            EntityType = "MaintenanceTicket",
+            EntityId = id,
+            EntityLabel = ticket.Title,
+            Severity = severity,
+            TableName = "MaintenanceTickets",
+            RecordId = id,
+            OldValue = $"{{\"status\":\"{request.Status}\"}}",
+            NewValue = $"{{\"status\":\"{ticket.Status}\",\"resolutionNote\":\"{ticket.ResolutionNote ?? ""}\"}}"
+        });
+
         return Ok(new { message = "Đã cập nhật trạng thái phiếu bảo trì.", data = await BuildTicketById(ticket.Id) });
     }
 

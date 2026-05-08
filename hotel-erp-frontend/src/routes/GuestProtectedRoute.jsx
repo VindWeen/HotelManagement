@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAdminAuthStore } from "../store/adminAuthStore";
-import { getDefaultAuthenticatedPath, isGuestRole } from "./permissionRouting";
+import { canAccessGuestPortal, getDefaultAuthenticatedPath } from "./permissionRouting";
 
 export default function GuestProtectedRoute({ children }) {
   const token = useAdminAuthStore((s) => s.token);
@@ -11,7 +11,7 @@ export default function GuestProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!isGuestRole(role)) {
+  if (!canAccessGuestPortal(role)) {
     return <Navigate to={getDefaultAuthenticatedPath(role, permissions)} replace />;
   }
 

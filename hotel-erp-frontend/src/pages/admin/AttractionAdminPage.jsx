@@ -66,13 +66,13 @@ const emptyForm = {
   address: "",
   latitude: "",
   longitude: "",
-  distanceKm: "",
   imageUrl: "",
   cloudinaryPublicId: "",
   mapEmbedLink: "",
   description: "",
   removeImage: false,
 };
+
 
 function buildEmbedUrl(detail) {
   if (!detail) return "";
@@ -90,6 +90,7 @@ function extractEmbedLink(value) {
   return match?.[1]?.trim() || trimmed;
 }
 
+
 function validateForm(form) {
   const next = {};
   if (!form.name.trim()) next.name = "Tên địa điểm không được để trống.";
@@ -101,9 +102,8 @@ function validateForm(form) {
     const longitude = Number(form.longitude);
     if (Number.isNaN(longitude) || longitude < -180 || longitude > 180) next.longitude = "Longitude phải nằm trong khoảng -180 đến 180.";
   }
-  if (form.distanceKm !== "") {
-    const distanceKm = Number(form.distanceKm);
-    if (Number.isNaN(distanceKm) || distanceKm < 0) next.distanceKm = "Khoảng cách không được âm.";
+  if ((form.latitude === "") !== (form.longitude === "")) {
+    next.coordinates = "Cần nhập đủ cả latitude và longitude để hệ thống tính khoảng cách.";
   }
   return next;
 }
@@ -281,7 +281,6 @@ export default function AttractionAdminPage() {
         address: detail.address || "",
         latitude: detail.latitude ?? "",
         longitude: detail.longitude ?? "",
-        distanceKm: detail.distanceKm ?? "",
         imageUrl: detail.imageUrl || "",
         cloudinaryPublicId: detail.cloudinaryPublicId || "",
         mapEmbedLink: detail.mapEmbedLink || "",
@@ -339,7 +338,6 @@ export default function AttractionAdminPage() {
         address: form.address || null,
         latitude: form.latitude === "" ? null : Number(form.latitude),
         longitude: form.longitude === "" ? null : Number(form.longitude),
-        distanceKm: form.distanceKm === "" ? null : Number(form.distanceKm),
         imageUrl,
         cloudinaryPublicId,
         mapEmbedLink: extractEmbedLink(form.mapEmbedLink) || null,
@@ -606,11 +604,11 @@ export default function AttractionAdminPage() {
                 <FieldError message={fieldErrors.name} />
               </div>
               <div>
-                <label style={labelStyle}>Danh mục</label>
+                <label style={labelStyle}>Danh muc</label>
                 <select value={form.category} onChange={(e) => handleFieldChange("category", e.target.value)} style={inputStyle}>{CATEGORY_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}</select>
               </div>
               <div className="col-span-1 sm:col-span-2">
-                <label style={labelStyle}>Địa chỉ</label>
+                <label style={labelStyle}>Dia chi</label>
                 <input value={form.address} onChange={(e) => handleFieldChange("address", e.target.value)} style={inputStyle} />
               </div>
               <div>
@@ -623,10 +621,15 @@ export default function AttractionAdminPage() {
                 <input value={form.longitude} onChange={(e) => handleFieldChange("longitude", e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.longitude ? "var(--a-error-border)" : "var(--a-border-strong)" }} />
                 <FieldError message={fieldErrors.longitude} />
               </div>
-              <div>
+              <div className="col-span-1 sm:col-span-2">
                 <label style={labelStyle}>Khoảng cách (km)</label>
-                <input value={form.distanceKm} onChange={(e) => handleFieldChange("distanceKm", e.target.value)} style={{ ...inputStyle, borderColor: fieldErrors.distanceKm ? "var(--a-error-border)" : "var(--a-border-strong)" }} />
-                <FieldError message={fieldErrors.distanceKm} />
+                <div style={{ ...inputStyle, minHeight: 42, display: "flex", alignItems: "center", background: "var(--a-surface)" }}>
+                  Hệ thống sẽ tự động tính khoảng cách sau khi lưu từ tọa độ gốc của khách sạn.
+                </div>
+                <div style={{ marginTop: 6, fontSize: 12, color: "var(--a-text-muted)" }}>
+                  Chỉ cần nhập đủ latitude và longitude, không cần nhập tay khoảng cách.
+                </div>
+                <FieldError message={fieldErrors.coordinates} />
               </div>
               <div>
                 <label style={labelStyle}>Ảnh địa điểm</label>
@@ -656,3 +659,9 @@ export default function AttractionAdminPage() {
     </>
   );
 }
+
+
+
+
+
+

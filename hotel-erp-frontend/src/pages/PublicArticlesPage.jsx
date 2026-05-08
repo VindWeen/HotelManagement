@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getArticles } from "../api/articlesApi";
+import { getPlainTextExcerpt, stripHtml } from "../utils";
 
 const shellStyle = {
   minHeight: "100vh",
@@ -64,16 +65,16 @@ export default function PublicArticlesPage() {
                 <article style={{ background: "white", borderRadius: 24, border: "1px solid #ede7dd", overflow: "hidden", boxShadow: "0 14px 40px rgba(17,24,39,.05)", height: "100%" }}>
                   <div style={{ height: 190, background: "linear-gradient(135deg, #ece7df, #f8f5ef)" }}>
                     {article.thumbnailUrl ? (
-                      <img src={article.thumbnailUrl} alt={article.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      <img src={article.thumbnailUrl} alt={stripHtml(article.title) || "Article thumbnail"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     ) : null}
                   </div>
                   <div style={{ padding: 20 }}>
                     <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 700 }}>
                       {article.category?.name || "Chưa phân loại"}
                     </div>
-                    <h3 style={{ margin: "10px 0 0", fontSize: 22, lineHeight: 1.25, color: "#111827" }}>{article.title}</h3>
+                    <h3 style={{ margin: "10px 0 0", fontSize: 22, lineHeight: 1.25, color: "#111827" }}>{getPlainTextExcerpt(article.title, 120)}</h3>
                     {article.metaDescription ? (
-                      <p style={{ margin: "10px 0 0", color: "#4b5563", lineHeight: 1.7 }}>{article.metaDescription}</p>
+                      <p style={{ margin: "10px 0 0", color: "#4b5563", lineHeight: 1.7 }}>{getPlainTextExcerpt(article.metaDescription, 160)}</p>
                     ) : null}
                   </div>
                 </article>

@@ -110,6 +110,7 @@ public class BookingResponse
     public string? GuestName { get; set; }
     public string? GuestPhone { get; set; }
     public string? GuestEmail { get; set; }
+    public string? NationalId { get; set; }
     public int NumAdults { get; set; }
     public int NumChildren { get; set; }
     public string BookingCode { get; set; } = null!;
