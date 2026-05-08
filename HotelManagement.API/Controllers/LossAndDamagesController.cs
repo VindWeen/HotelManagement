@@ -23,32 +23,20 @@ public class LossAndDamagesController : ControllerBase
     private readonly Cloudinary _cloudinary;
     private readonly INotificationService _notificationService;
     private readonly IAuditLogGroupService _auditLogGroup;
-<<<<<<< HEAD
     private readonly IDashboardAggregationService _dashboard;
-=======
-    private readonly IAuditTrailService _auditTrail;
->>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
 
     public LossAndDamagesController(
         AppDbContext db,
         Cloudinary cloudinary,
         INotificationService notificationService,
         IAuditLogGroupService auditLogGroup,
-<<<<<<< HEAD
         IDashboardAggregationService dashboard)
-=======
-        IAuditTrailService auditTrail)
->>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
     {
         _db = db;
         _cloudinary = cloudinary;
         _notificationService = notificationService;
         _auditLogGroup = auditLogGroup;
-<<<<<<< HEAD
         _dashboard = dashboard;
-=======
-        _auditTrail = auditTrail;
->>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
     }
 
     private class ImageItem
@@ -591,29 +579,9 @@ public class LossAndDamagesController : ControllerBase
             Action = NotificationAction.UpdateLossReport
         };
 
-<<<<<<< HEAD
         // Fire-and-forget: refresh snapshot
         _ = _dashboard.RefreshSnapshotsAsync(
             [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist, SnapshotRoles.Housekeeping]);
-=======
-        events.Add(new AuditLogGroupEvent
-        {
-            EventId = Guid.NewGuid().ToString(),
-            Timestamp = DateTime.UtcNow,
-            ActionType = "UPDATE",
-            EntityType = "LossAndDamage",
-            Context = new { damageId = id },
-            Changes = new { oldStatus, newStatus = record.Status, oldQuantity, newQuantity = record.Quantity },
-            Message = $"Đã cập nhật biên bản #{id}" + (oldStatus != record.Status ? $" (trạng thái: {oldStatus} -> {record.Status})" : "") + "."
-        });
-
-        var auditLog = _auditLogGroup.CreateGroup(
-            User,
-            $"Cập nhật biên bản mất/hỏng #{id} (trạng thái: {record.Status})." + (events.Count > 1 ? $" (và {events.Count - 1} sự kiện đồng bộ kho)" : ""),
-            events);
-        _db.AuditLogs.Add(auditLog);
-        await _db.SaveChangesAsync();
->>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
 
         return Ok(new
         {
@@ -838,29 +806,9 @@ public class LossAndDamagesController : ControllerBase
             Action = NotificationAction.DeleteLossReport
         };
 
-<<<<<<< HEAD
         // Fire-and-forget: refresh snapshot
         _ = _dashboard.RefreshSnapshotsAsync(
             [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist, SnapshotRoles.Housekeeping]);
-=======
-        events.Add(new AuditLogGroupEvent
-        {
-            EventId = Guid.NewGuid().ToString(),
-            Timestamp = DateTime.UtcNow,
-            ActionType = "DELETE",
-            EntityType = "LossAndDamage",
-            Context = new { damageId = id },
-            Changes = new { oldStatus = record.Status, oldQuantity = record.Quantity },
-            Message = $"Xóa biên bản #{id} khỏi hệ thống."
-        });
-
-        var auditLog = _auditLogGroup.CreateGroup(
-            User,
-            $"Xóa biên bản mất/hỏng #{id} khỏi hệ thống." + (events.Count > 1 ? $" (và {events.Count - 1} sự kiện đồng bộ kho)" : ""),
-            events);
-        _db.AuditLogs.Add(auditLog);
-        await _db.SaveChangesAsync();
->>>>>>> 3b8da399d443d75fc02e0ad4f6e10d04fc682bb3
 
         return Ok(new
         {
