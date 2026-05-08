@@ -390,7 +390,7 @@ export default function GuestProfilePage() {
             <FeedbackBanner feedback={profileFeedback} />
 
             <form onSubmit={handleProfileSubmit} style={{ display: "grid", gap: 18 }}>
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 16, alignItems: "start" }}>
                 <Field label="Họ và tên">
                   <input
                     type="text"
@@ -399,7 +399,7 @@ export default function GuestProfilePage() {
                     style={inputStyle}
                   />
                 </Field>
-                <Field label="Email" hint="Email hiện chưa hỗ trợ thay đổi trong portal khách hàng.">
+                <Field label="Email">
                   <input value={profile?.email || ""} disabled style={{ ...inputStyle, background: "var(--g-surface-raised)", color: "var(--g-text-muted)" }} />
                 </Field>
                 <Field label="Số điện thoại">
@@ -424,9 +424,9 @@ export default function GuestProfilePage() {
                     style={inputStyle}
                   >
                     <option value="">Chọn giới tính</option>
-                    <option value="Male">Nam</option>
-                    <option value="Female">Nữ</option>
-                    <option value="Other">Khác</option>
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                    <option value="Khác">Khác</option>
                   </select>
                 </Field>
                 <Field label="Hạng thành viên">

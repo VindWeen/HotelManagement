@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { addRoomToBooking, cancelBooking, checkIn, checkInRoom, checkOut, earlyCheckOut, extendStay, getBookingDetail } from "../../api/bookingsApi";
-import { createInvoiceFromBooking, getInvoiceByBookingId, getInvoiceDetail } from "../../api/invoicesApi";
+import { createInvoiceFromBooking, ensureInvoiceDetailByBookingId, finalizeInvoice, getInvoiceByBookingId, getInvoiceDetail } from "../../api/invoicesApi";
 import { recordPayment } from "../../api/paymentsApi";
 import { getAdminRoomTypes } from "../../api/roomTypesApi";
 import { formatCurrency, formatDate } from "../../utils";
@@ -9,6 +9,8 @@ import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
 import { getBookingSourceLabel, getBookingStatusLabel, getPaymentTypeLabel, getInvoiceStatusLabel } from "../../utils/statusLabels";
 import { printInvoiceDocument } from "../../utils/printInvoice";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
+import BookingInvoicePreviewModal from "../../components/BookingInvoicePreviewModal";
+import { BOOKING_INVOICE_EXPORT_TOOLTIP, canExportBookingInvoice } from "../../utils/bookingInvoice";
 
 const ALLOWED_ACTIONS = {
   Pending: ["cancel", "collect_deposit"],
@@ -615,7 +617,7 @@ function CheckoutDraftModal({ open, booking, draftInvoice, loading, confirming, 
                   <tbody>
                     {details2.length===0
                       ? <tr><td colSpan={5} style={{...tdS,textAlign:'center',color:'var(--a-text-muted)'}}>Không có dữ liệu</td></tr>
-                      : details2.map((d,i) => <tr key={i}><td style={tdS}>{d.roomNumber||'-'}</td><td style={tdS}>{d.roomTypeName||'-'}</td><td style={tdS}>{fd(d.checkInDate)}</td><td style={tdS}>{fd(d.checkOutDate)}</td><td style={{...tdS,textAlign:'right',fontWeight:700}}>{fc(d.pricePerNight||0)}</td></tr>)}
+                      : details2.map((d,i) => <tr key={i}><td style={tdS}>{d.roomNumber || d.roomName || '-'}</td><td style={tdS}>{d.roomTypeName||'-'}</td><td style={tdS}>{fd(d.checkInDate)}</td><td style={tdS}>{fd(d.checkOutDate)}</td><td style={{...tdS,textAlign:'right',fontWeight:700}}>{fc(d.pricePerNight||0)}</td></tr>)}
                   </tbody>
                 </table>
               </div>
@@ -828,6 +830,11 @@ export default function BookingDetailPage() {
     loadRoomTypes();
   }, []);
 
+  const loadCheckoutDraftInvoice = useCallback(
+    async () => ensureInvoiceDetailByBookingId(id),
+    [id],
+  );
+
   const canRun = (action) => {
     const status = booking?.status;
     const summary = booking?.paymentSummary || {};
@@ -841,6 +848,43 @@ export default function BookingDetailPage() {
     if (action === "refund") return status === "Cancelled" && Number(booking?.depositAmount || 0) > 0;
 
     return (ALLOWED_ACTIONS[status] || []).includes(action);
+  };
+  const canExportInvoice = canExportBookingInvoice(booking);
+
+  const openExportInvoiceModal = async () => {
+    setCheckoutDraftOpen(true);
+    setCheckoutDraftInvoice(null);
+    setCheckoutDraftLoading(true);
+    try {
+      const draft = await loadCheckoutDraftInvoice();
+      setCheckoutDraftInvoice(draft);
+    } catch (e) {
+      setCheckoutDraftOpen(false);
+      showToast(e?.response?.data?.message || "Không thể tải hóa đơn nháp.", "error");
+    } finally {
+      setCheckoutDraftLoading(false);
+    }
+  };
+
+  const executeExportInvoiceConfirm = async () => {
+    if (!checkoutDraftInvoice?.id) return;
+
+    setCheckoutConfirming(true);
+    try {
+      await finalizeInvoice(checkoutDraftInvoice.id);
+      const fullInvoiceRes = await getInvoiceDetail(checkoutDraftInvoice.id);
+      const refreshedInvoice = fullInvoiceRes?.data?.data || fullInvoiceRes?.data || null;
+      setCheckoutDraftInvoice(refreshedInvoice);
+      await load();
+      if (refreshedInvoice) {
+        printInvoiceDocument(refreshedInvoice, "final");
+      }
+      showToast("Đã xác nhận và in hóa đơn thật.");
+    } catch (e) {
+      showToast(e?.response?.data?.message || "Không thể xác nhận hóa đơn.", "error");
+    } finally {
+      setCheckoutConfirming(false);
+    }
   };
 
   const runAction = async (action) => {
@@ -902,68 +946,12 @@ export default function BookingDetailPage() {
       return;
     }
 
-    if (action === "checkout") {
-      // Mở modal xem hóa đơn nháp trước
-      setCheckoutDraftOpen(true);
-      setCheckoutDraftInvoice(null);
-      setCheckoutDraftLoading(true);
-      try {
-        const existing = await getInvoiceByBookingId(id);
-        setCheckoutDraftInvoice(existing?.data?.data || existing?.data || null);
-      } catch {
-        setCheckoutDraftInvoice(null); // sẽ ước tính từ dữ liệu booking
-      } finally {
-        setCheckoutDraftLoading(false);
-      }
-      return;
-    }
-
     try {
       if (action === "checkin") { await checkIn(id); showToast("Đã Check-in thành công."); }
+      if (action === "checkout") { await checkOut(id); showToast("Đã Check-out thành công."); }
       await load();
     } catch (e) {
       showToast(e?.response?.data?.message || "Thao tác thất bại.", "error");
-    }
-  };
-
-  // Thực hiện checkout thật + tạo hóa đơn + in
-  const executeCheckoutConfirm = async () => {
-    setCheckoutConfirming(true);
-    try {
-      // 1. Check-out
-      await checkOut(id);
-      showToast("Đã Check-out thành công.");
-      setCheckoutDraftOpen(false);
-
-      // 2. Tạo hoặc lấy hóa đơn
-      let invoiceId = checkoutDraftInvoice?.id;
-      if (!invoiceId) {
-        try {
-          const existing = await getInvoiceByBookingId(id);
-          invoiceId = existing?.data?.data?.id || existing?.data?.id;
-        } catch {
-          // no existing invoice
-        }
-      }
-      if (!invoiceId) {
-        try {
-          const created = await createInvoiceFromBooking(id);
-          invoiceId = created?.data?.invoiceId || created?.data?.id;
-        } catch (e2) {
-          showToast(e2?.response?.data?.message || "Không thể tạo hóa đơn.", "error");
-        }
-      }
-
-      // 3. Điến trang hóa đơn và in
-      await load();
-            if (invoiceId) {
-        const fullInvoiceRes = await getInvoiceDetail(invoiceId);
-        printInvoiceDocument(fullInvoiceRes?.data?.data || fullInvoiceRes?.data, "final");
-      }
-    } catch (e) {
-      showToast(e?.response?.data?.message || "Check-out thất bại.", "error");
-    } finally {
-      setCheckoutConfirming(false);
     }
   };
 
@@ -1245,14 +1233,14 @@ export default function BookingDetailPage() {
         onConfirm={executeExtendStay}
         onCancel={() => setExtendStayTarget(null)}
       />
-      <CheckoutDraftModal
+      <BookingInvoicePreviewModal
         open={checkoutDraftOpen}
         booking={booking}
-        draftInvoice={checkoutDraftInvoice}
+        invoice={checkoutDraftInvoice}
         loading={checkoutDraftLoading}
         confirming={checkoutConfirming}
-        onConfirm={executeCheckoutConfirm}
-        onCancel={() => setCheckoutDraftOpen(false)}
+        onConfirm={executeExportInvoiceConfirm}
+        onClose={() => setCheckoutDraftOpen(false)}
       />
 
       {extendStayConflict && (
@@ -1549,6 +1537,11 @@ export default function BookingDetailPage() {
                 <button className="action-btn" disabled={!canRun("checkout")} onClick={() => runAction("checkout")}>
                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>logout</span> Khách Check-out
                 </button>
+                <span title={canExportInvoice ? "Xu?t h�a ��n" : BOOKING_INVOICE_EXPORT_TOOLTIP} style={{ display: "block" }}>
+                  <button className="action-btn" disabled={!canExportInvoice} onClick={openExportInvoiceModal} style={{ width: "100%" }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>print</span> Xuất hóa đơn
+                  </button>
+                </span>
                 <button className="action-btn" disabled={!canRun("open_invoice")} onClick={() => runAction("open_invoice")}>
                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>receipt_long</span> Mở hóa đơn
                 </button>

@@ -2086,7 +2086,6 @@ export function LossAndDamageTable({
   fmtCurrency,
   onView,
   onEdit,
-  onBatchUpdateStatus,
   onReplenish,
   onBatchReplenish,
   onPageChange,
@@ -2144,7 +2143,6 @@ export function LossAndDamageTable({
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8 }}>
                   <button className="btn-icon-p" onClick={() => onView(rec)} title="Xem chi tiet" style={{ width: "100%" }}><span className="material-symbols-outlined">visibility</span></button>
                   <button className="btn-icon-p" onClick={() => onEdit(rec)} title="Chinh sua" style={{ width: "100%" }}><span className="material-symbols-outlined">edit_square</span></button>
-                  <button className="btn-icon-p" onClick={() => onBatchUpdateStatus(rec)} title="Cap nhat trang thai hang loat" style={{ width: "100%", color: "#9333ea" }}><span className="material-symbols-outlined">checklist</span></button>
                   <button className="btn-icon-p" onClick={() => onReplenish(rec)} title="Bổ sung lại vào phòng" disabled={!canReplenishRecord(rec)} style={{ width: "100%", ...(!canReplenishRecord(rec) ? { opacity: 0.4, cursor: "not-allowed" } : { color: "#166534" }) }}><span className="material-symbols-outlined">inventory_2</span></button>
                   <button className="btn-icon-p" onClick={() => onBatchReplenish(rec)} title="Bổ sung hàng loạt" disabled={!canBatchReplenish} style={{ width: "100%", ...(!canBatchReplenish ? { opacity: 0.4, cursor: "not-allowed" } : { color: "#1d4ed8" }) }}><span className="material-symbols-outlined">playlist_add_check</span></button>
                 </div>
@@ -2280,9 +2278,6 @@ export function LossAndDamageTable({
                       </button>
                       <button className="btn-icon-p" onClick={() => onEdit(rec)} title="Chỉnh sửa">
                         <span className="material-symbols-outlined">edit_square</span>
-                      </button>
-                      <button className="btn-icon-p" onClick={() => onBatchUpdateStatus(rec)} title="Xác nhận/Cập nhật trạng thái hàng loạt theo booking" style={{ color: "#9333ea" }}>
-                        <span className="material-symbols-outlined">checklist</span>
                       </button>
                       <button
                         className="btn-icon-p"
@@ -2481,7 +2476,6 @@ function LossAndDamageTableUnified({
   fmtCurrency,
   onView,
   onEdit,
-  onBatchUpdateStatus,
   onReplenish,
   onBatchReplenish,
   onPageChange,
@@ -2501,7 +2495,6 @@ function LossAndDamageTableUnified({
         fmtCurrency={fmtCurrency}
         onView={onView}
         onEdit={onEdit}
-        onBatchUpdateStatus={onBatchUpdateStatus}
         onReplenish={onReplenish}
         onBatchReplenish={onBatchReplenish}
         onPageChange={onPageChange}
@@ -2711,13 +2704,6 @@ function LossAndDamageTableUnified({
                           { title: "Xem chi tiết", icon: "visibility", onClick: () => onView(rec), disabled: false },
                           { title: "Chỉnh sửa", icon: "edit_square", onClick: () => onEdit(rec), disabled: false },
                           {
-                            title: "Cập nhật trạng thái hàng loạt theo booking",
-                            icon: "checklist",
-                            onClick: () => onBatchUpdateStatus(rec),
-                            disabled: false,
-                            activeColor: "#9333ea",
-                          },
-                          {
                             title: "Bổ sung lại vào phòng",
                             icon: "inventory_2",
                             onClick: () => onReplenish(rec),
@@ -2831,7 +2817,6 @@ export default function LossAndDamagePage() {
   const [detailItem, setDetailItem] = useState(null);
   const [replenishItem, setReplenishItem] = useState(null);
   const [batchReplenishItem, setBatchReplenishItem] = useState(null);
-  const [batchUpdateStatusItem, setBatchUpdateStatusItem] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -2956,15 +2941,6 @@ export default function LossAndDamagePage() {
         onSaved={() => fetchRecords(true)}
         showToast={showToast}
       />
-      <BatchUpdateStatusModal
-        open={!!batchUpdateStatusItem}
-        seedItem={batchUpdateStatusItem}
-        records={records}
-        onClose={() => setBatchUpdateStatusItem(null)}
-        onSaved={() => fetchRecords(true)}
-        showToast={showToast}
-      />
-
       <div style={{ maxWidth: 1400, margin: "0 auto", position: "relative", zIndex: 0 }}>
         <LossAndDamageHeaderUnified
           recordCount={records.length}
@@ -2994,7 +2970,6 @@ export default function LossAndDamagePage() {
           fmtCurrency={fmtCurrency}
           onView={setDetailItem}
           onEdit={setEditItem}
-          onBatchUpdateStatus={setBatchUpdateStatusItem}
           onReplenish={setReplenishItem}
           onBatchReplenish={setBatchReplenishItem}
           onPageChange={setPage}

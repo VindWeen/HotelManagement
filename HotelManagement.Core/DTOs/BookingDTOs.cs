@@ -88,6 +88,7 @@ public class BookingDetailResponse
     public string? Note { get; set; }
     public string? RoomName { get; set; }
     public string? RoomTypeName { get; set; }
+    public string? CleaningStatus { get; set; }
 }
 
 public class BookingPaymentSummaryResponse

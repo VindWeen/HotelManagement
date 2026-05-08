@@ -156,7 +156,8 @@ public class BookingService : IBookingService
             PricePerNight = d.PricePerNight,
             Note = d.Note,
             RoomName = d.Room?.RoomNumber,
-            RoomTypeName = d.RoomType?.Name
+            RoomTypeName = d.RoomType?.Name,
+            CleaningStatus = d.Room?.CleaningStatus
         }).ToList()
     };
 }

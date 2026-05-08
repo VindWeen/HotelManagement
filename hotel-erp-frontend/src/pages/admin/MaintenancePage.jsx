@@ -109,6 +109,27 @@ const fmtDateTime = (value) =>
       })
     : "—";
 
+const isTicketBlockingRoom = (ticket) =>
+  Boolean(ticket?.blocksRoom) && !["Closed", "Cancelled"].includes(ticket?.status);
+
+const canTransitionMaintenanceStatus = (currentStatus, nextStatus) => {
+  if (currentStatus === nextStatus) return false;
+
+  if (currentStatus === "Open") {
+    return nextStatus === "InProgress" || nextStatus === "Cancelled";
+  }
+
+  if (currentStatus === "InProgress") {
+    return nextStatus === "Resolved";
+  }
+
+  if (currentStatus === "Resolved") {
+    return nextStatus === "Closed";
+  }
+
+  return false;
+};
+
 export default function MaintenancePage() {
   const { isMobile } = useResponsiveAdmin();
   const [rooms, setRooms] = useState([]);
@@ -155,7 +176,15 @@ export default function MaintenancePage() {
   }, [load]);
 
   const roomOptions = useMemo(() => rooms || [], [rooms]);
-  const staffOptions = useMemo(() => (staff || []).filter((user) => user.status !== false), [staff]);
+  const staffOptions = useMemo(
+    () =>
+      (staff || []).filter(
+        (user) =>
+          user.status !== false &&
+          String(user.roleName || user.role?.name || "").toLowerCase() !== "guest",
+      ),
+    [staff],
+  );
 
   const handleCreate = async (event) => {
     event.preventDefault();
@@ -261,9 +290,56 @@ export default function MaintenancePage() {
               </select>
               <input type="datetime-local" value={form.expectedDoneAt} onChange={(e) => setForm((prev) => ({ ...prev, expectedDoneAt: e.target.value }))} style={inputStyle} />
             </div>
-            <label style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--a-text-muted)", fontWeight: 700 }}>
-              <input type="checkbox" checked={form.blocksRoom} onChange={(e) => setForm((prev) => ({ ...prev, blocksRoom: e.target.checked }))} />
-              Block phòng ngay khi mở ticket
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                padding: "12px 14px",
+                borderRadius: 14,
+                border: `1.5px solid ${form.blocksRoom ? "var(--a-warning-border)" : "var(--a-border)"}`,
+                background: form.blocksRoom ? "var(--a-warning-bg)" : "var(--a-surface-raised)",
+                color: form.blocksRoom ? "var(--a-warning)" : "var(--a-text-muted)",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                <input
+                  type="checkbox"
+                  checked={form.blocksRoom}
+                  onChange={(e) => setForm((prev) => ({ ...prev, blocksRoom: e.target.checked }))}
+                  style={{
+                    position: "absolute",
+                    opacity: 0,
+                    width: 1,
+                    height: 1,
+                    pointerEvents: "none",
+                  }}
+                />
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 6,
+                    border: `1.5px solid ${form.blocksRoom ? "var(--a-warning)" : "var(--a-border-strong)"}`,
+                    background: form.blocksRoom ? "var(--a-warning)" : "var(--a-surface)",
+                    color: form.blocksRoom ? "#fff" : "transparent",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 14,
+                    fontWeight: 900,
+                    lineHeight: 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  ✓
+                </span>
+                Block phòng ngay khi mở ticket
+              </span>
             </label>
             <button type="submit" disabled={saving} style={{ ...PRIMARY_BUTTON, height: 44, justifyContent: "center" }}>
               {saving ? "Đang lưu..." : "Tạo ticket bảo trì"}
@@ -333,13 +409,27 @@ export default function MaintenancePage() {
                     <div>Xử lý: {ticket.assignedTo?.fullName || "Chưa gán"}</div>
                   </div>
                   <textarea value={statusNotes[ticket.id] || ticket.resolutionNote || ""} onChange={(e) => setStatusNotes((prev) => ({ ...prev, [ticket.id]: e.target.value }))} placeholder="Ghi chú khi xử lý / đóng ticket" style={{ ...inputStyle, minHeight: 78, resize: "vertical" }} />
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    {["InProgress", "Resolved", "Closed", "Cancelled"].map((status) => (
-                      <button key={status} type="button" onClick={() => handleStatusUpdate(ticket.id, status)} disabled={saving || ticket.status === status} style={{ height: 36, borderRadius: 10, border: "1px solid var(--a-border)", background: "var(--a-surface)", color: "var(--a-text-muted)", fontWeight: 800, opacity: ticket.status === status ? 0.5 : 1 }}>
-                        {statusActionLabels[status] || status}
-                      </button>
-                    ))}
-                  </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      {["InProgress", "Resolved", "Closed", "Cancelled"].map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          onClick={() => handleStatusUpdate(ticket.id, status)}
+                          disabled={saving || !canTransitionMaintenanceStatus(ticket.status, status)}
+                          style={{
+                            height: 36,
+                            borderRadius: 10,
+                            border: "1px solid var(--a-border)",
+                            background: "var(--a-surface)",
+                            color: "var(--a-text-muted)",
+                            fontWeight: 800,
+                            opacity: canTransitionMaintenanceStatus(ticket.status, status) ? 1 : 0.5,
+                          }}
+                        >
+                          {statusActionLabels[status] || status}
+                        </button>
+                      ))}
+                    </div>
                 </article>
               );
             })}
@@ -364,8 +454,8 @@ export default function MaintenancePage() {
                     <td style={{ padding: "16px 18px" }}>
                       <div style={{ color: "var(--a-text)", fontWeight: 800 }}>Phòng {ticket.roomNumber}</div>
                       <div style={{ color: "var(--a-text-muted)", fontSize: 13 }}>{ticket.roomTypeName || "—"}</div>
-                      <div style={{ marginTop: 6, color: ticket.blocksRoom ? "var(--a-warning)" : "var(--a-text-muted)", fontSize: 12, fontWeight: 700 }}>
-                        {ticket.blocksRoom ? "Đang block phòng" : "Không block phòng"}
+                      <div style={{ marginTop: 6, color: isTicketBlockingRoom(ticket) ? "var(--a-warning)" : "var(--a-text-muted)", fontSize: 12, fontWeight: 700 }}>
+                        {isTicketBlockingRoom(ticket) ? "Đang block phòng" : "Không block phòng"}
                       </div>
                     </td>
                     <td style={{ padding: "16px 18px" }}>
@@ -400,7 +490,7 @@ export default function MaintenancePage() {
                             key={status}
                             type="button"
                             onClick={() => handleStatusUpdate(ticket.id, status)}
-                            disabled={saving || ticket.status === status}
+                            disabled={saving || !canTransitionMaintenanceStatus(ticket.status, status)}
                             style={{
                               height: 34,
                               borderRadius: 10,
@@ -409,7 +499,7 @@ export default function MaintenancePage() {
                               color: "var(--a-text-muted)",
                               fontWeight: 700,
                               cursor: "pointer",
-                              opacity: ticket.status === status ? 0.5 : 1,
+                              opacity: canTransitionMaintenanceStatus(ticket.status, status) ? 1 : 0.5,
                             }}
                           >
                             {statusActionLabels[status] || status}

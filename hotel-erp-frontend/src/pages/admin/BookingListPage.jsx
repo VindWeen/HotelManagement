@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { cancelBooking, checkIn, checkOut, createBooking, getBookings, getReceptionAvailability, getReceptionDashboard, getReceptionMemberSuggestions } from "../../api/bookingsApi";
-import { createInvoiceFromBooking, getInvoiceByBookingId } from "../../api/invoicesApi";
+import { createInvoiceFromBooking, ensureInvoiceDetailByBookingId, finalizeInvoice, getInvoiceByBookingId, getInvoiceDetail } from "../../api/invoicesApi";
 import { recordPayment } from "../../api/paymentsApi";
 import { getVouchers } from "../../api/vouchersApi";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import { formatDate, formatCurrency } from "../../utils";
 import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyInput";
+import { printInvoiceDocument } from "../../utils/printInvoice";
 import { getBookingSourceLabel, getBookingStatusLabel } from "../../utils/statusLabels";
+import BookingInvoicePreviewModal from "../../components/BookingInvoicePreviewModal";
+import { BOOKING_INVOICE_EXPORT_TOOLTIP, canExportBookingInvoice } from "../../utils/bookingInvoice";
 
 const ALLOWED_ACTIONS = {
   Pending: ["cancel", "collect_deposit"],
@@ -493,6 +496,11 @@ export default function BookingListPage() {
   const [paymentTarget, setPaymentTarget] = useState(null);
   const [paymentMode, setPaymentMode] = useState("deposit");
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [exportInvoiceOpen, setExportInvoiceOpen] = useState(false);
+  const [exportInvoiceBooking, setExportInvoiceBooking] = useState(null);
+  const [exportInvoiceData, setExportInvoiceData] = useState(null);
+  const [exportInvoiceLoading, setExportInvoiceLoading] = useState(false);
+  const [exportInvoiceConfirming, setExportInvoiceConfirming] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
@@ -628,6 +636,44 @@ export default function BookingListPage() {
   const hasActiveFilters = activeFilterChips.length > 0;
   const clearFilters = () => {
     setFilters({ bookingCode: "", guest: "", status: "", fromDate: "", toDate: "" });
+  };
+
+  const openExportInvoiceModal = async (item) => {
+    setExportInvoiceBooking(item);
+    setExportInvoiceData(null);
+    setExportInvoiceOpen(true);
+    setExportInvoiceLoading(true);
+    try {
+      const invoice = await ensureInvoiceDetailByBookingId(item.id);
+      setExportInvoiceData(invoice);
+    } catch (e) {
+      setExportInvoiceOpen(false);
+      setExportInvoiceBooking(null);
+      showToast(e?.response?.data?.message || "Không thể tải hóa đơn nháp.", "error");
+    } finally {
+      setExportInvoiceLoading(false);
+    }
+  };
+
+  const executeExportInvoiceConfirm = async () => {
+    if (!exportInvoiceData?.id) return;
+
+    setExportInvoiceConfirming(true);
+    try {
+      await finalizeInvoice(exportInvoiceData.id);
+      const fullInvoiceRes = await getInvoiceDetail(exportInvoiceData.id);
+      const refreshedInvoice = fullInvoiceRes?.data?.data || fullInvoiceRes?.data || null;
+      setExportInvoiceData(refreshedInvoice);
+      await load();
+      if (refreshedInvoice) {
+        printInvoiceDocument(refreshedInvoice, "final");
+      }
+      showToast("Đã xác nhận và in hóa đơn thật.");
+    } catch (e) {
+      showToast(e?.response?.data?.message || "Không thể xác nhận hóa đơn.", "error");
+    } finally {
+      setExportInvoiceConfirming(false);
+    }
   };
 
   const estimatedBookingAmount = useMemo(() => {
@@ -814,6 +860,8 @@ export default function BookingListPage() {
 
     return (ALLOWED_ACTIONS[status] || []).includes(action);
   };
+
+  const canExportInvoice = (item) => canExportBookingInvoice(item);
 
   const loadAvailability = useCallback(async () => {
     if (!bookingForm.checkInDate || !bookingForm.checkOutDate) {
@@ -1079,6 +1127,18 @@ export default function BookingListPage() {
         onConfirm={executeBookingPayment}
         onCancel={() => setPaymentTarget(null)}
         loading={paymentLoading}
+      />
+      <BookingInvoicePreviewModal
+        open={exportInvoiceOpen}
+        booking={exportInvoiceBooking}
+        invoice={exportInvoiceData}
+        loading={exportInvoiceLoading}
+        confirming={exportInvoiceConfirming}
+        onConfirm={executeExportInvoiceConfirm}
+        onClose={() => {
+          setExportInvoiceOpen(false);
+          setExportInvoiceBooking(null);
+        }}
       />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
@@ -1519,6 +1579,9 @@ export default function BookingListPage() {
                   <button className="btn-icon-p" title="Thu cọc" disabled={!canRun(item, "collect_deposit") || busyId === item.id} onClick={() => runAction(item, "collect_deposit")} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>payments</span></button>
                   <button className="btn-icon-p" title="Check-in" disabled={!canRun(item, "checkin") || busyId === item.id} onClick={() => runAction(item, "checkin")} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>login</span></button>
                   <button className="btn-icon-p" title="Check-out" disabled={!canRun(item, "checkout") || busyId === item.id} onClick={() => runAction(item, "checkout")} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>logout</span></button>
+                  <span title={canExportInvoice(item) ? "Xuất hóa đơn" : BOOKING_INVOICE_EXPORT_TOOLTIP}>
+                    <button className="btn-icon-p" title="Xuất hóa đơn" disabled={!canExportInvoice(item) || busyId === item.id} onClick={() => openExportInvoiceModal(item)} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>print</span></button>
+                  </span>
                   <button className="btn-icon-p" title="Mở hóa đơn" disabled={!canRun(item, "open_invoice") || busyId === item.id} onClick={() => runAction(item, "open_invoice")} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>receipt_long</span></button>
                   <button className="btn-icon-p" title="Thu thêm để nhận phòng" disabled={!canRun(item, "collect_checkin") || busyId === item.id} onClick={() => runAction(item, "collect_checkin")} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>account_balance_wallet</span></button>
                   <button className="btn-icon-p" title="Hoàn tiền" disabled={!canRun(item, "refund") || busyId === item.id} onClick={() => runAction(item, "refund")} style={{ width: "100%" }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>reply</span></button>
@@ -1603,6 +1666,9 @@ export default function BookingListPage() {
                     <button className="btn-icon-p" title="Thu thêm để nhận phòng" disabled={!canRun(item, "collect_checkin") || busyId === item.id} onClick={() => runAction(item, "collect_checkin")}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>account_balance_wallet</span></button>
                     <button className="btn-icon-p" title="Check-in" disabled={!canRun(item, "checkin") || busyId === item.id} onClick={() => runAction(item, "checkin")}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>login</span></button>
                     <button className="btn-icon-p" title="Check-out" disabled={!canRun(item, "checkout") || busyId === item.id} onClick={() => runAction(item, "checkout")}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>logout</span></button>
+                    <span title={canExportInvoice(item) ? "Xuất hóa đơn" : BOOKING_INVOICE_EXPORT_TOOLTIP}>
+                      <button className="btn-icon-p" title="Xuất hóa đơn" disabled={!canExportInvoice(item) || busyId === item.id} onClick={() => openExportInvoiceModal(item)}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>print</span></button>
+                    </span>
                     <button className="btn-icon-p" title="Mở hóa đơn" disabled={!canRun(item, "open_invoice") || busyId === item.id} onClick={() => runAction(item, "open_invoice")}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>receipt_long</span></button>
                     <button className="btn-icon-p" title="Hoàn tiền" disabled={!canRun(item, "refund") || busyId === item.id} onClick={() => runAction(item, "refund")}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>reply</span></button>
                     <button className="btn-icon-p" title="Hủy" disabled={!canRun(item, "cancel") || busyId === item.id} onClick={() => runAction(item, "cancel")} style={{ color: canRun(item, "cancel") ? "#dc2626" : "#cbd5e1", borderColor: canRun(item, "cancel") ? "#fecaca" : "#f1f0ea" }} onMouseEnter={(e) => { if (canRun(item, "cancel")) { e.currentTarget.style.background = "#fef2f2"; } }} onMouseLeave={(e) => { e.currentTarget.style.background = "white"; }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>cancel</span></button>
