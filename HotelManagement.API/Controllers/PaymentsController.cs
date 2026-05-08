@@ -62,20 +62,36 @@ public class PaymentsController : ControllerBase
     private readonly IPaymentService _paymentService;
     private readonly IInvoiceService _invoiceService;
     private readonly IMomoService _momoService;
-    private readonly IDashboardAggregationService _dashboard;
+    private readonly IAuditTrailService _auditTrail;
 
-    public PaymentsController(
-        AppDbContext db, 
-        IPaymentService paymentService, 
-        IInvoiceService invoiceService, 
-        IMomoService momoService,
-        IDashboardAggregationService dashboard)
+    public PaymentsController(AppDbContext db, IPaymentService paymentService, IInvoiceService invoiceService, IMomoService momoService, IAuditTrailService auditTrail)
     {
         _db = db;
         _paymentService = paymentService;
         _invoiceService = invoiceService;
         _momoService = momoService;
-        _dashboard = dashboard;
+        _auditTrail = auditTrail;
+    }
+
+    private static string? NormalizeGuestEmail(string? email)
+        => string.IsNullOrWhiteSpace(email) ? null : email.Trim().ToLowerInvariant();
+
+    private bool CanAccessGuestBooking(Booking booking, string? userId, string? bookingCode, string? guestEmail)
+    {
+        if (!string.IsNullOrWhiteSpace(userId)
+            && booking.UserId != null
+            && booking.UserId.ToString() == userId)
+        {
+            return true;
+        }
+
+        var normalizedCode = bookingCode?.Trim();
+        var normalizedEmail = NormalizeGuestEmail(guestEmail);
+
+        return !string.IsNullOrWhiteSpace(normalizedCode)
+            && !string.IsNullOrWhiteSpace(normalizedEmail)
+            && string.Equals(booking.BookingCode, normalizedCode, StringComparison.Ordinal)
+            && string.Equals(NormalizeGuestEmail(booking.GuestEmail), normalizedEmail, StringComparison.Ordinal);
     }
 
     // ─── GUEST ENDPOINTS ──────────────────────────────────────────────────
@@ -211,10 +227,6 @@ public class PaymentsController : ControllerBase
                 await _db.SaveChangesAsync();
                 await _invoiceService.CreateFromBookingAsync(booking.Id);
 
-
-                // Fire-and-forget: refresh snapshot
-                _ = _dashboard.RefreshSnapshotsAsync(
-                    [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist]);
                 await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
                 {
                     ActionCode = "MOMO_IPN_SUCCESS",
@@ -342,9 +354,6 @@ public class PaymentsController : ControllerBase
                 await _invoiceService.CreateFromBookingAsync(booking.Id);
             }
 
-            // Fire-and-forget: refresh snapshot
-            _ = _dashboard.RefreshSnapshotsAsync(
-                [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist]);
             await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
             {
                 ActionCode = normalizedType == PaymentTypes.Refund ? "RECORD_BOOKING_REFUND" : "RECORD_BOOKING_PAYMENT",
@@ -357,7 +366,7 @@ public class PaymentsController : ControllerBase
                 TableName = "Payments",
                 RecordId = payment.Id,
                 NewValue = $"{{\"bookingId\":{booking.Id},\"bookingCode\":\"{booking.BookingCode}\",\"amount\":{request.AmountPaid},\"method\":\"{payment.PaymentMethod}\",\"type\":\"{normalizedType}\",\"depositTotal\":{booking.DepositAmount}}}"
-            }); 
+            });
 
             return Ok(new
             {
@@ -459,9 +468,6 @@ public class PaymentsController : ControllerBase
 
         var finalized = await _invoiceService.FinalizeAsync(invoice.Id);
 
-        // Fire-and-forget: refresh snapshot
-        _ = _dashboard.RefreshSnapshotsAsync(
-            [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Accountant, SnapshotRoles.Receptionist]);
         await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
         {
             ActionCode = "RECORD_INVOICE_PAYMENT",
@@ -496,3 +502,4 @@ public class PaymentsController : ControllerBase
         });
     }
 }
+
