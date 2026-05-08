@@ -50,14 +50,14 @@ export default function AttractionDetailPage() {
   }, [attraction]);
 
   if (loading) return <LoadingSpinner fullPage text="Đang tải điểm đến..." />;
-  if (!attraction) return <EmptyState icon="🗺️" title="Không tìm thấy điểm đến" action={<Link to="/attractions" className="g-btn-outline">Quay lại</Link>} />;
+  if (!attraction) return <EmptyState icon={<span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>map</span>} title="Không tìm thấy điểm đến" action={<Link to="/attractions" className="g-btn-outline">Quay lại</Link>} />;
 
   return (
     <>
       <div style={{ background: 'var(--g-surface-raised)', padding: 'var(--g-space-16) 0 var(--g-space-10)' }}>
         <PageContainer size="md">
           <Link to="/attractions" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600, color: 'var(--g-primary)' }}>
-            <span>←</span> Quay lại danh sách khám phá
+            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_back</span> Quay lại danh sách khám phá
           </Link>
           <div className="g-label" style={{ marginTop: 'var(--g-space-6)' }}>
             {attraction.category || "Địa điểm"}
@@ -80,7 +80,7 @@ export default function AttractionDetailPage() {
               alignItems: 'center',
               gap: 8
             }}>
-              <span>📍</span> {attraction.address}
+              <span className="material-symbols-outlined" style={{ fontSize: 22 }}>location_on</span> {attraction.address}
             </p>
           )}
         </PageContainer>
@@ -128,7 +128,7 @@ export default function AttractionDetailPage() {
                     alignItems: 'center',
                     gap: 8
                   }}>
-                    <span>🚗</span> Khoảng cách ước tính: <strong>{attraction.distanceKm} km</strong>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>directions_car</span> Khoảng cách ước tính: <strong>{attraction.distanceKm} km</strong>
                   </div>
                 )}
               </div>

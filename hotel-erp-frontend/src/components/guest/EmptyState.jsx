@@ -18,12 +18,20 @@
  *   />
  */
 export default function EmptyState({
-  icon = '🌿',
+  icon = 'content_paste_search',
   title = 'Chưa có dữ liệu',
   message,
   action,
   compact = false,
 }) {
+  const renderIcon = () => {
+    if (typeof icon !== 'string') return icon;
+    // Nếu là chuỗi không chứa emoji thì coi là Material Icon name
+    const hasEmoji = /\p{Extended_Pictographic}/u.test(icon);
+    if (hasEmoji) return icon;
+    return <span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>{icon}</span>;
+  };
+
   return (
     <div style={{
       display: 'flex',
@@ -42,8 +50,9 @@ export default function EmptyState({
         lineHeight: 1,
         marginBottom: 'var(--g-space-5)',
         filter: 'grayscale(0.15)',
+        color: 'var(--g-text-faint)'
       }}>
-        {icon}
+        {renderIcon()}
       </div>
 
       {/* Title */}

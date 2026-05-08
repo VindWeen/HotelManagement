@@ -103,7 +103,7 @@ export default function ArticleDetailPage() {
   }, [article]);
 
   if (loading) return <LoadingSpinner fullPage text="Đang tải bài viết..." />;
-  if (!article) return <EmptyState icon="😕" title="Không tìm thấy bài viết" message="Bài viết không tồn tại hoặc chưa được xuất bản." action={<Link to="/articles" className="g-btn-outline">Quay lại danh sách</Link>} />;
+  if (!article) return <EmptyState icon={<span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>sentiment_very_dissatisfied</span>} title="Không tìm thấy bài viết" message="Bài viết không tồn tại hoặc chưa được xuất bản." action={<Link to="/articles" className="g-btn-outline">Quay lại danh sách</Link>} />;
 
   const publishedDate = article.publishedAt 
     ? new Date(article.publishedAt).toLocaleDateString("vi-VN", { year: 'numeric', month: 'long', day: 'numeric' })
@@ -167,7 +167,7 @@ export default function ArticleDetailPage() {
           }}
         >
           <Link to="/articles" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600, color: 'var(--g-primary)' }}>
-            <span>←</span> Tạp chí Ethereal
+            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>arrow_back</span> Tạp chí Ethereal
           </Link>
 
           <div style={{ marginTop: 22 }}>

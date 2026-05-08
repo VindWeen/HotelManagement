@@ -12,7 +12,7 @@ import { getFullImageUrl } from '../../utils/imageUtils';
 const VND = (n) =>
   n ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) : '—';
 
-const STARS_ICONS = ['🛏️', '🌿', '🍽️', '💆', '🏊', '🏋️'];
+const STARS_ICONS = ['bed', 'spa', 'restaurant', 'massage', 'pool', 'fitness_center'];
 
 /* ── Small star renderer ── */
 function Stars({ rating, size = 16 }) {
@@ -41,7 +41,7 @@ function RoomCard({ room }) {
           />
         ) : (
           <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,#1a3826 0%,#4f645b 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: 48 }}>🛏️</span>
+            <span className="material-symbols-outlined" style={{ fontSize: 48, color: '#fff' }}>bed</span>
           </div>
         )}
         <div style={{
@@ -60,9 +60,9 @@ function RoomCard({ room }) {
           <h3 style={{ fontFamily: 'var(--g-font-heading)', fontSize: '1.15rem', fontWeight: 700, color: 'var(--g-text)', margin: '0 0 4px', lineHeight: 1.3 }}>
             {room.name}
           </h3>
-          <div style={{ fontSize: '0.8rem', color: 'var(--g-text-muted)', display: 'flex', gap: 12 }}>
-            {room.maxOccupancy && <span>👥 {room.maxOccupancy} khách</span>}
-            {room.areaM2 && <span>📐 {room.areaM2}m²</span>}
+          <div style={{ fontSize: '0.8rem', color: 'var(--g-text-muted)', display: 'flex', gap: 12, alignItems: 'center' }}>
+            {room.maxOccupancy && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>groups</span> {room.maxOccupancy} khách</span>}
+            {room.areaM2 && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>straighten</span> {room.areaM2}m²</span>}
           </div>
         </div>
         {amenities.length > 0 && (
@@ -151,7 +151,7 @@ function ArticleCard({ article }) {
             />
           ) : (
             <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #1a3826 0%, #6e8b7c 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 40 }}>📰</span>
+              <span className="material-symbols-outlined" style={{ fontSize: 40, color: '#fff' }}>article</span>
             </div>
           )}
           {article.category?.name && (
@@ -472,7 +472,7 @@ export default function HomePage() {
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.3)'; }}
               onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.25)'; }}
             >
-              🗓 Đặt phòng ngay
+              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>calendar_month</span> Đặt phòng ngay
             </Link>
             <Link
               to="/rooms"
@@ -560,7 +560,7 @@ export default function HomePage() {
                   <div className="hp-service-icon">
                     {svc.imageUrl
                       ? <img src={getFullImageUrl(svc.imageUrl)} alt={svc.name} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: '50%', margin: '0 auto 8px' }} />
-                      : STARS_ICONS[i % STARS_ICONS.length]
+                      : <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>{STARS_ICONS[i % STARS_ICONS.length]}</span>
                     }
                   </div>
                   <div className="hp-service-name">{svc.name}</div>
@@ -572,15 +572,17 @@ export default function HomePage() {
                 </div>
               ))
               : [
-                { icon: '💆', name: 'Mộc Spa & Wellness' },
-                { icon: '🍽️', name: 'Nhà hàng Á-Âu' },
-                { icon: '🏊', name: 'Hồ bơi vô cực' },
-                { icon: '🏋️', name: 'Phòng tập Gym' },
-                { icon: '🌿', name: 'Yoga & Thiền' },
-                { icon: '🚗', name: 'Đưa đón sân bay' },
+                { icon: 'massage', name: 'Mộc Spa & Wellness' },
+                { icon: 'restaurant', name: 'Nhà hàng Á-Âu' },
+                { icon: 'pool', name: 'Hồ bơi vô cực' },
+                { icon: 'fitness_center', name: 'Phòng tập Gym' },
+                { icon: 'spa', name: 'Yoga & Thiền' },
+                { icon: 'directions_car', name: 'Đưa đón sân bay' },
               ].map(({ icon, name }) => (
                 <div key={name} className="hp-service-card">
-                  <div className="hp-service-icon">{icon}</div>
+                  <div className="hp-service-icon">
+                    <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>{icon}</span>
+                  </div>
                   <div className="hp-service-name">{name}</div>
                 </div>
               ))
@@ -598,7 +600,7 @@ export default function HomePage() {
           eyebrow="Góc Nhìn Khách Hàng"
           title="Dấu Ấn Khó Quên"
           subtitle={avgRating > 0
-            ? <>Điểm đánh giá trung bình: <strong style={{ color: 'var(--g-primary)' }}>{avgRating.toFixed(1)}/5 ⭐</strong></>
+            ? <>Điểm đánh giá trung bình: <strong style={{ color: 'var(--g-primary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>{avgRating.toFixed(1)}/5 <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--g-gold)' }}>star</span></strong></>
             : 'Những gì khách hàng nói về trải nghiệm của họ tại The Ethereal'}
           className="g-animate-up"
         />
@@ -679,7 +681,7 @@ export default function HomePage() {
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
               onMouseLeave={e => e.currentTarget.style.transform = ''}
             >
-              🗓 Bắt Đầu Đặt Phòng
+              <span className="material-symbols-outlined" style={{ fontSize: 22 }}>calendar_month</span> Bắt Đầu Đặt Phòng
             </Link>
             <Link
               to="/rooms"

@@ -38,7 +38,7 @@ export default function AttractionsPage() {
           <LoadingSpinner variant="skeleton" skeletonCount={6} />
         ) : attractions.length === 0 ? (
           <EmptyState 
-            icon="🗺️" 
+            icon={<span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>map</span>} 
             title="Chưa có địa điểm khám phá" 
             message="Chúng tôi đang tổng hợp các điểm đến hấp dẫn. Quay lại sau nhé!"
           />
@@ -76,13 +76,18 @@ export default function AttractionsPage() {
                         lineHeight: 'var(--g-leading-relaxed)',
                         fontSize: 'var(--g-text-sm)',
                         flex: 1,
-                        margin: 0
+                        margin: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4
                       }}>
-                        📍 {attraction.address}
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>location_on</span> {attraction.address}
                       </p>
                     )}
                     <div style={{ marginTop: 'var(--g-space-4)' }}>
-                       <span style={{ fontSize: 'var(--g-text-sm)', fontWeight: 600, color: 'var(--g-primary)' }}>Khám phá ngay →</span>
+                       <span style={{ fontSize: 'var(--g-text-sm)', fontWeight: 600, color: 'var(--g-primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                         Khám phá ngay <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_right_alt</span>
+                       </span>
                     </div>
                   </div>
                 </article>

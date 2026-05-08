@@ -35,7 +35,7 @@ function RoomCard({ room }) {
           />
         ) : (
           <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #1a3826, #4f645b)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: 56 }}>🛏️</span>
+            <span className="material-symbols-outlined" style={{ fontSize: 56, color: '#fff' }}>bed</span>
           </div>
         )}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 55%)' }} />
@@ -58,9 +58,9 @@ function RoomCard({ room }) {
           <h2 style={{ fontFamily: 'var(--g-font-heading)', fontSize: '1.2rem', fontWeight: 700, color: 'var(--g-text)', margin: '0 0 6px', lineHeight: 1.3 }}>
             {room.name}
           </h2>
-          <div style={{ display: 'flex', gap: 16, fontSize: '0.82rem', color: 'var(--g-text-muted)' }}>
-            {room.maxOccupancy && <span>👥 {room.maxOccupancy} khách tối đa</span>}
-            {room.areaM2 && <span>📐 {room.areaM2} m²</span>}
+          <div style={{ display: 'flex', gap: 16, fontSize: '0.82rem', color: 'var(--g-text-muted)', alignItems: 'center' }}>
+            {room.maxOccupancy && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>groups</span> {room.maxOccupancy} khách tối đa</span>}
+            {room.areaM2 && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>straighten</span> {room.areaM2} m²</span>}
           </div>
         </div>
 
@@ -271,14 +271,28 @@ export default function RoomsPage() {
       <div className="rooms-filter-bar">
         <PageContainer>
           <div className="rooms-filter-inner">
-            <input
-              type="text"
-              className="rooms-filter-input"
-              placeholder="🔍  Tìm kiếm hạng phòng..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              id="rooms-search"
-            />
+            <div style={{ position: 'relative', flex: '1', minWidth: 200 }}>
+              <span className="material-symbols-outlined" style={{ 
+                position: 'absolute', 
+                left: 14, 
+                top: '50%', 
+                transform: 'translateY(-50%)', 
+                fontSize: 18, 
+                color: 'var(--g-text-muted)',
+                pointerEvents: 'none'
+              }}>
+                search
+              </span>
+              <input
+                type="text"
+                className="rooms-filter-input"
+                placeholder="Tìm kiếm hạng phòng..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                id="rooms-search"
+                style={{ paddingLeft: 42 }}
+              />
+            </div>
             <select
               className="rooms-filter-select"
               value={maxGuests}
@@ -286,7 +300,7 @@ export default function RoomsPage() {
               id="rooms-guests"
               title="Số khách"
             >
-              <option value="">👥 Số khách</option>
+              <option value="">Số khách</option>
               <option value="1">1 khách</option>
               <option value="2">2 khách</option>
               <option value="3">3 khách</option>
@@ -299,7 +313,7 @@ export default function RoomsPage() {
               id="rooms-price"
               title="Giá tối đa"
             >
-              <option value="">💰 Giá tối đa</option>
+              <option value="">Giá tối đa</option>
               <option value="1000000">1.000.000đ</option>
               <option value="2000000">2.000.000đ</option>
               <option value="5000000">5.000.000đ</option>
@@ -334,7 +348,7 @@ export default function RoomsPage() {
           <LoadingSpinner variant="skeleton" skeletonCount={6} />
         ) : filtered.length === 0 ? (
           <EmptyState
-            icon="🛏️"
+            icon={<span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>bed</span>}
             title={hasFilter ? 'Không tìm thấy phòng phù hợp' : 'Chưa có hạng phòng nào'}
             message={hasFilter ? 'Hãy thử điều chỉnh bộ lọc tìm kiếm.' : 'Vui lòng quay lại sau.'}
             action={hasFilter ? <button onClick={() => { setSearch(''); setMaxGuests(''); setMaxPrice(''); }} className="g-btn-primary" style={{ marginTop: 16 }}>Xoá bộ lọc</button> : null}

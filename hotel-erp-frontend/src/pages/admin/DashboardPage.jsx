@@ -227,12 +227,12 @@ function Stars({ rating }) {
 // ─── Main Component ──────────────────────────────────────────────────────────
 // ─── Date Filter Helpers ─────────────────────────────────────────────────────
 const DATE_PRESETS = [
-  { key: "today",   label: "Hôm nay" },
-  { key: "7days",   label: "7 ngày qua" },
-  { key: "month",   label: "Tháng này" },
-  { key: "year",    label: "Năm này" },
-  { key: "all",     label: "Tất cả" },
-  { key: "custom",  label: "Tùy chỉnh" },
+  { key: "today", label: "Hôm nay" },
+  { key: "7days", label: "7 ngày qua" },
+  { key: "month", label: "Tháng này" },
+  { key: "year", label: "Năm này" },
+  { key: "all", label: "Tất cả" },
+  { key: "custom", label: "Tùy chỉnh" },
 ];
 
 function getPresetRange(key) {
@@ -266,7 +266,7 @@ export default function DashboardPage() {
   // ─── Date filter state ────────────────────────────────────────────────────
   const [preset, setPreset] = useState("month");
   const [customFrom, setCustomFrom] = useState("");
-  const [customTo, setCustomTo]     = useState("");
+  const [customTo, setCustomTo] = useState("");
 
   const [bookings, setBookings] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -406,7 +406,7 @@ export default function DashboardPage() {
 
     if (preset === "custom") {
       from = customFrom ? new Date(customFrom + "T00:00:00") : null;
-      to   = customTo   ? new Date(customTo   + "T23:59:59") : now;
+      to = customTo ? new Date(customTo + "T23:59:59") : now;
     } else if (preset !== "all") {
       const range = getPresetRange(preset);
       if (range) { from = range.from; to = range.to; }
@@ -426,7 +426,7 @@ export default function DashboardPage() {
       .reduce((s, iv) => s + (iv.finalTotal || 0), 0);
 
     const filteredBookings = bookings.filter((b) => inRange(getBookingReferenceDate(b)));
-    const activeBookings = filteredBookings.filter((b) => ["Confirmed","Checked_in","Checked_out_pending_settlement","Pending"].includes(b.status)).length;
+    const activeBookings = filteredBookings.filter((b) => ["Confirmed", "Checked_in", "Checked_out_pending_settlement", "Pending"].includes(b.status)).length;
     const pendingBookings = filteredBookings.filter((b) => b.status === "Pending").length;
 
     const newUsersThisMonth = allUsers.filter((u) => {
@@ -456,7 +456,7 @@ export default function DashboardPage() {
     let from = null, to = now;
     if (preset === "custom") {
       from = customFrom ? new Date(customFrom + "T00:00:00") : null;
-      to   = customTo   ? new Date(customTo   + "T23:59:59") : now;
+      to = customTo ? new Date(customTo + "T23:59:59") : now;
     } else if (preset !== "all") {
       const range = getPresetRange(preset);
       if (range) { from = range.from; to = range.to; }
@@ -951,69 +951,69 @@ export default function DashboardPage() {
               })}
             </div>
           ) : (
-          <div className="scroll-x">
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
-              <thead>
-                <tr style={{ background: "color-mix(in srgb, var(--a-surface-raised) 88%, transparent)" }}>
-                  {["Mã", "Khách hàng", "Liên hệ", "Ngày đặt", "Tổng tiền", "Trạng thái"].map((h, i) => (
-                    <th key={h} style={{ padding: "12px 20px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--a-text-muted)", textAlign: i === 4 ? "right" : "left", borderBottom: "1px solid var(--a-border)", whiteSpace: "nowrap" }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i}>
-                      {Array.from({ length: 6 }).map((_, j) => (
-                        <td key={j} style={{ padding: "14px 20px" }}>
-                          <Skel h={13} w={j === 4 ? 80 : j === 0 ? 70 : 120} />
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : filteredBookingList.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} style={{ padding: "40px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 13 }}>Chưa có booking nào trong kỳ này</td>
+            <div className="scroll-x">
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
+                <thead>
+                  <tr style={{ background: "color-mix(in srgb, var(--a-surface-raised) 88%, transparent)" }}>
+                    {["Mã", "Khách hàng", "Liên hệ", "Ngày đặt", "Tổng tiền", "Trạng thái"].map((h, i) => (
+                      <th key={h} style={{ padding: "12px 20px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--a-text-muted)", textAlign: i === 4 ? "right" : "left", borderBottom: "1px solid var(--a-border)", whiteSpace: "nowrap" }}>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ) : (
-                  filteredBookingList.map((b) => {
-                    const cfg = DASH_STATUS_CFG[b.status] || DASH_STATUS_CFG.Cancelled;
-                    const initial = (b.guestName || "?")[0].toUpperCase();
-                    return (
-                      <tr key={b.id} className="hover-row" style={{ borderBottom: "1px solid var(--a-border)" }}>
-                        <td style={{ padding: "14px 20px" }}>
-                          <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 700, color: "#4f645b", letterSpacing: "0.05em" }}>{b.bookingCode}</span>
-                        </td>
-                        <td style={{ padding: "14px 20px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(79,100,91,.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f645b", fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
-                              {initial}
-                            </div>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--a-text)" }}>{b.guestName || "Khách vãng lai"}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding: "14px 20px", fontSize: 12, color: "var(--a-text-muted)" }}>{b.guestPhone || b.guestEmail || "—"}</td>
-                        <td style={{ padding: "14px 20px", fontSize: 12, color: "var(--a-text-muted)", whiteSpace: "nowrap" }}>
-                          {b.checkInTime ? fmtDateTime(b.checkInTime) : fmtDate(b.bookingDetails?.[0]?.checkInDate)}
-                        </td>
-                        <td style={{ padding: "14px 20px", textAlign: "right" }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--a-text)" }}>{fmtCurrency(b.totalEstimatedAmount)}</span>
-                        </td>
-                        <td style={{ padding: "14px 20px" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 9999, fontSize: 11, fontWeight: 700, background: cfg.bg, color: cfg.color }}>
-                            <span style={{ width: 5, height: 5, borderRadius: "50%", background: cfg.dot, flexShrink: 0 }} />
-                            {cfg.label}
-                          </span>
-                        </td>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i}>
+                        {Array.from({ length: 6 }).map((_, j) => (
+                          <td key={j} style={{ padding: "14px 20px" }}>
+                            <Skel h={13} w={j === 4 ? 80 : j === 0 ? 70 : 120} />
+                          </td>
+                        ))}
                       </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                    ))
+                  ) : filteredBookingList.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ padding: "40px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 13 }}>Chưa có booking nào trong kỳ này</td>
+                    </tr>
+                  ) : (
+                    filteredBookingList.map((b) => {
+                      const cfg = DASH_STATUS_CFG[b.status] || DASH_STATUS_CFG.Cancelled;
+                      const initial = (b.guestName || "?")[0].toUpperCase();
+                      return (
+                        <tr key={b.id} className="hover-row" style={{ borderBottom: "1px solid var(--a-border)" }}>
+                          <td style={{ padding: "14px 20px" }}>
+                            <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 700, color: "#4f645b", letterSpacing: "0.05em" }}>{b.bookingCode}</span>
+                          </td>
+                          <td style={{ padding: "14px 20px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(79,100,91,.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f645b", fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
+                                {initial}
+                              </div>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--a-text)" }}>{b.guestName || "Khách vãng lai"}</span>
+                            </div>
+                          </td>
+                          <td style={{ padding: "14px 20px", fontSize: 12, color: "var(--a-text-muted)" }}>{b.guestPhone || b.guestEmail || "—"}</td>
+                          <td style={{ padding: "14px 20px", fontSize: 12, color: "var(--a-text-muted)", whiteSpace: "nowrap" }}>
+                            {b.checkInTime ? fmtDateTime(b.checkInTime) : fmtDate(b.bookingDetails?.[0]?.checkInDate)}
+                          </td>
+                          <td style={{ padding: "14px 20px", textAlign: "right" }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--a-text)" }}>{fmtCurrency(b.totalEstimatedAmount)}</span>
+                          </td>
+                          <td style={{ padding: "14px 20px" }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 9999, fontSize: 11, fontWeight: 700, background: cfg.bg, color: cfg.color }}>
+                              <span style={{ width: 5, height: 5, borderRadius: "50%", background: cfg.dot, flexShrink: 0 }} />
+                              {cfg.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
@@ -1057,7 +1057,7 @@ export default function DashboardPage() {
                 {(["Occupied", "Cleaning", "PendingLoss", "Maintenance", "Ready"]).map(statusKey => {
                   const groupRooms = roomPreview.filter(r => getRoomStatusKey(r) === statusKey);
                   if (groupRooms.length === 0) return null;
-                const cfg = DASH_ROOM_BS_CFG[statusKey];
+                  const cfg = DASH_ROOM_BS_CFG[statusKey];
                   return (
                     <div key={statusKey}>
                       {/* Section header */}
@@ -1141,5 +1141,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-
