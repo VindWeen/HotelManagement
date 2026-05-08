@@ -175,15 +175,15 @@ export default function GuestFooter() {
             </p>
             <div className="gf-contact">
               <div className="gf-contact-item">
-                <span className="gf-contact-icon">📍</span>
+                <span className="material-symbols-outlined gf-contact-icon">location_on</span>
                 <span>123 Đường Nguyễn Huệ, Quận 1, TP.HCM</span>
               </div>
               <div className="gf-contact-item">
-                <span className="gf-contact-icon">📞</span>
+                <span className="material-symbols-outlined gf-contact-icon">call</span>
                 <span>+84 28 3822 8888</span>
               </div>
               <div className="gf-contact-item">
-                <span className="gf-contact-icon">✉️</span>
+                <span className="material-symbols-outlined gf-contact-icon">mail</span>
                 <span>hello@theethereal.vn</span>
               </div>
             </div>

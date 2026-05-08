@@ -41,7 +41,7 @@ export default function ReviewsPage() {
           <LoadingSpinner variant="skeleton" skeletonCount={6} />
         ) : reviews.length === 0 ? (
           <EmptyState 
-            icon="✨" 
+            icon={<span className="material-symbols-outlined" style={{ fontSize: 'inherit' }}>auto_awesome</span>} 
             title="Chưa có đánh giá" 
             message="Hãy là người đầu tiên để lại đánh giá sau kỳ nghỉ của bạn!"
           />
