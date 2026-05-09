@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getGuestServiceCatalog } from '../../api/guestServicesApi';
 import { PageContainer, SectionTitle, LoadingSpinner, EmptyState } from '../../components/guest';
 import { getFullImageUrl } from '../../utils/imageUtils';
+import { useAdminAuthStore } from '../../store/adminAuthStore';
+import { getMyBookings } from '../../api/bookingsApi';
+import { message } from 'antd';
+import { isGuestRole } from '../../routes/permissionRouting';
 
 const VND = (n) =>
   n ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) : null;
@@ -47,7 +51,7 @@ export const getServiceIcon = (name) => {
   return 'room_service';
 };
 
-function ServiceCard({ service }) {
+function ServiceCard({ service, onOrder }) {
   const iconName = getServiceIcon(service.name);
   const price = VND(service.price);
 
@@ -63,6 +67,7 @@ function ServiceCard({ service }) {
       position: 'relative',
       cursor: 'pointer',
     }}
+      onClick={() => onOrder && onOrder(service.id)}
       onMouseEnter={e => { 
         e.currentTarget.style.transform = 'translateY(-8px)'; 
         e.currentTarget.style.boxShadow = 'var(--g-shadow-lg)'; 
@@ -148,13 +153,17 @@ function ServiceCard({ service }) {
           </p>
         )}
         <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid var(--g-border)' }}>
-          <Link
-            to="/login"
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onOrder) onOrder(service.id);
+            }}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               fontSize: '0.95rem', color: 'var(--g-primary)', fontWeight: 700,
-              textDecoration: 'none', padding: '4px 0',
+              padding: '4px 0',
               transition: 'color 0.2s',
+              cursor: 'pointer',
             }}
             onMouseEnter={e => e.currentTarget.style.color = 'var(--g-primary-hover)'}
             onMouseLeave={e => e.currentTarget.style.color = 'var(--g-primary)'}
@@ -164,7 +173,7 @@ function ServiceCard({ service }) {
               onMouseEnter={e => e.currentTarget.style.transform = 'translateX(4px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'translateX(0)'}
             >arrow_forward</span>
-          </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -176,6 +185,39 @@ export default function PublicServicesPage() {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
+
+  const token = useAdminAuthStore(s => s.token);
+  const user = useAdminAuthStore(s => s.user);
+  const navigate = useNavigate();
+
+  const handleOrder = async (serviceId) => {
+    if (!token) {
+      message.warning('Vui lòng đăng nhập để đặt dịch vụ.');
+      return;
+    }
+
+    if (!isGuestRole(user?.role)) {
+      navigate('/admin/services/order');
+      return;
+    }
+
+    try {
+      const res = await getMyBookings();
+      const myBookings = res.data?.data || res.data || [];
+      const checkedInBookings = myBookings.filter(
+        b => b.status === "Checked_in" || b.status === "CheckedIn" || b.status === "Confirmed"
+      );
+      
+      if (checkedInBookings.length > 0) {
+        navigate(`/guest/services/order?serviceId=${serviceId}`);
+      } else {
+        message.warning('Bạn cần có phòng đang lưu trú (đã check-in) để đặt dịch vụ.');
+      }
+    } catch (err) {
+      console.error(err);
+      message.error('Không thể kiểm tra trạng thái phòng. Vui lòng thử lại.');
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -365,7 +407,7 @@ export default function PublicServicesPage() {
             <EmptyState icon="✨" title="Không có dịch vụ" message="Chưa có dịch vụ nào trong danh mục này. Vui lòng quay lại sau." />
           ) : (
             <div className="ps-grid">
-              {filtered.map((svc) => <ServiceCard key={svc.id} service={svc} />)}
+              {filtered.map((svc) => <ServiceCard key={svc.id} service={svc} onOrder={handleOrder} />)}
             </div>
           )}
         </div>
