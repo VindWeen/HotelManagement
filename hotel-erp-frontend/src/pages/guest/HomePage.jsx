@@ -6,13 +6,13 @@ import { getReviews } from '../../api/reviewsApi';
 import { getArticles } from '../../api/articlesApi';
 import { getGuestServiceCatalog } from '../../api/guestServicesApi';
 import { getPlainTextExcerpt, stripHtml } from '../../utils';
+import { getServiceIcon } from './PublicServicesPage';
 import { getFullImageUrl } from '../../utils/imageUtils';
 
 /* ── Formatters ── */
 const VND = (n) =>
   n ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) : '—';
 
-const STARS_ICONS = ['bed', 'spa', 'restaurant', 'massage', 'pool', 'fitness_center'];
 
 /* ── Small star renderer ── */
 function Stars({ rating, size = 16 }) {
@@ -381,25 +381,33 @@ export default function HomePage() {
           margin-top: 48px;
         }
         .hp-service-card {
-          background: #fff;
+          background: var(--g-bg-card);
           border: 1px solid var(--g-border);
           border-radius: var(--g-radius-lg);
           padding: 24px 16px 20px;
           text-align: center;
-          transition: all 0.25s var(--g-ease);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .hp-service-card:hover {
-          transform: translateY(-4px);
-          box-shadow: var(--g-shadow-lg);
-          border-color: var(--g-primary-light);
+          transform: translateY(-8px);
+          box-shadow: 0 20px 40px -10px var(--g-primary-subtle);
+          border-color: var(--g-primary-subtle);
         }
         .hp-service-icon {
-          font-size: 2rem;
-          margin-bottom: 12px;
+          width: 64px;
+          height: 64px;
+          border-radius: 20px;
+          background: var(--g-primary-muted);
+          color: var(--g-primary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 16px;
         }
         .hp-service-name {
-          font-weight: 700;
-          font-size: 0.88rem;
+          font-family: var(--g-font-heading);
+          font-weight: 800;
+          font-size: 0.95rem;
           color: var(--g-text);
           line-height: 1.35;
         }
@@ -555,33 +563,39 @@ export default function HomePage() {
           />
           <div className="hp-services-grid">
             {services.length > 0
-              ? services.map((svc, i) => (
-                <div key={svc.id} className="hp-service-card">
-                  <div className="hp-service-icon">
-                    {svc.imageUrl
-                      ? <img src={getFullImageUrl(svc.imageUrl)} alt={svc.name} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: '50%', margin: '0 auto 8px' }} />
-                      : <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>{STARS_ICONS[i % STARS_ICONS.length]}</span>
-                    }
-                  </div>
-                  <div className="hp-service-name">{svc.name}</div>
-                  {svc.price > 0 && (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--g-primary)', fontWeight: 700, marginTop: 6 }}>
-                      {VND(svc.price)}
+              ? services.map((svc) => {
+                  const iconId = getServiceIcon(svc.name);
+                  return (
+                    <div key={svc.id} className="hp-service-card">
+                      <div className="hp-service-icon">
+                        {svc.imageUrl ? (
+                          <img src={getFullImageUrl(svc.imageUrl)} alt={svc.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} />
+                        ) : typeof iconId === 'string' ? (
+                          <span className="material-symbols-outlined" style={{ fontSize: 32 }}>{iconId}</span>
+                        ) : (
+                          <div style={{ fontSize: 32, display: 'flex' }}>{iconId}</div>
+                        )}
+                      </div>
+                      <div className="hp-service-name">{svc.name}</div>
+                      {svc.price > 0 && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--g-primary)', fontWeight: 700, marginTop: 6 }}>
+                          {VND(svc.price)}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))
+                  );
+                })
               : [
-                { icon: 'massage', name: 'Mộc Spa & Wellness' },
+                { icon: 'spa', name: 'Mộc Spa & Wellness' },
                 { icon: 'restaurant', name: 'Nhà hàng Á-Âu' },
                 { icon: 'pool', name: 'Hồ bơi vô cực' },
                 { icon: 'fitness_center', name: 'Phòng tập Gym' },
-                { icon: 'spa', name: 'Yoga & Thiền' },
-                { icon: 'directions_car', name: 'Đưa đón sân bay' },
+                { icon: 'self_improvement', name: 'Yoga & Thiền' },
+                { icon: 'airport_shuttle', name: 'Đưa đón sân bay' },
               ].map(({ icon, name }) => (
                 <div key={name} className="hp-service-card">
                   <div className="hp-service-icon">
-                    <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>{icon}</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: 32 }}>{icon}</span>
                   </div>
                   <div className="hp-service-name">{name}</div>
                 </div>
@@ -706,3 +720,4 @@ export default function HomePage() {
     </>
   );
 }
+
