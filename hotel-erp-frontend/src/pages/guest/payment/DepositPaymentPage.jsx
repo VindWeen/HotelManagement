@@ -5,21 +5,13 @@ import {
 } from "../../../api/paymentsApi";
 import { PageContainer, SectionTitle, LoadingSpinner, EmptyState } from "../../../components/guest";
 import { formatCurrency } from "../../../utils";
+import { buildVietQRUrl, normalizeVietnameseText } from "../../../utils/vietqr";
 import { useAdminAuthStore } from "../../../store/adminAuthStore";
 
 // ── VietQR config ─────────────────────────────────────────────────────
 const VIETQR_BANK   = "VCB";
 const VIETQR_ACCOUNT = "1039807638";
 const VIETQR_TEMPLATE = "compact";
-
-function buildVietQRUrl(amount, description) {
-  const base = `https://img.vietqr.io/image/${VIETQR_BANK}-${VIETQR_ACCOUNT}-${VIETQR_TEMPLATE}.png`;
-  const params = new URLSearchParams({
-    amount: Math.round(amount).toString(),
-    addInfo: description,
-  });
-  return `${base}?${params.toString()}`;
-}
 
 function buildMomoQRUrl(amount, description) {
   const base = `https://api.vietqr.io/image/970454-99MM24032M46882192-kRMQ7Kp.jpg`;
@@ -155,7 +147,7 @@ export default function DepositPaymentPage() {
   } = paymentInfo;
 
   const activeMethod = PAYMENT_METHODS.find((m) => m.id === selectedMethod);
-  const userNameString = (user?.fullName || user?.email?.split('@')[0] || "Khach").replace(/đ|Đ/g, "d").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const userNameString = normalizeVietnameseText(user?.fullName || user?.email?.split('@')[0] || "Khach");
   const qrDescription = `${userNameString} Thanh toan coc 30% ${remaining}`;
   const qrUrl = selectedMethod === "momo"
     ? buildMomoQRUrl(remaining, qrDescription)

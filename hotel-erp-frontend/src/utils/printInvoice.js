@@ -1,5 +1,6 @@
 import { formatCurrency, formatDate } from "./index";
 import { getInvoiceStatusLabel, getPaymentTypeLabel } from "./statusLabels";
+import { buildInvoiceVietQRData } from "./vietqr";
 
 export const printInvoiceDocument = (invoice, mode = "final") => {
     if (!invoice) return;
@@ -51,6 +52,28 @@ export const printInvoiceDocument = (invoice, mode = "final") => {
         <td style="text-align:right;">${formatCurrency(item.totalAmount || 0)}</td>
       </tr>
     `).join("");
+    const paymentQr = buildInvoiceVietQRData(invoice.booking, invoice);
+    const qrSection = paymentQr ? `
+      <div class="card qr-card" style="margin-top: 24px;">
+        <div class="section-title">QR thanh toan cong no</div>
+        <div class="qr-layout">
+          <div class="qr-box">
+            <img
+              src="${paymentQr.qrUrl}"
+              alt="VietQR thanh toan hoa don"
+              style="width:196px;height:196px;display:block;"
+              onerror="this.onerror=null;this.src='https://img.vietqr.io/image/${paymentQr.bankCode}-${paymentQr.accountNumber}-${paymentQr.template}.png';"
+            />
+          </div>
+          <div>
+            <div class="qr-meta"><span>Ngan hang</span><strong>Vietcombank (VCB)</strong></div>
+            <div class="qr-meta"><span>So tai khoan</span><strong>${paymentQr.accountNumber}</strong></div>
+            <div class="qr-meta"><span>So tien can thanh toan</span><strong style="color:#b91c1c;">${formatCurrency(paymentQr.amount)}</strong></div>
+            <div class="qr-meta"><span>Noi dung chuyen khoan</span><strong>${paymentQr.description}</strong></div>
+          </div>
+        </div>
+      </div>
+    ` : "";
 
     const printWindow = window.open("", "_blank", "width=900,height=700");
     if (!printWindow) {
@@ -77,6 +100,14 @@ export const printInvoiceDocument = (invoice, mode = "final") => {
             .summary-total { font-size:18px; font-weight:800; margin-top:12px; padding-top:12px; border-top:2px solid #111827; }
             .muted { color:#6b7280; }
             .watermark { color:#b91c1c; font-weight:800; letter-spacing: 0.2em; }
+            .qr-layout { display:grid; grid-template-columns: 220px 1fr; gap: 20px; align-items:center; }
+            .qr-box { border:1px solid #bfdbfe; border-radius:16px; background:#fff; padding:12px; width:fit-content; }
+            .qr-meta { margin-bottom: 12px; }
+            .qr-meta span { display:block; color:#6b7280; font-size:12px; text-transform:uppercase; margin-bottom:4px; }
+            .qr-meta strong { display:block; font-size:14px; word-break:break-word; }
+            .qr-card { background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%); }
+            @media print { .qr-card { break-inside: avoid; } }
+            @media (max-width: 720px) { .qr-layout { grid-template-columns: 1fr; } .qr-box { margin: 0 auto; } }
             @media print { body { padding: 16px; } }
           </style>
         </head>
@@ -209,6 +240,7 @@ export const printInvoiceDocument = (invoice, mode = "final") => {
               </tbody>
             </table>
           </div>
+          ${qrSection}
         </body>
       </html>
     `);

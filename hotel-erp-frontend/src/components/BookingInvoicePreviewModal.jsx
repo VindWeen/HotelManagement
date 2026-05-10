@@ -1,4 +1,5 @@
 import { printInvoiceDocument } from "../utils/printInvoice";
+import { buildInvoiceVietQRData } from "../utils/vietqr";
 
 const INVOICE_PREVIEW_STATUS_LABELS = {
   Draft: "Nháp",
@@ -139,6 +140,10 @@ export default function BookingInvoicePreviewModal({
   const outstanding =
     invToPrint?.outstandingAmount ??
     Math.max(0, (booking?.totalEstimatedAmount || 0) - (booking?.depositAmount || 0));
+  const paymentQr = buildInvoiceVietQRData(booking, {
+    ...invToPrint,
+    outstandingAmount: outstanding,
+  });
   const isDraft = !invToPrint?.status || invToPrint.status === "Draft";
   const printMode = isDraft ? "draft" : "final";
 
@@ -475,6 +480,65 @@ export default function BookingInvoicePreviewModal({
                   </div>
                 ) : null}
               </div>
+
+              {paymentQr ? (
+                <div
+                  style={{
+                    marginTop: 18,
+                    border: "1px solid var(--a-border)",
+                    borderRadius: 16,
+                    padding: 18,
+                    background: "linear-gradient(180deg, rgba(240,246,255,0.85) 0%, var(--a-surface) 100%)",
+                  }}
+                >
+                  <div style={{ ...secL, marginBottom: 12 }}>QR thanh toán công nợ</div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                      gap: 18,
+                      alignItems: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        background: "#fff",
+                        borderRadius: 14,
+                        border: "1px solid #bfdbfe",
+                        padding: 12,
+                        width: "fit-content",
+                        margin: "0 auto",
+                      }}
+                    >
+                      <img
+                        src={paymentQr.qrUrl}
+                        alt="VietQR thanh toan hoa don"
+                        style={{ width: 196, height: 196, display: "block" }}
+                        onError={(event) => {
+                          event.currentTarget.src = `https://img.vietqr.io/image/${paymentQr.bankCode}-${paymentQr.accountNumber}-${paymentQr.template}.png`;
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: "grid", gap: 10 }}>
+                      {[
+                        ["Ngân hàng", "Vietcombank (VCB)"],
+                        ["Số tài khoản", paymentQr.accountNumber],
+                        ["Số tiền cần thanh toán", fc(paymentQr.amount)],
+                        ["Nội dung chuyển khoản", paymentQr.description],
+                      ].map(([label, value]) => (
+                        <div key={label} style={{ display: "grid", gap: 4 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>
+                            {label}
+                          </div>
+                          <div style={{ fontSize: label === "Số tiền cần thanh toán" ? 18 : 14, fontWeight: label === "Số tiền cần thanh toán" ? 800 : 700, color: label === "Số tiền cần thanh toán" ? "var(--a-error)" : "var(--a-text)", wordBreak: "break-word" }}>
+                            {value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </>
           )}
         </div>
