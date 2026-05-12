@@ -86,7 +86,6 @@ export function RoomDetailHeader({
   loadingInv,
   savingStatus,
   onBack,
-  onPrint,
   onRefreshInventory,
   onSaveStatus,
   Skel,
@@ -143,28 +142,6 @@ export function RoomDetailHeader({
         )}
       </div>
       <div style={{ display: "flex", gap: 12 }}>
-        <button
-          onClick={onPrint}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "10px 20px",
-            borderRadius: 12,
-            fontSize: 14,
-            fontWeight: 800,
-            background: "var(--a-surface)",
-            color: "var(--a-text)",
-            border: "1.5px solid var(--a-border-strong)",
-            cursor: "pointer",
-            boxShadow: "var(--a-shadow-sm)",
-          }}
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
-            print
-          </span>
-          In báo cáo
-        </button>
         {activeTab === "inventory" && (
           <button
             onClick={onRefreshInventory}
@@ -1297,7 +1274,6 @@ export default function RoomDetailPage() {
                     loadingInv={loadingInv}
                     savingStatus={savingStatus}
                     onBack={() => navigate(-1)}
-                    onPrint={() => window.print()}
                     onRefreshInventory={loadInventory}
                     onSaveStatus={handleSaveStatus}
                     Skel={Skel}
