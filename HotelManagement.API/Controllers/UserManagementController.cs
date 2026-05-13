@@ -1,4 +1,4 @@
-﻿using HotelManagement.Core.Authorization;
+using HotelManagement.Core.Authorization;
 using HotelManagement.Core.DTOs;
 using HotelManagement.Core.Entities;
 using HotelManagement.Core.Helpers;
@@ -357,6 +357,11 @@ public class UserManagementController : ControllerBase
             Action  = NotificationAction.LockAccount
         };
 
+        await _sessionInvalidation.InvalidateUserAsync(
+            id,
+            "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.",
+            "account_locked");
+
         return Ok(new { notification });
     }
 
@@ -446,6 +451,14 @@ public class UserManagementController : ControllerBase
             Type    = NotificationType.Success,
             Action  = user.Status == true ? NotificationAction.UnlockAccount : NotificationAction.LockAccount
         };
+
+        if (user.Status == false)
+        {
+            await _sessionInvalidation.InvalidateUserAsync(
+                id,
+                "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.",
+                "account_locked");
+        }
 
         return Ok(new { notification, userId = id, status = user.Status });
     }
