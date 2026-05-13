@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getGuestServiceCatalog } from '../../api/guestServicesApi';
 import { PageContainer, SectionTitle, LoadingSpinner, EmptyState } from '../../components/guest';
 import { getFullImageUrl } from '../../utils/imageUtils';
+import { useAdminAuthStore } from '../../store/adminAuthStore';
 
 const VND = (n) =>
   n ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) : null;
@@ -47,7 +48,7 @@ export const getServiceIcon = (name) => {
   return 'room_service';
 };
 
-function ServiceCard({ service }) {
+function ServiceCard({ service, isLoggedIn }) {
   const iconName = getServiceIcon(service.name);
   const price = VND(service.price);
 
@@ -149,7 +150,7 @@ function ServiceCard({ service }) {
         )}
         <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid var(--g-border)' }}>
           <Link
-            to="/login"
+            to={isLoggedIn ? `/guest/services/order?serviceId=${service.id}` : "/login"}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               fontSize: '0.95rem', color: 'var(--g-primary)', fontWeight: 700,
@@ -172,6 +173,8 @@ function ServiceCard({ service }) {
 }
 
 export default function PublicServicesPage() {
+  const token = useAdminAuthStore(s => s.token);
+  const isLoggedIn = !!token;
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -365,7 +368,7 @@ export default function PublicServicesPage() {
             <EmptyState icon="✨" title="Không có dịch vụ" message="Chưa có dịch vụ nào trong danh mục này. Vui lòng quay lại sau." />
           ) : (
             <div className="ps-grid">
-              {filtered.map((svc) => <ServiceCard key={svc.id} service={svc} />)}
+              {filtered.map((svc) => <ServiceCard key={svc.id} service={svc} isLoggedIn={isLoggedIn} />)}
             </div>
           )}
         </div>

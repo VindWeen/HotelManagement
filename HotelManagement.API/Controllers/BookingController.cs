@@ -391,7 +391,7 @@ public class BookingsController : ControllerBase
         return bookedRooms < totalRooms;
     }
 
-    private async Task<Room?> FindAvailableRoomAsync(BookingDetail detail, int? requestedRoomId = null, CancellationToken cancellationToken = default)
+    private async Task<Room?> FindAvailableRoomAsync(BookingDetail detail, int? requestedRoomId = null, HashSet<int>? assignedRoomIds = null, CancellationToken cancellationToken = default)
     {
         var (normalizedCheckIn, normalizedCheckOut) = NormalizeStayDates(detail.CheckInDate, detail.CheckOutDate);
 
@@ -410,6 +410,11 @@ public class BookingsController : ControllerBase
 
         foreach (var room in candidateRooms)
         {
+            if (assignedRoomIds != null && assignedRoomIds.Contains(room.Id))
+            {
+                continue;
+            }
+
             var hasConflict = await _context.BookingDetails
                 .AsNoTracking()
                 .AnyAsync(bd => bd.Id != detail.Id
@@ -486,7 +491,7 @@ public class BookingsController : ControllerBase
         return suggestions;
     }
 
-    private async Task ApplyCheckInToDetailAsync(Booking booking, BookingDetail detail, int? requestedRoomId, CancellationToken cancellationToken = default)
+    private async Task ApplyCheckInToDetailAsync(Booking booking, BookingDetail detail, int? requestedRoomId, HashSet<int>? assignedRoomIds = null, CancellationToken cancellationToken = default)
     {
         if (detail.RoomTypeId == null)
         {
@@ -502,11 +507,12 @@ public class BookingsController : ControllerBase
                 assignedRoom.BusinessStatus = RoomBusinessStatuses.Occupied;
                 assignedRoom.Status = ComputeRoomStatus(assignedRoom.BusinessStatus, assignedRoom.CleaningStatus);
                 detail.Room = assignedRoom;
+                assignedRoomIds?.Add(assignedRoom.Id);
             }
         }
         else
         {
-            var room = await FindAvailableRoomAsync(detail, requestedRoomId, cancellationToken);
+            var room = await FindAvailableRoomAsync(detail, requestedRoomId, assignedRoomIds, cancellationToken);
             if (room == null)
             {
                 throw new InvalidOperationException(requestedRoomId.HasValue
@@ -519,6 +525,7 @@ public class BookingsController : ControllerBase
             detail.Room = room;
             room.BusinessStatus = RoomBusinessStatuses.Occupied;
             room.Status = ComputeRoomStatus(room.BusinessStatus, room.CleaningStatus);
+            assignedRoomIds?.Add(room.Id);
         }
 
         booking.Status = BookingStatuses.CheckedIn;
@@ -716,9 +723,8 @@ public class BookingsController : ControllerBase
 
         var pendingCheckouts = bookings
             .Where(b =>
-                ((b.Status == BookingStatuses.CheckedIn) ||
-                 (b.Status == BookingStatuses.CheckedOutPendingSettlement))
-                && b.BookingDetails.Any(d => d.CheckOutDate.Date == targetDate))
+                (b.Status == BookingStatuses.CheckedIn && b.BookingDetails.Any(d => d.CheckOutDate.Date == targetDate)) ||
+                b.Status == BookingStatuses.CheckedOutPendingSettlement)
             .ToList();
 
         var response = new ReceptionDashboardResponse
@@ -1436,7 +1442,7 @@ public class BookingsController : ControllerBase
         try
         {
             await EnsureGuestAccountLinkedAsync(booking, request.GuestName, request.GuestPhone, request.GuestEmail, request.NationalId, requireNationalId: true, sendNewAccountEmail: true, cancellationToken: cancellationToken);
-            await ApplyCheckInToDetailAsync(booking, detail, request.RoomId, cancellationToken);
+            await ApplyCheckInToDetailAsync(booking, detail, request.RoomId, null, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
         }
         catch (InvalidOperationException ex)
@@ -1504,12 +1510,18 @@ public class BookingsController : ControllerBase
             return BookingActionError(StatusCodes.Status400BadRequest, ex.Message);
         }
 
+        var detailIdsToCheckIn = new HashSet<int>(detailsToCheckIn.Select(d => d.Id));
+        var assignedRoomIds = new HashSet<int>(
+            booking.BookingDetails
+                .Where(d => d.RoomId.HasValue && !detailIdsToCheckIn.Contains(d.Id))
+                .Select(d => d.RoomId!.Value));
+
         foreach (var detail in detailsToCheckIn)
         {
             var itemRequest = requestedDetails.FirstOrDefault(x => x.BookingDetailId == detail.Id);
             try
             {
-                await ApplyCheckInToDetailAsync(booking, detail, itemRequest?.RoomId, cancellationToken);
+                await ApplyCheckInToDetailAsync(booking, detail, itemRequest?.RoomId, assignedRoomIds, cancellationToken);
             }
             catch (InvalidOperationException ex)
             {

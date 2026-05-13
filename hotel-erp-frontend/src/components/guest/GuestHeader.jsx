@@ -611,7 +611,7 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
                       role="menuitem"
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>book_online</span>
-                      My Booking
+                      Booking của tôi
                     </Link>
                     <Link
                       to="/guest/my-orders"
@@ -620,7 +620,7 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
                       role="menuitem"
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>room_service</span>
-                      My Service
+                      Dịch vụ của tôi
                     </Link>
                     <Link
                       to="/guest/loyalty"
@@ -629,7 +629,7 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
                       role="menuitem"
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>workspace_premium</span>
-                      Loyalty
+                      Thành viên thân thiết
                     </Link>
                     <Link
                       to="/guest/vouchers"
@@ -638,7 +638,7 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
                       role="menuitem"
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>local_offer</span>
-                      Voucher
+                      Ưu đãi của tôi
                     </Link>
                     <Link
                       to="/guest/reviews"
@@ -647,7 +647,7 @@ export default function GuestHeader({ themeMode = 'light', onToggleTheme }) {
                       role="menuitem"
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>rate_review</span>
-                      Review của tôi
+                      Đánh giá của tôi
                     </Link>
                     <Link
                       to="/guest/profile"

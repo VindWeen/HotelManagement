@@ -690,7 +690,7 @@ export default function BookingPage() {
   /* ── Room types ── */
   const [roomTypes, setRoomTypes] = useState([]);
   const [loadingRoomTypes, setLoadingRoomTypes] = useState(false);
-  const [selectedRoomTypeId, setSelectedRoomTypeId] = useState(null);
+  const [selectedRoomsMap, setSelectedRoomsMap] = useState({}); // { [roomTypeId]: quantity }
 
   /* ── Guest info ── */
   const [guestName, setGuestName] = useState(user?.fullName || "");
@@ -732,15 +732,38 @@ export default function BookingPage() {
   /* ── Computed ── */
   const nights = useMemo(() => calcNights(checkIn, checkOut), [checkIn, checkOut]);
 
-  const selectedRoomType = useMemo(
-    () => roomTypes.find((rt) => rt.id === selectedRoomTypeId),
-    [roomTypes, selectedRoomTypeId]
-  );
-
   const subtotal = useMemo(() => {
-    if (!selectedRoomType) return 0;
-    return nights * selectedRoomType.basePrice;
-  }, [nights, selectedRoomType]);
+    let total = 0;
+    Object.keys(selectedRoomsMap).forEach(id => {
+      const rt = roomTypes.find(r => r.id === Number(id));
+      if (rt) {
+        total += rt.basePrice * selectedRoomsMap[id] * nights;
+      }
+    });
+    return total;
+  }, [selectedRoomsMap, roomTypes, nights]);
+
+  const totalSelectedCapacityAdults = useMemo(() => {
+    return Object.keys(selectedRoomsMap).reduce((sum, id) => {
+      const rt = roomTypes.find(r => r.id === Number(id));
+      return sum + (rt ? rt.capacityAdults * selectedRoomsMap[id] : 0);
+    }, 0);
+  }, [selectedRoomsMap, roomTypes]);
+
+  const totalSelectedCapacityChildren = useMemo(() => {
+    return Object.keys(selectedRoomsMap).reduce((sum, id) => {
+      const rt = roomTypes.find(r => r.id === Number(id));
+      return sum + (rt ? rt.capacityChildren * selectedRoomsMap[id] : 0);
+    }, 0);
+  }, [selectedRoomsMap, roomTypes]);
+
+  const totalSelectedRoomsCount = useMemo(() => {
+    return Object.values(selectedRoomsMap).reduce((a, b) => a + b, 0);
+  }, [selectedRoomsMap]);
+
+  const isSelectionValid = totalSelectedCapacityAdults >= numAdults && 
+                           (totalSelectedCapacityAdults + totalSelectedCapacityChildren) >= (numAdults + numChildren);
+
 
   const discountAmount = voucherInfo?.discountAmount || 0;
   const amountAfterVoucher = Math.max(0, subtotal - discountAmount);
@@ -757,14 +780,14 @@ export default function BookingPage() {
   const getVoucherDisabledReason = useCallback((voucher) => {
     if (!voucher) return "";
     if (voucher.isUsable === false) return voucher.unusableReason || "Voucher hiện chưa thể sử dụng.";
-    if (voucher.applicableRoomTypeId && voucher.applicableRoomTypeId !== selectedRoomTypeId) {
-      return "Không áp dụng cho hạng phòng này.";
+    if (voucher.applicableRoomTypeId && !selectedRoomsMap[voucher.applicableRoomTypeId]) {
+      return "Không áp dụng cho các hạng phòng đã chọn.";
     }
     if (voucher.minBookingValue && subtotal < voucher.minBookingValue) {
       return `Cần đơn tối thiểu ${formatCurrency(voucher.minBookingValue)}.`;
     }
     return "";
-  }, [selectedRoomTypeId, subtotal]);
+  }, [selectedRoomsMap, subtotal]);
 
   const pendingCount = pendingBookings.filter((b) => b.status === "Pending").length;
   const spamBlocked = isGuest && pendingCount >= MAX_PENDING;
@@ -929,14 +952,15 @@ export default function BookingPage() {
   }, [subtotal, voucherCode]);
 
   useEffect(() => {
-    if (!initialVoucherCode || !isGuest || !selectedRoomTypeId || subtotal <= 0) return;
+    const selectedIds = Object.keys(selectedRoomsMap).sort().join(',');
+    if (!initialVoucherCode || !isGuest || !selectedIds || subtotal <= 0) return;
 
-    const autoKey = `${initialVoucherCode}:${selectedRoomTypeId}:${subtotal}`;
+    const autoKey = `${initialVoucherCode}:${selectedIds}:${subtotal}`;
     if (autoAppliedVoucherRef.current === autoKey) return;
 
     autoAppliedVoucherRef.current = autoKey;
     handleApplyVoucher(initialVoucherCode);
-  }, [handleApplyVoucher, initialVoucherCode, isGuest, selectedRoomTypeId, subtotal]);
+  }, [handleApplyVoucher, initialVoucherCode, isGuest, selectedRoomsMap, subtotal]);
 
   /* ─── Navigation ─── */
   const goToStep = (n) => {
@@ -944,7 +968,7 @@ export default function BookingPage() {
       if (!validateDates()) return;
       loadRoomTypes();
     }
-    if (n === 3 && !selectedRoomTypeId) return;
+    if (n === 3 && !isSelectionValid) return;
     if (n === 4 && !validateGuestInfo()) return;
     setStep(n);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -972,13 +996,13 @@ export default function BookingPage() {
         note: note.trim() || undefined,
         voucherId: voucherInfo?.voucherId || undefined,
         loyaltyPointsToRedeem: normalizedRedeemPoints,
-        details: [
-          {
-            roomTypeId: selectedRoomTypeId,
+        details: Object.keys(selectedRoomsMap).flatMap(id => 
+          Array.from({ length: selectedRoomsMap[id] }).map(() => ({
+            roomTypeId: Number(id),
             checkInDate: checkIn,
             checkOutDate: checkOut,
-          },
-        ],
+          }))
+        ),
       };
 
       const res = await createBooking(payload);
@@ -1017,7 +1041,7 @@ export default function BookingPage() {
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
     setStep(1);
-    setSelectedRoomTypeId(null);
+    setSelectedRoomsMap({});
     setVoucherCode("");
     setVoucherInfo(null);
     setLoyaltyPointsToRedeem(0);
@@ -1326,34 +1350,26 @@ export default function BookingPage() {
                     <EmptyState icon="🏨" title="Không có loại phòng" message="Hiện tại không có loại phòng nào khả dụng. Vui lòng thử lại sau." />
                   ) : (
                     <div className="bp-room-types">
-                      {roomTypes.map((rt) => {
-                        const isSelected = selectedRoomTypeId === rt.id;
-                        // isAvailable từ server: availableRooms > 0
-                        // meetsCapacity từ server: capacityAdults >= numAdults
-                        const meetsCapacity = rt.meetsCapacity !== undefined
-                          ? rt.meetsCapacity
-                          : (rt.capacityAdults >= numAdults && rt.capacityChildren >= numChildren);
+                      {[...roomTypes].sort((a, b) => {
+                        const aFits1 = a.capacityAdults >= numAdults && (a.capacityAdults + a.capacityChildren) >= (numAdults + numChildren);
+                        const bFits1 = b.capacityAdults >= numAdults && (b.capacityAdults + b.capacityChildren) >= (numAdults + numChildren);
+                        if (aFits1 && !bFits1) return -1;
+                        if (!aFits1 && bFits1) return 1;
+                        const aAvail = a.availableRooms > 0;
+                        const bAvail = b.availableRooms > 0;
+                        if (aAvail && !bAvail) return -1;
+                        if (!aAvail && bAvail) return 1;
+                        return a.basePrice - b.basePrice;
+                      }).map((rt) => {
+                        const qty = selectedRoomsMap[rt.id] || 0;
+                        const isSelected = qty > 0;
                         const isAvailable = rt.isAvailable !== undefined ? rt.isAvailable : true;
-                        const selectable = meetsCapacity && isAvailable;
+                        
                         return (
                           <div
                             key={rt.id}
-                            className={`bp-rt-card${isSelected ? " selected" : ""}${!selectable ? " unavailable" : ""}`}
-                            onClick={() => {
-                              if (!selectable) return;
-                              setSelectedRoomTypeId(rt.id);
-                              setVoucherInfo(null);
-                              setVoucherError("");
-                            }}
-                            role="radio"
-                            aria-checked={isSelected}
-                            tabIndex={selectable ? 0 : -1}
-                            onKeyDown={(e) => {
-                              if (e.key !== "Enter" || !selectable) return;
-                              setSelectedRoomTypeId(rt.id);
-                              setVoucherInfo(null);
-                              setVoucherError("");
-                            }}
+                            className={`bp-rt-card${isSelected ? " selected" : ""}${!isAvailable ? " unavailable" : ""}`}
+                            style={{ cursor: "default" }}
                           >
                             {rt.primaryImageUrl ? (
                               <img src={rt.primaryImageUrl} alt={rt.name} className="bp-rt-img" />
@@ -1397,18 +1413,46 @@ export default function BookingPage() {
                                   {rt.description.length > 100 ? rt.description.slice(0, 100) + "..." : rt.description}
                                 </div>
                               )}
-                              {/* Status text */}
-                              {isSelected ? (
-                                <span className="bp-rt-selected-badge">✓ Đã chọn</span>
-                              ) : !isAvailable ? (
-                                <span className="bp-rt-unavail">✗ Hết phòng trong khoảng ngày này</span>
-                              ) : !meetsCapacity ? (
-                                <span className="bp-rt-unavail">
-                                  ✗ Không đủ sức chứa ({rt.capacityAdults} người lớn / {rt.capacityChildren} trẻ em)
-                                </span>
-                              ) : (
-                                <span className="bp-rt-avail">✓ Phù hợp — nhấn để chọn</span>
-                              )}
+                              {/* Quantity Selector */}
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: 12, borderTop: "1px dashed var(--g-border-light)" }}>
+                                <div style={{ fontSize: "var(--g-text-xs)", color: "var(--g-text-muted)" }}>
+                                  {!isAvailable ? "Hết phòng trong khoảng ngày này" : isSelected ? `Đã chọn ${qty} phòng` : "Chọn số lượng phòng cần đặt:"}
+                                </div>
+                                {isAvailable && (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--g-surface)", padding: "4px", borderRadius: "var(--g-radius-full)", border: "1.5px solid var(--g-border)" }}>
+                                    <button 
+                                      className="btn-icon-p" 
+                                      style={{ width: 28, height: 28, borderRadius: "50%", background: qty > 0 ? "var(--g-surface-raised)" : "transparent", color: qty > 0 ? "var(--g-text)" : "var(--g-text-muted)", opacity: qty > 0 ? 1 : 0.5, border: "none", cursor: qty > 0 ? "pointer" : "not-allowed" }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (qty > 0) {
+                                          setSelectedRoomsMap(prev => {
+                                            const next = { ...prev };
+                                            if (qty === 1) delete next[rt.id];
+                                            else next[rt.id] = qty - 1;
+                                            return next;
+                                          });
+                                          setVoucherInfo(null);
+                                          setVoucherError("");
+                                        }
+                                      }}
+                                    ><span className="material-symbols-outlined" style={{ fontSize: 18 }}>remove</span></button>
+                                    <span style={{ fontSize: 14, fontWeight: 700, width: 20, textAlign: "center" }}>{qty}</span>
+                                    <button 
+                                      className="btn-icon-p" 
+                                      style={{ width: 28, height: 28, borderRadius: "50%", background: qty < rt.availableRooms ? "var(--g-primary)" : "transparent", color: qty < rt.availableRooms ? "#fff" : "var(--g-text-muted)", opacity: qty < rt.availableRooms ? 1 : 0.5, border: "none", cursor: qty < rt.availableRooms ? "pointer" : "not-allowed" }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (qty < rt.availableRooms) {
+                                          setSelectedRoomsMap(prev => ({ ...prev, [rt.id]: qty + 1 }));
+                                          setVoucherInfo(null);
+                                          setVoucherError("");
+                                        }
+                                      }}
+                                    ><span className="material-symbols-outlined" style={{ fontSize: 18 }}>add</span></button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         );
@@ -1417,12 +1461,17 @@ export default function BookingPage() {
                   )}
                 </div>
 
-                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", alignItems: "center" }}>
+                  {!isSelectionValid && totalSelectedRoomsCount > 0 && (
+                    <div style={{ color: "var(--g-error)", fontSize: "var(--g-text-sm)", fontWeight: 700, marginRight: "auto" }}>
+                      Sức chứa phòng chưa đủ cho {numAdults} người lớn{numChildren > 0 ? `, ${numChildren} trẻ em` : ""}.
+                    </div>
+                  )}
                   <button className="g-btn-outline" onClick={() => setStep(1)}>← Quay lại</button>
                   <button
                     className="g-btn-primary"
                     onClick={() => goToStep(3)}
-                    disabled={!selectedRoomTypeId}
+                    disabled={!isSelectionValid}
                   >
                     Tiếp theo →
                   </button>
@@ -1658,7 +1707,7 @@ export default function BookingPage() {
                                 <span>
                                   <strong>{voucher.code}</strong>
                                   <span style={{ display: "block", fontSize: "var(--g-text-xs)", color: "var(--g-text-muted)", marginTop: 2 }}>
-                                    {getVoucherAudienceLabel(voucher)} - {voucher.discountType === "PERCENT" ? `Giảm ${voucher.discountValue}%` : `Giảm ${formatCurrency(voucher.discountValue)}`}
+                                    {getVoucherAudienceLabel(voucher)} - {voucher.discountType === "PERCENT" ? `Giảm ${voucher.discountValue}%${voucher.maxDiscountAmount ? ` tối đa ${formatCurrency(voucher.maxDiscountAmount)}` : ""}` : `Giảm ${formatCurrency(voucher.discountValue)}`}
                                     {disabledReason ? ` - ${disabledReason}` : ""}
                                   </span>
                                 </span>
@@ -1748,8 +1797,13 @@ export default function BookingPage() {
                 {/* Date & room summary */}
                 <div style={{ background: "var(--g-surface-raised)", borderRadius: "var(--g-radius-md)", padding: 16, marginBottom: 20, display: "grid", gap: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--g-text-sm)", flexWrap: "wrap", gap: 8 }}>
-                    <span style={{ color: "var(--g-text-muted)" }}>Loại phòng</span>
-                    <strong style={{ color: "var(--g-text)" }}>{selectedRoomType?.name}</strong>
+                    <span style={{ color: "var(--g-text-muted)" }}>Phòng đã chọn</span>
+                    <div style={{ color: "var(--g-text)", textAlign: "right", fontWeight: 700 }}>
+                      {Object.keys(selectedRoomsMap).map(id => {
+                        const rt = roomTypes.find(r => r.id === Number(id));
+                        return rt ? <div key={id}>{rt.name} (x{selectedRoomsMap[id]})</div> : null;
+                      })}
+                    </div>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--g-text-sm)", flexWrap: "wrap", gap: 8 }}>
                     <span style={{ color: "var(--g-text-muted)" }}>Check-in</span>
@@ -1840,15 +1894,16 @@ export default function BookingPage() {
                 <h3>📋 Tóm tắt đặt phòng</h3>
               </div>
               <div className="bp-summary-body">
-                {selectedRoomType ? (
+                {totalSelectedRoomsCount > 0 ? (
                   <>
                     <div className="bp-sum-row">
-                      <span className="bp-sum-label">Loại phòng</span>
-                      <span className="bp-sum-value">{selectedRoomType.name}</span>
-                    </div>
-                    <div className="bp-sum-row">
-                      <span className="bp-sum-label">Giá/đêm</span>
-                      <span className="bp-sum-value">{formatCurrency(selectedRoomType.basePrice)}</span>
+                      <span className="bp-sum-label" style={{ alignSelf: "flex-start" }}>Phòng đã chọn</span>
+                      <div className="bp-sum-value" style={{ textAlign: "right" }}>
+                        {Object.keys(selectedRoomsMap).map(id => {
+                          const rt = roomTypes.find(r => r.id === Number(id));
+                          return rt ? <div key={id}>{rt.name} (x{selectedRoomsMap[id]})<br/><span style={{fontSize: "var(--g-text-xs)", color: "var(--g-text-muted)", fontWeight: "normal"}}>{formatCurrency(rt.basePrice)}/đêm</span></div> : null;
+                        })}
+                      </div>
                     </div>
                     <div className="bp-sum-row">
                       <span className="bp-sum-label">Số đêm</span>

@@ -671,11 +671,13 @@ export default function InvoiceDetailPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-                <button type="button" className="action-btn" style={{ padding: "12px 14px", fontSize: 13 }} onClick={() => printInvoiceDocument(invoice, "draft")}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>draft</span>
-                  In bản nháp
-                </button>
+              <div className={`grid grid-cols-1 ${(invoice.status !== "Partially_Paid" && invoice.status !== "Paid" && invoice.status !== "Refunded") ? "sm:grid-cols-2" : ""} gap-3 mb-5`}>
+                {(invoice.status !== "Partially_Paid" && invoice.status !== "Paid" && invoice.status !== "Refunded") && (
+                  <button type="button" className="action-btn" style={{ padding: "12px 14px", fontSize: 13 }} onClick={() => printInvoiceDocument(invoice, "draft")}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>draft</span>
+                    In bản nháp
+                  </button>
+                )}
                 <button type="button" className="action-btn primary" style={{ padding: "12px 14px", fontSize: 13 }} onClick={() => printInvoiceDocument(invoice, "final")}>
                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>receipt_long</span>
                   In hóa đơn
@@ -694,7 +696,7 @@ export default function InvoiceDetailPage() {
                   <span style={{ fontWeight: 700, color: "var(--a-text)" }}>{formatCurrency(invoice.totalServiceAmount)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--a-text-muted)" }}>
-                  <span>Bồi thường thiết bị:</span>
+                  <span>Bồi thường/Sử dụng:</span>
                   <span style={{ fontWeight: 700, color: "var(--a-text)" }}>{formatCurrency(invoice.totalDamageAmount)}</span>
                 </div>
                 {invoice.adjustmentAmount > 0 && (
@@ -744,7 +746,7 @@ export default function InvoiceDetailPage() {
                 <span>{formatCurrency(invoice.outstandingAmount)}</span>
               </div>
 
-              {invoice.status !== "Paid" && invoice.status !== "Refunded" && (
+              {(invoice.status === "Draft" || invoice.status === "Ready_To_Collect") && (
                 <div style={{ marginTop: 24 }}>
                   <button className="action-btn primary" style={{ width: "100%", padding: "14px", fontSize: 15 }} onClick={runFinalize}>
                     <span className="material-symbols-outlined" style={{ fontSize: 20 }}>verified</span> Chốt Hóa Đơn
