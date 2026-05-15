@@ -1,6 +1,6 @@
 // src/pages/admin/DashboardPage.jsx
 // Dashboard thực tế — tích hợp API: Bookings, Rooms, Users, Reviews, Vouchers, LossAndDamages, Equipments
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { Fragment, useState, useEffect, useCallback, useMemo } from "react";
 import { getBookings } from "../../api/bookingsApi";
 import { getRooms } from "../../api/roomsApi";
 import { getUsers } from "../../api/userManagementApi";
@@ -11,6 +11,8 @@ import { getEquipments } from "../../api/equipmentsApi";
 import { getInvoices } from "../../api/invoicesApi";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import axiosClient from "../../api/axios";
+import { getCurrentDashboard, rebuildAllCurrent } from "../../api/dashboardPeriodsApi";
+import { useAdminAuthStore } from "../../store/adminAuthStore";
 
 const DASHBOARD_PAGE_SIZE = 200;
 
@@ -47,6 +49,7 @@ const _getBookingRevenueDate = (booking) => {
 
 const getBookingReferenceDate = (booking) => {
   if (booking?.checkInTime) return new Date(booking.checkInTime);
+  if (booking?.checkInDate) return new Date(booking.checkInDate);
   const fallback = booking?.bookingDetails?.[0]?.checkInDate;
   return fallback ? new Date(fallback) : null;
 };
@@ -224,49 +227,85 @@ function Stars({ rating }) {
   );
 }
 
-// ─── Main Component ──────────────────────────────────────────────────────────
-// ─── Date Filter Helpers ─────────────────────────────────────────────────────
-const DATE_PRESETS = [
-  { key: "today", label: "Hôm nay" },
-  { key: "7days", label: "7 ngày qua" },
-  { key: "month", label: "Tháng này" },
-  { key: "year", label: "Năm này" },
-  { key: "all", label: "Tất cả" },
-  { key: "custom", label: "Tùy chỉnh" },
-];
+function SectionCard({ title, subtitle, children, style = {}, action = null }) {
+  return (
+    <div
+      className="card-in admin-card"
+      style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16, ...style }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <h4 style={{ fontSize: 15, fontWeight: 800, color: "var(--a-text)", margin: "0 0 2px" }}>{title}</h4>
+          {subtitle ? <p style={{ fontSize: 12, color: "var(--a-text-muted)", margin: 0 }}>{subtitle}</p> : null}
+        </div>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+}
 
-function getPresetRange(key) {
+function SummaryTile({ icon, label, value, sub, tint = "var(--a-info)", bg = "var(--a-info-bg)" }) {
+  return (
+    <div
+      style={{
+        background: "var(--a-surface-raised)",
+        border: "1px solid var(--a-border)",
+        borderRadius: 16,
+        padding: 16,
+        display: "flex",
+        flexDirection: "column",
+        gap: 10
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--a-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          {label}
+        </span>
+        <span
+          className="material-symbols-outlined"
+          style={{ fontSize: 18, color: tint, background: bg, borderRadius: 10, padding: 8, fontVariationSettings: "'FILL' 1" }}
+        >
+          {icon}
+        </span>
+      </div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: "var(--a-text)", letterSpacing: "-0.02em" }}>{value}</div>
+      {sub ? <div style={{ fontSize: 12, color: "var(--a-text-soft)", fontWeight: 600 }}>{sub}</div> : null}
+    </div>
+  );
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
+// ─── Shared Period Helpers ───────────────────────────────────────────────────
+function getPeriodFallbackRange(periodType) {
   const now = new Date();
   const start = new Date(now);
-  switch (key) {
-    case "today":
+
+  switch (periodType) {
+    case "DAILY":
       start.setHours(0, 0, 0, 0);
-      return { from: start, to: now };
-    case "7days":
-      start.setDate(now.getDate() - 6);
+      break;
+    case "WEEKLY": {
+      const day = start.getDay();
+      const diff = day === 0 ? 6 : day - 1;
+      start.setDate(start.getDate() - diff);
       start.setHours(0, 0, 0, 0);
-      return { from: start, to: now };
-    case "month":
+      break;
+    }
+    case "MONTHLY":
+    default:
       start.setDate(1);
       start.setHours(0, 0, 0, 0);
-      return { from: start, to: now };
-    case "year":
-      start.setMonth(0, 1);
-      start.setHours(0, 0, 0, 0);
-      return { from: start, to: now };
-    default:
-      return null;
+      break;
   }
+
+  return { from: start, to: now };
 }
 
 export default function DashboardPage() {
   const { isMobile } = useResponsiveAdmin();
-  const [loading, setLoading] = useState(true);
-
-  // ─── Date filter state ────────────────────────────────────────────────────
-  const [preset, setPreset] = useState("month");
-  const [customFrom, setCustomFrom] = useState("");
-  const [customTo, setCustomTo] = useState("");
+  const currentRole = useAdminAuthStore((s) => s.user?.role) || "Admin";
+  const [loading, setLoading] = useState(false);
 
   const [bookings, setBookings] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -274,9 +313,15 @@ export default function DashboardPage() {
   const [vouchers, setVouchers] = useState([]);
   const [_roomTypes, setRoomTypes] = useState([]);
   const [lossAndDamages, setLossAndDamages] = useState([]);
-  const [_equipments, setEquipments] = useState([]);
+  const [equipments, setEquipments] = useState([]);
   const [allInvoices, setAllInvoices] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
+
+  // ── Period Dashboard state ─────────────────────────────────────────────────────────────────────────────────────
+  const [periodType, setPeriodType] = useState("MONTHLY");
+  const [periodDashboard, setPeriodDashboard] = useState(null);
+  const [periodLoading, setPeriodLoading] = useState(false);
+  const [periodRebuilding, setPeriodRebuilding] = useState(false);
 
   const [stats, setStats] = useState({
     totalRevenue: 0,
@@ -396,21 +441,46 @@ export default function DashboardPage() {
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  // ── Fetch Period Dashboard khi periodType thay đổi ────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    setPeriodLoading(true);
+    getCurrentDashboard(null, periodType)
+      .then(res => { if (!cancelled) setPeriodDashboard(res.data); })
+      .catch(() => { if (!cancelled) setPeriodDashboard(null); })
+      .finally(() => { if (!cancelled) setPeriodLoading(false); });
+    return () => { cancelled = true; };
+  }, [periodType]);
+
+  const handleRebuildAll = async () => {
+    setPeriodRebuilding(true);
+    try {
+      await rebuildAllCurrent();
+      const res = await getCurrentDashboard(null, periodType);
+      setPeriodDashboard(res.data);
+    } catch (e) {
+      console.error("Rebuild failed:", e);
+    } finally {
+      setPeriodRebuilding(false);
+    }
+  };
 
   // ─── Compute date-filtered KPIs ──────────────────────────────────────────────
+  const activePeriodRange = useMemo(() => {
+    if (periodDashboard?.periodStart && periodDashboard?.periodEnd) {
+      return {
+        from: new Date(periodDashboard.periodStart),
+        to: new Date(periodDashboard.periodEnd),
+      };
+    }
+
+    return getPeriodFallbackRange(periodType);
+  }, [periodDashboard?.periodStart, periodDashboard?.periodEnd, periodType]);
+
   const filteredStats = useMemo(() => {
     const now = new Date();
-    let from = null;
-    let to = now;
-
-    if (preset === "custom") {
-      from = customFrom ? new Date(customFrom + "T00:00:00") : null;
-      to = customTo ? new Date(customTo + "T23:59:59") : now;
-    } else if (preset !== "all") {
-      const range = getPresetRange(preset);
-      if (range) { from = range.from; to = range.to; }
-    }
+    const from = activePeriodRange.from;
+    const to = activePeriodRange.to;
 
     const inRange = (date) => {
       if (!date) return false;
@@ -447,22 +517,51 @@ export default function DashboardPage() {
     filteredBookings.forEach((b) => { bookingsByStatus[b.status] = (bookingsByStatus[b.status] || 0) + 1; });
 
     return { totalRevenue, todayRevenue, activeBookings, pendingBookings, newUsersThisMonth, revenueByDay, bookingsByStatus };
-  }, [preset, customFrom, customTo, allInvoices, bookings, allUsers]);
+  }, [activePeriodRange, allInvoices, bookings, allUsers]);
+
+  const activePeriodLabel = periodType === "DAILY"
+    ? "Ngày"
+    : periodType === "WEEKLY"
+      ? "Tuần"
+      : "Tháng";
+  const hasPeriodKpis = (periodDashboard?.dashboard?.widgets?.kpiCards?.length || 0) > 0;
+  const snapshotSummary = periodDashboard?.dashboard?.summary || {};
+  const snapshotSections = periodDashboard?.dashboard?.widgets?.sections || {};
+  const sharedSnapshot = periodDashboard?.dashboard?.widgets?.shared || {};
+  const roleSectionKeyMap = {
+    Admin: "admin",
+    Manager: "manager",
+    Receptionist: "receptionist",
+    Accountant: "accountant",
+    Housekeeping: "housekeeping",
+    WarehouseStaff: "warehouseStaff",
+  };
+  const currentRoleSnapshot = snapshotSections?.[roleSectionKeyMap[currentRole]] || null;
+  const recentBookingsSnapshot = sharedSnapshot?.recentBookings || [];
+  const roomStatusSnapshot = sharedSnapshot?.roomStatus || {};
+  const roomStatusCountsSnapshot = roomStatusSnapshot?.counts || {};
+  const roomStatusGroupsSnapshot = roomStatusSnapshot?.roomsByStatus || {};
+  const revenueByDaySnapshot = sharedSnapshot?.revenueByDay || [];
+  const bookingStatusSnapshot = sharedSnapshot?.bookingsByStatus || {};
+  const roomTypeOccupancySnapshot = sharedSnapshot?.roomTypeOccupancy || [];
+  const reviewSummarySnapshot = sharedSnapshot?.reviewSummary || {};
+  const quickStatsSnapshot = sharedSnapshot?.quickStats || {};
+  const inventorySummarySnapshot = sharedSnapshot?.inventorySummary || {};
+  const lossOverviewSnapshot = sharedSnapshot?.lossOverview || {};
+  const usingSnapshotRoleSections = ["Receptionist", "Accountant", "Housekeeping", "WarehouseStaff"].includes(currentRole) && !!currentRoleSnapshot;
+  const roleSectionLoading = usingSnapshotRoleSections ? false : loading;
 
   // Merge base stats + filtered stats
   const mergedStats = { ...stats, ...filteredStats };
   const filteredBookingList = useMemo(() => {
-    const now = new Date();
-    let from = null, to = now;
-    if (preset === "custom") {
-      from = customFrom ? new Date(customFrom + "T00:00:00") : null;
-      to = customTo ? new Date(customTo + "T23:59:59") : now;
-    } else if (preset !== "all") {
-      const range = getPresetRange(preset);
-      if (range) { from = range.from; to = range.to; }
+    if (recentBookingsSnapshot.length > 0) {
+      return recentBookingsSnapshot;
     }
+
+    const from = activePeriodRange.from;
+    const to = activePeriodRange.to;
     const inRange = (date) => {
-      if (!date) return preset === "all";
+      if (!date) return false;
       if (from && date < from) return false;
       if (date > to) return false;
       return true;
@@ -476,34 +575,422 @@ export default function DashboardPage() {
         return (b.id || 0) - (a.id || 0);
       })
       .slice(0, 8);
-  }, [preset, customFrom, customTo, bookings]);
+  }, [activePeriodRange, bookings, recentBookingsSnapshot]);
 
   const STATUS_ORDER = { Occupied: 0, Cleaning: 1, PendingLoss: 2, Maintenance: 3, Ready: 4 };
-  const roomPreview = [...rooms].sort((a, b) => {
-    const ka = STATUS_ORDER[getRoomStatusKey(a)] ?? 99;
-    const kb = STATUS_ORDER[getRoomStatusKey(b)] ?? 99;
-    if (ka !== kb) return ka - kb;
-    return (a.roomNumber || "").localeCompare(b.roomNumber || "", "vi", { numeric: true });
-  });
-  const statusEntries = Object.entries(mergedStats.bookingsByStatus).sort((a, b) => b[1] - a[1]);
-  const totalBk = Object.values(mergedStats.bookingsByStatus).reduce((s, v) => s + v, 0) || 1;
+  const roomPreview = useMemo(() => {
+    if (roomStatusGroupsSnapshot && Object.keys(roomStatusGroupsSnapshot).length > 0) {
+      return [
+        ...(roomStatusGroupsSnapshot.Occupied || []),
+        ...(roomStatusGroupsSnapshot.Cleaning || []),
+        ...(roomStatusGroupsSnapshot.PendingLoss || []),
+        ...(roomStatusGroupsSnapshot.Maintenance || []),
+        ...(roomStatusGroupsSnapshot.Ready || []),
+      ];
+    }
+
+    return [...rooms].sort((a, b) => {
+      const ka = STATUS_ORDER[getRoomStatusKey(a)] ?? 99;
+      const kb = STATUS_ORDER[getRoomStatusKey(b)] ?? 99;
+      if (ka !== kb) return ka - kb;
+      return (a.roomNumber || "").localeCompare(b.roomNumber || "", "vi", { numeric: true });
+    });
+  }, [roomStatusGroupsSnapshot, rooms]);
+  const bookingStatusData = Object.keys(bookingStatusSnapshot).length > 0
+    ? bookingStatusSnapshot
+    : mergedStats.bookingsByStatus;
+  const statusEntries = Object.entries(bookingStatusData).sort((a, b) => b[1] - a[1]);
+  const totalBk = Object.values(bookingStatusData).reduce((s, v) => s + v, 0) || 1;
 
   const weekdays = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-  const dayLabels = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    return weekdays[d.getDay()];
-  });
+  const dayLabels = revenueByDaySnapshot.length > 0
+    ? revenueByDaySnapshot.map((item) => item.label)
+    : Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      return weekdays[d.getDay()];
+    });
 
   const roomCountByStatus = {
-    Ready: rooms.filter(r => r.businessStatus === "Available" && r.cleaningStatus === "Clean").length,
-    Occupied: rooms.filter(r => r.businessStatus === "Occupied").length,
-    Cleaning: rooms.filter(r => r.businessStatus === "Available" && r.cleaningStatus === "Dirty").length,
-    PendingLoss: rooms.filter(r => r.businessStatus === "Available" && r.cleaningStatus === "PendingLoss").length,
-    Maintenance: rooms.filter(r => r.businessStatus === "Disabled").length,
+    Ready: roomStatusCountsSnapshot.ready ?? rooms.filter(r => r.businessStatus === "Available" && r.cleaningStatus === "Clean").length,
+    Occupied: roomStatusCountsSnapshot.occupied ?? rooms.filter(r => r.businessStatus === "Occupied").length,
+    Cleaning: roomStatusCountsSnapshot.cleaning ?? rooms.filter(r => r.businessStatus === "Available" && r.cleaningStatus === "Dirty").length,
+    PendingLoss: roomStatusCountsSnapshot.pendingLoss ?? rooms.filter(r => r.businessStatus === "Available" && r.cleaningStatus === "PendingLoss").length,
+    Maintenance: roomStatusCountsSnapshot.maintenance ?? rooms.filter(r => r.businessStatus === "Disabled").length,
   };
 
-  const activePresetLabel = DATE_PRESETS.find(p => p.key === preset)?.label ?? "";
+  const today = useMemo(() => new Date(), []);
+  const todayArrivals = useMemo(
+    () => currentRole === "Receptionist" && currentRoleSnapshot?.todayArrivals
+      ? currentRoleSnapshot.todayArrivals
+      : bookings
+        .filter((b) => {
+          const checkInDate = b.bookingDetails?.[0]?.checkInDate ? new Date(b.bookingDetails[0].checkInDate) : null;
+          return checkInDate && isSameDay(checkInDate, today);
+        })
+        .sort((a, b) => (getBookingReferenceDate(a)?.getTime() ?? 0) - (getBookingReferenceDate(b)?.getTime() ?? 0))
+        .slice(0, 6),
+    [bookings, today, currentRole, currentRoleSnapshot]
+  );
+  const stayingGuests = useMemo(
+    () => currentRole === "Receptionist" && currentRoleSnapshot?.stayingGuests
+      ? currentRoleSnapshot.stayingGuests
+      : bookings.filter((b) => b.status === "Checked_in").slice(0, 6),
+    [bookings, currentRole, currentRoleSnapshot]
+  );
+  const pendingCheckoutBookings = useMemo(
+    () => currentRole === "Receptionist" && currentRoleSnapshot?.pendingCheckoutBookings
+      ? currentRoleSnapshot.pendingCheckoutBookings
+      : bookings.filter((b) => b.status === "Checked_out_pending_settlement").slice(0, 6),
+    [bookings, currentRole, currentRoleSnapshot]
+  );
+  const actionBookingList = useMemo(
+    () => currentRole === "Receptionist" && currentRoleSnapshot?.actionBookings
+      ? currentRoleSnapshot.actionBookings
+      : bookings
+        .filter((b) => b.status === "Pending" || b.status === "Confirmed")
+        .sort((a, b) => (getBookingReferenceDate(a)?.getTime() ?? 0) - (getBookingReferenceDate(b)?.getTime() ?? 0))
+        .slice(0, 6),
+    [bookings, currentRole, currentRoleSnapshot]
+  );
+
+  const recentInvoices = useMemo(
+    () => currentRole === "Accountant" && currentRoleSnapshot?.recentInvoices
+      ? currentRoleSnapshot.recentInvoices
+      : [...allInvoices]
+        .sort((a, b) => (getInvoiceRevenueDate(b)?.getTime() ?? 0) - (getInvoiceRevenueDate(a)?.getTime() ?? 0))
+        .slice(0, 6),
+    [allInvoices, currentRole, currentRoleSnapshot]
+  );
+  const unpaidInvoices = useMemo(
+    () => currentRole === "Accountant" && currentRoleSnapshot?.unpaidInvoices
+      ? currentRoleSnapshot.unpaidInvoices
+      : allInvoices
+        .filter((iv) => ["Ready_To_Collect", "Unpaid", "Partially_Paid"].includes(iv.status))
+        .sort((a, b) => (getInvoiceRevenueDate(b)?.getTime() ?? 0) - (getInvoiceRevenueDate(a)?.getTime() ?? 0))
+        .slice(0, 6),
+    [allInvoices, currentRole, currentRoleSnapshot]
+  );
+  const confirmedDamageRecords = useMemo(
+    () => currentRole === "Accountant" && currentRoleSnapshot?.confirmedDamageRecords
+      ? currentRoleSnapshot.confirmedDamageRecords
+      : lossAndDamages
+        .filter((item) => item.status === "Confirmed")
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .slice(0, 6),
+    [lossAndDamages, currentRole, currentRoleSnapshot]
+  );
+
+  const cleaningRooms = useMemo(
+    () => currentRole === "Housekeeping" && currentRoleSnapshot?.cleaningRooms
+      ? currentRoleSnapshot.cleaningRooms
+      : roomPreview.filter((room) => getRoomStatusKey(room) === "Cleaning").slice(0, 8),
+    [roomPreview, currentRole, currentRoleSnapshot]
+  );
+  const pendingLossRooms = useMemo(
+    () => currentRole === "Housekeeping" && currentRoleSnapshot?.pendingLossRooms
+      ? currentRoleSnapshot.pendingLossRooms
+      : roomPreview.filter((room) => getRoomStatusKey(room) === "PendingLoss").slice(0, 8),
+    [roomPreview, currentRole, currentRoleSnapshot]
+  );
+  const readyRooms = useMemo(
+    () => currentRole === "Housekeeping" && currentRoleSnapshot?.readyRooms
+      ? currentRoleSnapshot.readyRooms
+      : roomPreview.filter((room) => getRoomStatusKey(room) === "Ready").slice(0, 8),
+    [roomPreview, currentRole, currentRoleSnapshot]
+  );
+
+  const lowStockItems = useMemo(
+    () => currentRole === "WarehouseStaff" && currentRoleSnapshot?.lowStockItems
+      ? currentRoleSnapshot.lowStockItems
+      : equipments
+        .filter((item) => (item.inStockQuantity ?? 0) <= Math.max(5, Math.ceil((item.totalQuantity || 0) * 0.2)))
+        .sort((a, b) => (a.inStockQuantity ?? 0) - (b.inStockQuantity ?? 0))
+        .slice(0, 8),
+    [equipments, currentRole, currentRoleSnapshot]
+  );
+  const damagedInventoryItems = useMemo(
+    () => currentRole === "WarehouseStaff" && currentRoleSnapshot?.damagedInventoryItems
+      ? currentRoleSnapshot.damagedInventoryItems
+      : equipments
+        .filter((item) => (item.damagedQuantity || 0) > 0 || (item.liquidatedQuantity || 0) > 0)
+        .sort((a, b) => ((b.damagedQuantity || 0) + (b.liquidatedQuantity || 0)) - ((a.damagedQuantity || 0) + (a.liquidatedQuantity || 0)))
+        .slice(0, 8),
+    [equipments, currentRole, currentRoleSnapshot]
+  );
+  const pendingReplenishmentRecords = useMemo(
+    () => (currentRole === "Housekeeping" || currentRole === "WarehouseStaff") && currentRoleSnapshot?.pendingReplenishmentRecords
+      ? currentRoleSnapshot.pendingReplenishmentRecords
+      : lossAndDamages
+        .filter((item) => item.status === "Confirmed" && ((item.replenishedQuantity || 0) < (item.quantity || 0)))
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .slice(0, 8),
+    [lossAndDamages, currentRole, currentRoleSnapshot]
+  );
+
+  const receptionistData = currentRoleSnapshot && currentRole === "Receptionist"
+    ? {
+      summary: currentRoleSnapshot.summary || {},
+      todayArrivals: currentRoleSnapshot.todayArrivals || [],
+      stayingGuests: currentRoleSnapshot.stayingGuests || [],
+      pendingCheckoutBookings: currentRoleSnapshot.pendingCheckoutBookings || [],
+      actionBookings: currentRoleSnapshot.actionBookings || [],
+    }
+    : {
+      summary: {},
+      todayArrivals,
+      stayingGuests,
+      pendingCheckoutBookings,
+      actionBookings: actionBookingList,
+    };
+
+  const accountantData = currentRoleSnapshot && currentRole === "Accountant"
+    ? {
+      summary: currentRoleSnapshot.summary || {},
+      recentInvoices: currentRoleSnapshot.recentInvoices || [],
+      unpaidInvoices: currentRoleSnapshot.unpaidInvoices || [],
+      confirmedDamageRecords: currentRoleSnapshot.confirmedDamageRecords || [],
+      revenueBreakdown: currentRoleSnapshot.revenueBreakdown || {},
+    }
+    : {
+      summary: {},
+      recentInvoices,
+      unpaidInvoices,
+      confirmedDamageRecords,
+      revenueBreakdown: {
+        roomRevenue: allInvoices.reduce((sum, iv) => sum + (iv.totalRoomAmount || 0), 0),
+        serviceRevenue: allInvoices.reduce((sum, iv) => sum + (iv.totalServiceAmount || 0), 0),
+        damageRevenue: allInvoices.reduce((sum, iv) => sum + (iv.totalDamageAmount || 0), 0),
+      },
+    };
+
+  const housekeepingData = currentRoleSnapshot && currentRole === "Housekeeping"
+    ? {
+      summary: currentRoleSnapshot.summary || {},
+      cleaningRooms: currentRoleSnapshot.cleaningRooms || [],
+      pendingLossRooms: currentRoleSnapshot.pendingLossRooms || [],
+      readyRooms: currentRoleSnapshot.readyRooms || [],
+      pendingReplenishmentRecords: currentRoleSnapshot.pendingReplenishmentRecords || [],
+    }
+    : {
+      summary: {},
+      cleaningRooms,
+      pendingLossRooms,
+      readyRooms,
+      pendingReplenishmentRecords,
+    };
+
+  const warehouseData = currentRoleSnapshot && currentRole === "WarehouseStaff"
+    ? {
+      summary: currentRoleSnapshot.summary || {},
+      lowStockItems: currentRoleSnapshot.lowStockItems || [],
+      pendingReplenishmentRecords: currentRoleSnapshot.pendingReplenishmentRecords || [],
+      damagedInventoryItems: currentRoleSnapshot.damagedInventoryItems || [],
+      inventorySummary: currentRoleSnapshot.inventorySummary || {},
+    }
+    : {
+      summary: {},
+      lowStockItems,
+      pendingReplenishmentRecords,
+      damagedInventoryItems,
+      inventorySummary: {
+        totalQuantity: mergedStats.totalEquipmentUnits,
+        inUseQuantity: mergedStats.inUseEquipmentUnits,
+        inStockQuantity: equipments.reduce((sum, item) => sum + (item.inStockQuantity || 0), 0),
+      },
+    };
+
+  const fallbackKpiCards = useMemo(() => {
+    const totalInvoiceValue = allInvoices.reduce((sum, item) => sum + (item.finalTotal || 0), 0);
+    const unpaidInvoiceCount = allInvoices.filter((iv) => ["Ready_To_Collect", "Unpaid", "Partially_Paid"].includes(iv.status)).length;
+
+    switch (currentRole) {
+      case "Manager":
+        return [
+          { icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Doanh thu kỳ", value: fmtCurrency(mergedStats.totalRevenue), sub: `Hôm nay: ${fmtCurrency(mergedStats.todayRevenue)}`, subColor: "var(--a-brand-ink)", delay: 0 },
+          { icon: "meeting_room", intent: "error", iconColor: "var(--a-error)", label: "Công suất phòng", value: `${mergedStats.occupancyRate}%`, sub: `${mergedStats.availableRooms} phòng sẵn sàng`, subColor: "var(--a-success)", delay: 60 },
+          { icon: "confirmation_number", intent: "info", iconColor: "var(--a-info)", label: "Booking vận hành", value: fmt(mergedStats.activeBookings), sub: `${mergedStats.pendingBookings} booking chờ xử lý`, subColor: "var(--a-warning)", delay: 120 },
+          { icon: "warning", intent: "warning", iconColor: "var(--a-warning)", label: "Cảnh báo mở", value: fmt(mergedStats.pendingLoss + roomCountByStatus.Cleaning), sub: `${mergedStats.pendingLoss} pending loss`, subColor: "var(--a-text-muted)", delay: 180 },
+        ];
+      case "Receptionist":
+        return [
+          { icon: "login", intent: "success", iconColor: "var(--a-success)", label: "Khách đến hôm nay", value: fmt(todayArrivals.length), sub: `${stayingGuests.length} khách đang ở`, subColor: "var(--a-info)", delay: 0 },
+          { icon: "hotel", intent: "info", iconColor: "var(--a-info)", label: "Khách đang lưu trú", value: fmt(stayingGuests.length), sub: `${pendingCheckoutBookings.length} chờ checkout`, subColor: "var(--a-warning)", delay: 60 },
+          { icon: "task", intent: "warning", iconColor: "var(--a-warning)", label: "Booking chờ xử lý", value: fmt(actionBookingList.length), sub: `${roomCountByStatus.Ready} phòng sẵn sàng`, subColor: "var(--a-success)", delay: 120 },
+          { icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Chờ quyết toán", value: fmt(pendingCheckoutBookings.length), sub: `${fmtCurrency(unpaidInvoices.reduce((sum, iv) => sum + (iv.finalTotal || 0), 0))} cần thu`, subColor: "var(--a-brand-ink)", delay: 180 },
+        ];
+      case "Accountant":
+        return [
+          { icon: "receipt_long", intent: "info", iconColor: "var(--a-info)", label: "Tổng hóa đơn kỳ", value: fmt(recentInvoices.length), sub: `${fmt(allInvoices.length)} toàn hệ thống`, subColor: "var(--a-text-muted)", delay: 0 },
+          { icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Tổng giá trị hóa đơn", value: fmtCurrency(totalInvoiceValue), sub: `${fmtCurrency(mergedStats.totalRevenue)} đã thanh toán`, subColor: "var(--a-brand-ink)", delay: 60 },
+          { icon: "pending_actions", intent: "warning", iconColor: "var(--a-warning)", label: "Hóa đơn chưa thanh toán", value: fmt(unpaidInvoiceCount), sub: `${fmtCurrency(unpaidInvoices.reduce((sum, iv) => sum + (iv.finalTotal || 0), 0))} cần follow-up`, subColor: "var(--a-warning)", delay: 120 },
+          { icon: "report", intent: "error", iconColor: "var(--a-error)", label: "Thất thoát đã xác nhận", value: fmtCurrency(mergedStats.totalLossValue), sub: `${fmt(confirmedDamageRecords.length)} biên bản gần đây`, subColor: "var(--a-error)", delay: 180 },
+        ];
+      case "Housekeeping":
+        return [
+          { icon: "cleaning_services", intent: "error", iconColor: "var(--a-error)", label: "Phòng cần dọn", value: fmt(roomCountByStatus.Cleaning), sub: `${fmt(roomCountByStatus.PendingLoss)} pending loss`, subColor: "var(--a-warning)", delay: 0 },
+          { icon: "warning", intent: "warning", iconColor: "var(--a-warning)", label: "Phòng pending loss", value: fmt(roomCountByStatus.PendingLoss), sub: `${fmt(mergedStats.pendingLoss)} biên bản mở`, subColor: "var(--a-error)", delay: 60 },
+          { icon: "check_circle", intent: "success", iconColor: "var(--a-success)", label: "Phòng đã sẵn sàng", value: fmt(roomCountByStatus.Ready), sub: `${fmt(roomCountByStatus.Occupied)} đang có khách`, subColor: "var(--a-success)", delay: 120 },
+          { icon: "inventory_2", intent: "info", iconColor: "var(--a-info)", label: "Vật tư cần phối hợp", value: fmt(pendingReplenishmentRecords.length), sub: `${fmt(equipments.length)} vật tư active`, subColor: "var(--a-info)", delay: 180 },
+        ];
+      case "WarehouseStaff":
+        return [
+          { icon: "inventory_2", intent: "info", iconColor: "var(--a-info)", label: "Tổng vật tư active", value: fmt(mergedStats.totalEquipments), sub: `${fmt(mergedStats.totalEquipmentUnits)} đơn vị`, subColor: "var(--a-info)", delay: 0 },
+          { icon: "warehouse", intent: "success", iconColor: "var(--a-success)", label: "Tồn kho khả dụng", value: fmt(equipments.reduce((sum, item) => sum + (item.inStockQuantity || 0), 0)), sub: `${lowStockItems.length} vật tư sắp thiếu`, subColor: "var(--a-warning)", delay: 60 },
+          { icon: "deployed_code", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Vật tư đang dùng", value: fmt(mergedStats.inUseEquipmentUnits), sub: `${pendingReplenishmentRecords.length} cần bổ sung`, subColor: "var(--a-brand-ink)", delay: 120 },
+          { icon: "dangerous", intent: "error", iconColor: "var(--a-error)", label: "Hư hỏng/chờ bổ sung", value: fmt(mergedStats.damagedEquipmentUnits + pendingReplenishmentRecords.length), sub: `${damagedInventoryItems.length} vật tư cần xử lý`, subColor: "var(--a-error)", delay: 180 },
+        ];
+      default:
+        return [
+          { icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Tổng doanh thu", value: fmtCurrency(mergedStats.totalRevenue), sub: `Hôm nay: ${fmtCurrency(mergedStats.todayRevenue)}`, subColor: "var(--a-brand-ink)", delay: 0 },
+          { icon: "confirmation_number", intent: "info", iconColor: "var(--a-info)", label: "Booking đang hoạt động", value: fmt(mergedStats.activeBookings), sub: `${mergedStats.pendingBookings} booking chờ cọc`, subColor: "var(--a-warning)", delay: 60 },
+          { icon: "meeting_room", intent: "error", iconColor: "var(--a-error)", label: "Tỷ lệ lấp đầy", value: `${mergedStats.occupancyRate}%`, sub: `${mergedStats.availableRooms} phòng sẵn sàng`, subColor: "var(--a-success)", delay: 120 },
+          { icon: "group", intent: "warning", iconColor: "var(--a-warning)", label: "Tài khoản hệ thống", value: fmt(mergedStats.totalUsers), sub: `+${fmt(mergedStats.newUsersThisMonth)} trong kỳ lọc`, subColor: "var(--a-text-muted)", delay: 180 },
+        ];
+    }
+  }, [
+    currentRole,
+    mergedStats,
+    roomCountByStatus,
+    todayArrivals.length,
+    stayingGuests.length,
+    pendingCheckoutBookings.length,
+    actionBookingList.length,
+    unpaidInvoices,
+    allInvoices,
+    confirmedDamageRecords.length,
+    pendingReplenishmentRecords.length,
+    equipments,
+    lowStockItems.length,
+    damagedInventoryItems.length
+  ]);
+
+  const renderBookingList = (items, emptyText) => (
+    roleSectionLoading ? (
+      <div style={{ display: "grid", gap: 12 }}>
+        {Array.from({ length: 4 }).map((_, i) => <Skel key={i} h={72} r={14} />)}
+      </div>
+    ) : items.length === 0 ? (
+      <div style={{ padding: "16px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 13 }}>{emptyText}</div>
+    ) : (
+      <div style={{ display: "grid", gap: 12 }}>
+        {items.map((item) => {
+          const referenceDate = getBookingReferenceDate(item);
+          const cfg = DASH_STATUS_CFG[item.status] || DASH_STATUS_CFG.Cancelled;
+          return (
+            <div key={item.id} style={{ background: "var(--a-surface-raised)", border: "1px solid var(--a-border)", borderRadius: 14, padding: 14, display: "grid", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "var(--a-text)" }}>{item.guestName || "Khách vãng lai"}</div>
+                  <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>{item.bookingCode}</div>
+                </div>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 9999, fontSize: 11, fontWeight: 800, background: cfg.bg, color: cfg.color }}>
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: cfg.dot }} />
+                  {cfg.label}
+                </span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12, color: "var(--a-text-soft)" }}>
+                <span>{referenceDate ? fmtDateTime(referenceDate) : "Chưa có lịch"}</span>
+                <strong style={{ color: "var(--a-text)" }}>{fmtCurrency(item.totalEstimatedAmount)}</strong>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )
+  );
+
+  const renderInvoiceList = (items, emptyText) => (
+    roleSectionLoading ? (
+      <div style={{ display: "grid", gap: 12 }}>
+        {Array.from({ length: 4 }).map((_, i) => <Skel key={i} h={58} r={14} />)}
+      </div>
+    ) : items.length === 0 ? (
+      <div style={{ padding: "16px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 13 }}>{emptyText}</div>
+    ) : (
+      <div style={{ display: "grid", gap: 12 }}>
+        {items.map((invoice) => (
+          <div key={invoice.id} style={{ background: "var(--a-surface-raised)", border: "1px solid var(--a-border)", borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--a-text)" }}>Hóa đơn #{invoice.id}</div>
+              <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>{fmtDateTime(invoice.createdAt)} · {invoice.status || "Draft"}</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--a-text)" }}>{fmtCurrency(invoice.finalTotal)}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  );
+
+  const renderEquipmentList = (items, emptyText, valueRenderer) => (
+    roleSectionLoading ? (
+      <div style={{ display: "grid", gap: 12 }}>
+        {Array.from({ length: 4 }).map((_, i) => <Skel key={i} h={58} r={14} />)}
+      </div>
+    ) : items.length === 0 ? (
+      <div style={{ padding: "16px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 13 }}>{emptyText}</div>
+    ) : (
+      <div style={{ display: "grid", gap: 12 }}>
+        {items.map((item) => (
+          <div key={item.id} style={{ background: "var(--a-surface-raised)", border: "1px solid var(--a-border)", borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--a-text)" }}>{item.name}</div>
+              <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>{item.itemCode} · {item.category}</div>
+            </div>
+            <div style={{ textAlign: "right", fontSize: 12, fontWeight: 700, color: "var(--a-text)" }}>
+              {valueRenderer(item)}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  );
+
+  const renderRoomList = (items, emptyText, badgeText, badgeColor) => (
+    roleSectionLoading ? (
+      <div style={{ display: "grid", gap: 12 }}>
+        {Array.from({ length: 4 }).map((_, i) => <Skel key={i} h={58} r={14} />)}
+      </div>
+    ) : items.length === 0 ? (
+      <div style={{ padding: "16px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 13 }}>{emptyText}</div>
+    ) : (
+      <div style={{ display: "grid", gap: 12 }}>
+        {items.map((room) => (
+          <div key={room.id} style={{ background: "var(--a-surface-raised)", border: "1px solid var(--a-border)", borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--a-text)" }}>Phòng {room.roomNumber}</div>
+              <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>{room.roomTypeName || "Chưa rõ loại phòng"}</div>
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 700, color: badgeColor }}>{badgeText}</span>
+          </div>
+        ))}
+      </div>
+    )
+  );
+
+  const renderDamageRecordList = (items, emptyText) => (
+    roleSectionLoading ? (
+      <div style={{ display: "grid", gap: 12 }}>
+        {Array.from({ length: 4 }).map((_, i) => <Skel key={i} h={58} r={14} />)}
+      </div>
+    ) : items.length === 0 ? (
+      <div style={{ padding: "16px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 13 }}>{emptyText}</div>
+    ) : (
+      <div style={{ display: "grid", gap: 12 }}>
+        {items.map((item) => (
+          <div key={item.id} style={{ background: "var(--a-surface-raised)", border: "1px solid var(--a-border)", borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--a-text)" }}>Biên bản #{item.id}</div>
+              <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>{fmtDateTime(item.createdAt)} · {item.status}</div>
+            </div>
+            <div style={{ textAlign: "right", fontSize: 13, fontWeight: 800, color: "var(--a-error)" }}>{fmtCurrency(item.penaltyAmount)}</div>
+          </div>
+        ))}
+      </div>
+    )
+  );
 
   return (
     <>
@@ -535,12 +1022,6 @@ export default function DashboardPage() {
         .db-subtitle-highlight { color:var(--a-brand-ink); }
         .db-table-head { background:color-mix(in srgb, var(--a-surface-raised) 92%, transparent); }
         .db-border { border-color:var(--a-divider) !important; }
-        .date-filter-bar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:12px 20px; background:var(--a-surface-raised); border-radius:16px; border:1px solid var(--a-border); margin-bottom:24px; box-shadow:var(--a-shadow-xs); }
-        .preset-select { appearance:none; -webkit-appearance:none; padding:7px 32px 7px 14px; border-radius:10px; border:1.5px solid var(--a-border); background:var(--a-surface); color:var(--a-text); font-size:13px; font-family:'Manrope',sans-serif; font-weight:700; cursor:pointer; outline:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; transition:border-color .15s, box-shadow .15s; min-width:150px; }
-        .preset-select:focus { border-color:var(--a-brand-border); box-shadow:0 0 0 3px color-mix(in srgb, var(--a-brand-ink) 15%, transparent); }
-        .preset-select:hover { border-color:var(--a-brand-border); }
-        .date-input { padding:7px 12px; border-radius:10px; border:1.5px solid var(--a-border); background:var(--a-surface); color:var(--a-text); font-size:13px; font-family:'Manrope',sans-serif; font-weight:600; cursor:pointer; outline:none; transition:border-color .15s; }
-        .date-input:focus { border-color:var(--a-brand-border); box-shadow:0 0 0 3px color-mix(in srgb, var(--a-brand-ink) 15%, transparent); }
       `}</style>
 
       <div className="admin-page" style={{ maxWidth: 1400, margin: "0 auto", fontFamily: "Manrope, sans-serif" }}>
@@ -558,56 +1039,167 @@ export default function DashboardPage() {
               </span>
             </p>
           </div>
-          <button className="refresh-btn" onClick={fetchAll} disabled={loading}>
-            <span className="material-symbols-outlined" style={{ fontSize: 18, ...(loading ? { animation: "spin .7s linear infinite" } : {}) }}>
+          <button className="refresh-btn" onClick={handleRebuildAll} disabled={periodLoading || periodRebuilding}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18, ...((periodLoading || periodRebuilding) ? { animation: "spin .7s linear infinite" } : {}) }}>
               refresh
             </span>
             Làm mới
           </button>
         </div>
 
-        {/* ── Date Filter Bar ── */}
-        <div className="date-filter-bar">
-          <span className="material-symbols-outlined" style={{ fontSize: 18, color: "var(--a-brand-ink)", flexShrink: 0 }}>calendar_month</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--a-text-muted)", whiteSpace: "nowrap" }}>Lọc theo:</span>
-          <select
-            className="preset-select"
-            value={preset}
-            onChange={e => setPreset(e.target.value)}
-          >
-            {DATE_PRESETS.map(p => (
-              <option key={p.key} value={p.key}>{p.label}</option>
-            ))}
-          </select>
-          {preset === "custom" && (
+        {/* ── Period Dashboard Section ─────────────────────────────────────── */}
+        <div className="card-in admin-card" style={{ padding: 22, marginBottom: 24, borderRadius: 18 }}>
+          {/* Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+            <div>
+              <h4 style={{ fontSize: 15, fontWeight: 800, color: "var(--a-text)", margin: "0 0 2px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                Dashboard theo kỳ
+                {periodDashboard && (
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "var(--a-text-muted)", background: "var(--a-surface-raised)", padding: "2px 8px", borderRadius: 6, border: "1px solid var(--a-border)" }}>
+                    {periodDashboard.periodKey} · {periodDashboard.status}
+                  </span>
+                )}
+              </h4>
+              <p style={{ fontSize: 12, color: "var(--a-text-muted)", margin: 0 }}>
+                Số liệu tổng hợp từ DB · Tự động cập nhật theo nghiệp vụ · Bộ lọc chung: <strong style={{ color: "var(--a-brand-ink)" }}>{activePeriodLabel}</strong>
+              </p>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              {["DAILY", "WEEKLY", "MONTHLY"].map(pt => (
+                <button
+                  key={pt}
+                  onClick={() => setPeriodType(pt)}
+                  style={{
+                    padding: "6px 14px", borderRadius: 10, cursor: "pointer",
+                    fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 12,
+                    border: "1.5px solid", transition: "all .15s",
+                    borderColor: periodType === pt ? "var(--a-brand-border)" : "var(--a-border)",
+                    background: periodType === pt ? "var(--a-primary-muted)" : "var(--a-surface)",
+                    color: periodType === pt ? "var(--a-brand-ink)" : "var(--a-text-muted)",
+                  }}
+                >
+                  {pt === "DAILY" ? "Ngày" : pt === "WEEKLY" ? "Tuần" : "Tháng"}
+                </button>
+              ))}
+              <button
+                onClick={handleRebuildAll}
+                disabled={periodRebuilding}
+                style={{
+                  padding: "6px 14px", borderRadius: 10, border: "1.5px solid var(--a-border)",
+                  background: "var(--a-surface)", color: "var(--a-text-muted)",
+                  fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 12,
+                  cursor: periodRebuilding ? "not-allowed" : "pointer",
+                  display: "flex", alignItems: "center", gap: 4, opacity: periodRebuilding ? 0.7 : 1,
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 14, ...(periodRebuilding ? { animation: "spin .7s linear infinite" } : {}) }}>sync</span>
+                {periodRebuilding ? "Rebuilding..." : "Rebuild"}
+              </button>
+            </div>
+          </div>
+
+          {/* KPI Cards */}
+          {periodLoading ? (
+            <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+              {[1, 2, 3].map(i => <Skel key={i} h={76} style={{ flex: "1 1 140px", borderRadius: 12 }} />)}
+            </div>
+          ) : periodDashboard?.dashboard?.widgets?.kpiCards?.length > 0 ? (
             <>
-              <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 600, whiteSpace: "nowrap" }}>Từ</span>
-              <input
-                type="date"
-                className="date-input"
-                value={customFrom}
-                max={customTo || new Date().toISOString().slice(0, 10)}
-                onChange={e => setCustomFrom(e.target.value)}
-              />
-              <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 600, whiteSpace: "nowrap" }}>đến</span>
-              <input
-                type="date"
-                className="date-input"
-                value={customTo}
-                min={customFrom}
-                max={new Date().toISOString().slice(0, 10)}
-                onChange={e => setCustomTo(e.target.value)}
-              />
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+                {periodDashboard.dashboard.widgets.kpiCards.map((card, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      flex: "1 1 150px", padding: "14px 16px", borderRadius: 12,
+                      background: "var(--a-surface-raised)", border: "1px solid var(--a-border)",
+                    }}
+                  >
+                    <p style={{ fontSize: 11, fontWeight: 600, color: "var(--a-text-muted)", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      {card.title}
+                    </p>
+                    <h3 style={{ fontSize: 20, fontWeight: 800, color: "var(--a-text)", margin: "0 0 2px", letterSpacing: "-0.02em" }}>
+                      {card.unit === "VND"
+                        ? fmtCurrency(card.value)
+                        : card.unit === "%"
+                          ? `${card.value}%`
+                          : fmt(card.value)}
+                    </h3>
+                    <span style={{ fontSize: 10, color: "var(--a-text-soft)", fontWeight: 600 }}>{card.unit}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Comparison vs kỳ trước */}
+              {periodDashboard?.comparison?.metrics && (
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "var(--a-text-muted)", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    So với kỳ trước
+                  </p>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {Object.entries(periodDashboard.comparison.metrics).map(([key, m]) => {
+                      const LABELS = {
+                        totalBookings: "Booking", totalRevenue: "Doanh thu",
+                        occupancyRate: "Lấp đầy", damageReports: "Biên bản HH",
+                        penaltyAmount: "Tiền đền bù", newCustomers: "KH mới",
+                        dirtyRooms: "Phòng bẩn", pendingPaymentAmount: "Chưa TT",
+                      };
+                      const label = LABELS[key] || key;
+                      const isUp = m.trend === "up";
+                      const isDown = m.trend === "down";
+                      const isGood = (m.directionMeaning === "higher_is_better" && isUp)
+                        || (m.directionMeaning === "lower_is_better" && isDown);
+                      const isBad = (m.directionMeaning === "higher_is_better" && isDown)
+                        || (m.directionMeaning === "lower_is_better" && isUp);
+                      const trendIcon = isUp ? "arrow_upward" : isDown ? "arrow_downward" : "remove";
+                      return (
+                        <div
+                          key={key}
+                          style={{
+                            padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+                            display: "flex", gap: 3, alignItems: "center",
+                            background: isGood ? "var(--a-success-bg)" : isBad ? "var(--a-error-bg)" : "var(--a-surface-raised)",
+                            color: isGood ? "var(--a-success)" : isBad ? "var(--a-error)" : "var(--a-text-muted)",
+                          }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 12, fontVariationSettings: "'FILL' 1" }}>
+                            {trendIcon}
+                          </span>
+                          {label}: <strong>{m.growthRate != null ? `${m.growthRate > 0 ? "+" : ""}${m.growthRate}%` : "—"}</strong>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </>
+          ) : !periodLoading ? (
+            <div style={{ textAlign: "center", padding: "20px 0", color: "var(--a-text-muted)" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 36, display: "block", marginBottom: 8, opacity: 0.35 }}>bar_chart</span>
+              <p style={{ fontSize: 13, margin: 0 }}>Chưa có dữ liệu cho kỳ này.</p>
+              <p style={{ fontSize: 12, margin: "4px 0 0", opacity: 0.7 }}>Nhấn <strong>Rebuild</strong> để tạo snapshot.</p>
+            </div>
+          ) : null}
+
+          {/* Footer */}
+          {periodDashboard && (
+            <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--a-divider)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 4 }}>
+              <span style={{ fontSize: 10, color: "var(--a-text-soft)", fontWeight: 600 }}>
+                Cập nhật: {fmtDateTime(periodDashboard.updatedAt)} · v{periodDashboard.version}
+              </span>
+              <span style={{ fontSize: 10, color: "var(--a-text-soft)" }}>
+                {periodDashboard.periodStart
+                  ? `${fmtDate(periodDashboard.periodStart)} → ${fmtDate(periodDashboard.periodEnd)}`
+                  : ""}
+              </span>
+            </div>
           )}
-          <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--a-text-soft)", fontWeight: 600 }}>
-            Đang xem: <strong style={{ color: "var(--a-brand-ink)" }}>{activePresetLabel}</strong>
-          </span>
         </div>
 
         {/* KPI Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-5">
-          {[
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-5" style={{ display: hasPeriodKpis ? "none" : undefined }}>
+          {fallbackKpiCards.map((kpi, idx) => (
+            <Fragment key={idx}>
+            {/*
             {
               icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)",
               label: "Tổng doanh thu", value: loading ? null : fmtCurrency(mergedStats.totalRevenue),
@@ -632,9 +1224,8 @@ export default function DashboardPage() {
               sub: loading ? null : `+${mergedStats.newUsersThisMonth} trong kỳ lọc`,
               subColor: "var(--a-text-muted)", delay: 180,
             },
-          ].map((kpi, idx) => (
+            */}
             <div
-              key={idx}
               className="card-in admin-stat-card"
               data-intent={kpi.intent}
               style={{ padding: 22, animationDelay: `${kpi.delay}ms`, animationFillMode: "both" }}
@@ -662,20 +1253,145 @@ export default function DashboardPage() {
                 <p style={{ fontSize: 11, fontWeight: 600, color: kpi.subColor, margin: 0 }}>{kpi.sub}</p>
               )}
             </div>
+            </Fragment>
           ))}
         </div>
 
+        {currentRole === "Receptionist" && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-5">
+              <SummaryTile icon="login" label="Khách đến hôm nay" value={fmt(receptionistData.summary.arrivals ?? todayArrivals.length)} sub={`${fmt(receptionistData.summary.pendingHandlingBookings ?? actionBookingList.length)} booking đang chờ xử lý`} tint="var(--a-success)" bg="var(--a-success-bg)" />
+              <SummaryTile icon="hotel" label="Khách đang lưu trú" value={fmt(receptionistData.summary.stayingGuests ?? stayingGuests.length)} sub={`${fmt(receptionistData.summary.pendingCheckout ?? pendingCheckoutBookings.length)} khách chờ trả phòng`} tint="var(--a-info)" bg="var(--a-info-bg)" />
+              <SummaryTile icon="meeting_room" label="Phòng sẵn sàng nhận khách" value={fmt(receptionistData.summary.readyRooms ?? roomCountByStatus.Ready)} sub={`${fmt(receptionistData.summary.cleaningRooms ?? roomCountByStatus.Cleaning)} phòng đang dọn`} tint="var(--a-brand-ink)" bg="var(--a-primary-muted)" />
+              <SummaryTile icon="payments" label="Khoản cần quyết toán" value={fmtCurrency(receptionistData.summary.outstandingSettlementValue ?? unpaidInvoices.reduce((sum, iv) => sum + (iv.finalTotal || 0), 0))} sub={`${fmt(unpaidInvoices.length)} hóa đơn chưa xong`} tint="var(--a-warning)" bg="var(--a-warning-bg)" />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+              <SectionCard title="Khách đến hôm nay" subtitle="Ưu tiên check-in trong ngày">
+                {renderBookingList(todayArrivals, "Không có khách đến hôm nay")}
+              </SectionCard>
+              <SectionCard title="Khách đang lưu trú" subtitle="Các booking đang ở trạng thái Checked-in">
+                {renderBookingList(stayingGuests, "Không có khách đang lưu trú")}
+              </SectionCard>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+              <SectionCard title="Chờ trả phòng và quyết toán" subtitle="Theo dõi các booking cần hoàn tất thủ tục">
+                {renderBookingList(pendingCheckoutBookings, "Không có booking chờ trả phòng")}
+              </SectionCard>
+              <SectionCard title="Booking mới hoặc chờ xử lý" subtitle="Booking Pending và Confirmed cần follow-up">
+                {renderBookingList(actionBookingList, "Không có booking chờ xử lý")}
+              </SectionCard>
+            </div>
+          </>
+        )}
+
+        {currentRole === "Accountant" && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-5">
+              <SummaryTile icon="receipt_long" label="Tổng hóa đơn" value={fmt(accountantData.summary.totalInvoices ?? recentInvoices.length)} sub={`${fmt(recentInvoices.length)} hóa đơn gần đây`} tint="var(--a-info)" bg="var(--a-info-bg)" />
+              <SummaryTile icon="payments" label="Tổng giá trị" value={fmtCurrency(accountantData.summary.totalInvoiceValue ?? recentInvoices.reduce((sum, iv) => sum + (iv.finalTotal || 0), 0))} sub={`${fmtCurrency(mergedStats.totalRevenue)} đã thanh toán`} tint="var(--a-brand-ink)" bg="var(--a-primary-muted)" />
+              <SummaryTile icon="pending_actions" label="Chưa thanh toán" value={fmt(accountantData.summary.unpaidInvoiceCount ?? unpaidInvoices.length)} sub={`${fmtCurrency(accountantData.summary.unpaidInvoiceValue ?? unpaidInvoices.reduce((sum, iv) => sum + (iv.finalTotal || 0), 0))} cần thu`} tint="var(--a-warning)" bg="var(--a-warning-bg)" />
+              <SummaryTile icon="report" label="Thất thoát đã xác nhận" value={fmtCurrency(accountantData.summary.confirmedLossValue ?? confirmedDamageRecords.reduce((sum, item) => sum + (item.penaltyAmount || 0), 0))} sub={`${fmt(confirmedDamageRecords.length)} biên bản gần đây`} tint="var(--a-error)" bg="var(--a-error-bg)" />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+              <SectionCard title="Hóa đơn gần đây" subtitle="Theo dõi các khoản thu vừa phát sinh">
+                {renderInvoiceList(recentInvoices, "Chưa có hóa đơn nào")}
+              </SectionCard>
+              <SectionCard title="Hóa đơn chưa thanh toán" subtitle="Ưu tiên follow-up các khoản còn treo">
+                {renderInvoiceList(unpaidInvoices, "Không có hóa đơn chờ xử lý")}
+              </SectionCard>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+              <SectionCard title="Breakdown doanh thu" subtitle="Tách theo nguồn thu chính">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+                  <SummaryTile icon="bed" label="Doanh thu phòng" value={fmtCurrency(accountantData.revenueBreakdown.roomRevenue ?? 0)} tint="var(--a-success)" bg="var(--a-success-bg)" />
+                  <SummaryTile icon="room_service" label="Doanh thu dịch vụ" value={fmtCurrency(accountantData.revenueBreakdown.serviceRevenue ?? 0)} tint="var(--a-info)" bg="var(--a-info-bg)" />
+                  <SummaryTile icon="warning" label="Doanh thu thất thoát" value={fmtCurrency(accountantData.revenueBreakdown.damageRevenue ?? 0)} tint="var(--a-error)" bg="var(--a-error-bg)" />
+                </div>
+              </SectionCard>
+              <SectionCard title="Biên bản thất thoát đã xác nhận" subtitle="Các khoản có thể cần hạch toán hoặc đối soát">
+                {renderDamageRecordList(confirmedDamageRecords, "Không có biên bản đã xác nhận")}
+              </SectionCard>
+            </div>
+          </>
+        )}
+
+        {currentRole === "Housekeeping" && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-5">
+              <SummaryTile icon="cleaning_services" label="Phòng cần dọn" value={fmt(housekeepingData.summary.cleaningRooms ?? roomCountByStatus.Cleaning)} sub={`${fmt(cleaningRooms.length)} phòng ưu tiên`} tint="var(--a-error)" bg="var(--a-error-bg)" />
+              <SummaryTile icon="warning" label="Phòng pending loss" value={fmt(housekeepingData.summary.pendingLossRooms ?? roomCountByStatus.PendingLoss)} sub={`${fmt(housekeepingData.summary.pendingLossCount ?? mergedStats.pendingLoss)} biên bản đang mở`} tint="var(--a-warning)" bg="var(--a-warning-bg)" />
+              <SummaryTile icon="check_circle" label="Phòng đã sẵn sàng" value={fmt(housekeepingData.summary.readyRooms ?? roomCountByStatus.Ready)} sub={`${fmt(readyRooms.length)} phòng nổi bật`} tint="var(--a-success)" bg="var(--a-success-bg)" />
+              <SummaryTile icon="inventory_2" label="Cần phối hợp vật tư" value={fmt(pendingReplenishmentRecords.length)} sub={`${fmt(housekeepingData.summary.activeEquipments ?? inventorySummarySnapshot.totalEquipments ?? equipments.length)} vật tư active`} tint="var(--a-info)" bg="var(--a-info-bg)" />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+              <SectionCard title="Phòng cần dọn ngay" subtitle="Các phòng Dirty cần housekeeping xử lý">
+                {renderRoomList(cleaningRooms, "Không có phòng cần dọn", "Cần dọn", "var(--a-error)")}
+              </SectionCard>
+              <SectionCard title="Phòng pending loss" subtitle="Các phòng cần phối hợp thêm với bộ phận liên quan">
+                {renderRoomList(pendingLossRooms, "Không có phòng pending loss", "Pending loss", "var(--a-warning)")}
+              </SectionCard>
+            </div>
+          </>
+        )}
+
+        {currentRole === "WarehouseStaff" && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-5">
+              <SummaryTile icon="inventory_2" label="Tổng vật tư active" value={fmt(warehouseData.summary.activeEquipments ?? inventorySummarySnapshot.totalEquipments ?? mergedStats.totalEquipments)} sub={`${fmt(warehouseData.inventorySummary.totalQuantity ?? inventorySummarySnapshot.totalQuantity ?? mergedStats.totalEquipmentUnits)} đơn vị`} tint="var(--a-info)" bg="var(--a-info-bg)" />
+              <SummaryTile icon="warehouse" label="Tồn kho khả dụng" value={fmt(warehouseData.summary.totalInStock ?? inventorySummarySnapshot.inStockQuantity ?? equipments.reduce((sum, item) => sum + (item.inStockQuantity || 0), 0))} sub={`${fmt(lowStockItems.length)} vật tư sắp thiếu`} tint="var(--a-success)" bg="var(--a-success-bg)" />
+              <SummaryTile icon="deployed_code" label="Vật tư đang dùng" value={fmt(warehouseData.summary.totalInUse ?? inventorySummarySnapshot.inUseQuantity ?? mergedStats.inUseEquipmentUnits)} sub={`${fmt(pendingReplenishmentRecords.length)} phiếu cần bổ sung`} tint="var(--a-brand-ink)" bg="var(--a-primary-muted)" />
+              <SummaryTile icon="dangerous" label="Hư hỏng/liquidated" value={fmt(damagedInventoryItems.length)} sub={`${fmt(warehouseData.summary.totalDamaged ?? inventorySummarySnapshot.damagedQuantity ?? mergedStats.damagedEquipmentUnits)} đơn vị hư hỏng`} tint="var(--a-error)" bg="var(--a-error-bg)" />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+              <SectionCard title="Vật tư sắp thiếu" subtitle="Ưu tiên kiểm tra và bổ sung">
+                {renderEquipmentList(lowStockItems, "Chưa có vật tư nào sắp thiếu", (item) => `${fmt(item.inStockQuantity)} tồn · ${fmt(item.totalQuantity)} tổng`)}
+              </SectionCard>
+              <SectionCard title="Loss/Damage cần bổ sung" subtitle="Các biên bản đã xác nhận nhưng chưa bổ sung đủ">
+                {roleSectionLoading ? (
+                  <div style={{ display: "grid", gap: 12 }}>{Array.from({ length: 4 }).map((_, i) => <Skel key={i} h={58} r={14} />)}</div>
+                ) : pendingReplenishmentRecords.length === 0 ? (
+                  <div style={{ padding: "16px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 13 }}>Không có biên bản cần bổ sung</div>
+                ) : (
+                  <div style={{ display: "grid", gap: 12 }}>
+                    {pendingReplenishmentRecords.map((item) => (
+                      <div key={item.id} style={{ background: "var(--a-surface-raised)", border: "1px solid var(--a-border)", borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--a-text)" }}>Biên bản #{item.id}</div>
+                          <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>Cần bù {fmt((item.quantity || 0) - (item.replenishedQuantity || 0))} đơn vị</div>
+                        </div>
+                        <div style={{ textAlign: "right", fontSize: 12, fontWeight: 700, color: "var(--a-warning)" }}>{fmtDateTime(item.createdAt)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </SectionCard>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+              <SectionCard title="Vật tư hư hỏng hoặc liquidated" subtitle="Các vật tư cần xử lý riêng">
+                {renderEquipmentList(damagedInventoryItems, "Không có vật tư hư hỏng", (item) => `${fmt((item.damagedQuantity || 0) + (item.liquidatedQuantity || 0))} cần xử lý`)}
+              </SectionCard>
+              <SectionCard title="Đối soát nhanh vật tư" subtitle="So sánh trạng thái tổng, dùng và tồn kho">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+                  <SummaryTile icon="inventory" label="Tổng số lượng" value={fmt(warehouseData.inventorySummary.totalQuantity ?? inventorySummarySnapshot.totalQuantity ?? mergedStats.totalEquipmentUnits)} tint="var(--a-info)" bg="var(--a-info-bg)" />
+                  <SummaryTile icon="sync_alt" label="Đang dùng" value={fmt(warehouseData.inventorySummary.inUseQuantity ?? inventorySummarySnapshot.inUseQuantity ?? mergedStats.inUseEquipmentUnits)} tint="var(--a-brand-ink)" bg="var(--a-primary-muted)" />
+                  <SummaryTile icon="warehouse" label="Tồn kho" value={fmt(warehouseData.inventorySummary.inStockQuantity ?? inventorySummarySnapshot.inStockQuantity ?? equipments.reduce((sum, item) => sum + (item.inStockQuantity || 0), 0))} tint="var(--a-success)" bg="var(--a-success-bg)" />
+                </div>
+              </SectionCard>
+            </div>
+          </>
+        )}
+
         {/* REVENUE CHART & QUICK ACTIONS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-7">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-7" style={{ display: ["Admin", "Manager"].includes(currentRole) ? undefined : "none" }}>
           {/* Thất thoát hư hỏng */}
           <div className="card-in admin-stat-card" data-intent="error" style={{ borderRadius: 18, padding: 22, animationDelay: "220ms", animationFillMode: "both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
               <div className="admin-stat-icon">
                 <span className="material-symbols-outlined" style={{ color: "var(--a-error)", fontSize: 22, fontVariationSettings: "'FILL' 1" }}>report</span>
               </div>
-              {!loading && mergedStats.pendingLoss > 0 && (
+              {!loading && (lossOverviewSnapshot.pendingLossCount ?? mergedStats.pendingLoss) > 0 && (
                 <span className="admin-status-badge" data-intent="warning" style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px" }}>
-                  {mergedStats.pendingLoss} chờ xử lý
+                  {lossOverviewSnapshot.pendingLossCount ?? mergedStats.pendingLoss} chờ xử lý
                 </span>
               )}
             </div>
@@ -683,14 +1399,14 @@ export default function DashboardPage() {
             {loading ? <Skel h={28} w={140} style={{ marginBottom: 6 }} /> : (
               <div className="kpi-val" style={{ animationFillMode: "both" }}>
                 <h3 style={{ fontSize: 24, fontWeight: 800, color: "var(--a-error)", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
-                  {fmtCurrency(mergedStats.totalLossValue)}
+                  {fmtCurrency(lossOverviewSnapshot.totalLossValue ?? mergedStats.totalLossValue)}
                 </h3>
               </div>
             )}
             {loading ? <Skel h={12} w={160} /> : (
               <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "var(--a-error)" }}>
-                  {lossAndDamages.length} biên bản · {mergedStats.confirmedLoss} đã xác nhận
+                  {lossOverviewSnapshot.totalRecords ?? lossAndDamages.length} biên bản · {lossOverviewSnapshot.confirmedLossCount ?? mergedStats.confirmedLoss} đã xác nhận
                 </span>
               </div>
             )}
@@ -707,20 +1423,20 @@ export default function DashboardPage() {
             {loading ? <Skel h={28} w={80} style={{ marginBottom: 6 }} /> : (
               <div className="kpi-val" style={{ animationFillMode: "both" }}>
                 <h3 style={{ fontSize: 24, fontWeight: 800, color: "var(--a-info)", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
-                  {fmt(mergedStats.totalEquipmentUnits)}
+                  {fmt(inventorySummarySnapshot.totalQuantity ?? mergedStats.totalEquipmentUnits)}
                 </h3>
               </div>
             )}
             {loading ? <Skel h={12} w={160} /> : (
               <p style={{ fontSize: 11, fontWeight: 800, color: "var(--a-info)", margin: 0, opacity: 0.82 }}>
-                {fmt(mergedStats.inUseEquipmentUnits)} đang dùng · {fmt(mergedStats.damagedEquipmentUnits)} hư hỏng
+                {fmt(inventorySummarySnapshot.inUseQuantity ?? mergedStats.inUseEquipmentUnits)} đang dùng · {fmt(inventorySummarySnapshot.damagedQuantity ?? mergedStats.damagedEquipmentUnits)} hư hỏng
               </p>
             )}
           </div>
         </div>
 
         {/* Row 2: Revenue + Room Type Occupancy */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5" style={{ display: ["Admin", "Manager"].includes(currentRole) ? undefined : "none" }}>
           <div className="card-in admin-card" style={{ padding: 24, animationDelay: "200ms", animationFillMode: "both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
               <div>
@@ -729,7 +1445,7 @@ export default function DashboardPage() {
               </div>
               {!loading && (
                 <span className="admin-status-badge" data-intent="success" style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px" }}>
-                  {fmtCurrency(mergedStats.revenueByDay.reduce((s, v) => s + v, 0))}
+                  {fmtCurrency((revenueByDaySnapshot.length > 0 ? revenueByDaySnapshot : mergedStats.revenueByDay.map((value, index) => ({ value, label: dayLabels[index] }))).reduce((s, item) => s + (item.value || 0), 0))}
                 </span>
               )}
             </div>
@@ -740,7 +1456,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <MiniBar data={mergedStats.revenueByDay} labels={dayLabels} color="var(--a-brand-ink)" />
+              <MiniBar data={revenueByDaySnapshot.length > 0 ? revenueByDaySnapshot.map((item) => item.value) : mergedStats.revenueByDay} labels={dayLabels} color="var(--a-brand-ink)" />
             )}
           </div>
 
@@ -758,11 +1474,11 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-            ) : mergedStats.roomTypeOccupancy.length === 0 ? (
+            ) : roomTypeOccupancySnapshot.length === 0 && mergedStats.roomTypeOccupancy.length === 0 ? (
               <p style={{ color: "var(--a-text-muted)", fontSize: 13, textAlign: "center", paddingTop: 16 }}>Không có dữ liệu</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {mergedStats.roomTypeOccupancy.map((rt, i) => (
+                {(roomTypeOccupancySnapshot.length > 0 ? roomTypeOccupancySnapshot : mergedStats.roomTypeOccupancy).map((rt, i) => (
                   <div key={i}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: "var(--a-text)" }}>{rt.name}</span>
@@ -784,7 +1500,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Row 3: Booking Status + Reviews + Quick Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5" style={{ display: ["Admin", "Manager"].includes(currentRole) ? undefined : "none" }}>
           <div className="card-in admin-card" style={{ padding: 24, animationDelay: "300ms", animationFillMode: "both" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--a-text)", margin: "0 0 18px" }}>Phân loại booking</h4>
             {loading ? (
@@ -832,25 +1548,26 @@ export default function DashboardPage() {
                   <div>
                     <p style={{ fontSize: 11, color: "rgba(231,254,243,.6)", fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Điểm trung bình</p>
                     <p style={{ fontSize: 32, fontWeight: 800, color: "#e7fef3", margin: 0, lineHeight: 1 }}>
-                      {mergedStats.avgRating.toFixed(1)}
+                      {(reviewSummarySnapshot.averageRating ?? mergedStats.avgRating).toFixed(1)}
                       <span style={{ fontSize: 14, color: "var(--a-emphasis-muted)", fontWeight: 500 }}>/5</span>
                     </p>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                    <Stars rating={Math.round(mergedStats.avgRating)} />
-                    <span style={{ fontSize: 11, color: "rgba(231,254,243,.6)" }}>{reviews.length} đánh giá</span>
+                    <Stars rating={Math.round(reviewSummarySnapshot.averageRating ?? mergedStats.avgRating)} />
+                    <span style={{ fontSize: 11, color: "rgba(231,254,243,.6)" }}>{reviewSummarySnapshot.totalReviews ?? reviews.length} đánh giá</span>
                   </div>
                 </div>
-                {mergedStats.pendingReviews > 0 && (
+                {(reviewSummarySnapshot.pendingReviews ?? mergedStats.pendingReviews) > 0 && (
                   <div className="admin-status-badge" data-intent="warning" style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 10, padding: "8px 12px" }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--a-warning)" }}>schedule</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--a-warning)" }}>{mergedStats.pendingReviews} đánh giá chờ duyệt</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--a-warning)" }}>{reviewSummarySnapshot.pendingReviews ?? mergedStats.pendingReviews} đánh giá chờ duyệt</span>
                   </div>
                 )}
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {[5, 4, 3, 2, 1].map(star => {
-                    const cnt = reviews.filter(r => r.rating === star).length;
-                    const pct = reviews.length > 0 ? Math.round((cnt / reviews.length) * 100) : 0;
+                    const cnt = (reviewSummarySnapshot.distribution || []).find((item) => item.rating === star)?.count ?? reviews.filter(r => r.rating === star).length;
+                    const totalReviews = reviewSummarySnapshot.totalReviews ?? reviews.length;
+                    const pct = totalReviews > 0 ? Math.round((cnt / totalReviews) * 100) : 0;
                     return (
                       <div key={star} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: "var(--a-text-muted)", width: 8, textAlign: "right" }}>{star}</span>
@@ -876,10 +1593,10 @@ export default function DashboardPage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
-                  { icon: "local_offer", iconColor: "#1e40af", bg: "#dbeafe", label: "Voucher đang hoạt động", value: fmt(mergedStats.activeVouchers), sub: `${fmt(vouchers.length)} tổng cộng` },
-                  { icon: "bed", iconColor: "#065f46", bg: "#d1fae5", label: "Phòng sẵn sàng", value: fmt(mergedStats.availableRooms), sub: `${fmt(rooms.length)} phòng tổng` },
-                  { icon: "category", iconColor: "#9333ea", bg: "#f3e8ff", label: "Loại phòng", value: fmt(mergedStats.activeRoomTypes), sub: "Loại phòng đang hoạt động" },
-                  { icon: "people", iconColor: "#b45309", bg: "#fef3c7", label: "Tài khoản hệ thống", value: fmt(mergedStats.totalUsers), sub: `+${fmt(mergedStats.newUsersThisMonth)} trong kỳ lọc` },
+                  { icon: "local_offer", iconColor: "#1e40af", bg: "#dbeafe", label: "Voucher đang hoạt động", value: fmt(quickStatsSnapshot.activeVouchers ?? mergedStats.activeVouchers), sub: `${fmt(quickStatsSnapshot.totalVouchers ?? vouchers.length)} tổng cộng` },
+                  { icon: "bed", iconColor: "#065f46", bg: "#d1fae5", label: "Phòng sẵn sàng", value: fmt(quickStatsSnapshot.availableRooms ?? mergedStats.availableRooms), sub: `${fmt(quickStatsSnapshot.totalRooms ?? rooms.length)} phòng tổng` },
+                  { icon: "category", iconColor: "#9333ea", bg: "#f3e8ff", label: "Loại phòng", value: fmt(quickStatsSnapshot.activeRoomTypes ?? mergedStats.activeRoomTypes), sub: "Loại phòng đang hoạt động" },
+                  { icon: "people", iconColor: "#b45309", bg: "#fef3c7", label: "Tài khoản hệ thống", value: fmt(quickStatsSnapshot.totalUsers ?? mergedStats.totalUsers), sub: `+${fmt(quickStatsSnapshot.newUsersInPeriod ?? mergedStats.newUsersThisMonth)} trong kỳ lọc` },
                 ].map((item, i) => (
                   <div
                     key={i}
@@ -910,7 +1627,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Bookings Table */}
-        <div className="card-in admin-card" style={{ overflow: "hidden", animationDelay: "460ms", animationFillMode: "both", marginBottom: 20 }}>
+        <div className="card-in admin-card" style={{ overflow: "hidden", animationDelay: "460ms", animationFillMode: "both", marginBottom: 20, display: ["Admin", "Manager", "Receptionist"].includes(currentRole) ? undefined : "none" }}>
           <div style={{ padding: "20px 28px", borderBottom: "1px solid var(--a-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--a-text)", margin: 0 }}>Booking gần đây</h4>
             <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 500 }}>
@@ -1018,7 +1735,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Room Status Grid */}
-        <div className="card-in admin-card" style={{ overflow: "hidden", animationDelay: "500ms", animationFillMode: "both" }}>
+        <div className="card-in admin-card" style={{ overflow: "hidden", animationDelay: "500ms", animationFillMode: "both", display: ["Admin", "Manager", "Receptionist", "Housekeeping"].includes(currentRole) ? undefined : "none" }}>
           <div style={{ padding: "20px 28px", borderBottom: "1px solid var(--a-border)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
             <h4 style={{ fontSize: 15, fontWeight: 800, color: "var(--a-text)", margin: 0 }}>Trạng thái phòng</h4>
 
@@ -1050,12 +1767,14 @@ export default function DashboardPage() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12 }}>
                 {Array.from({ length: 6 }).map((_, i) => <Skel key={i} h={90} r={12} />)}
               </div>
-            ) : rooms.length === 0 ? (
+            ) : roomPreview.length === 0 ? (
               <p style={{ color: "var(--a-text-muted)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Chưa có phòng nào</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
                 {(["Occupied", "Cleaning", "PendingLoss", "Maintenance", "Ready"]).map(statusKey => {
-                  const groupRooms = roomPreview.filter(r => getRoomStatusKey(r) === statusKey);
+                  const groupRooms = (roomStatusGroupsSnapshot?.[statusKey] || []).length > 0
+                    ? roomStatusGroupsSnapshot[statusKey]
+                    : roomPreview.filter(r => getRoomStatusKey(r) === statusKey);
                   if (groupRooms.length === 0) return null;
                   const cfg = DASH_ROOM_BS_CFG[statusKey];
                   return (
@@ -1141,3 +1860,4 @@ export default function DashboardPage() {
     </>
   );
 }
+

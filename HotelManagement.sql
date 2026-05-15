@@ -759,33 +759,6 @@ GO
 CREATE INDEX [ix_activity_log_reads_user_id] ON [dbo].[Activity_Log_Reads] ([user_id]);
 GO
 
--- ============================================================
--- BẢNG Dashboard_Snapshots
--- Lưu kết quả tổng hợp dashboard đã tính sẵn theo role.
--- Mỗi role có 1 snapshot / ngày, tự động refresh khi dữ liệu
--- thay đổi (event-driven invalidation từ các controller).
--- Khi load dashboard chỉ cần đọc 1 row thay vì join 6-7 bảng.
--- ============================================================
-
-CREATE TABLE [dbo].[Dashboard_Snapshots] (
-    [id]            [int]           IDENTITY(1,1) NOT NULL,
-    [role_name]     [nvarchar](100) NOT NULL,                      -- 'Admin', 'Manager', 'Accountant', 'Receptionist', 'Housekeeping', ...
-    [snapshot_date] [date]          NOT NULL,                      -- Ngày UTC của snapshot
-    [snapshot_data] [nvarchar](max) NOT NULL,                      -- JSON payload tương ứng với role
-    [computed_at]   [datetime]      NOT NULL DEFAULT GETUTCDATE(), -- Thời điểm tính gần nhất (UTC)
-    PRIMARY KEY CLUSTERED ([id] ASC)
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-
--- Unique index: mỗi role chỉ có 1 snapshot mỗi ngày — dùng MERGE / UPSERT
-CREATE UNIQUE NONCLUSTERED INDEX [UQ_Dashboard_Snapshots_Role_Date]
-    ON [dbo].[Dashboard_Snapshots] ([role_name] ASC, [snapshot_date] ASC)
-GO
-
--- Index tra cứu nhanh theo role (dùng nhất khi load dashboard)
-CREATE NONCLUSTERED INDEX [IX_Dashboard_Snapshots_RoleName]
-    ON [dbo].[Dashboard_Snapshots] ([role_name] ASC, [computed_at] DESC)
-GO
 
 -- ============================================================
 -- SEED DATA — THỨ TỰ CHA TRƯỚC CON
@@ -803,6 +776,7 @@ INSERT [dbo].[Roles] ([id], [name], [description]) VALUES (7,  N'Chef',        N
 INSERT [dbo].[Roles] ([id], [name], [description]) VALUES (8,  N'Waiter',      N'Nhân viên phục vụ')
 INSERT [dbo].[Roles] ([id], [name], [description]) VALUES (9,  N'IT Support',  N'Kỹ thuật viên')
 INSERT [dbo].[Roles] ([id], [name], [description]) VALUES (10, N'Guest',       N'Khách hàng')
+INSERT [dbo].[Roles] ([id], [name], [description]) VALUES (11, N'WarehouseStaff', N'Nhân viên kho vật tư')
 SET IDENTITY_INSERT [dbo].[Roles] OFF
 GO
 
@@ -845,28 +819,28 @@ GO
 SET IDENTITY_INSERT [dbo].[Users] ON
 INSERT [dbo].[Users] ([id],[role_id],[membership_id],[full_name],[email],[phone],[password_hash],[status],[loyalty_points],[loyalty_points_usable],[created_at])
 VALUES (1,  1,  NULL, N'Nguyễn Admin',    N'admin@hotel.com',       N'0900000001', N'$2a$11$oFBpZq/8S8DAE2qhAt0TCOIsOXB3WlBlmdybSneBVxZBdqcKzm9Qu',  1, 0,    0,    CAST(N'2026-01-01T00:00:00.000' AS DateTime))
-INSERT [dbo].[Users] ([id],[role_id],[membership_id],[full_name],[email],[phone],[password_hash],[status],[loyalty_points],[loyalty_points_usable],[created_at])
-VALUES (2,  2,  NULL, N'Trần Manager',    N'manager@hotel.com',     N'0900000002', N'hash2',  1, 0,    0,    CAST(N'2026-01-01T00:00:00.000' AS DateTime))
-INSERT [dbo].[Users] ([id],[role_id],[membership_id],[full_name],[email],[phone],[password_hash],[status],[loyalty_points],[loyalty_points_usable],[created_at])
-VALUES (3,  3,  NULL, N'Lê Lễ Tân',      N'reception1@hotel.com',  N'0900000003', N'hash3',  1, 0,    0,    CAST(N'2026-01-01T00:00:00.000' AS DateTime))
-INSERT [dbo].[Users] ([id],[role_id],[membership_id],[full_name],[email],[phone],[password_hash],[status],[loyalty_points],[loyalty_points_usable],[created_at])
-VALUES (4,  3,  NULL, N'Phạm Lễ Tân',    N'reception2@hotel.com',  N'0900000004', N'hash4',  1, 0,    0,    CAST(N'2026-01-01T00:00:00.000' AS DateTime))
-INSERT [dbo].[Users] ([id],[role_id],[membership_id],[full_name],[email],[phone],[password_hash],[status],[loyalty_points],[loyalty_points_usable],[created_at])
-VALUES (5,  4,  NULL, N'Hoàng Kế Toán',  N'accountant@hotel.com',  N'0900000005', N'hash5',  1, 0,    0,    CAST(N'2026-01-01T00:00:00.000' AS DateTime))
-INSERT [dbo].[Users] ([id],[role_id],[membership_id],[full_name],[email],[phone],[password_hash],[status],[loyalty_points],[loyalty_points_usable],[created_at])
-VALUES (6,  10, 1,    N'Khách Hàng A',   N'guestA@gmail.com',      N'0900000006', N'hash6',  1, 120,  100,  CAST(N'2026-01-10T00:00:00.000' AS DateTime))
-INSERT [dbo].[Users] ([id],[role_id],[membership_id],[full_name],[email],[phone],[password_hash],[status],[loyalty_points],[loyalty_points_usable],[created_at])
-VALUES (7,  10, 2,    N'Khách Hàng B',   N'guestB@gmail.com',      N'0900000007', N'hash7',  1, 550,  400,  CAST(N'2026-01-15T00:00:00.000' AS DateTime))
-INSERT [dbo].[Users] ([id],[role_id],[membership_id],[full_name],[email],[phone],[password_hash],[status],[loyalty_points],[loyalty_points_usable],[created_at])
-VALUES (8,  10, 3,    N'Khách Hàng C',   N'guestC@gmail.com',      N'0900000008', N'hash8',  1, 1200, 1000, CAST(N'2026-01-20T00:00:00.000' AS DateTime))
-INSERT [dbo].[Users] ([id],[role_id],[membership_id],[full_name],[email],[phone],[password_hash],[status],[loyalty_points],[loyalty_points_usable],[created_at])
-VALUES (9,  10, 4,    N'Khách Hàng D',   N'guestD@gmail.com',      N'0900000009', N'hash9',  1, 3500, 3000, CAST(N'2026-01-25T00:00:00.000' AS DateTime))
-INSERT [dbo].[Users] ([id],[role_id],[membership_id],[full_name],[email],[phone],[password_hash],[status],[loyalty_points],[loyalty_points_usable],[created_at])
-VALUES (10, 10, 5,    N'Khách Hàng E',   N'guestE@gmail.com',      N'0900000010', N'hash10', 1, 5200, 5000, CAST(N'2026-02-01T00:00:00.000' AS DateTime))
+
+INSERT [dbo].[Users] ([id], [role_id], [membership_id], [full_name], [email], [phone], [gender], [password_hash], [loyalty_points], [loyalty_points_usable], [status], [created_at]) 
+VALUES (2, 2, NULL, N'Tạ Trần Vinh Quang', N'fw62262@gmail.com', N'0937590998', N'Nam', N'$2a$11$y4M6/q0/GZIBubq7D2Q7rO4ZSfE94d0U15HghTMqngy42KBXfj9x.', 0, 0, 1, CAST(N'2026-05-15T17:36:39.477' AS DateTime))
+INSERT [dbo].[Users] ([id], [role_id], [membership_id], [full_name], [email], [phone], [gender], [password_hash], [loyalty_points], [loyalty_points_usable], [status], [created_at]) 
+VALUES (3, 3, NULL, N'Nguyễn Đức Hiếu', N'hieusaber@gmail.com', N'0912345678', N'Nam', N'$2a$11$LxOJyDM19P28jvDLPJn/gO29FgZ3b6IKbYUXV6ZBlxAVZeAny1VAa', 0, 0, 1, CAST(N'2026-05-15T17:39:32.407' AS DateTime))
+INSERT [dbo].[Users] ([id], [role_id], [membership_id], [full_name], [email], [phone], [gender], [password_hash], [loyalty_points], [loyalty_points_usable], [status], [created_at]) 
+VALUES (4, 4, NULL, N'Lê Minh Luân', N'leminhluan087@gmail.com', N'0912345678', N'Nam', N'$2a$11$6wAt4OLFFwVlzWHeIfU5E.D7tT8aNwIrJA9jGreq.gAeBo.tQ.KIe', 0, 0, 1, CAST(N'2026-05-15T17:46:56.353' AS DateTime))
+INSERT [dbo].[Users] ([id], [role_id], [membership_id], [full_name], [email], [phone], [gender], [password_hash], [loyalty_points], [loyalty_points_usable], [status], [created_at]) 
+VALUES (5, 11, NULL, N'Võ Nhạc Phước', N'vonhacphuoc@gmail.com', N'0912345678', N'Nữ', N'$2a$11$oIci..nfjmLZfrS0tQvtI.ISwiSAoZ30qbcnSulJREhNAu6TiHYZG', 0, 0, 1, CAST(N'2026-05-15T17:47:57.427' AS DateTime))
+INSERT [dbo].[Users] ([id], [role_id], [membership_id], [full_name], [email], [phone], [gender], [password_hash], [loyalty_points], [loyalty_points_usable], [status], [created_at]) 
+VALUES (6, 5, NULL, N'Ngô Tấn Lộc', N'ngotanloc3007@gmail.com', N'0912345678', N'Nam', N'$2a$11$mQ67hNBSI/S/e1xftbIQruRPzwol4nE4JcJoAQIcwO8ZqbRRNh0We', 0, 0, 1, CAST(N'2026-05-15T17:49:16.103' AS DateTime))
 SET IDENTITY_INSERT [dbo].[Users] OFF
 GO
 
 -- 5. Role_Permissions
+-- Permission matrix for dashboard roles:
+-- Admin(1):        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+-- Manager(2):      1,4,5,6,7,8,10,11
+-- Receptionist(3): 1,4,5,6
+-- Accountant(4):   1,5,6,8
+-- Housekeeping(5): 1,4,10
+-- Warehouse(11):   1,8,10
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (1, 1)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (1, 2)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (1, 3)
@@ -883,37 +857,27 @@ INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (1, 13)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (1, 14)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (1, 15)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 1)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 2)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 4)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 5)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 6)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 7)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 8)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 9)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 10)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 11)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 12)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (2, 13)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (3, 1)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (3, 4)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (3, 5)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (3, 6)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (3, 7)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (3, 9)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (3, 10)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (4, 1)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (4, 2)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (4, 4)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (4, 5)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (4, 6)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (4, 7)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (4, 8)
+INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (5, 1)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (5, 4)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (5, 6)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (5, 7)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (5, 8)
-INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (5, 9)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (5, 10)
+INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (11, 1)
+INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (11, 8)
+INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (11, 10)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (7, 7)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (7, 8)
 INSERT [dbo].[Role_Permissions] ([role_id], [permission_id]) VALUES (7, 9)
@@ -1297,26 +1261,16 @@ GO
 
 -- 19. Services
 SET IDENTITY_INSERT [dbo].[Services] ON
-INSERT [dbo].[Services] ([id],[category_id],[name],[price],[unit],[is_active])
-VALUES (1,  1,  N'Set Ăn Sáng Buffet',    CAST(200000.00 AS Decimal(18,2)), N'Người',  1)
-INSERT [dbo].[Services] ([id],[category_id],[name],[price],[unit],[is_active])
-VALUES (2,  1,  N'Mì Ý Hải Sản',          CAST(150000.00 AS Decimal(18,2)), N'Phần',   1)
-INSERT [dbo].[Services] ([id],[category_id],[name],[price],[unit],[is_active])
-VALUES (3,  2,  N'Massage Toàn Thân 60p', CAST(500000.00 AS Decimal(18,2)), N'Lượt',   1)
-INSERT [dbo].[Services] ([id],[category_id],[name],[price],[unit],[is_active])
-VALUES (4,  2,  N'Xông Hơi Thảo Dược',   CAST(300000.00 AS Decimal(18,2)), N'Lượt',   1)
-INSERT [dbo].[Services] ([id],[category_id],[name],[price],[unit],[is_active])
-VALUES (5,  3,  N'Đưa Đón Sân Bay 4 Chỗ',CAST(350000.00 AS Decimal(18,2)), N'Chuyến', 1)
-INSERT [dbo].[Services] ([id],[category_id],[name],[price],[unit],[is_active])
-VALUES (6,  3,  N'Thuê Xe Máy Nửa Ngày', CAST(100000.00 AS Decimal(18,2)), N'Chiếc',  1)
-INSERT [dbo].[Services] ([id],[category_id],[name],[price],[unit],[is_active])
-VALUES (7,  4,  N'Giặt Khô Áo Vest',     CAST(120000.00 AS Decimal(18,2)), N'Cái',    1)
-INSERT [dbo].[Services] ([id],[category_id],[name],[price],[unit],[is_active])
-VALUES (8,  4,  N'Giặt Sấy Tiêu Chuẩn', CAST(40000.00  AS Decimal(18,2)), N'Kg',     1)
-INSERT [dbo].[Services] ([id],[category_id],[name],[price],[unit],[is_active])
-VALUES (9,  5,  N'Tour Đảo Nửa Ngày',    CAST(800000.00 AS Decimal(18,2)), N'Người',  1)
-INSERT [dbo].[Services] ([id],[category_id],[name],[price],[unit],[is_active])
-VALUES (10, 10, N'Móc Khóa Kỷ Niệm',    CAST(50000.00  AS Decimal(18,2)), N'Cái',    1)
+INSERT [dbo].[Services] ([id], [category_id], [name], [description], [price], [unit], [image_url], [is_active]) VALUES (1, 1, N'Set Ăn Sáng Buffet', NULL, CAST(200000.00 AS Decimal(18, 2)), N'Người', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867619/hotel/services/mneltgepkxxldezypoqi.jpg', 1)
+INSERT [dbo].[Services] ([id], [category_id], [name], [description], [price], [unit], [image_url], [is_active]) VALUES (2, 1, N'Mì Ý Hải Sản', NULL, CAST(150000.00 AS Decimal(18, 2)), N'Phần', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867644/hotel/services/ot93hlsw6b5kdlqgkvii.jpg', 1)
+INSERT [dbo].[Services] ([id], [category_id], [name], [description], [price], [unit], [image_url], [is_active]) VALUES (3, 2, N'Massage Toàn Thân 60p', NULL, CAST(500000.00 AS Decimal(18, 2)), N'Lượt', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867653/hotel/services/afjunhpefudirmf1msck.jpg', 1)
+INSERT [dbo].[Services] ([id], [category_id], [name], [description], [price], [unit], [image_url], [is_active]) VALUES (4, 2, N'Xông Hơi Thảo Dược', NULL, CAST(300000.00 AS Decimal(18, 2)), N'Lượt', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867584/hotel/services/fqpx7nc8aco7ls2udlgw.jpg', 1)
+INSERT [dbo].[Services] ([id], [category_id], [name], [description], [price], [unit], [image_url], [is_active]) VALUES (5, 3, N'Đưa Đón Sân Bay 4 Chỗ', NULL, CAST(350000.00 AS Decimal(18, 2)), N'Chuyến', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867679/hotel/services/ff36c6wdjlrzkhikpjnp.jpg', 1)
+INSERT [dbo].[Services] ([id], [category_id], [name], [description], [price], [unit], [image_url], [is_active]) VALUES (6, 3, N'Thuê Xe Máy Nửa Ngày', NULL, CAST(100000.00 AS Decimal(18, 2)), N'Chiếc', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867596/hotel/services/k5y3raqfidtktocxlmvi.jpg', 1)
+INSERT [dbo].[Services] ([id], [category_id], [name], [description], [price], [unit], [image_url], [is_active]) VALUES (7, 4, N'Giặt Khô Áo Vest', NULL, CAST(120000.00 AS Decimal(18, 2)), N'Cái', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867670/hotel/services/jybfb2eo2wwbqpbjhatn.jpg', 1)
+INSERT [dbo].[Services] ([id], [category_id], [name], [description], [price], [unit], [image_url], [is_active]) VALUES (8, 4, N'Giặt Sấy Tiêu Chuẩn', NULL, CAST(40000.00 AS Decimal(18, 2)), N'Kg', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867662/hotel/services/fv6iikq6raqjianzojqy.jpg', 1)
+INSERT [dbo].[Services] ([id], [category_id], [name], [description], [price], [unit], [image_url], [is_active]) VALUES (9, 5, N'Tour Đảo Nửa Ngày', NULL, CAST(800000.00 AS Decimal(18, 2)), N'Người', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867607/hotel/services/gh6giozf9mfbendpdfnh.jpg', 1)
+INSERT [dbo].[Services] ([id], [category_id], [name], [description], [price], [unit], [image_url], [is_active]) VALUES (10, 10, N'Móc Khóa Kỷ Niệm', NULL, CAST(50000.00 AS Decimal(18, 2)), N'Cái', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867634/hotel/services/n12ehej0jusrdh9u4jyt.jpg', 1)
 SET IDENTITY_INSERT [dbo].[Services] OFF
 GO
 
@@ -1386,26 +1340,175 @@ GO
 
 -- 26. Attractions
 SET IDENTITY_INSERT [dbo].[Attractions] ON
-INSERT [dbo].[Attractions] ([id],[name],[category],[address],[latitude],[longitude],[distance_km],[description],[image_url],[map_embed_link],[is_active])
-VALUES (1,  N'Chợ Trung Tâm',          N'Ẩm thực',  N'123 Đường Trung Tâm',    CAST(16.047079 AS Decimal(9,6)), CAST(108.206230 AS Decimal(9,6)), CAST(1.50  AS Decimal(5,2)), N'Khu chợ truyền thống sầm uất',          NULL, N'link_map_1',  1)
-INSERT [dbo].[Attractions] ([id],[name],[category],[address],[latitude],[longitude],[distance_km],[description],[image_url],[map_embed_link],[is_active])
-VALUES (2,  N'Bãi Biển Chính',         N'Thiên nhiên',N'Bờ biển Đông',          CAST(16.050000 AS Decimal(9,6)), CAST(108.210000 AS Decimal(9,6)), CAST(0.50  AS Decimal(5,2)), N'Bãi tắm công cộng tuyệt đẹp',           NULL, N'link_map_2',  1)
-INSERT [dbo].[Attractions] ([id],[name],[category],[address],[latitude],[longitude],[distance_km],[description],[image_url],[map_embed_link],[is_active])
-VALUES (3,  N'Bảo Tàng Thành Phố',    N'Di tích',  N'456 Đường Lịch Sử',      CAST(16.040000 AS Decimal(9,6)), CAST(108.200000 AS Decimal(9,6)), CAST(3.00  AS Decimal(5,2)), N'Lưu giữ giá trị lịch sử',               NULL, N'link_map_3',  1)
-INSERT [dbo].[Attractions] ([id],[name],[category],[address],[latitude],[longitude],[distance_km],[description],[image_url],[map_embed_link],[is_active])
-VALUES (4,  N'Phố Đi Bộ',             N'Giải trí', N'789 Phố Đêm',            CAST(16.045000 AS Decimal(9,6)), CAST(108.205000 AS Decimal(9,6)), CAST(1.00  AS Decimal(5,2)), N'Khu vực vui chơi giải trí về đêm',      NULL, N'link_map_4',  1)
-INSERT [dbo].[Attractions] ([id],[name],[category],[address],[latitude],[longitude],[distance_km],[description],[image_url],[map_embed_link],[is_active])
-VALUES (5,  N'Chùa Cổ Lịch Sử',      N'Di tích',  N'Núi Ngũ Hành Sơn',       CAST(16.000000 AS Decimal(9,6)), CAST(108.230000 AS Decimal(9,6)), CAST(5.50  AS Decimal(5,2)), N'Ngôi chùa linh thiêng',                 NULL, N'link_map_5',  1)
-INSERT [dbo].[Attractions] ([id],[name],[category],[address],[latitude],[longitude],[distance_km],[description],[image_url],[map_embed_link],[is_active])
-VALUES (6,  N'Khu Vui Chơi Giải Trí', N'Giải trí', N'Khu Vui Chơi Phía Tây',  CAST(15.990000 AS Decimal(9,6)), CAST(108.150000 AS Decimal(9,6)), CAST(8.00  AS Decimal(5,2)), N'Công viên trò chơi quy mô lớn',         NULL, N'link_map_6',  1)
-INSERT [dbo].[Attractions] ([id],[name],[category],[address],[latitude],[longitude],[distance_km],[description],[image_url],[map_embed_link],[is_active])
-VALUES (7,  N'Suối Nước Nóng',        N'Thiên nhiên',N'Vùng Núi Phía Tây',     CAST(15.920000 AS Decimal(9,6)), CAST(108.100000 AS Decimal(9,6)), CAST(15.00 AS Decimal(5,2)), N'Điểm nghỉ dưỡng thiên nhiên',           NULL, N'link_map_7',  1)
-INSERT [dbo].[Attractions] ([id],[name],[category],[address],[latitude],[longitude],[distance_km],[description],[image_url],[map_embed_link],[is_active])
-VALUES (8,  N'Làng Nghề Truyền Thống',N'Di tích',  N'Làng Cổ Ngoại Ô',        CAST(15.960000 AS Decimal(9,6)), CAST(108.130000 AS Decimal(9,6)), CAST(12.00 AS Decimal(5,2)), N'Trải nghiệm văn hóa bản địa',           NULL, N'link_map_8',  1)
-INSERT [dbo].[Attractions] ([id],[name],[category],[address],[latitude],[longitude],[distance_km],[description],[image_url],[map_embed_link],[is_active])
-VALUES (9,  N'Trung Tâm Thương Mại',  N'Giải trí', N'321 Đường Mua Sắm',      CAST(16.043000 AS Decimal(9,6)), CAST(108.208000 AS Decimal(9,6)), CAST(2.00  AS Decimal(5,2)), N'Khu mua sắm cao cấp',                   NULL, N'link_map_9',  1)
-INSERT [dbo].[Attractions] ([id],[name],[category],[address],[latitude],[longitude],[distance_km],[description],[image_url],[map_embed_link],[is_active])
-VALUES (10, N'Điểm Ngắm Hoàng Hôn',  N'Thiên nhiên',N'Mũi Đất Phía Nam',      CAST(16.020000 AS Decimal(9,6)), CAST(108.215000 AS Decimal(9,6)), CAST(4.00  AS Decimal(5,2)), N'Nơi có view biển đẹp nhất',             NULL, N'link_map_10', 1)
+INSERT [dbo].[Attractions] ([id], [name], [category], [address], [latitude], [longitude], [distance_km], [description], [image_url], [cloudinary_public_id], [map_embed_link], [is_active]) VALUES (1, N'Chợ Trung Tâm', N'Ẩm thực', N'123 Đường Trung Tâm', CAST(16.047079 AS Decimal(9, 6)), CAST(108.206230 AS Decimal(9, 6)), CAST(586.37 AS Decimal(5, 2)), N'Khu chợ truyền thống sầm uất', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867888/hotel/attractions/attraction_1778867877.jpg', N'hotel/attractions/attraction_1778867877', N'link_map_1', 1)
+INSERT [dbo].[Attractions] ([id], [name], [category], [address], [latitude], [longitude], [distance_km], [description], [image_url], [cloudinary_public_id], [map_embed_link], [is_active]) VALUES (2, N'Bãi Biển Chính', N'Thiên nhiên', N'Bờ biển Đông', CAST(16.050000 AS Decimal(9, 6)), CAST(108.210000 AS Decimal(9, 6)), CAST(586.79 AS Decimal(5, 2)), N'Bãi tắm công cộng tuyệt đẹp', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867867/hotel/attractions/attraction_1778867858.jpg', N'hotel/attractions/attraction_1778867858', N'link_map_2', 1)
+INSERT [dbo].[Attractions] ([id], [name], [category], [address], [latitude], [longitude], [distance_km], [description], [image_url], [cloudinary_public_id], [map_embed_link], [is_active]) VALUES (3, N'Bảo Tàng Thành Phố', N'Di tích', N'456 Đường Lịch Sử', CAST(16.040000 AS Decimal(9, 6)), CAST(108.200000 AS Decimal(9, 6)), CAST(585.43 AS Decimal(5, 2)), N'Lưu giữ giá trị lịch sử', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867908/hotel/attractions/attraction_1778867896.jpg', N'hotel/attractions/attraction_1778867896', N'link_map_3', 1)
+INSERT [dbo].[Attractions] ([id], [name], [category], [address], [latitude], [longitude], [distance_km], [description], [image_url], [cloudinary_public_id], [map_embed_link], [is_active]) VALUES (4, N'Phố Đi Bộ', N'Giải trí', N'789 Phố Đêm', CAST(16.045000 AS Decimal(9, 6)), CAST(108.205000 AS Decimal(9, 6)), CAST(586.11 AS Decimal(5, 2)), N'Khu vực vui chơi giải trí về đêm', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867878/hotel/attractions/attraction_1778867868.jpg', N'hotel/attractions/attraction_1778867868', N'link_map_4', 1)
+INSERT [dbo].[Attractions] ([id], [name], [category], [address], [latitude], [longitude], [distance_km], [description], [image_url], [cloudinary_public_id], [map_embed_link], [is_active]) VALUES (5, N'Chùa Cổ Lịch Sử', N'Di tích', N'Núi Ngũ Hành Sơn', CAST(16.000000 AS Decimal(9, 6)), CAST(108.230000 AS Decimal(9, 6)), CAST(581.99 AS Decimal(5, 2)), N'Ngôi chùa linh thiêng', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867930/hotel/attractions/attraction_1778867920.jpg', N'hotel/attractions/attraction_1778867920', N'link_map_5', 1)
+INSERT [dbo].[Attractions] ([id], [name], [category], [address], [latitude], [longitude], [distance_km], [description], [image_url], [cloudinary_public_id], [map_embed_link], [is_active]) VALUES (6, N'Khu Vui Chơi Giải Trí', N'Giải trí', N'Khu Vui Chơi Phía Tây', CAST(15.990000 AS Decimal(9, 6)), CAST(108.150000 AS Decimal(9, 6)), CAST(578.68 AS Decimal(5, 2)), N'Công viên trò chơi quy mô lớn', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867842/hotel/attractions/attraction_1778867831.jpg', N'hotel/attractions/attraction_1778867831', N'link_map_6', 1)
+INSERT [dbo].[Attractions] ([id], [name], [category], [address], [latitude], [longitude], [distance_km], [description], [image_url], [cloudinary_public_id], [map_embed_link], [is_active]) VALUES (7, N'Suối Nước Nóng', N'Thiên nhiên', N'Vùng Núi Phía Tây', CAST(15.920000 AS Decimal(9, 6)), CAST(108.100000 AS Decimal(9, 6)), CAST(569.81 AS Decimal(5, 2)), N'Điểm nghỉ dưỡng thiên nhiên', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867783/hotel/attractions/attraction_1778867772.jpg', N'hotel/attractions/attraction_1778867772', N'link_map_7', 1)
+INSERT [dbo].[Attractions] ([id], [name], [category], [address], [latitude], [longitude], [distance_km], [description], [image_url], [cloudinary_public_id], [map_embed_link], [is_active]) VALUES (8, N'Làng Nghề Truyền Thống', N'Di tích', N'Làng Cổ Ngoại Ô', CAST(15.960000 AS Decimal(9, 6)), CAST(108.130000 AS Decimal(9, 6)), CAST(574.92 AS Decimal(5, 2)), N'Trải nghiệm văn hóa bản địa', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867831/hotel/attractions/attraction_1778867821.jpg', N'hotel/attractions/attraction_1778867821', N'link_map_8', 1)
+INSERT [dbo].[Attractions] ([id], [name], [category], [address], [latitude], [longitude], [distance_km], [description], [image_url], [cloudinary_public_id], [map_embed_link], [is_active]) VALUES (9, N'Trung Tâm Thương Mại', N'Giải trí', N'321 Đường Mua Sắm', CAST(16.043000 AS Decimal(9, 6)), CAST(108.208000 AS Decimal(9, 6)), CAST(585.98 AS Decimal(5, 2)), N'Khu mua sắm cao cấp', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867896/hotel/attractions/attraction_1778867887.jpg', N'hotel/attractions/attraction_1778867887', N'link_map_9', 1)
+INSERT [dbo].[Attractions] ([id], [name], [category], [address], [latitude], [longitude], [distance_km], [description], [image_url], [cloudinary_public_id], [map_embed_link], [is_active]) VALUES (10, N'Điểm Ngắm Hoàng Hôn', N'Thiên nhiên', N'Mũi Đất Phía Nam', CAST(16.020000 AS Decimal(9, 6)), CAST(108.215000 AS Decimal(9, 6)), CAST(583.71 AS Decimal(5, 2)), N'Nơi có view biển đẹp nhất', N'https://res.cloudinary.com/dekvhccnn/image/upload/v1778867917/hotel/attractions/attraction_1778867907.jpg', N'hotel/attractions/attraction_1778867907', N'link_map_10', 1)
 SET IDENTITY_INSERT [dbo].[Attractions] OFF
 -- Hệ thống backend sẽ tự động tổng hợp Dashboard Snapshot từ các bảng thực tế khi người dùng truy cập lần đầu trong ngày, hoặc khi có các tương tác mới cần refresh snapshot.
+GO
+
+-- ============================================================
+-- CLUSTER 8: DASHBOARD THEO KỲ (Role-Based Period Dashboard)
+-- Lưu số liệu dashboard tổng hợp theo role + kỳ thời gian.
+-- Mỗi role có 1 dòng / kỳ (DAILY / WEEKLY / MONTHLY).
+-- Service tự động rebuild khi có sự kiện nghiệp vụ (DAMAGE_REPORTED, ...).
+-- ============================================================
+
+CREATE TABLE [dbo].[Role_Dashboard_Period_States]
+(
+    -- Identity
+    [id]                  [int]            IDENTITY(1,1) NOT NULL,
+
+    -- Role info
+    [role_id]             [int]            NOT NULL,       -- FK Roles.id
+    [role_name]           [nvarchar](100)  NOT NULL,       -- cache tên role (tránh JOIN khi query)
+
+    -- Dashboard identity
+    [dashboard_code]      [varchar](100)   NOT NULL,       -- ADMIN_DASHBOARD, MANAGER_DASHBOARD, WAREHOUSE_DASHBOARD, ...
+    [dashboard_title]     [nvarchar](255)  NOT NULL,       -- "Admin Dashboard"
+
+    -- Period info
+    [period_type]         [varchar](20)    NOT NULL,       -- DAILY / WEEKLY / MONTHLY / QUARTERLY / YEARLY
+    [period_key]          [varchar](30)    NOT NULL,       -- "2026-05" / "2026-W20" / "2026-05-13"
+    [period_start]        [datetime2](7)   NOT NULL,       -- UTC start của kỳ
+    [period_end]          [datetime2](7)   NOT NULL,       -- UTC end của kỳ
+
+    -- JSON payload
+    [dashboard_json]      [nvarchar](max)  NOT NULL,       -- số liệu chính của kỳ (phải là JSON hợp lệ)
+    [comparison_json]     [nvarchar](max)  NULL,           -- so sánh với kỳ trước (cache)
+
+    -- Trạng thái kỳ
+    [status]              [varchar](20)    NOT NULL
+        CONSTRAINT [DF_RoleDashboardPeriod_Status]    DEFAULT ('OPEN'),
+                                                           -- OPEN / CLOSED / REBUILT / CORRECTED
+    [is_current]          [bit]            NOT NULL
+        CONSTRAINT [DF_RoleDashboardPeriod_IsCurrent] DEFAULT ((0)),
+                                                           -- 1 = kỳ hiện tại đang OPEN
+
+    -- Event tracking
+    [last_event_type]     [varchar](100)   NULL,           -- DAMAGE_REPORTED, MANUAL_REBUILD, ...
+    [last_event_source]   [varchar](100)   NULL,           -- tên service đã trigger
+    [last_event_ref_id]   [int]            NULL,           -- ID bản ghi nguồn (LossAndDamage.id, ...)
+
+    -- Optimistic concurrency
+    [version]             [int]            NOT NULL
+        CONSTRAINT [DF_RoleDashboardPeriod_Version]   DEFAULT ((1)),
+
+    -- Timestamps
+    [created_at]          [datetime2](7)   NOT NULL
+        CONSTRAINT [DF_RoleDashboardPeriod_CreatedAt] DEFAULT (SYSUTCDATETIME()),
+    [updated_at]          [datetime2](7)   NOT NULL
+        CONSTRAINT [DF_RoleDashboardPeriod_UpdatedAt] DEFAULT (SYSUTCDATETIME()),
+    [closed_at]           [datetime2](7)   NULL,           -- thời điểm kỳ chuyển sang CLOSED
+
+    -- Audit
+    [updated_by]          [int]            NULL,           -- FK Users.id (ai rebuild / update)
+
+    -- PRIMARY KEY
+    CONSTRAINT [PK_Role_Dashboard_Period_States]
+        PRIMARY KEY CLUSTERED ([id] ASC),
+
+    -- FOREIGN KEYS
+    CONSTRAINT [FK_RoleDashboardPeriod_Roles]
+        FOREIGN KEY ([role_id]) REFERENCES [dbo].[Roles] ([id]),
+
+    CONSTRAINT [FK_RoleDashboardPeriod_UpdatedBy]
+        FOREIGN KEY ([updated_by]) REFERENCES [dbo].[Users] ([id]),
+
+    -- CHECK CONSTRAINTS
+    CONSTRAINT [CK_RoleDashboardPeriod_PeriodType]
+        CHECK ([period_type] IN ('DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY')),
+
+    CONSTRAINT [CK_RoleDashboardPeriod_Status]
+        CHECK ([status] IN ('OPEN', 'CLOSED', 'REBUILT', 'CORRECTED')),
+
+    CONSTRAINT [CK_RoleDashboardPeriod_DashboardJson_IsJson]
+        CHECK (ISJSON([dashboard_json]) = 1),
+
+    CONSTRAINT [CK_RoleDashboardPeriod_ComparisonJson_IsJson]
+        CHECK ([comparison_json] IS NULL OR ISJSON([comparison_json]) = 1)
+
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+-- Unique index: role_id + dashboard_code + period_type + period_key phải unique
+CREATE UNIQUE INDEX [UX_RoleDashboardPeriod_Role_Dashboard_Period]
+ON [dbo].[Role_Dashboard_Period_States]
+(
+    [role_id],
+    [dashboard_code],
+    [period_type],
+    [period_key]
+)
+GO
+
+-- Query index: tìm theo role_name + period_type + thời gian
+CREATE INDEX [IX_RoleDashboardPeriod_Query]
+ON [dbo].[Role_Dashboard_Period_States]
+(
+    [dashboard_code],
+    [role_name],
+    [period_type],
+    [period_start],
+    [period_end]
+)
+GO
+
+-- Filtered index: tối ưu truy vấn kỳ hiện tại (is_current = 1)
+CREATE INDEX [IX_RoleDashboardPeriod_Current]
+ON [dbo].[Role_Dashboard_Period_States]
+(
+    [role_id],
+    [dashboard_code],
+    [period_type],
+    [is_current]
+)
+WHERE [is_current] = 1
+GO
+
+-- Sort index: lấy lịch sử (ORDER BY updated_at DESC)
+CREATE INDEX [IX_RoleDashboardPeriod_UpdatedAt]
+ON [dbo].[Role_Dashboard_Period_States]
+(
+    [updated_at] DESC
+)
+GO
+
+-- Seed dữ liệu: 1 dòng MONTHLY is_current=1 cho từng role
+DECLARE @PeriodType  VARCHAR(20)  = 'MONTHLY';
+DECLARE @PeriodKey   VARCHAR(30)  = FORMAT(GETUTCDATE(), 'yyyy-MM');
+DECLARE @PeriodStart DATETIME2(7) = DATEFROMPARTS(YEAR(GETUTCDATE()), MONTH(GETUTCDATE()), 1);
+DECLARE @PeriodEnd   DATETIME2(7) = DATEADD(MILLISECOND, -1, DATEADD(MONTH, 1, @PeriodStart));
+
+INSERT INTO [dbo].[Role_Dashboard_Period_States]
+(
+    [role_id], [role_name], [dashboard_code], [dashboard_title],
+    [period_type], [period_key], [period_start], [period_end],
+    [dashboard_json], [comparison_json], [status], [is_current]
+)
+SELECT
+    r.[id],
+    r.[name],
+    CASE r.[name]
+        WHEN N'Admin'          THEN 'ADMIN_DASHBOARD'
+        WHEN N'Manager'        THEN 'MANAGER_DASHBOARD'
+        WHEN N'Receptionist'   THEN 'RECEPTION_DASHBOARD'
+        WHEN N'Accountant'     THEN 'ACCOUNTANT_DASHBOARD'
+        WHEN N'Housekeeping'   THEN 'HOUSEKEEPING_DASHBOARD'
+        WHEN N'WarehouseStaff' THEN 'WAREHOUSE_DASHBOARD'
+        ELSE UPPER(REPLACE(CONVERT(VARCHAR(100), r.[name]), ' ', '_')) + '_DASHBOARD'
+    END,
+    r.[name] + N' Dashboard',
+    @PeriodType, @PeriodKey, @PeriodStart, @PeriodEnd,
+    N'{"meta":{"schemaVersion":1,"dashboardCode":"","roleName":"","periodType":"MONTHLY","periodKey":"","status":"OPEN"},"summary":{},"widgets":{},"breakdown":{},"alerts":[],"events":[]}',
+    N'{"baseInfo":{"comparisonType":"PREVIOUS_PERIOD"},"metrics":{}}',
+    'OPEN', 1
+FROM [dbo].[Roles] r
 GO

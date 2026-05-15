@@ -20,7 +20,9 @@ public class AppDbContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<ActivityLogRead> ActivityLogReads => Set<ActivityLogRead>();
-    public DbSet<DashboardSnapshot> DashboardSnapshots => Set<DashboardSnapshot>();
+
+    // ── Cluster 8: Role-Based Period Dashboard ────────────────
+    public DbSet<RoleDashboardPeriodState> RoleDashboardPeriodStates => Set<RoleDashboardPeriodState>();
 
     // ── Cluster 2: Room Management ───────────────────────────────
     public DbSet<Amenity> Amenities => Set<Amenity>();
@@ -154,16 +156,30 @@ public class AppDbContext : DbContext
             .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // ── DashboardSnapshot ─────────────────────────────────────
-        modelBuilder.Entity<DashboardSnapshot>().ToTable("Dashboard_Snapshots");
-        modelBuilder.Entity<DashboardSnapshot>()
-            .HasIndex(s => new { s.RoleName, s.SnapshotDate })
+        // ── RoleDashboardPeriodState ───────────────────────────────────
+        // Table name already set via [Table] attribute on the entity.
+        modelBuilder.Entity<RoleDashboardPeriodState>()
+            .HasIndex(x => new { x.RoleId, x.DashboardCode, x.PeriodType, x.PeriodKey })
             .IsUnique();
-        modelBuilder.Entity<DashboardSnapshot>()
-            .HasIndex(s => new { s.RoleName, s.ComputedAt });
-        modelBuilder.Entity<DashboardSnapshot>()
-            .Property(s => s.SnapshotDate)
-            .HasColumnType("date");
+
+        modelBuilder.Entity<RoleDashboardPeriodState>()
+            .HasIndex(x => new { x.DashboardCode, x.RoleName, x.PeriodType, x.PeriodStart, x.PeriodEnd });
+
+        modelBuilder.Entity<RoleDashboardPeriodState>()
+            .HasIndex(x => new { x.RoleId, x.DashboardCode, x.PeriodType, x.IsCurrent })
+            .HasFilter("[is_current] = 1");
+
+        modelBuilder.Entity<RoleDashboardPeriodState>()
+            .HasOne(x => x.Role)
+            .WithMany()
+            .HasForeignKey(x => x.RoleId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<RoleDashboardPeriodState>()
+            .HasOne(x => x.UpdatedByUser)
+            .WithMany()
+            .HasForeignKey(x => x.UpdatedBy)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // ── 2. Composite Primary Keys cho bảng join ──────────────
         modelBuilder.Entity<RolePermission>()

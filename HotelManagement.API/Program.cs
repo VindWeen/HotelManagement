@@ -160,7 +160,7 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IBookingStatusFlowService, BookingStatusFlowService>();
 builder.Services.AddScoped<IVoucherValidationService, VoucherValidationService>();
 builder.Services.AddScoped<IVoucherAudienceService, VoucherAudienceService>();
-builder.Services.AddScoped<IDashboardAggregationService, DashboardAggregationService>();
+builder.Services.AddScoped<IRoleDashboardPeriodService, RoleDashboardPeriodService>();
 builder.Services.AddScoped<IMomoService, MomoService>();
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<RoomStatusSchedulerService>();

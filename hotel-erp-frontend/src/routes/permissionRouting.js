@@ -28,9 +28,21 @@ export function getDefaultAdminPath(role, permissions = []) {
 
   if (hasPermission(permissionSet, "VIEW_DASHBOARD")) return "/admin/dashboard";
 
+  if (role === "Receptionist" && hasPermission(permissionSet, "MANAGE_BOOKINGS")) {
+    return "/admin/bookings";
+  }
+
+  if (role === "Accountant" && hasPermission(permissionSet, "MANAGE_INVOICES")) {
+    return "/admin/invoices";
+  }
+
   // Housekeeping thường đi thẳng khu vực dọn phòng khi không có dashboard.
   if (role === "Housekeeping" && hasPermission(permissionSet, "MANAGE_ROOMS")) {
     return "/admin/housekeeping";
+  }
+
+  if (role === "WarehouseStaff" && hasPermission(permissionSet, "MANAGE_INVENTORY")) {
+    return "/admin/items";
   }
 
   if (hasPermission(permissionSet, "MANAGE_ROOMS")) return "/admin/rooms";

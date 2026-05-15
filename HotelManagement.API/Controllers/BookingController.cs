@@ -35,7 +35,6 @@ public class BookingsController : ControllerBase
     private readonly IInvoiceService _invoiceService;
     private readonly IAuditTrailService _auditTrail;
     private readonly IConfiguration _config;
-    private readonly IDashboardAggregationService _dashboard;
 
     public BookingsController(
         AppDbContext context,
@@ -48,8 +47,7 @@ public class BookingsController : ControllerBase
         IPaymentService paymentService,
         IInvoiceService invoiceService,
         IAuditTrailService auditTrail,
-        IConfiguration config,
-        IDashboardAggregationService dashboard)
+        IConfiguration config)
     {
         _context = context;
         _redis = redis;
@@ -62,7 +60,6 @@ public class BookingsController : ControllerBase
         _invoiceService = invoiceService;
         _auditTrail = auditTrail;
         _config = config;
-        _dashboard = dashboard;
     }
 
     private IDatabase RedisDb => _redis.GetDatabase();
@@ -1219,10 +1216,6 @@ public class BookingsController : ControllerBase
                 }
             }
 
-            // Fire-and-forget: refresh snapshot cho các role liên quan
-            _ = _dashboard.RefreshSnapshotsAsync(
-                [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Receptionist, SnapshotRoles.Accountant]);
-
             return BookingActionSuccess("Tạo booking thành công.", booking);
         }
         finally
@@ -1408,9 +1401,6 @@ public class BookingsController : ControllerBase
         });
 
         await _context.SaveChangesAsync();
-        // Fire-and-forget: refresh snapshot
-        _ = _dashboard.RefreshSnapshotsAsync(
-            [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Receptionist, SnapshotRoles.Accountant]);
         return BookingActionSuccess("Hủy booking thành công.", b);
     }
 
@@ -1464,10 +1454,6 @@ public class BookingsController : ControllerBase
             OldValue = null,
             NewValue = $"{{\"roomId\": {detail.RoomId?.ToString() ?? "null"}, \"status\": \"{booking.Status}\"}}"
         });
-
-        // Fire-and-forget: refresh snapshot
-        _ = _dashboard.RefreshSnapshotsAsync(
-            [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Receptionist, SnapshotRoles.Housekeeping]);
 
         return BookingActionSuccess("Check-in từng phòng thành công.", booking);
     }
@@ -1545,10 +1531,6 @@ public class BookingsController : ControllerBase
             OldValue = null,
             NewValue = $"{{\"checkedInCount\": {detailsToCheckIn.Count}, \"status\": \"{booking.Status}\"}}"
         });
-
-        // Fire-and-forget: refresh snapshot
-        _ = _dashboard.RefreshSnapshotsAsync(
-            [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Receptionist, SnapshotRoles.Housekeeping]);
 
         return BookingActionSuccess("Check-in hàng loạt thành công.", booking);
     }
@@ -1757,10 +1739,6 @@ public class BookingsController : ControllerBase
             NewValue = $"{{\"bookingDetailId\": {detail.Id}, \"newCheckOutDate\": \"{normalizedDate:O}\"}}"
         });
 
-        // Fire-and-forget: refresh snapshot
-        _ = _dashboard.RefreshSnapshotsAsync(
-            [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Receptionist, SnapshotRoles.Accountant]);
-
         return BookingActionSuccess("Đã cập nhật out sớm và tính lại booking thành công.", booking);
     }
 
@@ -1809,10 +1787,6 @@ public class BookingsController : ControllerBase
 
         await _context.SaveChangesAsync();
         await _invoiceService.CreateFromBookingAsync(b.Id);
-
-        // Fire-and-forget: refresh snapshot
-        _ = _dashboard.RefreshSnapshotsAsync(
-            [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Receptionist, SnapshotRoles.Housekeeping, SnapshotRoles.Accountant]);
 
         return BookingActionSuccess("Check-out booking thành công. Booking đang chờ quyết toán hóa đơn.", b);
     }
