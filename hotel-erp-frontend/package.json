@@ -18,6 +18,7 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.1",
+    "sepay-pg-node": "^1.0.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
@@ -34,6 +35,7 @@
     "globals": "^17.4.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^3.4.19",
-    "vite": "^8.0.1"
+    "vite": "^8.0.1",
+    "vite-plugin-node-polyfills": "^0.27.0"
   }
 }
