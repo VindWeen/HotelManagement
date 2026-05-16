@@ -6,6 +6,7 @@ import { logout } from "../api/authApi";
 import { getMyProfile } from "../api/userProfileApi";
 import { useResponsiveAdmin } from "../hooks/useResponsiveAdmin";
 import NotificationMenu from "../components/NotificationMenu";
+import WeatherWidget from "../components/common/WeatherWidget";
 import "../styles/admin-theme.css";
 
 const THEME_STORAGE_KEY = "admin-theme-mode";
@@ -252,6 +253,7 @@ export default function AdminLayout() {
                   <span className="material-symbols-outlined">menu</span>
                 </button>
               )}
+              {!isMobile ? <WeatherWidget /> : null}
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 16, marginLeft: 12 }}>

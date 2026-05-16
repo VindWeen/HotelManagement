@@ -11,8 +11,9 @@ import { getEquipments } from "../../api/equipmentsApi";
 import { getInvoices } from "../../api/invoicesApi";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import axiosClient from "../../api/axios";
-import { getCurrentDashboard, rebuildAllCurrent } from "../../api/dashboardPeriodsApi";
+import { getCurrentDashboard } from "../../api/dashboardPeriodsApi";
 import { useAdminAuthStore } from "../../store/adminAuthStore";
+import AdminPeriodDashboardIllustration from "../../components/admin/AdminPeriodDashboardIllustration";
 
 const DASHBOARD_PAGE_SIZE = 200;
 
@@ -56,6 +57,18 @@ const getBookingReferenceDate = (booking) => {
 
 const getInvoiceRevenueDate = (invoice) =>
   invoice?.createdAt ? new Date(invoice.createdAt) : null;
+
+const startOfDay = (date) => {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+};
+
+const endOfDay = (date) => {
+  const next = new Date(date);
+  next.setHours(23, 59, 59, 999);
+  return next;
+};
 
 const getPagedTotal = (payload, fallbackLength = 0) =>
   payload?.pagination?.totalItems ??
@@ -441,25 +454,33 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // ── Fetch Period Dashboard khi periodType thay đổi ────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false;
+  const loadPeriodDashboard = useCallback(async () => {
     setPeriodLoading(true);
-    getCurrentDashboard(null, periodType)
-      .then(res => { if (!cancelled) setPeriodDashboard(res.data); })
-      .catch(() => { if (!cancelled) setPeriodDashboard(null); })
-      .finally(() => { if (!cancelled) setPeriodLoading(false); });
-    return () => { cancelled = true; };
-  }, [periodType]);
-
-  const handleRebuildAll = async () => {
-    setPeriodRebuilding(true);
     try {
-      await rebuildAllCurrent();
       const res = await getCurrentDashboard(null, periodType);
       setPeriodDashboard(res.data);
+    } catch {
+      setPeriodDashboard(null);
+    } finally {
+      setPeriodLoading(false);
+    }
+  }, [periodType]);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  // ── Fetch Period Dashboard khi periodType thay đổi ────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    loadPeriodDashboard();
+  }, [loadPeriodDashboard]);
+
+  const handleRefreshAll = async () => {
+    setPeriodRebuilding(true);
+    try {
+      await Promise.all([fetchAll(), loadPeriodDashboard()]);
     } catch (e) {
-      console.error("Rebuild failed:", e);
+      console.error("Dashboard refresh failed:", e);
     } finally {
       setPeriodRebuilding(false);
     }
@@ -504,20 +525,67 @@ export default function DashboardPage() {
       return inRange(d);
     }).length;
 
-    // Revenue chart: last 7 days always
-    const revenueByDay = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      return allInvoices
-        .filter((iv) => iv.status === "Paid" && isSameDay(getInvoiceRevenueDate(iv), d))
-        .reduce((s, iv) => s + (iv.finalTotal || 0), 0);
-    });
+    const paidInvoiceEntries = allInvoices
+      .filter((iv) => iv.status === "Paid")
+      .map((iv) => ({ ...iv, revenueDate: getInvoiceRevenueDate(iv) }))
+      .filter((iv) => iv.revenueDate);
+
+    const revenueByDay = (() => {
+      if (periodType === "DAILY") {
+        const buckets = Array.from({ length: 25 }, (_, hour) => ({
+          label: `${hour}h`,
+          value: 0,
+        }));
+
+        paidInvoiceEntries.forEach((invoice) => {
+          if (!inRange(invoice.revenueDate)) return;
+          buckets[invoice.revenueDate.getHours()].value += invoice.finalTotal || 0;
+        });
+
+        return buckets;
+      }
+
+      if (periodType === "WEEKLY") {
+        const weekdayLabels = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+        const buckets = weekdayLabels.map((label) => ({ label, value: 0 }));
+
+        paidInvoiceEntries.forEach((invoice) => {
+          if (!inRange(invoice.revenueDate)) return;
+          const dayIndex = invoice.revenueDate.getDay() === 0 ? 6 : invoice.revenueDate.getDay() - 1;
+          buckets[dayIndex].value += invoice.finalTotal || 0;
+        });
+
+        return buckets;
+      }
+
+      const rangeEnd = endOfDay(to);
+      const rangeStart = startOfDay(rangeEnd);
+      rangeStart.setDate(rangeStart.getDate() - 6);
+      const buckets = Array.from({ length: 7 }, (_, index) => {
+        const current = new Date(rangeStart);
+        current.setDate(rangeStart.getDate() + index);
+        return {
+          label: `${current.getDate()}/${current.getMonth() + 1}`,
+          value: 0,
+          key: current.toDateString(),
+        };
+      });
+
+      paidInvoiceEntries.forEach((invoice) => {
+        if (invoice.revenueDate < rangeStart || invoice.revenueDate > rangeEnd) return;
+        const dayKey = startOfDay(invoice.revenueDate).toDateString();
+        const bucket = buckets.find((item) => item.key === dayKey);
+        if (bucket) bucket.value += invoice.finalTotal || 0;
+      });
+
+      return buckets.map(({ key, ...item }) => item);
+    })();
 
     const bookingsByStatus = {};
     filteredBookings.forEach((b) => { bookingsByStatus[b.status] = (bookingsByStatus[b.status] || 0) + 1; });
 
     return { totalRevenue, todayRevenue, activeBookings, pendingBookings, newUsersThisMonth, revenueByDay, bookingsByStatus };
-  }, [activePeriodRange, allInvoices, bookings, allUsers]);
+  }, [activePeriodRange, allInvoices, allUsers, bookings, periodType]);
 
   const activePeriodLabel = periodType === "DAILY"
     ? "Ngày"
@@ -541,7 +609,6 @@ export default function DashboardPage() {
   const roomStatusSnapshot = sharedSnapshot?.roomStatus || {};
   const roomStatusCountsSnapshot = roomStatusSnapshot?.counts || {};
   const roomStatusGroupsSnapshot = roomStatusSnapshot?.roomsByStatus || {};
-  const revenueByDaySnapshot = sharedSnapshot?.revenueByDay || [];
   const bookingStatusSnapshot = sharedSnapshot?.bookingsByStatus || {};
   const roomTypeOccupancySnapshot = sharedSnapshot?.roomTypeOccupancy || [];
   const reviewSummarySnapshot = sharedSnapshot?.reviewSummary || {};
@@ -602,14 +669,16 @@ export default function DashboardPage() {
   const statusEntries = Object.entries(bookingStatusData).sort((a, b) => b[1] - a[1]);
   const totalBk = Object.values(bookingStatusData).reduce((s, v) => s + v, 0) || 1;
 
-  const weekdays = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-  const dayLabels = revenueByDaySnapshot.length > 0
-    ? revenueByDaySnapshot.map((item) => item.label)
-    : Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      return weekdays[d.getDay()];
-    });
+  const revenueChartTitle = periodType === "DAILY"
+    ? "Doanh thu theo giờ"
+    : periodType === "WEEKLY"
+      ? "Doanh thu trong tuần"
+      : "Doanh thu 7 ngày gần nhất";
+  const revenueChartSubtitle = periodType === "DAILY"
+    ? "Hiển thị từ 0h đến 24h"
+    : periodType === "WEEKLY"
+      ? "Tổng hợp theo T2, T3, T4, T5, T6, T7, CN"
+      : "Chỉ tính hóa đơn đã thanh toán trong 7 ngày gần đây";
 
   const roomCountByStatus = {
     Ready: roomStatusCountsSnapshot.ready ?? rooms.filter(r => r.businessStatus === "Available" && r.cleaningStatus === "Clean").length,
@@ -1022,6 +1091,20 @@ export default function DashboardPage() {
         .db-subtitle-highlight { color:var(--a-brand-ink); }
         .db-table-head { background:color-mix(in srgb, var(--a-surface-raised) 92%, transparent); }
         .db-border { border-color:var(--a-divider) !important; }
+        .period-dashboard-layout { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(260px,.9fr); gap:18px; align-items:stretch; }
+        .period-hero-panel { display:flex; align-items:center; justify-content:center; overflow:visible; min-height:100%; }
+        .period-hero-illustration { width:100%; max-width:440px; margin:0 auto; }
+        .period-hero-illustration svg { width:100%; height:auto; display:block; }
+        .period-hero-illustration [style*="fill:#92E3A9"] { fill:var(--a-brand-ink) !important; }
+        .period-hero-illustration [style*="fill:#263238"] { fill:var(--a-text) !important; }
+        .period-hero-illustration [style*="fill:#ebebeb"],
+        .period-hero-illustration [style*="fill:#e0e0e0"],
+        .period-hero-illustration [style*="fill:#e6e6e6"],
+        .period-hero-illustration [style*="fill:#f0f0f0"],
+        .period-hero-illustration [style*="fill:#f5f5f5"],
+        .period-hero-illustration [style*="fill:#fafafa"] { fill:color-mix(in srgb, var(--a-surface) 60%, var(--a-border)) !important; }
+        .period-hero-illustration [style*="fill:#fff"] { fill:var(--a-surface) !important; }
+        @media (max-width: 1024px) { .period-dashboard-layout { grid-template-columns:1fr; } }
       `}</style>
 
       <div className="admin-page" style={{ maxWidth: 1400, margin: "0 auto", fontFamily: "Manrope, sans-serif" }}>
@@ -1039,7 +1122,7 @@ export default function DashboardPage() {
               </span>
             </p>
           </div>
-          <button className="refresh-btn" onClick={handleRebuildAll} disabled={periodLoading || periodRebuilding}>
+          <button className="refresh-btn" onClick={handleRefreshAll} disabled={loading || periodLoading || periodRebuilding}>
             <span className="material-symbols-outlined" style={{ fontSize: 18, ...((periodLoading || periodRebuilding) ? { animation: "spin .7s linear infinite" } : {}) }}>
               refresh
             </span>
@@ -1049,6 +1132,8 @@ export default function DashboardPage() {
 
         {/* ── Period Dashboard Section ─────────────────────────────────────── */}
         <div className="card-in admin-card" style={{ padding: 22, marginBottom: 24, borderRadius: 18 }}>
+          <div className="period-dashboard-layout">
+            <div>
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
             <div>
@@ -1081,20 +1166,6 @@ export default function DashboardPage() {
                   {pt === "DAILY" ? "Ngày" : pt === "WEEKLY" ? "Tuần" : "Tháng"}
                 </button>
               ))}
-              <button
-                onClick={handleRebuildAll}
-                disabled={periodRebuilding}
-                style={{
-                  padding: "6px 14px", borderRadius: 10, border: "1.5px solid var(--a-border)",
-                  background: "var(--a-surface)", color: "var(--a-text-muted)",
-                  fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 12,
-                  cursor: periodRebuilding ? "not-allowed" : "pointer",
-                  display: "flex", alignItems: "center", gap: 4, opacity: periodRebuilding ? 0.7 : 1,
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 14, ...(periodRebuilding ? { animation: "spin .7s linear infinite" } : {}) }}>sync</span>
-                {periodRebuilding ? "Rebuilding..." : "Rebuild"}
-              </button>
             </div>
           </div>
 
@@ -1176,7 +1247,7 @@ export default function DashboardPage() {
             <div style={{ textAlign: "center", padding: "20px 0", color: "var(--a-text-muted)" }}>
               <span className="material-symbols-outlined" style={{ fontSize: 36, display: "block", marginBottom: 8, opacity: 0.35 }}>bar_chart</span>
               <p style={{ fontSize: 13, margin: 0 }}>Chưa có dữ liệu cho kỳ này.</p>
-              <p style={{ fontSize: 12, margin: "4px 0 0", opacity: 0.7 }}>Nhấn <strong>Rebuild</strong> để tạo snapshot.</p>
+              <p style={{ fontSize: 12, margin: "4px 0 0", opacity: 0.7 }}>Dashboard sẽ hiển thị ngay khi hệ thống có snapshot cho kỳ đã chọn.</p>
             </div>
           ) : null}
 
@@ -1193,6 +1264,12 @@ export default function DashboardPage() {
               </span>
             </div>
           )}
+            </div>
+
+            <div className="period-hero-panel">
+              <AdminPeriodDashboardIllustration />
+            </div>
+          </div>
         </div>
 
         {/* KPI Row */}
@@ -1440,23 +1517,23 @@ export default function DashboardPage() {
           <div className="card-in admin-card" style={{ padding: 24, animationDelay: "200ms", animationFillMode: "both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
               <div>
-                <h4 style={{ fontSize: 15, fontWeight: 800, color: "var(--a-text)", margin: "0 0 2px" }}>Doanh thu 7 ngày qua</h4>
-                <p style={{ fontSize: 12, color: "var(--a-text-muted)", margin: 0 }}>Chỉ tính hóa đơn đã thanh toán</p>
+                <h4 style={{ fontSize: 15, fontWeight: 800, color: "var(--a-text)", margin: "0 0 2px" }}>{revenueChartTitle}</h4>
+                <p style={{ fontSize: 12, color: "var(--a-text-muted)", margin: 0 }}>{revenueChartSubtitle}</p>
               </div>
               {!loading && (
                 <span className="admin-status-badge" data-intent="success" style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px" }}>
-                  {fmtCurrency((revenueByDaySnapshot.length > 0 ? revenueByDaySnapshot : mergedStats.revenueByDay.map((value, index) => ({ value, label: dayLabels[index] }))).reduce((s, item) => s + (item.value || 0), 0))}
+                  {fmtCurrency((mergedStats.revenueByDay || []).reduce((s, item) => s + (item.value || 0), 0))}
                 </span>
               )}
             </div>
             {loading ? (
               <div style={{ height: 80, display: "flex", alignItems: "flex-end", gap: 8 }}>
-                {Array.from({ length: 7 }).map((_, i) => (
+                {Array.from({ length: periodType === "DAILY" ? 12 : 7 }).map((_, i) => (
                   <Skel key={i} style={{ flex: 1, height: `${30 + Math.random() * 50}%`, borderRadius: "4px 4px 2px 2px" }} />
                 ))}
               </div>
             ) : (
-              <MiniBar data={revenueByDaySnapshot.length > 0 ? revenueByDaySnapshot.map((item) => item.value) : mergedStats.revenueByDay} labels={dayLabels} color="var(--a-brand-ink)" />
+              <MiniBar data={(mergedStats.revenueByDay || []).map((item) => item.value)} labels={(mergedStats.revenueByDay || []).map((item) => item.label)} color="var(--a-brand-ink)" />
             )}
           </div>
 

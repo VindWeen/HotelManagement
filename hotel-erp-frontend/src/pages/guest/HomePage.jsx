@@ -5,6 +5,7 @@ import { getRoomTypes } from '../../api/roomTypesApi';
 import { getReviews } from '../../api/reviewsApi';
 import { getArticles } from '../../api/articlesApi';
 import { getGuestServiceCatalog } from '../../api/guestServicesApi';
+import WeatherWidget from '../../components/common/WeatherWidget';
 import { getPlainTextExcerpt, stripHtml } from '../../utils';
 import { getServiceIcon } from './PublicServicesPage';
 import { getFullImageUrl } from '../../utils/imageUtils';
@@ -500,6 +501,9 @@ export default function HomePage() {
             >
               Khám phá phòng
             </Link>
+          </div>
+          <div style={{ marginTop: 24, width: 'min(100%, 360px)', marginInline: 'auto' }}>
+            <WeatherWidget variant="card" />
           </div>
         </div>
         <div className="hp-hero-scroll">
