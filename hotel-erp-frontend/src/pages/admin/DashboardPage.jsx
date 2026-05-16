@@ -1091,9 +1091,9 @@ export default function DashboardPage() {
         .db-subtitle-highlight { color:var(--a-brand-ink); }
         .db-table-head { background:color-mix(in srgb, var(--a-surface-raised) 92%, transparent); }
         .db-border { border-color:var(--a-divider) !important; }
-        .period-dashboard-layout { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(260px,.9fr); gap:18px; align-items:stretch; }
+        .period-dashboard-layout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(280px, 1fr); gap:18px; align-items:center; }
         .period-hero-panel { display:flex; align-items:center; justify-content:center; overflow:visible; min-height:100%; }
-        .period-hero-illustration { width:100%; max-width:440px; margin:0 auto; }
+        .period-hero-illustration { width:100%; max-width:300px; margin:0 auto; }
         .period-hero-illustration svg { width:100%; height:auto; display:block; }
         .period-hero-illustration [style*="fill:#92E3A9"] { fill:var(--a-brand-ink) !important; }
         .period-hero-illustration [style*="fill:#263238"] { fill:var(--a-text) !important; }
@@ -1171,17 +1171,17 @@ export default function DashboardPage() {
 
           {/* KPI Cards */}
           {periodLoading ? (
-            <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-              {[1, 2, 3].map(i => <Skel key={i} h={76} style={{ flex: "1 1 140px", borderRadius: 12 }} />)}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 16 }}>
+              {[1, 2, 3, 4].map(i => <Skel key={i} h={86} style={{ borderRadius: 12 }} />)}
             </div>
           ) : periodDashboard?.dashboard?.widgets?.kpiCards?.length > 0 ? (
             <>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 16 }}>
                 {periodDashboard.dashboard.widgets.kpiCards.map((card, i) => (
                   <div
                     key={i}
                     style={{
-                      flex: "1 1 150px", padding: "14px 16px", borderRadius: 12,
+                      padding: "16px", borderRadius: 12,
                       background: "var(--a-surface-raised)", border: "1px solid var(--a-border)",
                     }}
                   >
