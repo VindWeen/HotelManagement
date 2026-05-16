@@ -1093,17 +1093,17 @@ export default function DashboardPage() {
         .db-border { border-color:var(--a-divider) !important; }
         .period-dashboard-layout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(280px, 1fr); gap:18px; align-items:center; }
         .period-hero-panel { display:flex; align-items:center; justify-content:center; overflow:visible; min-height:100%; }
-        .period-hero-illustration { width:100%; max-width:300px; margin:0 auto; }
+        .period-hero-illustration { width:100%; margin:0 auto; }
         .period-hero-illustration svg { width:100%; height:auto; display:block; }
-        .period-hero-illustration [style*="fill:#92E3A9"] { fill:var(--a-brand-ink) !important; }
-        .period-hero-illustration [style*="fill:#263238"] { fill:var(--a-text) !important; }
-        .period-hero-illustration [style*="fill:#ebebeb"],
-        .period-hero-illustration [style*="fill:#e0e0e0"],
-        .period-hero-illustration [style*="fill:#e6e6e6"],
-        .period-hero-illustration [style*="fill:#f0f0f0"],
-        .period-hero-illustration [style*="fill:#f5f5f5"],
-        .period-hero-illustration [style*="fill:#fafafa"] { fill:color-mix(in srgb, var(--a-surface) 60%, var(--a-border)) !important; }
-        .period-hero-illustration [style*="fill:#fff"] { fill:var(--a-surface) !important; }
+        .period-hero-illustration [fill="#92E3A9"] { fill:var(--a-brand-ink) !important; }
+        .period-hero-illustration [fill="#263238"] { fill:var(--a-text) !important; }
+        .period-hero-illustration [fill="#ebebeb"],
+        .period-hero-illustration [fill="#e0e0e0"],
+        .period-hero-illustration [fill="#e6e6e6"],
+        .period-hero-illustration [fill="#f0f0f0"],
+        .period-hero-illustration [fill="#f5f5f5"],
+        .period-hero-illustration [fill="#fafafa"] { fill:color-mix(in srgb, var(--a-surface) 60%, var(--a-border)) !important; }
+        .period-hero-illustration [fill="#fff"] { fill:var(--a-surface) !important; }
         @media (max-width: 1024px) { .period-dashboard-layout { grid-template-columns:1fr; } }
       `}</style>
 
@@ -1267,7 +1267,9 @@ export default function DashboardPage() {
             </div>
 
             <div className="period-hero-panel">
-              <AdminPeriodDashboardIllustration />
+              <div className="period-hero-illustration">
+                <AdminPeriodDashboardIllustration />
+              </div>
             </div>
           </div>
         </div>
