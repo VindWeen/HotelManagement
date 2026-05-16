@@ -5,7 +5,7 @@ import { buildInvoiceVietQRData } from "./vietqr";
 export const printInvoiceDocument = (invoice, mode = "final") => {
     if (!invoice) return;
 
-    const title = mode === "draft" ? `BAN NHAP HOA DON #${invoice.id}` : `HOA DON THANH TOAN #${invoice.id}`;
+    const title = mode === "draft" ? `BAN NHAP HOA DON #${invoice.id}` : `HÓA ĐƠN THANH TOÁN #${invoice.id}`;
     const adjustmentRows = (invoice.adjustments || []).map((item) => `
       <tr>
         <td>${item.adjustmentType === "Discount" ? "Giam tru" : "Phu phi"}</td>
@@ -55,7 +55,7 @@ export const printInvoiceDocument = (invoice, mode = "final") => {
     const paymentQr = buildInvoiceVietQRData(invoice.booking, invoice);
     const qrSection = paymentQr ? `
       <div class="card qr-card" style="margin-top: 24px;">
-        <div class="section-title">QR thanh toan cong no</div>
+        <div class="section-title">QR THANH TOÁN CÔNG NỢ</div>
         <div class="qr-layout">
           <div class="qr-box">
             <img
@@ -66,10 +66,10 @@ export const printInvoiceDocument = (invoice, mode = "final") => {
             />
           </div>
           <div>
-            <div class="qr-meta"><span>Ngan hang</span><strong>Vietcombank (VCB)</strong></div>
-            <div class="qr-meta"><span>So tai khoan</span><strong>${paymentQr.accountNumber}</strong></div>
-            <div class="qr-meta"><span>So tien can thanh toan</span><strong style="color:#b91c1c;">${formatCurrency(paymentQr.amount)}</strong></div>
-            <div class="qr-meta"><span>Noi dung chuyen khoan</span><strong>${paymentQr.description}</strong></div>
+            <div class="qr-meta"><span>NGÂN HÀNG</span><strong>Vietcombank (VCB)</strong></div>
+            <div class="qr-meta"><span>SỐ TÀI KHOẢN</span><strong>${paymentQr.accountNumber}</strong></div>
+            <div class="qr-meta"><span>SỐ TIỀN CẦN THANH TOÁN</span><strong style="color:#b91c1c;">${formatCurrency(paymentQr.amount)}</strong></div>
+            <div class="qr-meta"><span>NỘI DUNG CHUYỂN KHOẢN</span><strong>${paymentQr.description}</strong></div>
           </div>
         </div>
       </div>
@@ -119,7 +119,7 @@ export const printInvoiceDocument = (invoice, mode = "final") => {
               <p class="muted">Booking: ${invoice.bookingCode || invoice.bookingId || "-"}</p>
             </div>
             <div style="text-align:right;">
-              ${mode === "draft" ? '<div class="watermark">DRAFT</div>' : '<div class="badge">ĐÃ CHỐT</div>'}
+              ${mode === "draft" ? '<div class="watermark">BẢN NHÁP</div>' : '<div class="badge">ĐÃ CHỐT</div>'}
               <p class="muted" style="margin-top:8px;">Ngày in: ${formatDate(new Date())}</p>
             </div>
           </div>
@@ -241,12 +241,22 @@ export const printInvoiceDocument = (invoice, mode = "final") => {
             </table>
           </div>
           ${qrSection}
+          <script>
+            let printed = false;
+            function doPrint() {
+              if (printed) return;
+              printed = true;
+              window.print();
+            }
+            window.onload = function() {
+              setTimeout(doPrint, 300);
+            };
+            setTimeout(doPrint, 2500); // Fallback in case image loading hangs
+          </script>
         </body>
       </html>
     `);
     printWindow.document.close();
     printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 200);
+    // Print will be triggered by window.onload inside the document
   };

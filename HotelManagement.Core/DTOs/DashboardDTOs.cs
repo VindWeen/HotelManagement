@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace HotelManagement.Core.DTOs;
 
 public class DashboardOverviewResponse
@@ -145,4 +147,60 @@ public class MemberTierBreakdownItemResponse
     public string TierName { get; set; } = null!;
     public int MemberCount { get; set; }
     public int TotalPoints { get; set; }
+}
+
+// ─── Role-Based Period Dashboard DTOs ────────────────────────────────────────
+
+/// <summary>Response đầy đủ khi GET dashboard theo kỳ.</summary>
+public class DashboardPeriodResponseDto
+{
+    public int Id { get; set; }
+    public int RoleId { get; set; }
+    public string RoleName { get; set; } = string.Empty;
+    public string DashboardCode { get; set; } = string.Empty;
+    public string DashboardTitle { get; set; } = string.Empty;
+    public string PeriodType { get; set; } = string.Empty;
+    public string PeriodKey { get; set; } = string.Empty;
+    public DateTime PeriodStart { get; set; }
+    public DateTime PeriodEnd { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public bool IsCurrent { get; set; }
+    public int Version { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    /// <summary>dashboard_json deserialized để FE đọc trực tiếp.</summary>
+    public JsonElement? Dashboard { get; set; }
+    /// <summary>comparison_json deserialized (so sánh kỳ trước).</summary>
+    public JsonElement? Comparison { get; set; }
+}
+
+/// <summary>Item gọn cho danh sách lịch sử kỳ (không kèm JSON lớn).</summary>
+public class DashboardHistoryItemDto
+{
+    public int Id { get; set; }
+    public string RoleName { get; set; } = string.Empty;
+    public string DashboardCode { get; set; } = string.Empty;
+    public string PeriodType { get; set; } = string.Empty;
+    public string PeriodKey { get; set; } = string.Empty;
+    public DateTime PeriodStart { get; set; }
+    public DateTime PeriodEnd { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public bool IsCurrent { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+/// <summary>Body cho POST /rebuild — rebuild 1 role/period.</summary>
+public class DashboardRebuildRequestDto
+{
+    public string RoleName { get; set; } = string.Empty;
+    public string PeriodType { get; set; } = "MONTHLY";
+    public DateTime? OccurredAtUtc { get; set; }
+}
+
+/// <summary>Body cho POST /events/rebuild-affected — trigger từ sự kiện nghiệp vụ.</summary>
+public class DashboardEventRequestDto
+{
+    /// <summary>Loại sự kiện: DAMAGE_REPORTED, BOOKING_CREATED, ...</summary>
+    public string EventType { get; set; } = string.Empty;
+    public DateTime? OccurredAtUtc { get; set; }
+    public int? RefId { get; set; }
 }

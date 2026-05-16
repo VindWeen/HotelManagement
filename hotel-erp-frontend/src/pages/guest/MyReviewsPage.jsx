@@ -56,7 +56,8 @@ export default function MyReviewsPage() {
       const res = await getMyReviewStatus();
       const pending = res.data?.pendingReviewBookings || [];
       setPendingBookings(pending);
-      setSubmittedReviews(res.data?.submittedReviews || []);
+      const allSubmitted = res.data?.submittedReviews || [];
+      setSubmittedReviews(allSubmitted.filter(r => r.status === "approved"));
       setSelectedBookingId((current) => current || (pending[0]?.id ? String(pending[0].id) : ""));
     } catch (err) {
       setError(err?.response?.data?.message || "Không thể tải trạng thái review.");
@@ -138,8 +139,8 @@ export default function MyReviewsPage() {
         </div>
       ) : null}
 
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 22, alignItems: "start" }}>
-        <form className="g-card" style={{ padding: 24, display: "grid", gap: 16 }} onSubmit={handleSubmit}>
+      <section style={{ display: "grid", gap: 32, maxWidth: 800, width: "100%", margin: "0 auto" }}>
+        <form className="g-card" style={{ padding: 28, display: "grid", gap: 20 }} onSubmit={handleSubmit}>
           <SectionTitle align="left" titleSize="sm" title="Tạo Review" subtitle="Chỉ booking đã hoàn tất và chưa từng review mới xuất hiện ở đây." />
 
           {pendingBookings.length === 0 ? (
@@ -176,11 +177,18 @@ export default function MyReviewsPage() {
                     <button
                       key={value}
                       type="button"
-                      className={value <= rating ? "g-btn-primary" : "g-btn-outline"}
                       onClick={() => setRating(value)}
-                      style={{ minWidth: 46, justifyContent: "center" }}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--g-gold, #FFD700)",
+                        fontSize: "2.5rem",
+                        padding: 0,
+                        lineHeight: 1,
+                      }}
                     >
-                      {value}
+                      {value <= rating ? "★" : "☆"}
                     </button>
                   ))}
                 </div>
@@ -197,17 +205,39 @@ export default function MyReviewsPage() {
                 />
               </label>
 
-              <label style={{ display: "grid", gap: 8 }}>
-                <span className="g-label">Ảnh review</span>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  onChange={(event) => setImage(event.target.files?.[0] || null)}
-                />
-              </label>
+              <div style={{ display: "grid", gap: 8 }}>
+                <span className="g-label">Ảnh minh chứng</span>
+                <label style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "24px",
+                  border: "2px dashed var(--g-border)",
+                  borderRadius: "var(--g-radius-md)",
+                  background: "var(--g-surface-raised)",
+                  cursor: "pointer",
+                  color: "var(--g-text-secondary)",
+                  textAlign: "center"
+                }}>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={(event) => setImage(event.target.files?.[0] || null)}
+                    style={{ display: "none" }}
+                  />
+                  {image ? (
+                    <span style={{ color: "var(--g-text)" }}>Đã chọn: <strong>{image.name}</strong><br/><small>(Nhấn để đổi ảnh khác)</small></span>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                      <span className="material-icons" style={{ fontSize: 32, color: "var(--g-text-secondary)" }}>add_photo_alternate</span>
+                      <span>Nhấn để chọn ảnh minh chứng (Tùy chọn)</span>
+                    </div>
+                  )}
+                </label>
+              </div>
 
               {imagePreview ? (
-                <img src={imagePreview} alt="Preview review" style={{ width: "100%", maxHeight: 240, objectFit: "cover", borderRadius: "var(--g-radius-md)" }} />
+                <img src={imagePreview} alt="Preview review" style={{ width: "100%", maxHeight: 300, objectFit: "cover", borderRadius: "var(--g-radius-md)" }} />
               ) : null}
 
               <button className="g-btn-primary" type="submit" disabled={submitting} style={{ justifyContent: "center" }}>
@@ -218,7 +248,7 @@ export default function MyReviewsPage() {
         </form>
 
         <section style={{ display: "grid", gap: 16 }}>
-          <SectionTitle align="left" titleSize="sm" title="Review Đã Gửi" subtitle="Theo dõi trạng thái duyệt từ admin." />
+          <SectionTitle align="left" titleSize="sm" title="Review Đã Gửi" subtitle="Các review của bạn đã được duyệt và hiển thị." />
           {submittedReviews.length === 0 ? (
             <EmptyState compact icon="reviews" title="Bạn chưa gửi review nào" message="Review đã gửi sẽ xuất hiện ở khu vực này." />
           ) : (

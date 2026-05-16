@@ -24,19 +24,22 @@ public class LossAndDamagesController : ControllerBase
     private readonly INotificationService _notificationService;
     private readonly IAuditLogGroupService _auditLogGroup;
     private readonly IAuditTrailService _auditTrail;
+    private readonly IRoleDashboardPeriodService _dashboardService;
 
     public LossAndDamagesController(
         AppDbContext db,
         Cloudinary cloudinary,
         INotificationService notificationService,
         IAuditLogGroupService auditLogGroup,
-        IAuditTrailService auditTrail)
+        IAuditTrailService auditTrail,
+        IRoleDashboardPeriodService dashboardService)
     {
         _db = db;
         _cloudinary = cloudinary;
         _notificationService = notificationService;
         _auditLogGroup = auditLogGroup;
         _auditTrail = auditTrail;
+        _dashboardService = dashboardService;
     }
 
     private class ImageItem
@@ -474,6 +477,11 @@ public class LossAndDamagesController : ControllerBase
 
         _ = _notificationService.SendToRolesAsync(new[] { "Admin", "Manager" }, notification.Title, notification.Message, notification.Action.ToString());
 
+        // ── Trigger dashboard rebuild ──
+        _ = _dashboardService.RebuildAffectedDashboardsAsync(
+            "DAMAGE_REPORTED", DateTime.UtcNow,
+            userId > 0 ? userId : null, record.Id);
+
         return StatusCode(201, new
         {
             message = record.Status == "Confirmed"
@@ -593,6 +601,11 @@ public class LossAndDamagesController : ControllerBase
         _db.AuditLogs.Add(auditLog);
         await _db.SaveChangesAsync();
 
+        // ── Trigger dashboard rebuild ──
+        var updateUserId = JwtHelper.GetUserId(User);
+        _ = _dashboardService.RebuildAffectedDashboardsAsync(
+            "DAMAGE_UPDATED", DateTime.UtcNow, updateUserId > 0 ? updateUserId : null, id);
+
         return Ok(new
         {
             message = oldStatus != record.Status || oldQuantity != record.Quantity
@@ -687,6 +700,10 @@ public class LossAndDamagesController : ControllerBase
             events);
         _db.AuditLogs.Add(auditLog);
         await _db.SaveChangesAsync();
+
+        // ── Trigger dashboard rebuild ──
+        _ = _dashboardService.RebuildAffectedDashboardsAsync(
+            "DAMAGE_UPDATED", DateTime.UtcNow, null, null);
 
         return Ok(new { message = $"Đã cập nhật trạng thái thành công cho {updatedCount} biên bản." });
     }
@@ -834,6 +851,11 @@ public class LossAndDamagesController : ControllerBase
         _db.AuditLogs.Add(auditLog);
         await _db.SaveChangesAsync();
 
+        // ── Trigger dashboard rebuild ──
+        var deleteUserId = JwtHelper.GetUserId(User);
+        _ = _dashboardService.RebuildAffectedDashboardsAsync(
+            "DAMAGE_CANCELLED", DateTime.UtcNow, deleteUserId > 0 ? deleteUserId : null, id);
+
         return Ok(new
         {
             message = "Đã xóa biên bản và hoàn tác tồn kho nếu biên bản đã từng được xác nhận.",
@@ -915,6 +937,11 @@ public class LossAndDamagesController : ControllerBase
             RecordId = id,
             NewValue = $"{{\"replenishedQuantity\":{actualQuantity},\"totalReplenished\":{record.ReplenishedQuantity},\"remaining\":{remainingAfter},\"note\":\"{request.Note ?? ""}\"}}"
         });
+
+        // ── Trigger dashboard rebuild ──
+        var replenishUserId = JwtHelper.GetUserId(User);
+        _ = _dashboardService.RebuildAffectedDashboardsAsync(
+            "DAMAGE_UPDATED", DateTime.UtcNow, replenishUserId > 0 ? replenishUserId : null, id);
 
         return Ok(new
         {
@@ -1022,6 +1049,10 @@ public class LossAndDamagesController : ControllerBase
             events);
         _db.AuditLogs.Add(auditLog);
         await _db.SaveChangesAsync();
+
+        // ── Trigger dashboard rebuild ──
+        _ = _dashboardService.RebuildAffectedDashboardsAsync(
+            "DAMAGE_UPDATED", DateTime.UtcNow, null, null);
 
         return Ok(new { message = $"Đã bổ sung thành công {totalReplenished} vật tư." });
     }

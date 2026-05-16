@@ -16,13 +16,11 @@ public class RoomsController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IAuditTrailService _auditTrail;
-    private readonly IDashboardAggregationService _dashboard;
 
-    public RoomsController(AppDbContext db, IAuditTrailService auditTrail, IDashboardAggregationService dashboard)
+    public RoomsController(AppDbContext db, IAuditTrailService auditTrail)
     {
         _db = db;
         _auditTrail = auditTrail;
-        _dashboard = dashboard;
     }
 
     // -----------------------------------------------------------------------------
@@ -284,10 +282,6 @@ public class RoomsController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        // Fire-and-forget: refresh snapshot
-        _ = _dashboard.RefreshSnapshotsAsync(
-            [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Receptionist, SnapshotRoles.Housekeeping]);
-
         return Ok(new { success = true, message = $"Đã đổi trạng thái phòng #{id} thành '{request.BusinessStatus}'." });
     }
 
@@ -332,10 +326,6 @@ public class RoomsController : ControllerBase
         });
 
         await _db.SaveChangesAsync();
-
-        // Fire-and-forget: refresh snapshot
-        _ = _dashboard.RefreshSnapshotsAsync(
-            [SnapshotRoles.Admin, SnapshotRoles.Manager, SnapshotRoles.Receptionist, SnapshotRoles.Housekeeping]);
 
         return Ok(new { success = true, message = $"Đã cập nhật cleaning_status phòng #{id} thành '{request.CleaningStatus}'." });
     }
