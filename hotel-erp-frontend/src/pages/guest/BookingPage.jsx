@@ -684,8 +684,13 @@ export default function BookingPage() {
   /* ── Dates & guests ── */
   const [checkIn, setCheckIn] = useState(today());
   const [checkOut, setCheckOut] = useState(tomorrow());
+  const [checkInTime, setCheckInTime] = useState("14:00");
+  const [checkOutTime, setCheckOutTime] = useState("12:00");
   const [numAdults, setNumAdults] = useState(1);
   const [numChildren, setNumChildren] = useState(0);
+
+  /* ── Helper: ghép ngày + giờ thành ISO datetime ── */
+  const buildDT = (date, time) => date ? `${date}T${time || "00:00"}:00` : "";
 
   /* ── Room types ── */
   const [roomTypes, setRoomTypes] = useState([]);
@@ -794,12 +799,14 @@ export default function BookingPage() {
 
   /* ─── Load room type availability when step 2 ─── */
   const loadRoomTypes = useCallback(async () => {
-    if (!checkIn || !checkOut || checkOut <= checkIn) return;
+    const ciDT = buildDT(checkIn, checkInTime);
+    const coDT = buildDT(checkOut, checkOutTime);
+    if (!ciDT || !coDT || new Date(coDT) <= new Date(ciDT)) return;
     setLoadingRoomTypes(true);
     try {
       const res = await getGuestAvailability({
-        checkInDate: checkIn,
-        checkOutDate: checkOut,
+        checkInDate: ciDT,
+        checkOutDate: coDT,
         numAdults,
         numChildren,
       });
@@ -810,7 +817,7 @@ export default function BookingPage() {
     } finally {
       setLoadingRoomTypes(false);
     }
-  }, [checkIn, checkOut, numAdults, numChildren]);
+  }, [checkIn, checkOut, checkInTime, checkOutTime, numAdults, numChildren]);
 
   /* ─── Load pending bookings for spam check ─── */
   const loadPendingBookings = useCallback(async () => {
@@ -899,11 +906,14 @@ export default function BookingPage() {
     today0.setHours(0, 0, 0, 0);
     const ci = new Date(checkIn);
     const co = new Date(checkOut);
+    const ciDT = new Date(buildDT(checkIn, checkInTime));
+    const coDT = new Date(buildDT(checkOut, checkOutTime));
 
     if (!checkIn) return setDateError("Vui lòng chọn ngày nhận phòng."), false;
     if (ci < today0) return setDateError("Ngày nhận phòng không được là ngày quá khứ."), false;
-    if (!checkOut || co <= ci)
-      return setDateError("Ngày trả phòng phải sau ngày nhận phòng."), false;
+    if (!checkOut) return setDateError("Vui lòng chọn ngày trả phòng."), false;
+    if (co < ci) return setDateError("Ngày trả phòng không được trước ngày nhận phòng."), false;
+    if (coDT <= ciDT) return setDateError("Giờ trả phòng phải sau giờ nhận phòng (kể cả khi cùng ngày)."), false;
     if (nights > 90) return setDateError("Số đêm không được vượt quá 90 đêm."), false;
     if (numAdults < 1) return setDateError("Phải có ít nhất 1 người lớn."), false;
     setDateError("");
@@ -999,8 +1009,8 @@ export default function BookingPage() {
         details: Object.keys(selectedRoomsMap).flatMap(id => 
           Array.from({ length: selectedRoomsMap[id] }).map(() => ({
             roomTypeId: Number(id),
-            checkInDate: checkIn,
-            checkOutDate: checkOut,
+            checkInDate: buildDT(checkIn, checkInTime),
+            checkOutDate: buildDT(checkOut, checkOutTime),
           }))
         ),
       };
@@ -1255,7 +1265,7 @@ export default function BookingPage() {
                       className={`bp-input${dateError ? " error" : ""}`}
                       value={checkIn}
                       min={today()}
-                      onChange={(e) => { setCheckIn(e.target.value); setDateError(""); setSelectedRoomTypeId(null); setVoucherInfo(null); }}
+                      onChange={(e) => { setCheckIn(e.target.value); setDateError(""); setSelectedRoomsMap({}); setVoucherInfo(null); }}
                     />
                   </div>
                   <div className="bp-field">
@@ -1265,12 +1275,46 @@ export default function BookingPage() {
                       className={`bp-input${dateError ? " error" : ""}`}
                       value={checkOut}
                       min={checkIn || today()}
-                      onChange={(e) => { setCheckOut(e.target.value); setDateError(""); setSelectedRoomTypeId(null); setVoucherInfo(null); }}
+                      onChange={(e) => { setCheckOut(e.target.value); setDateError(""); setSelectedRoomsMap({}); setVoucherInfo(null); }}
                     />
                   </div>
                 </div>
 
-                {nights > 0 && (
+                {/* Time pickers */}
+                <div className="bp-form-row">
+                  <div className="bp-field">
+                    <label className="bp-label">
+                      <span className="material-symbols-outlined" style={{ fontSize: 13, verticalAlign: "middle", marginRight: 4 }}>schedule</span>
+                      Giờ nhận phòng <span className="bp-required">*</span>
+                    </label>
+                    <input
+                      type="time"
+                      className="bp-input"
+                      value={checkInTime}
+                      onChange={(e) => { setCheckInTime(e.target.value); setDateError(""); }}
+                    />
+                  </div>
+                  <div className="bp-field">
+                    <label className="bp-label">
+                      <span className="material-symbols-outlined" style={{ fontSize: 13, verticalAlign: "middle", marginRight: 4 }}>schedule</span>
+                      Giờ trả phòng <span className="bp-required">*</span>
+                    </label>
+                    <input
+                      type="time"
+                      className="bp-input"
+                      value={checkOutTime}
+                      onChange={(e) => { setCheckOutTime(e.target.value); setDateError(""); }}
+                    />
+                  </div>
+                </div>
+
+                {checkIn === checkOut && (
+                  <div className="bp-banner info" style={{ marginBottom: 12 }}>
+                    📅 Bạn đang chọn cùng ngày — đảm bảo <strong>giờ trả phòng sau giờ nhận phòng</strong>.
+                  </div>
+                )}
+
+                {nights > 0 && checkIn !== checkOut && (
                   <div style={{ marginBottom: 16 }}>
                     <span className="bp-nights-badge">
                       <span className="material-symbols-outlined" style={{ fontSize: 15 }}>bedtime</span>

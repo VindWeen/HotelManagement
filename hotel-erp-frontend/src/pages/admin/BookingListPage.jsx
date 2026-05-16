@@ -525,6 +525,8 @@ export default function BookingListPage() {
     numChildren: "",
     checkInDate: "",
     checkOutDate: "",
+    checkInTime: "14:00",
+    checkOutTime: "12:00",
     voucherId: "",
     source: "walk_in",
     note: "",
@@ -863,6 +865,12 @@ export default function BookingListPage() {
 
   const canExportInvoice = (item) => canExportBookingInvoice(item);
 
+  const buildDateTime = (date, time) => {
+    if (!date) return "";
+    const t = time || "00:00";
+    return `${date}T${t}:00`;
+  };
+
   const loadAvailability = useCallback(async () => {
     if (!bookingForm.checkInDate || !bookingForm.checkOutDate) {
       setAvailableRoomTypes([]);
@@ -872,8 +880,8 @@ export default function BookingListPage() {
     setAvailabilityLoading(true);
     try {
       const res = await getReceptionAvailability({
-        checkInDate: bookingForm.checkInDate,
-        checkOutDate: bookingForm.checkOutDate,
+        checkInDate: buildDateTime(bookingForm.checkInDate, bookingForm.checkInTime),
+        checkOutDate: buildDateTime(bookingForm.checkOutDate, bookingForm.checkOutTime),
         numAdults: bookingForm.numAdults,
         numChildren: bookingForm.numChildren,
       });
@@ -885,7 +893,7 @@ export default function BookingListPage() {
     } finally {
       setAvailabilityLoading(false);
     }
-  }, [bookingForm.checkInDate, bookingForm.checkOutDate, bookingForm.numAdults, bookingForm.numChildren, showToast]);
+  }, [bookingForm.checkInDate, bookingForm.checkOutDate, bookingForm.checkInTime, bookingForm.checkOutTime, bookingForm.numAdults, bookingForm.numChildren, showToast]);
 
   useEffect(() => {
     if (activeTab === "manage") {
@@ -1037,8 +1045,8 @@ export default function BookingListPage() {
         details: bookingForm.selectedRooms.map((room) => ({
           roomTypeId: Number(room.roomTypeId),
           roomId: Number(room.roomId),
-          checkInDate: bookingForm.checkInDate,
-          checkOutDate: bookingForm.checkOutDate,
+          checkInDate: buildDateTime(bookingForm.checkInDate, bookingForm.checkInTime),
+          checkOutDate: buildDateTime(bookingForm.checkOutDate, bookingForm.checkOutTime),
         })),
       });
 
@@ -1054,6 +1062,8 @@ export default function BookingListPage() {
         numChildren: "",
         checkInDate: "",
         checkOutDate: "",
+        checkInTime: "14:00",
+        checkOutTime: "12:00",
         voucherId: "",
         source: "walk_in",
         note: "",
@@ -1292,6 +1302,37 @@ export default function BookingListPage() {
                 <input type="number" min="1" value={bookingForm.numAdults} onChange={(e) => setBookingForm((prev) => ({ ...prev, numAdults: e.target.value }))} style={inputStyle} placeholder="Người lớn" />
                 <input type="number" min="0" value={bookingForm.numChildren} onChange={(e) => setBookingForm((prev) => ({ ...prev, numChildren: e.target.value }))} style={inputStyle} placeholder="Trẻ em" />
               </div>
+              {/* Time pickers */}
+              <div className="grid grid-cols-2 gap-3" style={{ marginTop: 10 }}>
+                <div style={{ position: "relative" }}>
+                  <div style={{ position: "absolute", top: -8, left: 10, background: "var(--a-surface-soft)", padding: "0 4px", fontSize: 10, fontWeight: 800, color: "var(--a-primary)", zIndex: 1, letterSpacing: ".05em", textTransform: "uppercase" }}>
+                    Giờ check-in
+                  </div>
+                  <input
+                    type="time"
+                    value={bookingForm.checkInTime}
+                    onChange={(e) => setBookingForm((prev) => ({ ...prev, checkInTime: e.target.value }))}
+                    style={{ ...inputStyle, paddingTop: 14 }}
+                  />
+                </div>
+                <div style={{ position: "relative" }}>
+                  <div style={{ position: "absolute", top: -8, left: 10, background: "var(--a-surface-soft)", padding: "0 4px", fontSize: 10, fontWeight: 800, color: "var(--a-primary)", zIndex: 1, letterSpacing: ".05em", textTransform: "uppercase" }}>
+                    Giờ check-out
+                  </div>
+                  <input
+                    type="time"
+                    value={bookingForm.checkOutTime}
+                    onChange={(e) => setBookingForm((prev) => ({ ...prev, checkOutTime: e.target.value }))}
+                    style={{ ...inputStyle, paddingTop: 14 }}
+                  />
+                </div>
+              </div>
+              {bookingForm.checkInDate && bookingForm.checkOutDate && bookingForm.checkInDate === bookingForm.checkOutDate && (
+                <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 10, background: "var(--a-info-bg)", border: "1px solid var(--a-info-border)", fontSize: 12, fontWeight: 700, color: "var(--a-info)", display: "flex", alignItems: "center", gap: 6 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>info</span>
+                  Booking cùng ngày — đảm bảo giờ check-out sau giờ check-in.
+                </div>
+              )}
             </div>
           </div>
 

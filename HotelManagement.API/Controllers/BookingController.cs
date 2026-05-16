@@ -66,18 +66,23 @@ public class BookingsController : ControllerBase
 
     private static (DateTime CheckInDate, DateTime CheckOutDate) NormalizeStayDates(DateTime checkInDate, DateTime checkOutDate)
     {
-        var normalizedCheckIn = checkInDate.Date;
-        var normalizedCheckOut = checkOutDate.Date <= normalizedCheckIn
-            ? normalizedCheckIn.AddDays(1)
-            : checkOutDate.Date;
+        // Giữ lại thời gian (giờ:phút:giây) để hỗ trợ đặt nhiều booking cùng ngày khác giờ.
+        // Nếu checkout <= checkin, tự động đặt checkout = checkin + 1 ngày (giữ cùng giờ).
+        var normalizedCheckOut = checkOutDate <= checkInDate
+            ? checkInDate.AddDays(1)
+            : checkOutDate;
 
-        return (normalizedCheckIn, normalizedCheckOut);
+        return (checkInDate, normalizedCheckOut);
     }
 
     private static int CalculateNights(DateTime checkInDate, DateTime checkOutDate)
     {
-        var (normalizedCheckIn, normalizedCheckOut) = NormalizeStayDates(checkInDate, checkOutDate);
-        return Math.Max(1, (normalizedCheckOut - normalizedCheckIn).Days);
+        // Tính số đêm dựa trên ngày (không tính giờ) để đảm bảo tính phí đúng.
+        var checkInDay = checkInDate.Date;
+        var checkOutDay = checkOutDate.Date <= checkInDay
+            ? checkInDay.AddDays(1)
+            : checkOutDate.Date;
+        return Math.Max(1, (checkOutDay - checkInDay).Days);
     }
 
     private static string BuildRoomLiveStatusLabel(Room room)
@@ -994,7 +999,7 @@ public class BookingsController : ControllerBase
             {
                 foreach (var d in request.Details)
                 {
-                    var key = $"lock:{d.RoomTypeId}:{d.CheckInDate:yyyyMMdd}:{d.CheckOutDate:yyyyMMdd}";
+                    var key = $"lock:{d.RoomTypeId}:{d.CheckInDate:yyyyMMddHHmm}:{d.CheckOutDate:yyyyMMddHHmm}";
                     var ok = await RedisDb.StringSetAsync(key, "1", TimeSpan.FromSeconds(30), When.NotExists);
                     if (!ok)
                         return BookingActionError(StatusCodes.Status400BadRequest, "Đang có người đặt cùng loại phòng, vui lòng thử lại.");
