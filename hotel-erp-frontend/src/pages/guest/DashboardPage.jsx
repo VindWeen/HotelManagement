@@ -4,6 +4,7 @@ import { getMyBookings } from "../../api/bookingsApi";
 import { getMyReviewStatus } from "../../api/reviewsApi";
 import { getMyProfile } from "../../api/userProfileApi";
 import { EmptyState, LoadingSpinner, PageContainer, SectionTitle, StatusBadge } from "../../components/guest";
+import { GuestDashboardIllustration } from "../../components/guest/GuestDashboardIllustration";
 import { formatCurrency } from "../../utils";
 import { getBookingStatusLabel } from "../../utils/statusLabels";
 
@@ -38,7 +39,7 @@ const getReviewVariant = (status) => {
 const getReviewLabel = (status) => {
   if (status === "approved") return "Đã duyệt";
   if (status === "rejected") return "Cần chỉnh sửa";
-  if (status === "pending") return "Chờ duyệt";
+  if (status === "pending") return "Đã đánh giá";
   return "Không rõ";
 };
 
@@ -221,12 +222,19 @@ export default function GuestDashboardPage() {
 
   return (
     <PageContainer className="g-section-lg" style={{ display: "grid", gap: 32 }}>
-      <SectionTitle
-        align="left"
-        eyebrow="Guest Portal"
-        title={`Xin chào${profile?.fullName ? `, ${profile.fullName}` : ""}`}
-        subtitle="Theo dõi các booking sắp tới, trạng thái lưu trú, membership hiện tại và những việc cần xử lý trong tài khoản của bạn."
-      />
+      <div style={{ display: "flex", gap: 40, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 350px", display: "flex", justifyContent: "flex-start" }}>
+          <GuestDashboardIllustration style={{ width: "100%", maxWidth: "480px", height: "auto" }} />
+        </div>
+        <div style={{ flex: "1 1 300px" }}>
+          <SectionTitle
+            align="left"
+            eyebrow="Guest Portal"
+            title={`Xin chào${profile?.fullName ? `, ${profile.fullName}` : ""}`}
+            subtitle="Theo dõi các booking sắp tới, trạng thái lưu trú, membership hiện tại và những việc cần xử lý trong tài khoản của bạn."
+          />
+        </div>
+      </div>
 
       {error ? (
         <div
@@ -291,7 +299,7 @@ export default function GuestDashboardPage() {
         {upcomingBookings.length === 0 ? (
           <EmptyState
             compact
-            icon="🛎️"
+            icon="notifications_active"
             title="Chưa có booking sắp tới"
             message="Khi bạn tạo booking mới, thông tin sẽ xuất hiện ở đây."
           />
@@ -314,7 +322,7 @@ export default function GuestDashboardPage() {
         {activeStays.length === 0 ? (
           <EmptyState
             compact
-            icon="🏨"
+            icon="domain"
             title="Bạn chưa có booking đang lưu trú"
             message="Khi check-in thành công, booking sẽ được chuyển sang khu vực này."
           />
@@ -344,7 +352,7 @@ export default function GuestDashboardPage() {
           {pendingReviews.length === 0 ? (
             <EmptyState
               compact
-              icon="⭐"
+              icon="star"
               title="Không có review chờ thực hiện"
               message="Khi hoàn tất lưu trú và chưa đánh giá, booking sẽ hiển thị tại đây."
             />
@@ -384,7 +392,7 @@ export default function GuestDashboardPage() {
           {submittedReviews.length === 0 ? (
             <EmptyState
               compact
-              icon="📝"
+              icon="rate_review"
               title="Bạn chưa gửi review nào"
               message="Review đã gửi sẽ hiển thị ở đây để bạn theo dõi duyệt."
             />

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { addInvoiceAdjustment, finalizeInvoice, getInvoiceDetail, removeInvoiceAdjustment } from "../../api/invoicesApi";
 import { recordPayment } from "../../api/paymentsApi";
@@ -89,6 +89,9 @@ export default function InvoiceDetailPage() {
     setToasts((p) => p.filter((t) => t.id !== toastId));
   }, []);
 
+  const pollInterval = useRef(null);
+  const waitingForQR = useRef(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -105,6 +108,29 @@ export default function InvoiceDetailPage() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    const amount = parseMoneyInput(form.amountPaid);
+    if (form.paymentMethod === "Bank Transfer" && amount > 0 && invoice?.status !== "Paid" && invoice?.status !== "Refunded") {
+      waitingForQR.current = true;
+      pollInterval.current = setInterval(load, 3000);
+    } else {
+      if (pollInterval.current) clearInterval(pollInterval.current);
+    }
+    return () => {
+      if (pollInterval.current) clearInterval(pollInterval.current);
+    };
+  }, [form.paymentMethod, form.amountPaid, invoice?.status, load]);
+
+  useEffect(() => {
+    if (waitingForQR.current && invoice?.status === "Paid") {
+      waitingForQR.current = false;
+      showToast("Thanh toán thành công qua QR!", "success");
+      setTimeout(() => {
+        printInvoiceDocument(invoice, "final");
+      }, 500);
+    }
+  }, [invoice, showToast]);
+
   const location = useLocation();
   useEffect(() => {
     if (invoice && location.state?.autoPrint) {
@@ -116,6 +142,12 @@ export default function InvoiceDetailPage() {
   }, [invoice, location.state]);
 
   const outstanding = useMemo(() => invoice?.outstandingAmount || 0, [invoice]);
+
+  useEffect(() => {
+    if (invoice && outstanding > 0) {
+      setForm((prev) => ({ ...prev, amountPaid: formatMoneyInput(outstanding) }));
+    }
+  }, [invoice, outstanding]);
 
   const submitPayment = async (e) => {
     e.preventDefault();
@@ -340,14 +372,9 @@ export default function InvoiceDetailPage() {
                         inputMode="numeric"
                         placeholder="VD: 1.000.000"
                         value={form.amountPaid}
-                        onChange={(e) => {
-                          const clampedValue = clampMoneyInput(e.target.value, { max: Math.max(0, outstanding) });
-                          setForm({ ...form, amountPaid: formatMoneyInput(clampedValue) });
-                        }}
+                        readOnly
                         required
-                        style={inputStyle}
-                        onFocus={(e) => e.target.style.borderColor = "var(--a-primary)"}
-                        onBlur={(e) => e.target.style.borderColor = "var(--a-border)"}
+                        style={{ ...inputStyle, background: "var(--a-surface-soft)", cursor: "not-allowed", opacity: 0.8 }}
                       />
                     </div>
                     <div>
@@ -383,6 +410,39 @@ export default function InvoiceDetailPage() {
                     </button>
                   </div>
                 </form>
+                {form.paymentMethod === "Bank Transfer" && parseMoneyInput(form.amountPaid) > 0 && (
+                  <div style={{ marginTop: 24, textAlign: "center" }}>
+                    <div style={{ display: "inline-block", padding: 12, background: "white", borderRadius: 12, border: "2px solid var(--a-primary)", marginBottom: 20 }}>
+                      <img 
+                        src={`https://qr.sepay.vn/img?bank=ACB&acc=24598667&amount=${parseMoneyInput(form.amountPaid)}&des=${encodeURIComponent(`Thanh toan HD ${invoice.id}`)}`} 
+                        alt="QR Code" 
+                        style={{ width: 220, height: "auto", display: "block" }} 
+                      />
+                    </div>
+
+                    <div style={{ background: "var(--a-surface)", borderRadius: 8, padding: 16, marginBottom: 20, textAlign: "left", border: "1px solid var(--a-border)" }}>
+                      <div style={{ display: "grid", gap: 10 }}>
+                        {[
+                          ["Ngân hàng", "Ngân hàng TMCP Á Châu (ACB)"],
+                          ["Số tài khoản", "24598667"],
+                          ["Số tiền", formatCurrency(parseMoneyInput(form.amountPaid))],
+                          ["Nội dung CK", `Thanh toan HD ${invoice.id}`],
+                        ].map(([label, value]) => (
+                          <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                            <span style={{ color: "var(--a-text-muted)", fontSize: 13, fontWeight: 700 }}>{label}:</span>
+                            <span style={{ fontWeight: 800, fontSize: 14, color: label === "Số tiền" ? "var(--a-primary)" : "var(--a-text)" }}>
+                              {value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ background: "var(--a-warning-bg)", border: "1px solid var(--a-warning-border)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "var(--a-warning)", textAlign: "left", fontWeight: 700 }}>
+                      ⚠️ Hệ thống sẽ tự động xác nhận thanh toán sau khi khách chuyển khoản thành công. Vui lòng không đóng trang này.
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

@@ -56,10 +56,19 @@ public class WebhooksController : ControllerBase
                 if (string.IsNullOrEmpty(receivedOrderCode))
                 {
                     string content = contentProp.GetString() ?? "";
-                    var match = System.Text.RegularExpressions.Regex.Match(content, @"booking (\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                    if (match.Success)
+                    
+                    var hdMatch = System.Text.RegularExpressions.Regex.Match(content, @"hd\s?(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    if (hdMatch.Success)
                     {
-                        receivedOrderCode = match.Groups[1].Value;
+                        receivedOrderCode = "INV_" + hdMatch.Groups[1].Value;
+                    }
+                    else
+                    {
+                        var match = System.Text.RegularExpressions.Regex.Match(content, @"booking (\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        if (match.Success)
+                        {
+                            receivedOrderCode = match.Groups[1].Value;
+                        }
                     }
                 }
                 isSuccess = true;
@@ -86,6 +95,87 @@ public class WebhooksController : ControllerBase
                     NewValue = jsonStr
                 });
                 return Ok(new { success = true, message = "Webhook received but ignored." });
+            }
+
+            bool isInvoicePayment = receivedOrderCode.StartsWith("INV_");
+            if (isInvoicePayment)
+            {
+                if (!int.TryParse(receivedOrderCode.Substring(4), out int invoiceId))
+                {
+                    return Ok(new { success = true, message = "Invalid invoice id." });
+                }
+
+                var invoice = await _db.Invoices.Include(i => i.Payments).FirstOrDefaultAsync(i => i.Id == invoiceId);
+                if (invoice == null)
+                {
+                    await _auditTrail.WriteAsync(_db, null, Request, new AuditTrailEntry
+                    {
+                        ActionCode = "SEPAY_WEBHOOK_INVOICE_NOT_FOUND",
+                        ActionLabel = "SePay Webhook Invoice Not Found",
+                        Message = $"Invoice {invoiceId} not found for webhook.",
+                        Severity = "Error",
+                        TableName = "Payments",
+                        NewValue = jsonStr
+                    });
+                    return Ok(new { success = true, message = "Invoice not found." });
+                }
+
+                if (!string.IsNullOrEmpty(transId))
+                {
+                    var exists = await _db.Payments.AnyAsync(p => p.InvoiceId == invoice.Id && p.TransactionCode == transId && p.PaymentMethod == "SePay");
+                    if (exists) return Ok(new { success = true, message = "Transaction already processed." });
+                }
+
+                var invoicePayment = new Payment
+                {
+                    InvoiceId = invoice.Id,
+                    PaymentType = PaymentTypes.FinalSettlement,
+                    PaymentMethod = "SePay",
+                    AmountPaid = amount,
+                    TransactionCode = transId ?? $"SEPAY_{DateTime.UtcNow.Ticks}",
+                    Status = PaymentStatuses.Success,
+                    PaymentDate = DateTime.UtcNow,
+                    Note = $"SePay Webhook - Invoice: {invoiceId}"
+                };
+
+                _db.Payments.Add(invoicePayment);
+                await _db.SaveChangesAsync();
+
+                if (invoice.BookingId.HasValue)
+                {
+                    var bId = invoice.BookingId.Value;
+                    var relatedBooking = await _db.Bookings.FirstOrDefaultAsync(b => b.Id == bId);
+                    if (relatedBooking != null)
+                    {
+                        var totalPaid = await _db.Payments
+                            .Where(p => p.BookingId == bId && p.Status == PaymentStatuses.Success)
+                            .SumAsync(p => p.PaymentType == PaymentTypes.Refund ? -p.AmountPaid : p.AmountPaid);
+
+                        relatedBooking.DepositAmount = Math.Max(0m, totalPaid);
+                        if (relatedBooking.Status == BookingStatuses.Pending && relatedBooking.DepositAmount >= relatedBooking.RequiredBookingDepositAmount)
+                        {
+                            relatedBooking.Status = BookingStatuses.Confirmed;
+                        }
+                        await _db.SaveChangesAsync();
+                    }
+                }
+
+                await _invoiceService.FinalizeAsync(invoice.Id);
+
+                await _auditTrail.WriteAsync(_db, null, Request, new AuditTrailEntry
+                {
+                    ActionCode = "SEPAY_WEBHOOK_SUCCESS",
+                    ActionLabel = "Thanh toán SePay hóa đơn thành công",
+                    Message = $"Thanh toán SePay thành công cho hóa đơn #{invoice.Id}. Số tiền: {amount:N0}d. TransId: {transId}.",
+                    EntityType = "Payment",
+                    EntityId = invoice.Id,
+                    EntityLabel = $"Invoice #{invoice.Id}",
+                    Severity = "Success",
+                    TableName = "Payments",
+                    NewValue = $"{{\"invoiceId\":{invoice.Id},\"amount\":{amount},\"transId\":\"{transId}\"}}"
+                });
+
+                return Ok(new { success = true, message = "Invoice webhook processed successfully." });
             }
 
             bool isIdParsed = int.TryParse(receivedOrderCode, out int parsedId);
@@ -128,12 +218,12 @@ public class WebhooksController : ControllerBase
 
             _db.Payments.Add(payment);
 
-            var totalPaid = await _db.Payments
+            var bookingTotalPaid = await _db.Payments
                 .Where(p => p.BookingId == booking.Id && p.Status == PaymentStatuses.Success)
                 .SumAsync(p => (decimal?)(p.PaymentType == PaymentTypes.Refund ? -p.AmountPaid : p.AmountPaid)) ?? 0;
 
-            totalPaid += amount;
-            booking.DepositAmount = Math.Max(0m, totalPaid);
+            bookingTotalPaid += amount;
+            booking.DepositAmount = Math.Max(0m, bookingTotalPaid);
 
             if (booking.Status == BookingStatuses.Pending &&
                 (booking.DepositAmount ?? 0m) >= booking.RequiredBookingDepositAmount)

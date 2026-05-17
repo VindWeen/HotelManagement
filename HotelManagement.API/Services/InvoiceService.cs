@@ -1,4 +1,4 @@
-﻿using HotelManagement.Core.DTOs;
+using HotelManagement.Core.DTOs;
 using HotelManagement.Core.Entities;
 using HotelManagement.Core.Constants;
 using HotelManagement.Infrastructure.Data;
@@ -260,7 +260,7 @@ public class InvoiceService : IInvoiceService
         var pageSize = Math.Clamp(queryRequest.PageSize <= 0 ? 10 : queryRequest.PageSize, 1, 100);
 
         var query = _db.Invoices
-            .Include(i => i.Booking)
+            .Include(i => i.Booking).ThenInclude(b => b!.BookingDetails)
             .Include(i => i.Payments)
             .Include(i => i.Adjustments)
             .AsQueryable();
@@ -488,6 +488,7 @@ public class InvoiceService : IInvoiceService
                 RoomNumber = d.Room != null ? d.Room.RoomNumber : null,
                 d.RoomTypeId,
                 RoomTypeName = d.RoomType != null ? d.RoomType.Name : null,
+                CleaningStatus = d.Room != null ? d.Room.CleaningStatus : null,
                 d.CheckInDate,
                 d.CheckOutDate,
                 d.PricePerNight

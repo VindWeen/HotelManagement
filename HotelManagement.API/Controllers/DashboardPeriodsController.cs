@@ -76,7 +76,15 @@ public class DashboardPeriodsController : ControllerBase
     public async Task<IActionResult> RebuildAllCurrent(CancellationToken cancellationToken = default)
     {
         await _dashboardService.RebuildAllCurrentDashboardsAsync(ResolveUserId(), cancellationToken);
-        return Ok(new { message = "Đã rebuild toàn bộ dashboard hiện tại." });
+        return Ok(new { message = "Đã cập nhật dữ liệu Dashboard cho kỳ hiện tại thành công." });
+    }
+
+    [AllowAnonymous]
+    [HttpGet("test-rebuild")]
+    public async Task<IActionResult> TestRebuild(CancellationToken cancellationToken = default)
+    {
+        await _dashboardService.RebuildAllCurrentDashboardsAsync(null, cancellationToken);
+        return Ok(new { message = "Rebuild OK" });
     }
 
     /// <summary>POST trigger rebuild từ sự kiện nghiệp vụ (DAMAGE_REPORTED, ...).</summary>

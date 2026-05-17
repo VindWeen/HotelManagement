@@ -14,7 +14,7 @@ const getReviewVariant = (status) => {
 const getReviewLabel = (status) => {
   if (status === "approved") return "Đã duyệt";
   if (status === "rejected") return "Bị từ chối";
-  if (status === "pending") return "Chờ duyệt";
+  if (status === "pending") return "Đã đánh giá";
   return "Không rõ";
 };
 
@@ -103,7 +103,7 @@ export default function MyReviewsPage() {
         comment: comment.trim(),
         image,
       });
-      setSuccess("Review đã được gửi và đang chờ admin duyệt.");
+      setSuccess("Cảm ơn bạn đã đánh giá.");
       setComment("");
       setImage(null);
       setSelectedBookingId("");

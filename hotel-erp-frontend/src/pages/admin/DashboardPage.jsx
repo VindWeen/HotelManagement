@@ -11,7 +11,7 @@ import { getEquipments } from "../../api/equipmentsApi";
 import { getInvoices } from "../../api/invoicesApi";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 import axiosClient from "../../api/axios";
-import { getCurrentDashboard } from "../../api/dashboardPeriodsApi";
+import { getCurrentDashboard, rebuildAllCurrent } from "../../api/dashboardPeriodsApi";
 import { useAdminAuthStore } from "../../store/adminAuthStore";
 import AdminPeriodDashboardIllustration from "../../components/admin/AdminPeriodDashboardIllustration";
 
@@ -55,8 +55,13 @@ const getBookingReferenceDate = (booking) => {
   return fallback ? new Date(fallback) : null;
 };
 
-const getInvoiceRevenueDate = (invoice) =>
-  invoice?.createdAt ? new Date(invoice.createdAt) : null;
+const getInvoiceRevenueDate = (invoice) => {
+  if (invoice?.booking?.bookingDetails?.length > 0) {
+    const checkOutDates = invoice.booking.bookingDetails.map(d => new Date(d.checkOutDate).getTime());
+    return new Date(Math.max(...checkOutDates));
+  }
+  return invoice?.createdAt ? new Date(invoice.createdAt) : null;
+};
 
 const startOfDay = (date) => {
   const next = new Date(date);
@@ -478,6 +483,7 @@ export default function DashboardPage() {
   const handleRefreshAll = async () => {
     setPeriodRebuilding(true);
     try {
+      await rebuildAllCurrent();
       await Promise.all([fetchAll(), loadPeriodDashboard()]);
     } catch (e) {
       console.error("Dashboard refresh failed:", e);
@@ -558,24 +564,21 @@ export default function DashboardPage() {
         return buckets;
       }
 
-      const rangeEnd = endOfDay(to);
-      const rangeStart = startOfDay(rangeEnd);
-      rangeStart.setDate(rangeStart.getDate() - 6);
-      const buckets = Array.from({ length: 7 }, (_, index) => {
-        const current = new Date(rangeStart);
-        current.setDate(rangeStart.getDate() + index);
+      const year = to.getFullYear();
+      const buckets = Array.from({ length: 12 }, (_, index) => {
         return {
-          label: `${current.getDate()}/${current.getMonth() + 1}`,
+          label: `T${index + 1}`,
           value: 0,
-          key: current.toDateString(),
+          key: index,
         };
       });
 
       paidInvoiceEntries.forEach((invoice) => {
-        if (invoice.revenueDate < rangeStart || invoice.revenueDate > rangeEnd) return;
-        const dayKey = startOfDay(invoice.revenueDate).toDateString();
-        const bucket = buckets.find((item) => item.key === dayKey);
-        if (bucket) bucket.value += invoice.finalTotal || 0;
+        if (!invoice.revenueDate) return;
+        if (invoice.revenueDate.getFullYear() === year) {
+          const monthIndex = invoice.revenueDate.getMonth();
+          buckets[monthIndex].value += invoice.finalTotal || 0;
+        }
       });
 
       return buckets.map(({ key, ...item }) => item);
@@ -673,12 +676,12 @@ export default function DashboardPage() {
     ? "Doanh thu theo giờ"
     : periodType === "WEEKLY"
       ? "Doanh thu trong tuần"
-      : "Doanh thu 7 ngày gần nhất";
+      : "Doanh thu 12 tháng";
   const revenueChartSubtitle = periodType === "DAILY"
     ? "Hiển thị từ 0h đến 24h"
     : periodType === "WEEKLY"
       ? "Tổng hợp theo T2, T3, T4, T5, T6, T7, CN"
-      : "Chỉ tính hóa đơn đã thanh toán trong 7 ngày gần đây";
+      : `Hiển thị doanh thu các tháng trong năm ${(activePeriodRange.to || new Date()).getFullYear()}`;
 
   const roomCountByStatus = {
     Ready: roomStatusCountsSnapshot.ready ?? rooms.filter(r => r.businessStatus === "Available" && r.cleaningStatus === "Clean").length,
@@ -1890,7 +1893,7 @@ export default function DashboardPage() {
                               {/* Room number + status dot */}
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                                 <span style={{ fontSize: 18, fontWeight: 800, color: "var(--a-text)", letterSpacing: "-0.02em" }}>
-                                  {rm.roomNumber}
+                                  {rm.roomNumber || rm.RoomNumber || `Phòng ${rm.id}`}
                                 </span>
                                 <span
                                   style={{

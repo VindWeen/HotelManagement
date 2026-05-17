@@ -1107,6 +1107,10 @@ export default function BookingListPage() {
         .btn-icon-p:hover:not(:disabled) { border-color: var(--a-primary); color: var(--a-primary); background: var(--a-primary-soft); transform: scale(1.05); }
         .btn-icon-p:disabled { opacity: 0.35; cursor: not-allowed; }
         .badge-p { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+        .tab-btn { transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); outline: none; }
+        .tab-btn:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 12px 24px -8px rgba(0,0,0,0.12), 0 4px 8px -4px rgba(0,0,0,0.08); border-color: var(--a-border-strong) !important; z-index: 10; position: relative; }
+        .tab-btn.active { transform: translateY(-2px); box-shadow: 0 8px 20px -6px rgba(79, 100, 91, 0.25); border: 2px solid var(--a-primary) !important; background: linear-gradient(145deg, var(--a-primary-soft) 0%, var(--a-surface) 100%) !important; }
+        .tab-btn.active:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 14px 28px -8px rgba(79, 100, 91, 0.3); }
       `}</style>
 
       {/* Khu vực thông báo */}
@@ -1169,26 +1173,36 @@ export default function BookingListPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => handleTabChange(tab.id)}
-            style={{
-              borderRadius: 16,
-              padding: "16px 18px",
-              border: activeTab === tab.id ? "1.5px solid var(--a-primary)" : "1px solid var(--a-border)",
-              background: activeTab === tab.id ? "var(--a-primary-soft)" : "var(--a-surface-raised)",
-              textAlign: "left",
-              cursor: "pointer",
-              boxShadow: "0 1px 4px rgba(0,0,0,.04)",
-            }}
-          >
-            <div style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>
-              {tab.label}
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "var(--a-text)" }}>{tab.count}</div>
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
+              className={`tab-btn ${isActive ? "active" : ""}`}
+              style={{
+                borderRadius: 16,
+                padding: "16px 20px",
+                border: "1px solid var(--a-border)",
+                background: "var(--a-surface-raised)",
+                textAlign: "left",
+                cursor: "pointer",
+                boxShadow: "0 2px 6px rgba(0,0,0,.03)",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                minHeight: 100,
+              }}
+            >
+              <div style={{ fontSize: 13, color: isActive ? "var(--a-primary)" : "var(--a-text-soft)", fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8, lineHeight: 1.3 }}>
+                {tab.label}
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <div style={{ fontSize: 32, fontWeight: 900, color: isActive ? "var(--a-primary)" : "var(--a-text)", letterSpacing: "-0.03em" }}>{tab.count}</div>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {activeTab === "manage" && (

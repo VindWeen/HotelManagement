@@ -283,7 +283,11 @@ public sealed class RoleDashboardPeriodService : IRoleDashboardPeriodService
         var rangeEnd = periodInfo.PeriodEnd;
 
         var invoiceQuery = _db.Invoices.AsNoTracking()
-            .Where(x => x.CreatedAt >= rangeStart && x.CreatedAt <= rangeEnd);
+            .Include(x => x.Booking).ThenInclude(b => b!.BookingDetails)
+            .Where(x => 
+                (x.Booking != null && x.Booking.BookingDetails.Any() && x.Booking.BookingDetails.Max(d => d.CheckOutDate) >= rangeStart && x.Booking.BookingDetails.Max(d => d.CheckOutDate) <= rangeEnd) ||
+                ((x.Booking == null || !x.Booking.BookingDetails.Any()) && x.CreatedAt >= rangeStart && x.CreatedAt <= rangeEnd)
+            );
         var bookingQuery = _db.Bookings.AsNoTracking();
         var userQuery = _db.Users.AsNoTracking();
         var lossQuery = _db.LossAndDamages.AsNoTracking();
@@ -439,12 +443,16 @@ public sealed class RoleDashboardPeriodService : IRoleDashboardPeriodService
         var bookingsByStatus = filteredBookings
             .GroupBy(x => x.Status ?? "Unknown")
             .ToDictionary(x => x.Key, x => x.Count());
+        var endDateForChart = periodInfo.IsCurrent ? todayUtc : rangeEnd.Date;
         var revenueByDay = Enumerable.Range(0, 7)
             .Select(offset =>
             {
-                var date = rangeEnd.Date.AddDays(-(6 - offset));
+                var date = endDateForChart.AddDays(-(6 - offset));
                 var amount = invoicesInPeriod
-                    .Where(x => x.Status == "Paid" && x.CreatedAt.Date == date)
+                    .Where(x => x.Status == "Paid" && (
+                        (x.Booking != null && x.Booking.BookingDetails.Any() && x.Booking.BookingDetails.Max(d => d.CheckOutDate).Date == date) ||
+                        ((x.Booking == null || !x.Booking.BookingDetails.Any()) && x.CreatedAt.Date == date)
+                    ))
                     .Sum(x => x.FinalTotal ?? 0m);
                 return new
                 {
