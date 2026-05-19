@@ -21,17 +21,31 @@ public class UserManagementController : ControllerBase
     private readonly IEmailService _email;
     private readonly IAuditTrailService _auditTrail;
     private readonly ISessionInvalidationService _sessionInvalidation;
+    private readonly IRoleDashboardPeriodService _dashboardService;
 
     public UserManagementController(
         AppDbContext db,
         IEmailService email,
         IAuditTrailService auditTrail,
-        ISessionInvalidationService sessionInvalidation)
+        ISessionInvalidationService sessionInvalidation,
+        IRoleDashboardPeriodService dashboardService)
     {
         _db = db;
         _email = email;
         _auditTrail = auditTrail;
         _sessionInvalidation = sessionInvalidation;
+        _dashboardService = dashboardService;
+    }
+
+    private Task RebuildDashboardSnapshotAsync(string eventType, int? eventRefId, CancellationToken cancellationToken = default)
+    {
+        var currentUserId = JwtHelper.GetUserId(User);
+        return _dashboardService.RebuildAffectedDashboardsAsync(
+            eventType,
+            DateTime.UtcNow,
+            currentUserId > 0 ? currentUserId : null,
+            eventRefId,
+            cancellationToken);
     }
 
     // GET /api/UserManagement?roleId=&page=&pageSize=
@@ -258,6 +272,7 @@ public class UserManagementController : ControllerBase
             Action  = NotificationAction.CreateUser
         };
 
+        await RebuildDashboardSnapshotAsync("USER_CREATED", user.Id);
         return StatusCode(201, new { message = "Tạo tài khoản nhân viên thành công.", userId = user.Id, notification });
     }
 

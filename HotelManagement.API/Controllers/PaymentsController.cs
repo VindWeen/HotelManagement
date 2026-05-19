@@ -2,6 +2,7 @@ using HotelManagement.API.Services;
 using HotelManagement.Core.Authorization;
 using HotelManagement.Core.Constants;
 using HotelManagement.Core.Entities;
+using HotelManagement.Core.Helpers;
 using HotelManagement.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -63,14 +64,33 @@ public class PaymentsController : ControllerBase
     private readonly IInvoiceService _invoiceService;
     private readonly IMomoService _momoService;
     private readonly IAuditTrailService _auditTrail;
+    private readonly IRoleDashboardPeriodService _dashboardService;
 
-    public PaymentsController(AppDbContext db, IPaymentService paymentService, IInvoiceService invoiceService, IMomoService momoService, IAuditTrailService auditTrail)
+    public PaymentsController(
+        AppDbContext db,
+        IPaymentService paymentService,
+        IInvoiceService invoiceService,
+        IMomoService momoService,
+        IAuditTrailService auditTrail,
+        IRoleDashboardPeriodService dashboardService)
     {
         _db = db;
         _paymentService = paymentService;
         _invoiceService = invoiceService;
         _momoService = momoService;
         _auditTrail = auditTrail;
+        _dashboardService = dashboardService;
+    }
+
+    private Task RebuildDashboardSnapshotAsync(string eventType, int? eventRefId, CancellationToken cancellationToken = default)
+    {
+        var currentUserId = JwtHelper.GetUserId(User);
+        return _dashboardService.RebuildAffectedDashboardsAsync(
+            eventType,
+            DateTime.UtcNow,
+            currentUserId > 0 ? currentUserId : null,
+            eventRefId,
+            cancellationToken);
     }
 
     private static string? NormalizeGuestEmail(string? email)
@@ -239,6 +259,8 @@ public class PaymentsController : ControllerBase
                     TableName = "Payments",
                     NewValue = $"{{\"bookingId\":{bookingId},\"amount\":{ipn.Amount},\"transId\":\"{ipn.TransId}\",\"orderId\":\"{ipn.OrderId}\",\"newStatus\":\"{booking.Status}\"}}"
                 });
+
+                await RebuildDashboardSnapshotAsync("BOOKING_PAYMENT_RECORDED", booking.Id);
             }
         }
 
@@ -368,6 +390,10 @@ public class PaymentsController : ControllerBase
                 NewValue = $"{{\"bookingId\":{booking.Id},\"bookingCode\":\"{booking.BookingCode}\",\"amount\":{request.AmountPaid},\"method\":\"{payment.PaymentMethod}\",\"type\":\"{normalizedType}\",\"depositTotal\":{booking.DepositAmount}}}"
             });
 
+            await RebuildDashboardSnapshotAsync(
+                normalizedType == PaymentTypes.Refund ? "BOOKING_REFUND_RECORDED" : "BOOKING_PAYMENT_RECORDED",
+                booking.Id);
+
             return Ok(new
             {
                 success = true,
@@ -481,6 +507,8 @@ public class PaymentsController : ControllerBase
             RecordId = invoicePayment.Id,
             NewValue = $"{{\"invoiceId\":{invoiceId},\"amount\":{request.AmountPaid},\"method\":\"{invoicePayment.PaymentMethod}\",\"type\":\"{invoicePayment.PaymentType}\"}}"
         });
+
+        await RebuildDashboardSnapshotAsync("INVOICE_PAYMENT_RECORDED", invoice.Id);
 
         return Ok(new
         {

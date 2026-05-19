@@ -91,15 +91,25 @@ public class SystemSettingsController : ControllerBase
         if (request.HotelLongitude is < -180 or > 180)
             return BadRequest(new { message = "Longitude phải nằm trong khoảng -180 đến 180." });
 
-        var currentUserId = JwtHelper.GetUserId(User);
-        var setting = await _settingsService.UpdateHotelLocationAsync(
-            request.HotelAddress,
-            request.HotelLatitude,
-            request.HotelLongitude,
-            currentUserId > 0 ? currentUserId : null,
-            cancellationToken);
+        SystemSetting setting;
+        int affectedAttractions;
 
-        var affectedAttractions = await RecalculateAttractionDistancesAsync(setting, cancellationToken);
+        try
+        {
+            var currentUserId = JwtHelper.GetUserId(User);
+            setting = await _settingsService.UpdateHotelLocationAsync(
+                request.HotelAddress,
+                request.HotelLatitude,
+                request.HotelLongitude,
+                currentUserId > 0 ? currentUserId : null,
+                cancellationToken);
+
+            affectedAttractions = await RecalculateAttractionDistancesAsync(setting, cancellationToken);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
 
         await _auditTrail.WriteAsync(_db, User, Request, new AuditTrailEntry
         {
@@ -168,7 +178,17 @@ public class SystemSettingsController : ControllerBase
                 attraction.Longitude);
         }
 
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsDistancePrecisionOverflow(ex))
+        {
+            throw new InvalidOperationException(
+                "Khong the cap nhat vi tri vi cot distance_km trong bang Attractions dang qua nho. Hay chay script nang cot nay len decimal(7,2), sau do thu lai.",
+                ex);
+        }
+
         return attractions.Count;
     }
 
@@ -204,6 +224,13 @@ public class SystemSettingsController : ControllerBase
     }
 
     private static double DegreesToRadians(double degrees) => degrees * (Math.PI / 180d);
+
+    private static bool IsDistancePrecisionOverflow(DbUpdateException exception)
+    {
+        var message = exception.GetBaseException().Message;
+        return !string.IsNullOrWhiteSpace(message)
+            && message.Contains("Arithmetic overflow error converting numeric to data type numeric", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static object MapSetting(SystemSetting setting) => new
     {

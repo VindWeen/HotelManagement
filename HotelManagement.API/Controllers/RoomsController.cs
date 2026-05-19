@@ -16,11 +16,24 @@ public class RoomsController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IAuditTrailService _auditTrail;
+    private readonly IRoleDashboardPeriodService _dashboardService;
 
-    public RoomsController(AppDbContext db, IAuditTrailService auditTrail)
+    public RoomsController(AppDbContext db, IAuditTrailService auditTrail, IRoleDashboardPeriodService dashboardService)
     {
         _db = db;
         _auditTrail = auditTrail;
+        _dashboardService = dashboardService;
+    }
+
+    private Task RebuildDashboardSnapshotAsync(string eventType, int? eventRefId, CancellationToken cancellationToken = default)
+    {
+        var currentUserId = JwtHelper.GetUserId(User);
+        return _dashboardService.RebuildAffectedDashboardsAsync(
+            eventType,
+            DateTime.UtcNow,
+            currentUserId > 0 ? currentUserId : null,
+            eventRefId,
+            cancellationToken);
     }
 
     // -----------------------------------------------------------------------------
@@ -181,6 +194,7 @@ public class RoomsController : ControllerBase
         });
 
         await _db.SaveChangesAsync();
+        await RebuildDashboardSnapshotAsync("ROOM_UPDATED", room.Id);
 
         return Ok(new { success = true, message = "Cập nhật phòng thành công." });
     }
@@ -235,6 +249,7 @@ public class RoomsController : ControllerBase
             Metadata = $"{{\"roomNumber\": \"{room.RoomNumber}\", \"floor\": {room.Floor}, \"roomTypeId\": {room.RoomTypeId}, \"viewType\": \"{room.ViewType}\"}}"
         });
 
+        await RebuildDashboardSnapshotAsync("ROOM_CREATED", room.Id);
         return StatusCode(201, new { success = true, message = "Tạo phòng thành công.", id = room.Id });
     }
 
@@ -281,6 +296,7 @@ public class RoomsController : ControllerBase
         });
 
         await _db.SaveChangesAsync();
+        await RebuildDashboardSnapshotAsync("ROOM_STATUS_UPDATED", room.Id);
 
         return Ok(new { success = true, message = $"Đã đổi trạng thái phòng #{id} thành '{request.BusinessStatus}'." });
     }
@@ -326,6 +342,7 @@ public class RoomsController : ControllerBase
         });
 
         await _db.SaveChangesAsync();
+        await RebuildDashboardSnapshotAsync("ROOM_STATUS_UPDATED", room.Id);
 
         return Ok(new { success = true, message = $"Đã cập nhật cleaning_status phòng #{id} thành '{request.CleaningStatus}'." });
     }
@@ -418,6 +435,8 @@ public class RoomsController : ControllerBase
                 OldValue = null,
                 NewValue = $"{{\"createdCount\": {created.Count}}}"
             });
+
+            await RebuildDashboardSnapshotAsync("ROOM_BULK_CREATED", null);
         }
 
         return StatusCode(201, new

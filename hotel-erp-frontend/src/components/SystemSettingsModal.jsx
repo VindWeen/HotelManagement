@@ -19,14 +19,6 @@ const inputStyle = {
   outline: "none",
 };
 
-const titleStyle = {
-  margin: "6px 0 0",
-  fontSize: 24,
-  fontWeight: 800,
-  color: "var(--a-text)",
-  letterSpacing: "-0.02em",
-};
-
 const modalCardStyle = {
   width: "100%",
   maxWidth: 760,
@@ -46,6 +38,31 @@ const TAB_KEYS = {
   deposit: "deposit",
   location: "location",
 };
+
+function validateLocationForm(locationForm) {
+  const latitudeText = locationForm.hotelLatitude?.trim?.() ?? "";
+  const longitudeText = locationForm.hotelLongitude?.trim?.() ?? "";
+
+  if ((latitudeText === "") !== (longitudeText === "")) {
+    return "Cần nhập đủ cả latitude và longitude, hoặc để trống cả hai.";
+  }
+
+  if (latitudeText !== "") {
+    const latitude = Number(latitudeText);
+    if (Number.isNaN(latitude) || latitude < -90 || latitude > 90) {
+      return "Latitude phải nằm trong khoảng -90 đến 90.";
+    }
+  }
+
+  if (longitudeText !== "") {
+    const longitude = Number(longitudeText);
+    if (Number.isNaN(longitude) || longitude < -180 || longitude > 180) {
+      return "Longitude phải nằm trong khoảng -180 đến 180.";
+    }
+  }
+
+  return "";
+}
 
 export default function SystemSettingsModal({ open, onClose }) {
   const [activeTab, setActiveTab] = useState(TAB_KEYS.deposit);
@@ -121,6 +138,13 @@ export default function SystemSettingsModal({ open, onClose }) {
   };
 
   const handleSaveLocation = async () => {
+    const validationMessage = validateLocationForm(locationForm);
+    if (validationMessage) {
+      setError(validationMessage);
+      setSuccess("");
+      return;
+    }
+
     setSaving(true);
     setError("");
     setSuccess("");
@@ -311,6 +335,7 @@ export default function SystemSettingsModal({ open, onClose }) {
               <input
                 value={locationForm.hotelAddress}
                 onChange={(event) => setLocationForm((prev) => ({ ...prev, hotelAddress: event.target.value }))}
+                placeholder="Ví dụ: 123 Đại lộ Bình Dương, Thủ Dầu Một, Bình Dương"
                 style={inputStyle}
               />
             </div>
@@ -324,6 +349,7 @@ export default function SystemSettingsModal({ open, onClose }) {
                   step="0.000001"
                   value={locationForm.hotelLatitude}
                   onChange={(event) => setLocationForm((prev) => ({ ...prev, hotelLatitude: event.target.value }))}
+                  placeholder="10.953402"
                   style={inputStyle}
                 />
               </div>
@@ -336,12 +362,16 @@ export default function SystemSettingsModal({ open, onClose }) {
                   step="0.000001"
                   value={locationForm.hotelLongitude}
                   onChange={(event) => setLocationForm((prev) => ({ ...prev, hotelLongitude: event.target.value }))}
+                  placeholder="106.802169"
                   style={inputStyle}
                 />
               </div>
             </div>
             <div style={{ color: "var(--a-text-muted)", fontSize: 13, lineHeight: 1.6 }}>
               Khi thay đổi vị trí, hệ thống sẽ tự động tính lại khoảng cách cho các địa điểm đang lưu.
+            </div>
+            <div style={{ color: "var(--a-text-soft)", fontSize: 12, lineHeight: 1.6, marginTop: -8 }}>
+              Nhập tọa độ theo dạng số thập phân, ví dụ `10.953402` và `106.802169`.
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button

@@ -19,13 +19,31 @@ public class RoomTypesController : ControllerBase
     private readonly Cloudinary _cloudinary;
     private readonly IActivityLogService _activityLog; // Added IActivityLogService
     private readonly IAuditTrailService _auditTrail;
+    private readonly IRoleDashboardPeriodService _dashboardService;
 
-    public RoomTypesController(AppDbContext context, Cloudinary cloudinary, IActivityLogService activityLog, IAuditTrailService auditTrail) // Modified constructor
+    public RoomTypesController(
+        AppDbContext context,
+        Cloudinary cloudinary,
+        IActivityLogService activityLog,
+        IAuditTrailService auditTrail,
+        IRoleDashboardPeriodService dashboardService) // Modified constructor
     {
         _context = context; // Changed _db = db to _context = context
         _cloudinary = cloudinary;
         _activityLog = activityLog; // Assigned activityLog
         _auditTrail = auditTrail;
+        _dashboardService = dashboardService;
+    }
+
+    private Task RebuildDashboardSnapshotAsync(string eventType, int? eventRefId, CancellationToken cancellationToken = default)
+    {
+        var currentUserId = JwtHelper.GetUserId(User);
+        return _dashboardService.RebuildAffectedDashboardsAsync(
+            eventType,
+            DateTime.UtcNow,
+            currentUserId > 0 ? currentUserId : null,
+            eventRefId,
+            cancellationToken);
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -257,6 +275,7 @@ public class RoomTypesController : ControllerBase
             NewValue = $"{{\"name\":\"{roomType.Name}\",\"basePrice\":{roomType.BasePrice}}}"
         });
 
+        await RebuildDashboardSnapshotAsync("ROOM_TYPE_CREATED", roomType.Id);
         return StatusCode(201, new { message = "Tạo loại phòng thành công.", id = roomType.Id });
     }
 
@@ -298,6 +317,7 @@ public class RoomTypesController : ControllerBase
             NewValue = $"{{\"name\":\"{roomType.Name}\",\"basePrice\":{roomType.BasePrice}}}"
         });
 
+        await RebuildDashboardSnapshotAsync("ROOM_TYPE_UPDATED", roomType.Id);
         return Ok(new { message = "Cập nhật loại phòng thành công." });
     }
 
@@ -349,6 +369,7 @@ public class RoomTypesController : ControllerBase
             NewValue = "{\"isActive\": false}"
         });
 
+        await RebuildDashboardSnapshotAsync("ROOM_TYPE_DELETED", roomType.Id);
         return Ok(new { message = $"Đã xóa loại phòng '{roomType.Name}'." });
     }
 
@@ -634,6 +655,8 @@ public class RoomTypesController : ControllerBase
             OldValue = $"{{\"isActive\":{oldActive.ToString().ToLower()}}}",
             NewValue = $"{{\"isActive\":{roomType.IsActive.ToString().ToLower()}}}"
         });
+
+        await RebuildDashboardSnapshotAsync("ROOM_TYPE_UPDATED", roomType.Id);
 
         var action = roomType.IsActive ? "kích hoạt" : "vô hiệu hóa";
         return Ok(new

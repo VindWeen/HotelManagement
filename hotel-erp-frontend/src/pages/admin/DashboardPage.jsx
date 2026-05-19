@@ -63,18 +63,6 @@ const getInvoiceRevenueDate = (invoice) => {
   return invoice?.createdAt ? new Date(invoice.createdAt) : null;
 };
 
-const startOfDay = (date) => {
-  const next = new Date(date);
-  next.setHours(0, 0, 0, 0);
-  return next;
-};
-
-const endOfDay = (date) => {
-  const next = new Date(date);
-  next.setHours(23, 59, 59, 999);
-  return next;
-};
-
 const getPagedTotal = (payload, fallbackLength = 0) =>
   payload?.pagination?.totalItems ??
   payload?.pagination?.total ??
@@ -114,10 +102,13 @@ const STATUS_CFG = {
 
 // Room Business Status Config 
 const getRoomStatusKey = (rm) => {
-  if (rm.businessStatus === "Disabled") return "Maintenance";
-  if (rm.businessStatus === "Occupied") return "Occupied";
-  if (rm.businessStatus === "Available" && rm.cleaningStatus === "Clean") return "Ready";
-  if (rm.businessStatus === "Available" && rm.cleaningStatus === "PendingLoss") return "PendingLoss";
+  const businessStatus = rm?.businessStatus ?? rm?.BusinessStatus;
+  const cleaningStatus = rm?.cleaningStatus ?? rm?.CleaningStatus;
+
+  if (businessStatus === "Disabled") return "Maintenance";
+  if (businessStatus === "Occupied") return "Occupied";
+  if (businessStatus === "Available" && cleaningStatus === "Clean") return "Ready";
+  if (businessStatus === "Available" && cleaningStatus === "PendingLoss") return "PendingLoss";
   return "Cleaning";
 };
 
@@ -407,7 +398,6 @@ export default function DashboardPage() {
       setAllInvoices(ivList);
       setAllUsers(usList);
 
-      const now = new Date();
       const ready = rmList.filter((r) => r.businessStatus === "Available" && r.cleaningStatus === "Clean").length;
       const occupied = rmList.filter((r) => r.businessStatus === "Occupied").length;
       const sellableRooms = rmList.filter((r) => r.businessStatus !== "Disabled").length || 1;
@@ -581,7 +571,7 @@ export default function DashboardPage() {
         }
       });
 
-      return buckets.map(({ key, ...item }) => item);
+      return buckets.map(({ label, value }) => ({ label, value }));
     })();
 
     const bookingsByStatus = {};
@@ -613,16 +603,51 @@ export default function DashboardPage() {
   const roomStatusCountsSnapshot = roomStatusSnapshot?.counts || {};
   const roomStatusGroupsSnapshot = roomStatusSnapshot?.roomsByStatus || {};
   const bookingStatusSnapshot = sharedSnapshot?.bookingsByStatus || {};
+  const revenueByDaySnapshot = sharedSnapshot?.revenueByDay || [];
   const roomTypeOccupancySnapshot = sharedSnapshot?.roomTypeOccupancy || [];
   const reviewSummarySnapshot = sharedSnapshot?.reviewSummary || {};
   const quickStatsSnapshot = sharedSnapshot?.quickStats || {};
   const inventorySummarySnapshot = sharedSnapshot?.inventorySummary || {};
   const lossOverviewSnapshot = sharedSnapshot?.lossOverview || {};
+  const hasSnapshotSummary = Object.keys(snapshotSummary).length > 0;
+  const hasSharedSnapshot = Object.keys(sharedSnapshot).length > 0;
   const usingSnapshotRoleSections = ["Receptionist", "Accountant", "Housekeeping", "WarehouseStaff"].includes(currentRole) && !!currentRoleSnapshot;
   const roleSectionLoading = usingSnapshotRoleSections ? false : loading;
 
   // Merge base stats + filtered stats
   const mergedStats = { ...stats, ...filteredStats };
+  const displayStats = {
+    totalRevenue: snapshotSummary.totalRevenue ?? mergedStats.totalRevenue,
+    todayRevenue: mergedStats.todayRevenue,
+    activeBookings: snapshotSummary.activeBookings ?? mergedStats.activeBookings,
+    pendingBookings: snapshotSummary.pendingHandlingBookings ?? mergedStats.pendingBookings,
+    occupancyRate: snapshotSummary.occupancyRate ?? mergedStats.occupancyRate,
+    availableRooms: snapshotSummary.readyRooms ?? quickStatsSnapshot.availableRooms ?? mergedStats.availableRooms,
+    totalUsers: snapshotSummary.usersCount ?? quickStatsSnapshot.totalUsers ?? mergedStats.totalUsers,
+    newUsersThisMonth: snapshotSummary.newUsersInPeriod ?? quickStatsSnapshot.newUsersInPeriod ?? mergedStats.newUsersThisMonth,
+    avgRating: snapshotSummary.avgRating ?? reviewSummarySnapshot.averageRating ?? mergedStats.avgRating,
+    pendingReviews: snapshotSummary.pendingReviews ?? reviewSummarySnapshot.pendingReviews ?? mergedStats.pendingReviews,
+    activeVouchers: snapshotSummary.activeVouchers ?? quickStatsSnapshot.activeVouchers ?? mergedStats.activeVouchers,
+    activeRoomTypes: snapshotSummary.activeRoomTypes ?? quickStatsSnapshot.activeRoomTypes ?? mergedStats.activeRoomTypes,
+    revenueByDay: revenueByDaySnapshot.length > 0 ? revenueByDaySnapshot : mergedStats.revenueByDay,
+    bookingsByStatus: Object.keys(bookingStatusSnapshot).length > 0 ? bookingStatusSnapshot : mergedStats.bookingsByStatus,
+    roomTypeOccupancy: roomTypeOccupancySnapshot.length > 0 ? roomTypeOccupancySnapshot : mergedStats.roomTypeOccupancy,
+    totalLossValue: snapshotSummary.totalLossValue ?? lossOverviewSnapshot.totalLossValue ?? mergedStats.totalLossValue,
+    pendingLoss: snapshotSummary.pendingLossCount ?? lossOverviewSnapshot.pendingLossCount ?? mergedStats.pendingLoss,
+    confirmedLoss: snapshotSummary.confirmedLoss ?? lossOverviewSnapshot.confirmedLossCount ?? mergedStats.confirmedLoss,
+    totalEquipments: snapshotSummary.activeEquipments ?? inventorySummarySnapshot.totalEquipments ?? mergedStats.totalEquipments,
+    totalEquipmentUnits: snapshotSummary.totalEquipmentUnits ?? inventorySummarySnapshot.totalQuantity ?? mergedStats.totalEquipmentUnits,
+    inUseEquipmentUnits: snapshotSummary.totalInUse ?? inventorySummarySnapshot.inUseQuantity ?? mergedStats.inUseEquipmentUnits,
+    damagedEquipmentUnits: snapshotSummary.totalDamaged ?? inventorySummarySnapshot.damagedQuantity ?? mergedStats.damagedEquipmentUnits,
+    totalInvoices: snapshotSummary.totalInvoices,
+    totalInvoiceValue: snapshotSummary.totalInvoiceValue,
+    unpaidInvoices: snapshotSummary.unpaidInvoices,
+    pendingPaymentAmount: snapshotSummary.pendingPaymentAmount,
+    confirmedLossValue: snapshotSummary.confirmedLossValue,
+    totalInStock: snapshotSummary.totalInStock ?? inventorySummarySnapshot.inStockQuantity,
+    pendingReplenishment: snapshotSummary.pendingReplenishment,
+  };
+  const snapshotDrivenLoading = periodLoading || (loading && !hasSnapshotSummary && !hasSharedSnapshot);
   const filteredBookingList = useMemo(() => {
     if (recentBookingsSnapshot.length > 0) {
       return recentBookingsSnapshot;
@@ -668,7 +693,7 @@ export default function DashboardPage() {
   }, [roomStatusGroupsSnapshot, rooms]);
   const bookingStatusData = Object.keys(bookingStatusSnapshot).length > 0
     ? bookingStatusSnapshot
-    : mergedStats.bookingsByStatus;
+    : displayStats.bookingsByStatus;
   const statusEntries = Object.entries(bookingStatusData).sort((a, b) => b[1] - a[1]);
   const totalBk = Object.values(bookingStatusData).reduce((s, v) => s + v, 0) || 1;
 
@@ -866,9 +891,9 @@ export default function DashboardPage() {
       pendingReplenishmentRecords,
       damagedInventoryItems,
       inventorySummary: {
-        totalQuantity: mergedStats.totalEquipmentUnits,
-        inUseQuantity: mergedStats.inUseEquipmentUnits,
-        inStockQuantity: equipments.reduce((sum, item) => sum + (item.inStockQuantity || 0), 0),
+        totalQuantity: displayStats.totalEquipmentUnits,
+        inUseQuantity: displayStats.inUseEquipmentUnits,
+        inStockQuantity: displayStats.totalInStock ?? equipments.reduce((sum, item) => sum + (item.inStockQuantity || 0), 0),
       },
     };
 
@@ -879,10 +904,10 @@ export default function DashboardPage() {
     switch (currentRole) {
       case "Manager":
         return [
-          { icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Doanh thu kỳ", value: fmtCurrency(mergedStats.totalRevenue), sub: `Hôm nay: ${fmtCurrency(mergedStats.todayRevenue)}`, subColor: "var(--a-brand-ink)", delay: 0 },
-          { icon: "meeting_room", intent: "error", iconColor: "var(--a-error)", label: "Công suất phòng", value: `${mergedStats.occupancyRate}%`, sub: `${mergedStats.availableRooms} phòng sẵn sàng`, subColor: "var(--a-success)", delay: 60 },
-          { icon: "confirmation_number", intent: "info", iconColor: "var(--a-info)", label: "Booking vận hành", value: fmt(mergedStats.activeBookings), sub: `${mergedStats.pendingBookings} booking chờ xử lý`, subColor: "var(--a-warning)", delay: 120 },
-          { icon: "warning", intent: "warning", iconColor: "var(--a-warning)", label: "Cảnh báo mở", value: fmt(mergedStats.pendingLoss + roomCountByStatus.Cleaning), sub: `${mergedStats.pendingLoss} pending loss`, subColor: "var(--a-text-muted)", delay: 180 },
+          { icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Doanh thu kỳ", value: fmtCurrency(displayStats.totalRevenue), sub: `Hôm nay: ${fmtCurrency(displayStats.todayRevenue)}`, subColor: "var(--a-brand-ink)", delay: 0 },
+          { icon: "meeting_room", intent: "error", iconColor: "var(--a-error)", label: "Công suất phòng", value: `${displayStats.occupancyRate}%`, sub: `${displayStats.availableRooms} phòng sẵn sàng`, subColor: "var(--a-success)", delay: 60 },
+          { icon: "confirmation_number", intent: "info", iconColor: "var(--a-info)", label: "Booking vận hành", value: fmt(displayStats.activeBookings), sub: `${displayStats.pendingBookings} booking chờ xử lý`, subColor: "var(--a-warning)", delay: 120 },
+          { icon: "warning", intent: "warning", iconColor: "var(--a-warning)", label: "Cảnh báo mở", value: fmt(displayStats.pendingLoss + roomCountByStatus.Cleaning), sub: `${displayStats.pendingLoss} pending loss`, subColor: "var(--a-text-muted)", delay: 180 },
         ];
       case "Receptionist":
         return [
@@ -893,36 +918,36 @@ export default function DashboardPage() {
         ];
       case "Accountant":
         return [
-          { icon: "receipt_long", intent: "info", iconColor: "var(--a-info)", label: "Tổng hóa đơn kỳ", value: fmt(recentInvoices.length), sub: `${fmt(allInvoices.length)} toàn hệ thống`, subColor: "var(--a-text-muted)", delay: 0 },
-          { icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Tổng giá trị hóa đơn", value: fmtCurrency(totalInvoiceValue), sub: `${fmtCurrency(mergedStats.totalRevenue)} đã thanh toán`, subColor: "var(--a-brand-ink)", delay: 60 },
-          { icon: "pending_actions", intent: "warning", iconColor: "var(--a-warning)", label: "Hóa đơn chưa thanh toán", value: fmt(unpaidInvoiceCount), sub: `${fmtCurrency(unpaidInvoices.reduce((sum, iv) => sum + (iv.finalTotal || 0), 0))} cần follow-up`, subColor: "var(--a-warning)", delay: 120 },
-          { icon: "report", intent: "error", iconColor: "var(--a-error)", label: "Thất thoát đã xác nhận", value: fmtCurrency(mergedStats.totalLossValue), sub: `${fmt(confirmedDamageRecords.length)} biên bản gần đây`, subColor: "var(--a-error)", delay: 180 },
+          { icon: "receipt_long", intent: "info", iconColor: "var(--a-info)", label: "Tổng hóa đơn kỳ", value: fmt(displayStats.totalInvoices ?? recentInvoices.length), sub: `${fmt(allInvoices.length)} toàn hệ thống`, subColor: "var(--a-text-muted)", delay: 0 },
+          { icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Tổng giá trị hóa đơn", value: fmtCurrency(displayStats.totalInvoiceValue ?? totalInvoiceValue), sub: `${fmtCurrency(displayStats.totalRevenue)} đã thanh toán`, subColor: "var(--a-brand-ink)", delay: 60 },
+          { icon: "pending_actions", intent: "warning", iconColor: "var(--a-warning)", label: "Hóa đơn chưa thanh toán", value: fmt(displayStats.unpaidInvoices ?? unpaidInvoiceCount), sub: `${fmtCurrency(displayStats.pendingPaymentAmount ?? unpaidInvoices.reduce((sum, iv) => sum + (iv.finalTotal || 0), 0))} cần follow-up`, subColor: "var(--a-warning)", delay: 120 },
+          { icon: "report", intent: "error", iconColor: "var(--a-error)", label: "Thất thoát đã xác nhận", value: fmtCurrency(displayStats.confirmedLossValue ?? confirmedDamageRecords.reduce((sum, item) => sum + (item.penaltyAmount || 0), 0)), sub: `${fmt(confirmedDamageRecords.length)} biên bản gần đây`, subColor: "var(--a-error)", delay: 180 },
         ];
       case "Housekeeping":
         return [
           { icon: "cleaning_services", intent: "error", iconColor: "var(--a-error)", label: "Phòng cần dọn", value: fmt(roomCountByStatus.Cleaning), sub: `${fmt(roomCountByStatus.PendingLoss)} pending loss`, subColor: "var(--a-warning)", delay: 0 },
-          { icon: "warning", intent: "warning", iconColor: "var(--a-warning)", label: "Phòng pending loss", value: fmt(roomCountByStatus.PendingLoss), sub: `${fmt(mergedStats.pendingLoss)} biên bản mở`, subColor: "var(--a-error)", delay: 60 },
+          { icon: "warning", intent: "warning", iconColor: "var(--a-warning)", label: "Phòng pending loss", value: fmt(roomCountByStatus.PendingLoss), sub: `${fmt(displayStats.pendingLoss)} biên bản mở`, subColor: "var(--a-error)", delay: 60 },
           { icon: "check_circle", intent: "success", iconColor: "var(--a-success)", label: "Phòng đã sẵn sàng", value: fmt(roomCountByStatus.Ready), sub: `${fmt(roomCountByStatus.Occupied)} đang có khách`, subColor: "var(--a-success)", delay: 120 },
           { icon: "inventory_2", intent: "info", iconColor: "var(--a-info)", label: "Vật tư cần phối hợp", value: fmt(pendingReplenishmentRecords.length), sub: `${fmt(equipments.length)} vật tư active`, subColor: "var(--a-info)", delay: 180 },
         ];
       case "WarehouseStaff":
         return [
-          { icon: "inventory_2", intent: "info", iconColor: "var(--a-info)", label: "Tổng vật tư active", value: fmt(mergedStats.totalEquipments), sub: `${fmt(mergedStats.totalEquipmentUnits)} đơn vị`, subColor: "var(--a-info)", delay: 0 },
+          { icon: "inventory_2", intent: "info", iconColor: "var(--a-info)", label: "Tổng vật tư active", value: fmt(displayStats.totalEquipments), sub: `${fmt(displayStats.totalEquipmentUnits)} đơn vị`, subColor: "var(--a-info)", delay: 0 },
           { icon: "warehouse", intent: "success", iconColor: "var(--a-success)", label: "Tồn kho khả dụng", value: fmt(equipments.reduce((sum, item) => sum + (item.inStockQuantity || 0), 0)), sub: `${lowStockItems.length} vật tư sắp thiếu`, subColor: "var(--a-warning)", delay: 60 },
-          { icon: "deployed_code", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Vật tư đang dùng", value: fmt(mergedStats.inUseEquipmentUnits), sub: `${pendingReplenishmentRecords.length} cần bổ sung`, subColor: "var(--a-brand-ink)", delay: 120 },
-          { icon: "dangerous", intent: "error", iconColor: "var(--a-error)", label: "Hư hỏng/chờ bổ sung", value: fmt(mergedStats.damagedEquipmentUnits + pendingReplenishmentRecords.length), sub: `${damagedInventoryItems.length} vật tư cần xử lý`, subColor: "var(--a-error)", delay: 180 },
+          { icon: "deployed_code", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Vật tư đang dùng", value: fmt(displayStats.inUseEquipmentUnits), sub: `${pendingReplenishmentRecords.length} cần bổ sung`, subColor: "var(--a-brand-ink)", delay: 120 },
+          { icon: "dangerous", intent: "error", iconColor: "var(--a-error)", label: "Hư hỏng/chờ bổ sung", value: fmt(displayStats.damagedEquipmentUnits + pendingReplenishmentRecords.length), sub: `${damagedInventoryItems.length} vật tư cần xử lý`, subColor: "var(--a-error)", delay: 180 },
         ];
       default:
         return [
-          { icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Tổng doanh thu", value: fmtCurrency(mergedStats.totalRevenue), sub: `Hôm nay: ${fmtCurrency(mergedStats.todayRevenue)}`, subColor: "var(--a-brand-ink)", delay: 0 },
-          { icon: "confirmation_number", intent: "info", iconColor: "var(--a-info)", label: "Booking đang hoạt động", value: fmt(mergedStats.activeBookings), sub: `${mergedStats.pendingBookings} booking chờ cọc`, subColor: "var(--a-warning)", delay: 60 },
-          { icon: "meeting_room", intent: "error", iconColor: "var(--a-error)", label: "Tỷ lệ lấp đầy", value: `${mergedStats.occupancyRate}%`, sub: `${mergedStats.availableRooms} phòng sẵn sàng`, subColor: "var(--a-success)", delay: 120 },
-          { icon: "group", intent: "warning", iconColor: "var(--a-warning)", label: "Tài khoản hệ thống", value: fmt(mergedStats.totalUsers), sub: `+${fmt(mergedStats.newUsersThisMonth)} trong kỳ lọc`, subColor: "var(--a-text-muted)", delay: 180 },
+          { icon: "payments", intent: "brand", iconColor: "var(--a-brand-ink)", label: "Tổng doanh thu", value: fmtCurrency(displayStats.totalRevenue), sub: `Hôm nay: ${fmtCurrency(displayStats.todayRevenue)}`, subColor: "var(--a-brand-ink)", delay: 0 },
+          { icon: "confirmation_number", intent: "info", iconColor: "var(--a-info)", label: "Booking đang hoạt động", value: fmt(displayStats.activeBookings), sub: `${displayStats.pendingBookings} booking chờ cọc`, subColor: "var(--a-warning)", delay: 60 },
+          { icon: "meeting_room", intent: "error", iconColor: "var(--a-error)", label: "Tỷ lệ lấp đầy", value: `${displayStats.occupancyRate}%`, sub: `${displayStats.availableRooms} phòng sẵn sàng`, subColor: "var(--a-success)", delay: 120 },
+          { icon: "group", intent: "warning", iconColor: "var(--a-warning)", label: "Tài khoản hệ thống", value: fmt(displayStats.totalUsers), sub: `+${fmt(displayStats.newUsersThisMonth)} trong kỳ lọc`, subColor: "var(--a-text-muted)", delay: 180 },
         ];
     }
   }, [
     currentRole,
-    mergedStats,
+    displayStats,
     roomCountByStatus,
     todayArrivals.length,
     stayingGuests.length,
@@ -1322,7 +1347,7 @@ export default function DashboardPage() {
               <p className="admin-overline" style={{ margin: "0 0 4px" }}>
                 {kpi.label}
               </p>
-              {loading ? (
+              {snapshotDrivenLoading ? (
                 <Skel h={28} w={120} style={{ marginBottom: 6 }} />
               ) : (
                 <div className="kpi-val" style={{ animationDelay: `${kpi.delay + 80}ms`, animationFillMode: "both" }}>
@@ -1331,7 +1356,7 @@ export default function DashboardPage() {
                   </h3>
                 </div>
               )}
-              {loading ? <Skel h={12} w={140} /> : (
+              {snapshotDrivenLoading ? <Skel h={12} w={140} /> : (
                 <p style={{ fontSize: 11, fontWeight: 600, color: kpi.subColor, margin: 0 }}>{kpi.sub}</p>
               )}
             </div>
@@ -1370,7 +1395,7 @@ export default function DashboardPage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-5">
               <SummaryTile icon="receipt_long" label="Tổng hóa đơn" value={fmt(accountantData.summary.totalInvoices ?? recentInvoices.length)} sub={`${fmt(recentInvoices.length)} hóa đơn gần đây`} tint="var(--a-info)" bg="var(--a-info-bg)" />
-              <SummaryTile icon="payments" label="Tổng giá trị" value={fmtCurrency(accountantData.summary.totalInvoiceValue ?? recentInvoices.reduce((sum, iv) => sum + (iv.finalTotal || 0), 0))} sub={`${fmtCurrency(mergedStats.totalRevenue)} đã thanh toán`} tint="var(--a-brand-ink)" bg="var(--a-primary-muted)" />
+              <SummaryTile icon="payments" label="Tổng giá trị" value={fmtCurrency(accountantData.summary.totalInvoiceValue ?? displayStats.totalInvoiceValue ?? recentInvoices.reduce((sum, iv) => sum + (iv.finalTotal || 0), 0))} sub={`${fmtCurrency(displayStats.totalRevenue)} đã thanh toán`} tint="var(--a-brand-ink)" bg="var(--a-primary-muted)" />
               <SummaryTile icon="pending_actions" label="Chưa thanh toán" value={fmt(accountantData.summary.unpaidInvoiceCount ?? unpaidInvoices.length)} sub={`${fmtCurrency(accountantData.summary.unpaidInvoiceValue ?? unpaidInvoices.reduce((sum, iv) => sum + (iv.finalTotal || 0), 0))} cần thu`} tint="var(--a-warning)" bg="var(--a-warning-bg)" />
               <SummaryTile icon="report" label="Thất thoát đã xác nhận" value={fmtCurrency(accountantData.summary.confirmedLossValue ?? confirmedDamageRecords.reduce((sum, item) => sum + (item.penaltyAmount || 0), 0))} sub={`${fmt(confirmedDamageRecords.length)} biên bản gần đây`} tint="var(--a-error)" bg="var(--a-error-bg)" />
             </div>
@@ -1401,7 +1426,7 @@ export default function DashboardPage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-5">
               <SummaryTile icon="cleaning_services" label="Phòng cần dọn" value={fmt(housekeepingData.summary.cleaningRooms ?? roomCountByStatus.Cleaning)} sub={`${fmt(cleaningRooms.length)} phòng ưu tiên`} tint="var(--a-error)" bg="var(--a-error-bg)" />
-              <SummaryTile icon="warning" label="Phòng pending loss" value={fmt(housekeepingData.summary.pendingLossRooms ?? roomCountByStatus.PendingLoss)} sub={`${fmt(housekeepingData.summary.pendingLossCount ?? mergedStats.pendingLoss)} biên bản đang mở`} tint="var(--a-warning)" bg="var(--a-warning-bg)" />
+              <SummaryTile icon="warning" label="Phòng pending loss" value={fmt(housekeepingData.summary.pendingLossRooms ?? roomCountByStatus.PendingLoss)} sub={`${fmt(housekeepingData.summary.pendingLossCount ?? displayStats.pendingLoss)} biên bản đang mở`} tint="var(--a-warning)" bg="var(--a-warning-bg)" />
               <SummaryTile icon="check_circle" label="Phòng đã sẵn sàng" value={fmt(housekeepingData.summary.readyRooms ?? roomCountByStatus.Ready)} sub={`${fmt(readyRooms.length)} phòng nổi bật`} tint="var(--a-success)" bg="var(--a-success-bg)" />
               <SummaryTile icon="inventory_2" label="Cần phối hợp vật tư" value={fmt(pendingReplenishmentRecords.length)} sub={`${fmt(housekeepingData.summary.activeEquipments ?? inventorySummarySnapshot.totalEquipments ?? equipments.length)} vật tư active`} tint="var(--a-info)" bg="var(--a-info-bg)" />
             </div>
@@ -1419,10 +1444,10 @@ export default function DashboardPage() {
         {currentRole === "WarehouseStaff" && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-5">
-              <SummaryTile icon="inventory_2" label="Tổng vật tư active" value={fmt(warehouseData.summary.activeEquipments ?? inventorySummarySnapshot.totalEquipments ?? mergedStats.totalEquipments)} sub={`${fmt(warehouseData.inventorySummary.totalQuantity ?? inventorySummarySnapshot.totalQuantity ?? mergedStats.totalEquipmentUnits)} đơn vị`} tint="var(--a-info)" bg="var(--a-info-bg)" />
-              <SummaryTile icon="warehouse" label="Tồn kho khả dụng" value={fmt(warehouseData.summary.totalInStock ?? inventorySummarySnapshot.inStockQuantity ?? equipments.reduce((sum, item) => sum + (item.inStockQuantity || 0), 0))} sub={`${fmt(lowStockItems.length)} vật tư sắp thiếu`} tint="var(--a-success)" bg="var(--a-success-bg)" />
-              <SummaryTile icon="deployed_code" label="Vật tư đang dùng" value={fmt(warehouseData.summary.totalInUse ?? inventorySummarySnapshot.inUseQuantity ?? mergedStats.inUseEquipmentUnits)} sub={`${fmt(pendingReplenishmentRecords.length)} phiếu cần bổ sung`} tint="var(--a-brand-ink)" bg="var(--a-primary-muted)" />
-              <SummaryTile icon="dangerous" label="Hư hỏng/liquidated" value={fmt(damagedInventoryItems.length)} sub={`${fmt(warehouseData.summary.totalDamaged ?? inventorySummarySnapshot.damagedQuantity ?? mergedStats.damagedEquipmentUnits)} đơn vị hư hỏng`} tint="var(--a-error)" bg="var(--a-error-bg)" />
+              <SummaryTile icon="inventory_2" label="Tổng vật tư active" value={fmt(warehouseData.summary.activeEquipments ?? displayStats.totalEquipments)} sub={`${fmt(warehouseData.inventorySummary.totalQuantity ?? displayStats.totalEquipmentUnits)} đơn vị`} tint="var(--a-info)" bg="var(--a-info-bg)" />
+              <SummaryTile icon="warehouse" label="Tồn kho khả dụng" value={fmt(warehouseData.summary.totalInStock ?? displayStats.totalInStock ?? equipments.reduce((sum, item) => sum + (item.inStockQuantity || 0), 0))} sub={`${fmt(lowStockItems.length)} vật tư sắp thiếu`} tint="var(--a-success)" bg="var(--a-success-bg)" />
+              <SummaryTile icon="deployed_code" label="Vật tư đang dùng" value={fmt(warehouseData.summary.totalInUse ?? displayStats.inUseEquipmentUnits)} sub={`${fmt(pendingReplenishmentRecords.length)} phiếu cần bổ sung`} tint="var(--a-brand-ink)" bg="var(--a-primary-muted)" />
+              <SummaryTile icon="dangerous" label="Hư hỏng/liquidated" value={fmt(damagedInventoryItems.length)} sub={`${fmt(warehouseData.summary.totalDamaged ?? displayStats.damagedEquipmentUnits)} đơn vị hư hỏng`} tint="var(--a-error)" bg="var(--a-error-bg)" />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
               <SectionCard title="Vật tư sắp thiếu" subtitle="Ưu tiên kiểm tra và bổ sung">
@@ -1454,9 +1479,9 @@ export default function DashboardPage() {
               </SectionCard>
               <SectionCard title="Đối soát nhanh vật tư" subtitle="So sánh trạng thái tổng, dùng và tồn kho">
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-                  <SummaryTile icon="inventory" label="Tổng số lượng" value={fmt(warehouseData.inventorySummary.totalQuantity ?? inventorySummarySnapshot.totalQuantity ?? mergedStats.totalEquipmentUnits)} tint="var(--a-info)" bg="var(--a-info-bg)" />
-                  <SummaryTile icon="sync_alt" label="Đang dùng" value={fmt(warehouseData.inventorySummary.inUseQuantity ?? inventorySummarySnapshot.inUseQuantity ?? mergedStats.inUseEquipmentUnits)} tint="var(--a-brand-ink)" bg="var(--a-primary-muted)" />
-                  <SummaryTile icon="warehouse" label="Tồn kho" value={fmt(warehouseData.inventorySummary.inStockQuantity ?? inventorySummarySnapshot.inStockQuantity ?? equipments.reduce((sum, item) => sum + (item.inStockQuantity || 0), 0))} tint="var(--a-success)" bg="var(--a-success-bg)" />
+                  <SummaryTile icon="inventory" label="Tổng số lượng" value={fmt(warehouseData.inventorySummary.totalQuantity ?? displayStats.totalEquipmentUnits)} tint="var(--a-info)" bg="var(--a-info-bg)" />
+                  <SummaryTile icon="sync_alt" label="Đang dùng" value={fmt(warehouseData.inventorySummary.inUseQuantity ?? displayStats.inUseEquipmentUnits)} tint="var(--a-brand-ink)" bg="var(--a-primary-muted)" />
+                  <SummaryTile icon="warehouse" label="Tồn kho" value={fmt(warehouseData.inventorySummary.inStockQuantity ?? displayStats.totalInStock ?? equipments.reduce((sum, item) => sum + (item.inStockQuantity || 0), 0))} tint="var(--a-success)" bg="var(--a-success-bg)" />
                 </div>
               </SectionCard>
             </div>
@@ -1471,24 +1496,24 @@ export default function DashboardPage() {
               <div className="admin-stat-icon">
                 <span className="material-symbols-outlined" style={{ color: "var(--a-error)", fontSize: 22, fontVariationSettings: "'FILL' 1" }}>report</span>
               </div>
-              {!loading && (lossOverviewSnapshot.pendingLossCount ?? mergedStats.pendingLoss) > 0 && (
+              {!snapshotDrivenLoading && displayStats.pendingLoss > 0 && (
                 <span className="admin-status-badge" data-intent="warning" style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px" }}>
-                  {lossOverviewSnapshot.pendingLossCount ?? mergedStats.pendingLoss} chờ xử lý
+                  {displayStats.pendingLoss} chờ xử lý
                 </span>
               )}
             </div>
             <p style={{ fontSize: 12, fontWeight: 600, color: "var(--a-text-soft)", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Tổng tiền đền bù ghi nhận</p>
-            {loading ? <Skel h={28} w={140} style={{ marginBottom: 6 }} /> : (
+            {snapshotDrivenLoading ? <Skel h={28} w={140} style={{ marginBottom: 6 }} /> : (
               <div className="kpi-val" style={{ animationFillMode: "both" }}>
                 <h3 style={{ fontSize: 24, fontWeight: 800, color: "var(--a-error)", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
-                  {fmtCurrency(lossOverviewSnapshot.totalLossValue ?? mergedStats.totalLossValue)}
+                  {fmtCurrency(displayStats.totalLossValue)}
                 </h3>
               </div>
             )}
-            {loading ? <Skel h={12} w={160} /> : (
+            {snapshotDrivenLoading ? <Skel h={12} w={160} /> : (
               <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: "var(--a-error)" }}>
-                  {lossOverviewSnapshot.totalRecords ?? lossAndDamages.length} biên bản · {lossOverviewSnapshot.confirmedLossCount ?? mergedStats.confirmedLoss} đã xác nhận
+                  {lossOverviewSnapshot.totalRecords ?? lossAndDamages.length} biên bản · {displayStats.confirmedLoss} đã xác nhận
                 </span>
               </div>
             )}
@@ -1502,16 +1527,16 @@ export default function DashboardPage() {
               </div>
             </div>
             <p style={{ fontSize: 12, fontWeight: 600, color: "var(--a-text-soft)", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Tổng số lượng vật tư</p>
-            {loading ? <Skel h={28} w={80} style={{ marginBottom: 6 }} /> : (
+            {snapshotDrivenLoading ? <Skel h={28} w={80} style={{ marginBottom: 6 }} /> : (
               <div className="kpi-val" style={{ animationFillMode: "both" }}>
                 <h3 style={{ fontSize: 24, fontWeight: 800, color: "var(--a-info)", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
-                  {fmt(inventorySummarySnapshot.totalQuantity ?? mergedStats.totalEquipmentUnits)}
+                  {fmt(displayStats.totalEquipmentUnits)}
                 </h3>
               </div>
             )}
-            {loading ? <Skel h={12} w={160} /> : (
+            {snapshotDrivenLoading ? <Skel h={12} w={160} /> : (
               <p style={{ fontSize: 11, fontWeight: 800, color: "var(--a-info)", margin: 0, opacity: 0.82 }}>
-                {fmt(inventorySummarySnapshot.inUseQuantity ?? mergedStats.inUseEquipmentUnits)} đang dùng · {fmt(inventorySummarySnapshot.damagedQuantity ?? mergedStats.damagedEquipmentUnits)} hư hỏng
+                {fmt(displayStats.inUseEquipmentUnits)} đang dùng · {fmt(displayStats.damagedEquipmentUnits)} hư hỏng
               </p>
             )}
           </div>
@@ -1525,20 +1550,20 @@ export default function DashboardPage() {
                 <h4 style={{ fontSize: 15, fontWeight: 800, color: "var(--a-text)", margin: "0 0 2px" }}>{revenueChartTitle}</h4>
                 <p style={{ fontSize: 12, color: "var(--a-text-muted)", margin: 0 }}>{revenueChartSubtitle}</p>
               </div>
-              {!loading && (
+              {!snapshotDrivenLoading && (
                 <span className="admin-status-badge" data-intent="success" style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px" }}>
-                  {fmtCurrency((mergedStats.revenueByDay || []).reduce((s, item) => s + (item.value || 0), 0))}
+                  {fmtCurrency((displayStats.revenueByDay || []).reduce((s, item) => s + (item.value || 0), 0))}
                 </span>
               )}
             </div>
-            {loading ? (
+            {snapshotDrivenLoading ? (
               <div style={{ height: 80, display: "flex", alignItems: "flex-end", gap: 8 }}>
                 {Array.from({ length: periodType === "DAILY" ? 12 : 7 }).map((_, i) => (
                   <Skel key={i} style={{ flex: 1, height: `${30 + Math.random() * 50}%`, borderRadius: "4px 4px 2px 2px" }} />
                 ))}
               </div>
             ) : (
-              <MiniBar data={(mergedStats.revenueByDay || []).map((item) => item.value)} labels={(mergedStats.revenueByDay || []).map((item) => item.label)} color="var(--a-brand-ink)" />
+              <MiniBar data={(displayStats.revenueByDay || []).map((item) => item.value)} labels={(displayStats.revenueByDay || []).map((item) => item.label)} color="var(--a-brand-ink)" />
             )}
           </div>
 
@@ -1547,7 +1572,7 @@ export default function DashboardPage() {
               <h4 style={{ fontSize: 15, fontWeight: 800, color: "var(--a-text)", margin: "0 0 2px" }}>Tình trạng loại phòng</h4>
               <p style={{ fontSize: 12, color: "var(--a-text-muted)", margin: 0 }}>Tỷ lệ lấp đầy theo loại</p>
             </div>
-            {loading ? (
+            {snapshotDrivenLoading ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -1556,11 +1581,11 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-            ) : roomTypeOccupancySnapshot.length === 0 && mergedStats.roomTypeOccupancy.length === 0 ? (
+            ) : displayStats.roomTypeOccupancy.length === 0 ? (
               <p style={{ color: "var(--a-text-muted)", fontSize: 13, textAlign: "center", paddingTop: 16 }}>Không có dữ liệu</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {(roomTypeOccupancySnapshot.length > 0 ? roomTypeOccupancySnapshot : mergedStats.roomTypeOccupancy).map((rt, i) => (
+                {displayStats.roomTypeOccupancy.map((rt, i) => (
                   <div key={i}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: "var(--a-text)" }}>{rt.name}</span>
@@ -1585,7 +1610,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5" style={{ display: ["Admin", "Manager"].includes(currentRole) ? undefined : "none" }}>
           <div className="card-in admin-card" style={{ padding: 24, animationDelay: "300ms", animationFillMode: "both" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--a-text)", margin: "0 0 18px" }}>Phân loại booking</h4>
-            {loading ? (
+            {snapshotDrivenLoading ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {Array.from({ length: 5 }).map((_, i) => <Skel key={i} h={14} />)}
               </div>
@@ -1618,7 +1643,7 @@ export default function DashboardPage() {
           <div className="card-in admin-card" style={{ padding: 24, animationDelay: "360ms", animationFillMode: "both" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--a-text)", margin: "0 0 4px" }}>Đánh giá khách hàng</h4>
             <p style={{ fontSize: 12, color: "var(--a-text-muted)", margin: "0 0 18px" }}>Đã duyệt</p>
-            {loading ? (
+            {snapshotDrivenLoading ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <Skel h={48} r={12} />
                 <Skel h={12} />
@@ -1630,19 +1655,19 @@ export default function DashboardPage() {
                   <div>
                     <p style={{ fontSize: 11, color: "rgba(231,254,243,.6)", fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Điểm trung bình</p>
                     <p style={{ fontSize: 32, fontWeight: 800, color: "#e7fef3", margin: 0, lineHeight: 1 }}>
-                      {(reviewSummarySnapshot.averageRating ?? mergedStats.avgRating).toFixed(1)}
+                      {displayStats.avgRating.toFixed(1)}
                       <span style={{ fontSize: 14, color: "var(--a-emphasis-muted)", fontWeight: 500 }}>/5</span>
                     </p>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                    <Stars rating={Math.round(reviewSummarySnapshot.averageRating ?? mergedStats.avgRating)} />
+                    <Stars rating={Math.round(displayStats.avgRating)} />
                     <span style={{ fontSize: 11, color: "rgba(231,254,243,.6)" }}>{reviewSummarySnapshot.totalReviews ?? reviews.length} đánh giá</span>
                   </div>
                 </div>
-                {(reviewSummarySnapshot.pendingReviews ?? mergedStats.pendingReviews) > 0 && (
+                {displayStats.pendingReviews > 0 && (
                   <div className="admin-status-badge" data-intent="warning" style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 10, padding: "8px 12px" }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--a-warning)" }}>schedule</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--a-warning)" }}>{reviewSummarySnapshot.pendingReviews ?? mergedStats.pendingReviews} đánh giá chờ duyệt</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--a-warning)" }}>{displayStats.pendingReviews} đánh giá chờ duyệt</span>
                   </div>
                 )}
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1668,17 +1693,17 @@ export default function DashboardPage() {
 
           <div className="card-in admin-card" style={{ padding: 24, animationDelay: "420ms", animationFillMode: "both", display: "flex", flexDirection: "column", gap: 16 }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--a-text)", margin: 0 }}>Thống kê nhanh</h4>
-            {loading ? (
+            {snapshotDrivenLoading ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {Array.from({ length: 4 }).map((_, i) => <Skel key={i} h={52} r={12} />)}
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
-                  { icon: "local_offer", iconColor: "#1e40af", bg: "#dbeafe", label: "Voucher đang hoạt động", value: fmt(quickStatsSnapshot.activeVouchers ?? mergedStats.activeVouchers), sub: `${fmt(quickStatsSnapshot.totalVouchers ?? vouchers.length)} tổng cộng` },
-                  { icon: "bed", iconColor: "#065f46", bg: "#d1fae5", label: "Phòng sẵn sàng", value: fmt(quickStatsSnapshot.availableRooms ?? mergedStats.availableRooms), sub: `${fmt(quickStatsSnapshot.totalRooms ?? rooms.length)} phòng tổng` },
-                  { icon: "category", iconColor: "#9333ea", bg: "#f3e8ff", label: "Loại phòng", value: fmt(quickStatsSnapshot.activeRoomTypes ?? mergedStats.activeRoomTypes), sub: "Loại phòng đang hoạt động" },
-                  { icon: "people", iconColor: "#b45309", bg: "#fef3c7", label: "Tài khoản hệ thống", value: fmt(quickStatsSnapshot.totalUsers ?? mergedStats.totalUsers), sub: `+${fmt(quickStatsSnapshot.newUsersInPeriod ?? mergedStats.newUsersThisMonth)} trong kỳ lọc` },
+                  { icon: "local_offer", iconColor: "#1e40af", bg: "#dbeafe", label: "Voucher đang hoạt động", value: fmt(displayStats.activeVouchers), sub: `${fmt(quickStatsSnapshot.totalVouchers ?? vouchers.length)} tổng cộng` },
+                  { icon: "bed", iconColor: "#065f46", bg: "#d1fae5", label: "Phòng sẵn sàng", value: fmt(displayStats.availableRooms), sub: `${fmt(quickStatsSnapshot.totalRooms ?? rooms.length)} phòng tổng` },
+                  { icon: "category", iconColor: "#9333ea", bg: "#f3e8ff", label: "Loại phòng", value: fmt(displayStats.activeRoomTypes), sub: "Loại phòng đang hoạt động" },
+                  { icon: "people", iconColor: "#b45309", bg: "#fef3c7", label: "Tài khoản hệ thống", value: fmt(displayStats.totalUsers), sub: `+${fmt(displayStats.newUsersThisMonth)} trong kỳ lọc` },
                 ].map((item, i) => (
                   <div
                     key={i}
@@ -1713,12 +1738,12 @@ export default function DashboardPage() {
           <div style={{ padding: "20px 28px", borderBottom: "1px solid var(--a-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: "var(--a-text)", margin: 0 }}>Booking gần đây</h4>
             <span style={{ fontSize: 12, color: "var(--a-text-muted)", fontWeight: 500 }}>
-              {loading ? "..." : `${filteredBookingList.length} booking`}
+              {snapshotDrivenLoading ? "..." : `${filteredBookingList.length} booking`}
             </span>
           </div>
           {isMobile ? (
             <div style={{ display: "grid", gap: 12, padding: 14 }}>
-              {loading ? (
+              {snapshotDrivenLoading ? (
                 Array.from({ length: 4 }).map((_, i) => <Skel key={i} h={92} r={16} />)
               ) : filteredBookingList.length === 0 ? (
                 <div style={{ padding: "28px 0", textAlign: "center", color: "var(--a-text-muted)", fontSize: 13 }}>Chưa có booking nào trong kỳ này</div>
@@ -1762,7 +1787,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
+                  {snapshotDrivenLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i}>
                         {Array.from({ length: 6 }).map((_, j) => (
@@ -1823,9 +1848,9 @@ export default function DashboardPage() {
 
             {/* Legend badges */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {(["Ready", "Occupied", "Cleaning", "PendingLoss", "Maintenance"]).map(status => {
-                const cfg = DASH_ROOM_BS_CFG[status];
-                const cnt = roomCountByStatus[status] || 0;
+                    {(["Ready", "Occupied", "Cleaning", "PendingLoss", "Maintenance"]).map(status => {
+                      const cfg = DASH_ROOM_BS_CFG[status];
+                      const cnt = roomCountByStatus[status] || 0;
                 return (
                   <span
                     key={status}
@@ -1837,7 +1862,7 @@ export default function DashboardPage() {
                     }}
                   >
                     <span style={{ width: 7, height: 7, borderRadius: "50%", background: cfg.dot, flexShrink: 0 }} />
-                    {loading ? "..." : cnt} {cfg.label}
+                    {snapshotDrivenLoading ? "..." : cnt} {cfg.label}
                   </span>
                 );
               })}
@@ -1845,7 +1870,7 @@ export default function DashboardPage() {
           </div>
 
           <div style={{ padding: "20px 28px" }}>
-            {loading ? (
+            {snapshotDrivenLoading ? (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12 }}>
                 {Array.from({ length: 6 }).map((_, i) => <Skel key={i} h={90} r={12} />)}
               </div>
@@ -1854,8 +1879,9 @@ export default function DashboardPage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
                 {(["Occupied", "Cleaning", "PendingLoss", "Maintenance", "Ready"]).map(statusKey => {
-                  const groupRooms = (roomStatusGroupsSnapshot?.[statusKey] || []).length > 0
-                    ? roomStatusGroupsSnapshot[statusKey]
+                  const hasSnapshotRoomGroups = Object.keys(roomStatusGroupsSnapshot || {}).length > 0;
+                  const groupRooms = hasSnapshotRoomGroups
+                    ? (roomStatusGroupsSnapshot?.[statusKey] || [])
                     : roomPreview.filter(r => getRoomStatusKey(r) === statusKey);
                   if (groupRooms.length === 0) return null;
                   const cfg = DASH_ROOM_BS_CFG[statusKey];

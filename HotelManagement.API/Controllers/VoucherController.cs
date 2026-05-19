@@ -67,6 +67,7 @@ public class VouchersController : ControllerBase
     private readonly IVoucherAudienceService _voucherAudienceService;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
+    private readonly IRoleDashboardPeriodService _dashboardService;
 
     public VouchersController(
         AppDbContext context,
@@ -74,7 +75,8 @@ public class VouchersController : ControllerBase
         IVoucherValidationService voucherValidationService,
         IVoucherAudienceService voucherAudienceService,
         IEmailService emailService,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IRoleDashboardPeriodService dashboardService)
     {
         _context = context;
         _activityLog = activityLog;
@@ -82,6 +84,18 @@ public class VouchersController : ControllerBase
         _voucherAudienceService = voucherAudienceService;
         _emailService = emailService;
         _configuration = configuration;
+        _dashboardService = dashboardService;
+    }
+
+    private Task RebuildDashboardSnapshotAsync(string eventType, int? eventRefId, CancellationToken cancellationToken = default)
+    {
+        var currentUserId = JwtHelper.GetUserId(User);
+        return _dashboardService.RebuildAffectedDashboardsAsync(
+            eventType,
+            DateTime.UtcNow,
+            currentUserId > 0 ? currentUserId : null,
+            eventRefId,
+            cancellationToken);
     }
 
     private static string NormalizeAudienceType(string? value)
@@ -657,6 +671,8 @@ public class VouchersController : ControllerBase
         });
         await _context.SaveChangesAsync();
 
+        await RebuildDashboardSnapshotAsync("VOUCHER_CREATED", voucher.Id);
+
         return Ok(new
         {
             voucher,
@@ -770,6 +786,7 @@ public class VouchersController : ControllerBase
         await _context.SaveChangesAsync();
 
         await _context.SaveChangesAsync();
+        await RebuildDashboardSnapshotAsync("VOUCHER_UPDATED", v.Id);
         return Ok(v);
     }
 
@@ -813,6 +830,7 @@ public class VouchersController : ControllerBase
         await _context.SaveChangesAsync();
 
         await _context.SaveChangesAsync();
+        await RebuildDashboardSnapshotAsync("VOUCHER_DEACTIVATED", v.Id);
 
         return Ok(new { message = $"Voucher '{v.Code}' đã bị vô hiệu hóa." });
     }

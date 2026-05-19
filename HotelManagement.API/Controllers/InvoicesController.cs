@@ -1,6 +1,7 @@
 using HotelManagement.API.Services;
 using HotelManagement.Core.Authorization;
 using HotelManagement.Core.DTOs;
+using HotelManagement.Core.Helpers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HotelManagement.API.Controllers;
@@ -12,12 +13,29 @@ public class InvoicesController : ControllerBase
     private readonly IInvoiceService _invoiceService;
     private readonly IAuditTrailService _auditTrail;
     private readonly Infrastructure.Data.AppDbContext _db;
+    private readonly IRoleDashboardPeriodService _dashboardService;
 
-    public InvoicesController(IInvoiceService invoiceService, IAuditTrailService auditTrail, Infrastructure.Data.AppDbContext db)
+    public InvoicesController(
+        IInvoiceService invoiceService,
+        IAuditTrailService auditTrail,
+        Infrastructure.Data.AppDbContext db,
+        IRoleDashboardPeriodService dashboardService)
     {
         _invoiceService = invoiceService;
         _auditTrail = auditTrail;
         _db = db;
+        _dashboardService = dashboardService;
+    }
+
+    private Task RebuildDashboardSnapshotAsync(string eventType, int? eventRefId, CancellationToken cancellationToken = default)
+    {
+        var currentUserId = JwtHelper.GetUserId(User);
+        return _dashboardService.RebuildAffectedDashboardsAsync(
+            eventType,
+            DateTime.UtcNow,
+            currentUserId > 0 ? currentUserId : null,
+            eventRefId,
+            cancellationToken);
     }
 
     [RequirePermission(PermissionCodes.ManageInvoices)]
@@ -71,6 +89,7 @@ public class InvoicesController : ControllerBase
                 NewValue = $"{{\"bookingId\":{bookingId}}}"
             });
 
+            await RebuildDashboardSnapshotAsync("INVOICE_CREATED", bookingId);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -108,6 +127,7 @@ public class InvoicesController : ControllerBase
             NewValue = $"{{\"invoiceId\":{id},\"status\":\"Finalized\"}}"
         });
 
+        await RebuildDashboardSnapshotAsync("INVOICE_FINALIZED", id);
         return Ok(new { message = "Chốt hóa đơn thành công.", data = result });
     }
 
@@ -135,6 +155,7 @@ public class InvoicesController : ControllerBase
                 NewValue = $"{{\"invoiceId\":{id},\"reason\":\"{request.Reason}\",\"amount\":{request.Amount},\"adjustmentType\":\"{request.AdjustmentType}\"}}"
             });
 
+            await RebuildDashboardSnapshotAsync("INVOICE_UPDATED", id);
             return Ok(new { message = "Đã thêm điều chỉnh hóa đơn thành công.", data = result });
         }
         catch (InvalidOperationException ex)
@@ -167,6 +188,7 @@ public class InvoicesController : ControllerBase
                 OldValue = $"{{\"adjustmentId\":{adjustmentId},\"invoiceId\":{id}}}"
             });
 
+            await RebuildDashboardSnapshotAsync("INVOICE_UPDATED", id);
             return Ok(new { message = "Đã xóa điều chỉnh hóa đơn thành công.", data = result });
         }
         catch (KeyNotFoundException ex)
