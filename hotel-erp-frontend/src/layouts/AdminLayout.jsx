@@ -7,6 +7,7 @@ import { getMyProfile } from "../api/userProfileApi";
 import { useResponsiveAdmin } from "../hooks/useResponsiveAdmin";
 import NotificationMenu from "../components/NotificationMenu";
 import WeatherWidget from "../components/common/WeatherWidget";
+import SystemSettingsModal from "../components/SystemSettingsModal";
 import "../styles/admin-theme.css";
 
 const THEME_STORAGE_KEY = "admin-theme-mode";
@@ -22,7 +23,7 @@ function buildNavItems(hasPermission) {
     hasPermission("MANAGE_INVENTORY") && { to: "/admin/items", icon: "inventory_2", label: "Vật tư và Minibar" },
     hasPermission("MANAGE_INVENTORY") && { to: "/admin/loss-damage", icon: "report_problem", label: "Thất thoát và Đền bù" },
     hasPermission("MANAGE_BOOKINGS") && { to: "/admin/bookings", icon: "confirmation_number", label: "Đặt phòng" },
-    hasPermission("MANAGE_BOOKINGS") && { to: "/admin/vouchers", icon: "local_offer", label: "Voucher" },
+    hasPermission("MANAGE_VOUCHERS") && { to: "/admin/vouchers", icon: "local_offer", label: "Voucher" },
     hasPermission("MANAGE_SERVICES") && { to: "/admin/services", icon: "room_service", label: "Quản lý dịch vụ" },
     hasPermission("MANAGE_INVOICES") && { to: "/admin/invoices", icon: "receipt_long", label: "Hóa đơn" },
     hasPermission("MANAGE_USERS") && { to: "/admin/memberships", icon: "workspace_premium", label: "Khách hàng thành viên" },
@@ -49,6 +50,7 @@ export default function AdminLayout() {
   });
   const { width, isMobile } = useResponsiveAdmin();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -96,6 +98,7 @@ export default function AdminLayout() {
   const navItems = useMemo(() => buildNavItems(hasPermission), [hasPermission]);
   const ch = (user?.fullName || "A")[0].toUpperCase();
   const canUseNotificationCenter = user?.role === "Admin" || user?.role === "Manager";
+  const canManageSystemSettings = hasPermission("MANAGE_SYSTEM_SETTINGS");
 
   return (
     <>
@@ -106,6 +109,7 @@ export default function AdminLayout() {
       )}
 
       <div className="admin-portal" data-theme={themeMode}>
+        <SystemSettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         <div
           className="admin-shell"
           style={{
@@ -277,11 +281,18 @@ export default function AdminLayout() {
 
                 {canUseNotificationCenter ? <NotificationMenu /> : null}
 
-                <button className="admin-icon-btn" title="Tro giup" aria-label="Tro giup">
-                  <span className="material-symbols-outlined" style={{ fontSize: 19 }}>
-                    help_outline
-                  </span>
-                </button>
+                {canManageSystemSettings ? (
+                  <button
+                    className="admin-icon-btn"
+                    title="Setting"
+                    aria-label="Setting"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 19 }}>
+                      settings
+                    </span>
+                  </button>
+                ) : null}
               </div>
 
               {!isMobile && (

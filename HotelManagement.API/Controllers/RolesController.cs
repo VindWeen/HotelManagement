@@ -78,7 +78,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPost("assign-permission")]
-    [RequirePermission(PermissionCodes.EditRoles)]
+    [RequirePermission(PermissionCodes.EditRolePermissions)]
     public async Task<IActionResult> AssignPermission([FromBody] AssignPermissionRequest request)
     {
         var role = await _db.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Id == request.RoleId);
@@ -186,7 +186,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPut("{id:int}/permissions")]
-    [RequirePermission(PermissionCodes.EditRoles)]
+    [RequirePermission(PermissionCodes.EditRolePermissions)]
     public async Task<IActionResult> UpdatePermissions(int id, [FromBody] UpdateRolePermissionsRequest request)
     {
         if (request.RoleId != id)

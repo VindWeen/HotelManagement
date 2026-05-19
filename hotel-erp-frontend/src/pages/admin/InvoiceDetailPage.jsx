@@ -604,7 +604,7 @@ export default function InvoiceDetailPage() {
                       </div>
                       <div style={{ fontSize: 12, color: "var(--a-text-muted)" }}>{item.description || "Không có ghi chú"}</div>
                       <span className="badge-p" style={damageStatusBadgeStyle(item.remainingToReplenish)}>
-                        {item.remainingToReplenish > 0 ? `Còn thiếu ${item.remainingToReplenish}` : "Đã bổ sung đủ"}
+                        {item.remainingToReplenish > 0 ? "Chưa bổ sung đủ" : "Đã bổ sung đủ"}
                       </span>
                     </article>
                   ))}
@@ -642,7 +642,7 @@ export default function InvoiceDetailPage() {
                           className="badge-p"
                           style={damageStatusBadgeStyle(item.remainingToReplenish)}
                         >
-                          {item.remainingToReplenish > 0 ? `Còn thiếu ${item.remainingToReplenish}` : "Đã bổ sung đủ"}
+                          {item.remainingToReplenish > 0 ? "Chưa bổ sung đủ" : "Đã bổ sung đủ"}
                         </span>
                       </td>
                       <td style={{ padding: "16px 24px", textAlign: "right", fontSize: 13, fontWeight: 700, color: "var(--a-text)" }}>{item.quantity || 0}</td>

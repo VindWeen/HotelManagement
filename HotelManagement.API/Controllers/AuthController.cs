@@ -82,19 +82,7 @@ public class AuthController : ControllerBase
 
         var token = _jwt.GenerateToken(user, roleName, permissionCodes);
 
-        return Ok(new
-        {
-            token,
-            refreshToken,
-            expiresIn = _config["Jwt:ExpiresInMinutes"],
-            userId = user.Id,
-            fullName = user.FullName,
-            email = user.Email,
-            role = roleName,
-            avatarUrl = user.AvatarUrl,
-            permissions = permissionCodes,
-            notification
-        });
+        return Ok(BuildAuthResponse(user, roleName, permissionCodes, token, refreshToken, notification));
     }
 
     // POST /api/Auth/register
@@ -231,12 +219,7 @@ public class AuthController : ControllerBase
         });
         await _context.SaveChangesAsync();
 
-        return Ok(new
-        {
-            token,
-            refreshToken = newRefreshToken,
-            expiresIn = _config["Jwt:ExpiresInMinutes"],
-        });
+        return Ok(BuildAuthResponse(user, roleName, permissionCodes, token, newRefreshToken));
     }
 
     // POST /api/Auth/forgot-password
@@ -317,6 +300,27 @@ public class AuthController : ControllerBase
                 p => p.Id,
                 (rp, p) => p.PermissionCode)
             .ToListAsync();
+
+    private object BuildAuthResponse(
+        User user,
+        string roleName,
+        IEnumerable<string> permissionCodes,
+        string token,
+        string refreshToken,
+        Notification? notification = null)
+        => new
+        {
+            token,
+            refreshToken,
+            expiresIn = _config["Jwt:ExpiresInMinutes"],
+            userId = user.Id,
+            fullName = user.FullName,
+            email = user.Email,
+            role = roleName,
+            avatarUrl = user.AvatarUrl,
+            permissions = permissionCodes.ToList(),
+            notification
+        };
 
     private static string GenerateRefreshToken()
         => Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));

@@ -3,6 +3,7 @@ import * as signalR from '@microsoft/signalr';
 import { useAdminAuthStore } from '../store/adminAuthStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { getMyNotifications } from '../api/activityLogsApi';
+import { refreshAccessToken } from '../api/axios';
 
 export const useSignalR = () => {
     const { token, user } = useAdminAuthStore();
@@ -13,6 +14,7 @@ export const useSignalR = () => {
     const connectionRef = useRef(null);
     const logoutTimeoutRef = useRef(null);
     const [forcedLogoutNotice, setForcedLogoutNotice] = useState(null);
+    const [sessionUpdateNotice, setSessionUpdateNotice] = useState(null);
     const role = user?.role || "";
     const canUseNotificationCenter = role === "Admin" || role === "Manager";
 
@@ -101,9 +103,25 @@ export const useSignalR = () => {
             }, 1400);
         });
 
+        connection.on('SessionUpdated', async (payload) => {
+            const message = payload?.message || 'Quyen cua ban da duoc cap nhat.';
+            setSessionUpdateNotice({
+                id: Date.now(),
+                message,
+            });
+            setTimeout(() => setSessionUpdateNotice(null), 4200);
+
+            try {
+                await refreshAccessToken();
+            } catch (error) {
+                console.error('Failed to refresh session after SessionUpdated event:', error);
+            }
+        });
+
         return () => {
             connection.off('ReceiveNotification');
             connection.off('ForceLogout');
+            connection.off('SessionUpdated');
             connection.stop();
             if (connectionRef.current === connection) {
                 connectionRef.current = null;
@@ -113,6 +131,7 @@ export const useSignalR = () => {
 
     return {
         connection: connectionRef.current,
-        forcedLogoutNotice
+        forcedLogoutNotice,
+        sessionUpdateNotice,
     };
 };

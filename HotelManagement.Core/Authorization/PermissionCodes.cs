@@ -21,4 +21,9 @@ public static class PermissionCodes
     public const string ViewAuditLogs   = "VIEW_AUDIT_LOGS";
     public const string EditRoles       = "EDIT_ROLES";
     public const string CreateUsers     = "CREATE_USERS";
+    public const string ManageSystemSettings = "MANAGE_SYSTEM_SETTINGS";
+    public const string ManageVouchers       = "MANAGE_VOUCHERS";
+    public const string ChangeUserRole       = "CHANGE_USER_ROLE";
+    public const string EditRolePermissions  = "EDIT_ROLE_PERMISSIONS";
+    public const string ViewSystemSettings   = "VIEW_SYSTEM_SETTINGS";
 }

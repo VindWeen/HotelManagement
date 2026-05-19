@@ -181,7 +181,7 @@ public class UserManagementController : ControllerBase
 
     // POST /api/UserManagement
     [HttpPost]
-    [RequirePermission(PermissionCodes.ManageUsers)]
+    [RequirePermission(PermissionCodes.CreateUsers)]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
         var emailExists = await _db.Users
@@ -367,7 +367,7 @@ public class UserManagementController : ControllerBase
 
     // PUT /api/UserManagement/{id}/change-role
     [HttpPut("{id:int}/change-role")]
-    [RequirePermission(PermissionCodes.ManageUsers)]
+    [RequirePermission(PermissionCodes.ChangeUserRole)]
     public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeRoleRequest request)
     {
         var user = await _db.Users.FindAsync(id);
@@ -408,9 +408,9 @@ public class UserManagementController : ControllerBase
             Action  = NotificationAction.UpdateUser
         };
 
-        await _sessionInvalidation.InvalidateUserAsync(
+        await _sessionInvalidation.RefreshUserSessionAsync(
             id,
-            "Vai trò của bạn đã thay đổi. Vui lòng đăng nhập lại.",
+            "Vai trò của bạn đã thay đổi. Phiên làm việc sẽ được cập nhật ngay.",
             "role_changed");
 
         return Ok(new { oldRoleId, newRoleId = request.NewRoleId, newRoleName = role.Name, notification });

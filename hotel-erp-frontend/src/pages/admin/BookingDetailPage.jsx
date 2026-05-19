@@ -294,25 +294,25 @@ function AddRoomModal({ open, loading, roomTypes, booking, form, onChange, onCon
       <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 640, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)", padding: 30 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 22 }}>
           <div>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>ThÃªm phÃ²ng vÃ o booking</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>Thêm phòng vào booking</h3>
             <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-              ThÃªm má»™t háº¡ng phÃ²ng má»›i cho booking hiá»‡n táº¡i. Há»‡ thá»‘ng sáº½ tá»± gÃ¡n phÃ²ng phÃ¹ há»£p khi check-in.
+              Thêm một hạng phòng mới cho booking hiện tại. Hệ thống sẽ tự gán phòng phù hợp khi check-in.
             </p>
           </div>
           <button onClick={onCancel} className="action-btn" style={{ padding: "8px 12px", fontSize: 12, height: "fit-content" }}>
-            ÄÃ³ng
+            Đóng
           </button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14, marginBottom: 18 }}>
           <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Háº¡ng phÃ²ng</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Hạng phòng</div>
             <select
               value={form.roomTypeId}
               onChange={(e) => onChange("roomTypeId", e.target.value)}
               style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 14, fontWeight: 600, outline: "none", color: "#1c1917" }}
             >
-              <option value="">Chá»n háº¡ng phÃ²ng muá»‘n thÃªm</option>
+              <option value="">Chọn hạng phòng muốn thêm</option>
               {roomTypes.map((roomType) => (
                 <option key={roomType.id} value={roomType.id}>
                   {roomType.name}
@@ -347,7 +347,7 @@ function AddRoomModal({ open, loading, roomTypes, booking, form, onChange, onCon
             <textarea
               value={form.note}
               onChange={(e) => onChange("note", e.target.value)}
-              placeholder="VÃ­ dá»¥: ThÃªm phÃ²ng cho ngÆ°á»i thÃ¢n Ä‘i cÃ¹ng, cáº§n gáº§n phÃ²ng hiá»‡n táº¡i..."
+              placeholder="Ví dụ: Thêm phòng cho người thân đi cùng, cần gần phòng hiện tại..."
               style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917", minHeight: 92, resize: "none" }}
             />
           </div>
@@ -363,11 +363,11 @@ function AddRoomModal({ open, loading, roomTypes, booking, form, onChange, onCon
               <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>#{booking?.bookingCode || "-"}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Háº¡ng phÃ²ng</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{selectedRoomType?.name || "ChÆ°a chá»n"}</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Hạng phòng</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{selectedRoomType?.name || "Chưa chọn"}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>GiÃ¡ niÃªm yáº¿t</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Giá niêm yết</div>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#4f645b" }}>
                 {selectedRoomType ? `${formatCurrency(selectedRoomType.basePrice || 0)}/đêm` : "-"}
               </div>

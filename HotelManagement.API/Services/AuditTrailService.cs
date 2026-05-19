@@ -24,7 +24,7 @@ public interface IAuditTrailService
 {
     Task WriteAsync(
         AppDbContext db,
-        ClaimsPrincipal user,
+        ClaimsPrincipal? user,
         HttpRequest request,
         AuditTrailEntry entry,
         CancellationToken cancellationToken = default);
@@ -43,17 +43,17 @@ public class AuditTrailService : IAuditTrailService
 
     public async Task WriteAsync(
         AppDbContext db,
-        ClaimsPrincipal user,
+        ClaimsPrincipal? user,
         HttpRequest request,
         AuditTrailEntry entry,
         CancellationToken cancellationToken = default)
     {
         int? userId = null;
-        if (user.Identity?.IsAuthenticated == true)
+        if (user?.Identity?.IsAuthenticated == true)
         {
             try { userId = JwtHelper.GetUserId(user); } catch { }
         }
-        var roleName = user.FindFirst(ClaimTypes.Role)?.Value ?? user.FindFirst("role")?.Value;
+        var roleName = user?.FindFirst(ClaimTypes.Role)?.Value ?? user?.FindFirst("role")?.Value;
 
         await _activityLog.LogAsync(
             actionCode: entry.ActionCode,

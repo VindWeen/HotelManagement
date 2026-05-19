@@ -1,6 +1,5 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
-using HotelManagement.API.Configuration;
 using HotelManagement.API.Services;
 using HotelManagement.Core.Authorization;
 using HotelManagement.Core.Entities;
@@ -10,7 +9,6 @@ using HotelManagement.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace HotelManagement.API.Controllers;
 
@@ -22,20 +20,20 @@ public class AttractionsController : ControllerBase
     private readonly IActivityLogService _activityLog;
     private readonly Cloudinary _cloudinary;
     private readonly IAuditTrailService _auditTrail;
-    private readonly HotelLocationOptions _hotelLocation;
+    private readonly ISystemSettingsService _settingsService;
 
     public AttractionsController(
         AppDbContext db,
         IActivityLogService activityLog,
         Cloudinary cloudinary,
         IAuditTrailService auditTrail,
-        IOptions<HotelLocationOptions> hotelLocationOptions)
+        ISystemSettingsService settingsService)
     {
         _db = db;
         _activityLog = activityLog;
         _cloudinary = cloudinary;
         _auditTrail = auditTrail;
-        _hotelLocation = hotelLocationOptions.Value;
+        _settingsService = settingsService;
     }
 
     [HttpGet]
@@ -135,6 +133,7 @@ public class AttractionsController : ControllerBase
         if (HasIncompleteCoordinates(request.Latitude, request.Longitude))
             return BadRequest(new { message = "Can nhap day du ca latitude va longitude de tinh khoang cach." });
 
+        var hotelSetting = await _settingsService.GetCurrentAsync();
         var attraction = new Attraction
         {
             Name = request.Name.Trim(),
@@ -142,7 +141,7 @@ public class AttractionsController : ControllerBase
             Address = request.Address?.Trim(),
             Latitude = request.Latitude,
             Longitude = request.Longitude,
-            DistanceKm = CalculateDistanceKm(request.Latitude, request.Longitude),
+            DistanceKm = CalculateDistanceKm(hotelSetting, request.Latitude, request.Longitude),
             Description = request.Description?.Trim(),
             ImageUrl = request.ImageUrl?.Trim(),
             CloudinaryPublicId = request.CloudinaryPublicId?.Trim(),
@@ -230,7 +229,8 @@ public class AttractionsController : ControllerBase
         if (request.Longitude.HasValue)
             attraction.Longitude = request.Longitude.Value;
 
-        attraction.DistanceKm = CalculateDistanceKm(nextLatitude, nextLongitude);
+        var hotelSetting = await _settingsService.GetCurrentAsync();
+        attraction.DistanceKm = CalculateDistanceKm(hotelSetting, nextLatitude, nextLongitude);
 
         if (request.Description is not null)
             attraction.Description = request.Description.Trim();
@@ -438,34 +438,14 @@ public class AttractionsController : ControllerBase
         return srcMatch.Success ? srcMatch.Groups[1].Value.Trim() : trimmed;
     }
 
-    private decimal? CalculateDistanceKm(decimal? attractionLatitude, decimal? attractionLongitude)
+    private static decimal? CalculateDistanceKm(SystemSetting setting, decimal? attractionLatitude, decimal? attractionLongitude)
     {
-        if (!attractionLatitude.HasValue
-            || !attractionLongitude.HasValue
-            || !_hotelLocation.Latitude.HasValue
-            || !_hotelLocation.Longitude.HasValue)
-            return null;
-
-        var hotelLatitude = (double)_hotelLocation.Latitude.Value;
-        var hotelLongitude = (double)_hotelLocation.Longitude.Value;
-        var targetLatitude = (double)attractionLatitude.Value;
-        var targetLongitude = (double)attractionLongitude.Value;
-
-        const double earthRadiusKm = 6371d;
-        var latitudeDelta = DegreesToRadians(targetLatitude - hotelLatitude);
-        var longitudeDelta = DegreesToRadians(targetLongitude - hotelLongitude);
-        var startLatitude = DegreesToRadians(hotelLatitude);
-        var endLatitude = DegreesToRadians(targetLatitude);
-
-        var haversine = Math.Pow(Math.Sin(latitudeDelta / 2d), 2d)
-            + Math.Cos(startLatitude) * Math.Cos(endLatitude) * Math.Pow(Math.Sin(longitudeDelta / 2d), 2d);
-        var arc = 2d * Math.Atan2(Math.Sqrt(haversine), Math.Sqrt(1d - haversine));
-        var distance = earthRadiusKm * arc;
-
-        return Math.Round((decimal)distance, 2, MidpointRounding.AwayFromZero);
+        return SystemSettingsController.CalculateDistanceKm(
+            setting.HotelLatitude,
+            setting.HotelLongitude,
+            attractionLatitude,
+            attractionLongitude);
     }
-
-    private static double DegreesToRadians(double degrees) => degrees * (Math.PI / 180d);
 
     private async Task DeleteCloudinaryImageAsync(string? publicId)
     {

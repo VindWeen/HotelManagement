@@ -1512,3 +1512,81 @@ SELECT
     'OPEN', 1
 FROM [dbo].[Roles] r
 GO
+
+/* ================= 2026-05-19 Delta: System Settings + Granular Permissions ================= */
+IF OBJECT_ID(N'dbo.System_Settings', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[System_Settings](
+    [id] [int] IDENTITY(1,1) NOT NULL,
+    [booking_deposit_percent] [decimal](5, 2) NOT NULL DEFAULT 30,
+    [check_in_required_percent] [decimal](5, 2) NOT NULL DEFAULT 50,
+    [hotel_address] [nvarchar](500) NULL,
+    [hotel_latitude] [decimal](9, 6) NULL,
+    [hotel_longitude] [decimal](9, 6) NULL,
+    [created_at] [datetime] NOT NULL DEFAULT GETUTCDATE(),
+    [updated_at] [datetime] NULL,
+    [updated_by] [int] NULL,
+ CONSTRAINT [PK_System_Settings] PRIMARY KEY CLUSTERED ([id] ASC)
+);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'FK_System_Settings_Users_UpdatedBy')
+BEGIN
+ALTER TABLE [dbo].[System_Settings] WITH CHECK ADD CONSTRAINT [FK_System_Settings_Users_UpdatedBy]
+FOREIGN KEY([updated_by]) REFERENCES [dbo].[Users] ([id]);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[System_Settings])
+BEGIN
+INSERT [dbo].[System_Settings] ([booking_deposit_percent], [check_in_required_percent], [hotel_address], [hotel_latitude], [hotel_longitude], [created_at])
+VALUES (30, 50, N'', CAST(10.953402 AS Decimal(9, 6)), CAST(106.802169 AS Decimal(9, 6)), GETUTCDATE());
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [permission_code] = N'MANAGE_SYSTEM_SETTINGS')
+INSERT [dbo].[Permissions] ([name], [permission_code]) VALUES (N'MANAGE_SYSTEM_SETTINGS', N'MANAGE_SYSTEM_SETTINGS');
+IF NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [permission_code] = N'MANAGE_VOUCHERS')
+INSERT [dbo].[Permissions] ([name], [permission_code]) VALUES (N'MANAGE_VOUCHERS', N'MANAGE_VOUCHERS');
+IF NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [permission_code] = N'CHANGE_USER_ROLE')
+INSERT [dbo].[Permissions] ([name], [permission_code]) VALUES (N'CHANGE_USER_ROLE', N'CHANGE_USER_ROLE');
+IF NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [permission_code] = N'EDIT_ROLE_PERMISSIONS')
+INSERT [dbo].[Permissions] ([name], [permission_code]) VALUES (N'EDIT_ROLE_PERMISSIONS', N'EDIT_ROLE_PERMISSIONS');
+IF NOT EXISTS (SELECT 1 FROM [dbo].[Permissions] WHERE [permission_code] = N'VIEW_SYSTEM_SETTINGS')
+INSERT [dbo].[Permissions] ([name], [permission_code]) VALUES (N'VIEW_SYSTEM_SETTINGS', N'VIEW_SYSTEM_SETTINGS');
+GO
+
+DECLARE @AdminRoleId INT = (SELECT TOP 1 [id] FROM [dbo].[Roles] WHERE [name] = N'Admin');
+DECLARE @ManagerRoleId INT = (SELECT TOP 1 [id] FROM [dbo].[Roles] WHERE [name] = N'Manager');
+
+INSERT INTO [dbo].[Role_Permissions] ([role_id], [permission_id])
+SELECT @AdminRoleId, p.[id]
+FROM [dbo].[Permissions] p
+WHERE @AdminRoleId IS NOT NULL
+  AND p.[permission_code] IN (
+    N'MANAGE_SYSTEM_SETTINGS',
+    N'MANAGE_VOUCHERS',
+    N'CHANGE_USER_ROLE',
+    N'EDIT_ROLE_PERMISSIONS',
+    N'VIEW_SYSTEM_SETTINGS'
+  )
+  AND NOT EXISTS (
+    SELECT 1
+    FROM [dbo].[Role_Permissions] rp
+    WHERE rp.[role_id] = @AdminRoleId
+      AND rp.[permission_id] = p.[id]
+  );
+
+INSERT INTO [dbo].[Role_Permissions] ([role_id], [permission_id])
+SELECT @ManagerRoleId, p.[id]
+FROM [dbo].[Permissions] p
+WHERE @ManagerRoleId IS NOT NULL
+  AND p.[permission_code] IN (N'MANAGE_VOUCHERS')
+  AND NOT EXISTS (
+    SELECT 1
+    FROM [dbo].[Role_Permissions] rp
+    WHERE rp.[role_id] = @ManagerRoleId
+      AND rp.[permission_id] = p.[id]
+  );
+GO

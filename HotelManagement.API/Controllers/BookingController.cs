@@ -35,6 +35,7 @@ public class BookingsController : ControllerBase
     private readonly IInvoiceService _invoiceService;
     private readonly IAuditTrailService _auditTrail;
     private readonly IConfiguration _config;
+    private readonly ISystemSettingsService _settingsService;
 
     public BookingsController(
         AppDbContext context,
@@ -47,7 +48,8 @@ public class BookingsController : ControllerBase
         IPaymentService paymentService,
         IInvoiceService invoiceService,
         IAuditTrailService auditTrail,
-        IConfiguration config)
+        IConfiguration config,
+        ISystemSettingsService settingsService)
     {
         _context = context;
         _redis = redis;
@@ -60,6 +62,7 @@ public class BookingsController : ControllerBase
         _invoiceService = invoiceService;
         _auditTrail = auditTrail;
         _config = config;
+        _settingsService = settingsService;
     }
 
     private IDatabase RedisDb => _redis.GetDatabase();
@@ -325,15 +328,22 @@ public class BookingsController : ControllerBase
 
         finalTotal -= Math.Max(0m, booking.LoyaltyDiscountAmount);
         booking.TotalEstimatedAmount = Math.Max(0m, finalTotal);
-        ApplyBookingFinancialTargets(booking);
+        await ApplyBookingFinancialTargetsAsync(booking, cancellationToken);
         ApplyBookingStatusFromDeposit(booking);
     }
 
-    private static void ApplyBookingFinancialTargets(Booking booking)
+    private async Task ApplyBookingFinancialTargetsAsync(Booking booking, CancellationToken cancellationToken = default)
     {
+        var setting = await _settingsService.GetCurrentAsync(cancellationToken);
         var estimatedTotal = Math.Max(0m, booking.TotalEstimatedAmount);
-        booking.RequiredBookingDepositAmount = decimal.Round(estimatedTotal * 0.3m, 2, MidpointRounding.AwayFromZero);
-        booking.RequiredCheckInAmount = decimal.Round(estimatedTotal * 0.5m, 2, MidpointRounding.AwayFromZero);
+        booking.RequiredBookingDepositAmount = decimal.Round(
+            estimatedTotal * (setting.BookingDepositPercent / 100m),
+            2,
+            MidpointRounding.AwayFromZero);
+        booking.RequiredCheckInAmount = decimal.Round(
+            estimatedTotal * (setting.CheckInRequiredPercent / 100m),
+            2,
+            MidpointRounding.AwayFromZero);
     }
 
     private void ApplyBookingStatusFromDeposit(Booking booking)
@@ -1174,7 +1184,7 @@ public class BookingsController : ControllerBase
             booking.TotalEstimatedAmount = Math.Max(0m, subtotal - voucherDiscount - booking.LoyaltyDiscountAmount);
 
             booking.DepositAmount = 0m;
-            ApplyBookingFinancialTargets(booking);
+            await ApplyBookingFinancialTargetsAsync(booking);
 
             _context.Bookings.Add(booking);
             if (booking.VoucherId.HasValue && booking.UserId.HasValue)
