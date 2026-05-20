@@ -47,6 +47,11 @@ export const createVoucher = (data) =>
 export const updateVoucher = (id, data) =>
     axiosClient.put(`/Vouchers/${id}`, data);
 
+export const getEligibleVoucherUsers = (params = {}) => {
+    const query = buildQueryString(params);
+    return axiosClient.get(`/Vouchers/eligible-users?${query}`);
+};
+
 /**
  * DELETE /api/Vouchers/{id}  [MANAGE_BOOKINGS]
  * Soft delete — sets isActive = false

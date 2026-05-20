@@ -1,4 +1,5 @@
 using HotelManagement.Core.Authorization;
+using HotelManagement.Core.Helpers;
 using HotelManagement.Infrastructure.Data;
 using HotelManagement.API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -19,13 +20,30 @@ public class EquipmentsController : ControllerBase
     private readonly AppDbContext _db;
     private readonly Cloudinary _cloudinary;
     private readonly IAuditTrailService _auditTrail;
+    private readonly IRoleDashboardPeriodService _dashboardService;
     private static readonly JsonSerializerOptions SnapshotJsonOptions = new(JsonSerializerDefaults.Web);
 
-    public EquipmentsController(AppDbContext db, Cloudinary cloudinary, IAuditTrailService auditTrail)
+    public EquipmentsController(
+        AppDbContext db,
+        Cloudinary cloudinary,
+        IAuditTrailService auditTrail,
+        IRoleDashboardPeriodService dashboardService)
     {
         _db = db;
         _cloudinary = cloudinary;
         _auditTrail = auditTrail;
+        _dashboardService = dashboardService;
+    }
+
+    private Task RebuildDashboardSnapshotAsync(string eventType, int? eventRefId, CancellationToken cancellationToken = default)
+    {
+        var currentUserId = JwtHelper.GetUserId(User);
+        return _dashboardService.RebuildAffectedDashboardsAsync(
+            eventType,
+            DateTime.UtcNow,
+            currentUserId > 0 ? currentUserId : null,
+            eventRefId,
+            cancellationToken);
     }
 
     private sealed class RoomSnapshotItem
@@ -153,6 +171,7 @@ public class EquipmentsController : ControllerBase
             NewValue = $"{{\"itemCode\":\"{equipment.ItemCode}\",\"name\":\"{equipment.Name}\",\"totalQuantity\":{equipment.TotalQuantity},\"basePrice\":{equipment.BasePrice}}}"
         });
 
+        await RebuildDashboardSnapshotAsync("EQUIPMENT_CREATED", equipment.Id);
         return StatusCode(201, new
         {
             message = "Tạo vật tư thành công.",
@@ -233,6 +252,7 @@ public class EquipmentsController : ControllerBase
             NewValue = $"{{\"itemCode\":\"{equipment.ItemCode}\",\"name\":\"{equipment.Name}\",\"totalQuantity\":{equipment.TotalQuantity},\"basePrice\":{equipment.BasePrice}}}"
         });
 
+        await RebuildDashboardSnapshotAsync("EQUIPMENT_UPDATED", equipment.Id);
         return Ok(new { message = "Cập nhật vật tư thành công." });
     }
 
@@ -264,6 +284,7 @@ public class EquipmentsController : ControllerBase
             NewValue = $"{{\"isActive\":{equipment.IsActive.ToString().ToLower()}}}"
         });
 
+        await RebuildDashboardSnapshotAsync("EQUIPMENT_UPDATED", equipment.Id);
         return Ok(new
         {
             message = equipment.IsActive ? "Đã bật vật tư." : "Đã tắt vật tư.",
@@ -404,6 +425,7 @@ public class EquipmentsController : ControllerBase
             NewValue = $"{{\"changedEquipments\":{changed},\"totalEquipments\":{equipments.Count},\"syncedRooms\":{rooms.Count}}}"
         });
 
+        await RebuildDashboardSnapshotAsync("EQUIPMENT_UPDATED", null);
         return Ok(new
         {
             message = $"Đã đồng bộ vật tư thành công. Đã cập nhật snapshot từng phòng và {changed} equipment.",

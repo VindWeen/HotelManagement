@@ -35,6 +35,8 @@ public class BookingsController : ControllerBase
     private readonly IInvoiceService _invoiceService;
     private readonly IAuditTrailService _auditTrail;
     private readonly IConfiguration _config;
+    private readonly ISystemSettingsService _settingsService;
+    private readonly IRoleDashboardPeriodService _dashboardService;
 
     public BookingsController(
         AppDbContext context,
@@ -47,7 +49,9 @@ public class BookingsController : ControllerBase
         IPaymentService paymentService,
         IInvoiceService invoiceService,
         IAuditTrailService auditTrail,
-        IConfiguration config)
+        IConfiguration config,
+        ISystemSettingsService settingsService,
+        IRoleDashboardPeriodService dashboardService)
     {
         _context = context;
         _redis = redis;
@@ -60,9 +64,22 @@ public class BookingsController : ControllerBase
         _invoiceService = invoiceService;
         _auditTrail = auditTrail;
         _config = config;
+        _settingsService = settingsService;
+        _dashboardService = dashboardService;
     }
 
     private IDatabase RedisDb => _redis.GetDatabase();
+
+    private Task RebuildDashboardSnapshotAsync(string eventType, int? eventRefId, CancellationToken cancellationToken = default)
+    {
+        var currentUserId = JwtHelper.GetUserId(User);
+        return _dashboardService.RebuildAffectedDashboardsAsync(
+            eventType,
+            DateTime.UtcNow,
+            currentUserId > 0 ? currentUserId : null,
+            eventRefId,
+            cancellationToken);
+    }
 
     private static (DateTime CheckInDate, DateTime CheckOutDate) NormalizeStayDates(DateTime checkInDate, DateTime checkOutDate)
     {
@@ -325,15 +342,22 @@ public class BookingsController : ControllerBase
 
         finalTotal -= Math.Max(0m, booking.LoyaltyDiscountAmount);
         booking.TotalEstimatedAmount = Math.Max(0m, finalTotal);
-        ApplyBookingFinancialTargets(booking);
+        await ApplyBookingFinancialTargetsAsync(booking, cancellationToken);
         ApplyBookingStatusFromDeposit(booking);
     }
 
-    private static void ApplyBookingFinancialTargets(Booking booking)
+    private async Task ApplyBookingFinancialTargetsAsync(Booking booking, CancellationToken cancellationToken = default)
     {
+        var setting = await _settingsService.GetCurrentAsync(cancellationToken);
         var estimatedTotal = Math.Max(0m, booking.TotalEstimatedAmount);
-        booking.RequiredBookingDepositAmount = decimal.Round(estimatedTotal * 0.3m, 2, MidpointRounding.AwayFromZero);
-        booking.RequiredCheckInAmount = decimal.Round(estimatedTotal * 0.5m, 2, MidpointRounding.AwayFromZero);
+        booking.RequiredBookingDepositAmount = decimal.Round(
+            estimatedTotal * (setting.BookingDepositPercent / 100m),
+            2,
+            MidpointRounding.AwayFromZero);
+        booking.RequiredCheckInAmount = decimal.Round(
+            estimatedTotal * (setting.CheckInRequiredPercent / 100m),
+            2,
+            MidpointRounding.AwayFromZero);
     }
 
     private void ApplyBookingStatusFromDeposit(Booking booking)
@@ -1174,7 +1198,7 @@ public class BookingsController : ControllerBase
             booking.TotalEstimatedAmount = Math.Max(0m, subtotal - voucherDiscount - booking.LoyaltyDiscountAmount);
 
             booking.DepositAmount = 0m;
-            ApplyBookingFinancialTargets(booking);
+            await ApplyBookingFinancialTargetsAsync(booking);
 
             _context.Bookings.Add(booking);
             if (booking.VoucherId.HasValue && booking.UserId.HasValue)
@@ -1221,6 +1245,7 @@ public class BookingsController : ControllerBase
                 }
             }
 
+            await RebuildDashboardSnapshotAsync("BOOKING_CREATED", booking.Id);
             return BookingActionSuccess("Tạo booking thành công.", booking);
         }
         finally
@@ -1279,6 +1304,7 @@ public class BookingsController : ControllerBase
             NewValue = $"{{\"roomTypeId\": {roomType.Id}, \"checkInDate\": \"{normalized.CheckInDate:O}\", \"checkOutDate\": \"{normalized.CheckOutDate:O}\"}}"
         });
 
+        await RebuildDashboardSnapshotAsync("BOOKING_UPDATED", booking.Id, cancellationToken);
         return BookingActionSuccess("Đã thêm phòng vào booking thành công.", booking);
     }
 
@@ -1332,6 +1358,7 @@ public class BookingsController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
+        await RebuildDashboardSnapshotAsync("BOOKING_CONFIRMED", b.Id);
         return BookingActionSuccess("Xác nhận booking thành công.", b);
     }
 
@@ -1406,6 +1433,7 @@ public class BookingsController : ControllerBase
         });
 
         await _context.SaveChangesAsync();
+        await RebuildDashboardSnapshotAsync("BOOKING_CANCELLED", b.Id);
         return BookingActionSuccess("Hủy booking thành công.", b);
     }
 
@@ -1460,6 +1488,7 @@ public class BookingsController : ControllerBase
             NewValue = $"{{\"roomId\": {detail.RoomId?.ToString() ?? "null"}, \"status\": \"{booking.Status}\"}}"
         });
 
+        await RebuildDashboardSnapshotAsync("BOOKING_CHECKED_IN", booking.Id, cancellationToken);
         return BookingActionSuccess("Check-in từng phòng thành công.", booking);
     }
 
@@ -1537,6 +1566,7 @@ public class BookingsController : ControllerBase
             NewValue = $"{{\"checkedInCount\": {detailsToCheckIn.Count}, \"status\": \"{booking.Status}\"}}"
         });
 
+        await RebuildDashboardSnapshotAsync("BOOKING_CHECKED_IN", booking.Id, cancellationToken);
         return BookingActionSuccess("Check-in hàng loạt thành công.", booking);
     }
 
@@ -1601,6 +1631,7 @@ public class BookingsController : ControllerBase
                     NewValue = $"{{\"bookingDetailId\":{detail.Id},\"newCheckOutDate\":\"{normalizedNewCheckOut:yyyy-MM-dd}\"}}"
                 });
 
+                await RebuildDashboardSnapshotAsync("BOOKING_UPDATED", booking.Id, cancellationToken);
                 return BookingActionSuccess("Đã cập nhật ở thêm ngày cho booking thành công.", booking);
             }
         }
@@ -1623,6 +1654,7 @@ public class BookingsController : ControllerBase
                 NewValue = $"{{\"bookingDetailId\":{detail.Id},\"newCheckOutDate\":\"{normalizedNewCheckOut:yyyy-MM-dd}\"}}"
             });
 
+            await RebuildDashboardSnapshotAsync("BOOKING_UPDATED", booking.Id, cancellationToken);
             return BookingActionSuccess("Đã cập nhật ở thêm ngày cho booking thành công.", booking);
         }
 
@@ -1677,6 +1709,7 @@ public class BookingsController : ControllerBase
                 NewValue = $"{{\"bookingDetailId\":{detail.Id},\"newCheckOutDate\":\"{normalizedNewCheckOut:yyyy-MM-dd}\",\"targetRoomId\":{request.TargetRoomId.Value}}}"
             });
 
+            await RebuildDashboardSnapshotAsync("BOOKING_UPDATED", booking.Id, cancellationToken);
             return BookingActionSuccess("Đã thêm chặng phòng mới để ở thêm ngày thành công.", booking);
         }
 
@@ -1744,6 +1777,7 @@ public class BookingsController : ControllerBase
             NewValue = $"{{\"bookingDetailId\": {detail.Id}, \"newCheckOutDate\": \"{normalizedDate:O}\"}}"
         });
 
+        await RebuildDashboardSnapshotAsync("BOOKING_UPDATED", booking.Id, cancellationToken);
         return BookingActionSuccess("Đã cập nhật out sớm và tính lại booking thành công.", booking);
     }
 
@@ -1792,6 +1826,7 @@ public class BookingsController : ControllerBase
 
         await _context.SaveChangesAsync();
         await _invoiceService.CreateFromBookingAsync(b.Id);
+        await RebuildDashboardSnapshotAsync("BOOKING_CHECKED_OUT", b.Id);
 
         return BookingActionSuccess("Check-out booking thành công. Booking đang chờ quyết toán hóa đơn.", b);
     }
@@ -1911,6 +1946,8 @@ public class BookingsController : ControllerBase
                 TableName = "Bookings",
                 NewValue = $"{{\"expiredCount\":{expired.Count}}}"
             });
+
+            await RebuildDashboardSnapshotAsync("BOOKING_EXPIRED", null, ct);
         }
         return Ok(new { success = true, expired = expired.Count });
     }

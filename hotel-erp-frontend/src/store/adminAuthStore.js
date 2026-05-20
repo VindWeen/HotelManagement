@@ -118,4 +118,31 @@ export const useAdminAuthStore = create((set) => ({
             localStorage.setItem('user', JSON.stringify(newUser));
         }
     },
+
+    updateSession: ({ token, refreshToken, user, permissions }) => {
+        const storage = sessionStorage.getItem('token') ? sessionStorage : localStorage;
+        const currentUser = useAdminAuthStore.getState().user || null;
+        const nextUser = user ? { ...currentUser, ...user } : currentUser;
+        const nextPermissions = permissions || [];
+
+        set((state) => ({
+            token: token ?? state.token,
+            refreshToken: refreshToken ?? state.refreshToken,
+            user: nextUser,
+            permissions: nextPermissions.length ? nextPermissions : state.permissions,
+        }));
+
+        if (token) {
+            storage.setItem('token', token);
+        }
+        if (refreshToken) {
+            storage.setItem('refreshToken', refreshToken);
+        }
+        if (nextUser) {
+            storage.setItem('user', JSON.stringify(nextUser));
+        }
+        if (nextPermissions.length) {
+            storage.setItem('permissions', JSON.stringify(nextPermissions));
+        }
+    },
 }));

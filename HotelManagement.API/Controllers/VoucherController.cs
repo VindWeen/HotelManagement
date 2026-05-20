@@ -67,6 +67,7 @@ public class VouchersController : ControllerBase
     private readonly IVoucherAudienceService _voucherAudienceService;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
+    private readonly IRoleDashboardPeriodService _dashboardService;
 
     public VouchersController(
         AppDbContext context,
@@ -74,7 +75,8 @@ public class VouchersController : ControllerBase
         IVoucherValidationService voucherValidationService,
         IVoucherAudienceService voucherAudienceService,
         IEmailService emailService,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IRoleDashboardPeriodService dashboardService)
     {
         _context = context;
         _activityLog = activityLog;
@@ -82,6 +84,18 @@ public class VouchersController : ControllerBase
         _voucherAudienceService = voucherAudienceService;
         _emailService = emailService;
         _configuration = configuration;
+        _dashboardService = dashboardService;
+    }
+
+    private Task RebuildDashboardSnapshotAsync(string eventType, int? eventRefId, CancellationToken cancellationToken = default)
+    {
+        var currentUserId = JwtHelper.GetUserId(User);
+        return _dashboardService.RebuildAffectedDashboardsAsync(
+            eventType,
+            DateTime.UtcNow,
+            currentUserId > 0 ? currentUserId : null,
+            eventRefId,
+            cancellationToken);
     }
 
     private static string NormalizeAudienceType(string? value)
@@ -101,15 +115,12 @@ public class VouchersController : ControllerBase
             if (targetUserIds == null || targetUserIds.Count == 0)
                 return "Voucher riêng khách hàng cần chọn ít nhất một khách.";
 
-            var validGuestCount = await _context.Users
-                .Include(u => u.Role)
+            var validUserCount = await _context.Users
                 .CountAsync(u => targetUserIds.Contains(u.Id)
-                    && u.Status != false
-                    && u.Role != null
-                    && u.Role.Name == "Guest");
+                    && u.Status != false);
 
-            if (validGuestCount != targetUserIds.Distinct().Count())
-                return "Danh sách khách được chọn không hợp lệ hoặc không phải tài khoản Guest.";
+            if (validUserCount != targetUserIds.Distinct().Count())
+                return "Danh sách người dùng được chọn không hợp lệ hoặc đã bị vô hiệu hóa.";
         }
 
         if (audienceType == VoucherAudienceTypes.Membership)
@@ -187,9 +198,7 @@ public class VouchersController : ControllerBase
             .AsNoTracking()
             .Include(u => u.Role)
             .Where(u => u.Status == true
-                && !string.IsNullOrWhiteSpace(u.Email)
-                && u.Role != null
-                && u.Role.Name == "Guest");
+                && !string.IsNullOrWhiteSpace(u.Email));
 
         if (voucher.AudienceType == VoucherAudienceTypes.User)
         {
@@ -366,7 +375,7 @@ public class VouchersController : ControllerBase
     }
 
     // ================= GET ALL =================
-    [RequirePermission(PermissionCodes.ManageBookings)]
+    [RequirePermission(PermissionCodes.ManageVouchers)]
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] ListQueryRequest queryRequest,
@@ -465,8 +474,63 @@ public class VouchersController : ControllerBase
         return Ok(payload);
     }
 
+    [RequirePermission(PermissionCodes.ManageVouchers)]
+    [HttpGet("eligible-users")]
+    public async Task<IActionResult> GetEligibleUsers(
+        [FromQuery] string? keyword,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = _context.Users
+            .AsNoTracking()
+            .Include(u => u.Role)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var normalizedKeyword = keyword.Trim().ToLower();
+            query = query.Where(u =>
+                (u.FullName != null && u.FullName.ToLower().Contains(normalizedKeyword)) ||
+                (u.Email != null && u.Email.ToLower().Contains(normalizedKeyword)) ||
+                (u.Phone != null && u.Phone.ToLower().Contains(normalizedKeyword)));
+        }
+
+        var total = await query.CountAsync();
+        var items = await query
+            .OrderBy(u => u.FullName)
+            .ThenBy(u => u.Email)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(u => new
+            {
+                u.Id,
+                u.FullName,
+                u.Email,
+                u.Phone,
+                u.RoleId,
+                RoleName = u.Role != null ? u.Role.Name : null,
+                u.Status
+            })
+            .ToListAsync();
+
+        return Ok(new
+        {
+            data = items,
+            pagination = new
+            {
+                currentPage = page,
+                pageSize,
+                totalItems = total,
+                totalPages = (int)Math.Ceiling(total / (double)pageSize)
+            }
+        });
+    }
+
     // ================= GET BY ID =================
-    [RequirePermission(PermissionCodes.ManageBookings)]
+    [RequirePermission(PermissionCodes.ManageVouchers)]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -501,7 +565,7 @@ public class VouchersController : ControllerBase
     }
 
     // ================= CREATE =================
-    [RequirePermission(PermissionCodes.ManageBookings)]
+    [RequirePermission(PermissionCodes.ManageVouchers)]
     [HttpPost]
     public async Task<IActionResult> Create(CreateVoucherRequest request)
     {
@@ -509,9 +573,12 @@ public class VouchersController : ControllerBase
         if (request.DiscountType != VoucherDiscountTypes.Percent && request.DiscountType != VoucherDiscountTypes.FixedAmount)
             return BadRequest("DiscountType phải là PERCENT hoặc FIXED_AMOUNT");
 
-        // Validate PERCENT không vượt 100
-        if (request.DiscountType == VoucherDiscountTypes.Percent && request.DiscountValue > 100)
-            return BadRequest("Phần trăm giảm giá không được vượt quá 100%");
+        if (request.DiscountValue <= 0)
+            return BadRequest("Giá trị giảm phải lớn hơn 0.");
+
+        if (request.DiscountType == VoucherDiscountTypes.Percent
+            && (request.DiscountValue <= 0 || request.DiscountValue > 100))
+            return BadRequest("Phần trăm giảm giá phải lớn hơn 0 và nhỏ hơn hoặc bằng 100%.");
 
         // Validate ngày
         if (request.ValidFrom.HasValue && request.ValidTo.HasValue
@@ -604,6 +671,8 @@ public class VouchersController : ControllerBase
         });
         await _context.SaveChangesAsync();
 
+        await RebuildDashboardSnapshotAsync("VOUCHER_CREATED", voucher.Id);
+
         return Ok(new
         {
             voucher,
@@ -618,7 +687,7 @@ public class VouchersController : ControllerBase
     }
 
     // ================= UPDATE =================
-    [RequirePermission(PermissionCodes.ManageBookings)]
+    [RequirePermission(PermissionCodes.ManageVouchers)]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, UpdateVoucherRequest request)
     {
@@ -633,10 +702,19 @@ public class VouchersController : ControllerBase
             && request.DiscountType != VoucherDiscountTypes.FixedAmount)
             return BadRequest("DiscountType phải là PERCENT hoặc FIXED_AMOUNT");
 
+        if (request.DiscountValue.HasValue && request.DiscountValue <= 0)
+            return BadRequest("Giá trị giảm phải lớn hơn 0.");
+
         if (request.DiscountType == VoucherDiscountTypes.Percent
             && request.DiscountValue.HasValue
+            && (request.DiscountValue <= 0 || request.DiscountValue > 100))
+            return BadRequest("Phần trăm giảm giá phải lớn hơn 0 và nhỏ hơn hoặc bằng 100%.");
+
+        if (request.DiscountType is null
+            && string.Equals(v.DiscountType, VoucherDiscountTypes.Percent, StringComparison.OrdinalIgnoreCase)
+            && request.DiscountValue.HasValue
             && request.DiscountValue > 100)
-            return BadRequest("Phần trăm giảm giá không được vượt quá 100%");
+            return BadRequest("Phần trăm giảm giá phải lớn hơn 0 và nhỏ hơn hoặc bằng 100%.");
 
         // Validate ngày
         var newFrom = request.ValidFrom ?? v.ValidFrom;
@@ -708,11 +786,12 @@ public class VouchersController : ControllerBase
         await _context.SaveChangesAsync();
 
         await _context.SaveChangesAsync();
+        await RebuildDashboardSnapshotAsync("VOUCHER_UPDATED", v.Id);
         return Ok(v);
     }
 
     // ================= DELETE (SOFT) =================
-    [RequirePermission(PermissionCodes.ManageBookings)]
+    [RequirePermission(PermissionCodes.ManageVouchers)]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -751,6 +830,7 @@ public class VouchersController : ControllerBase
         await _context.SaveChangesAsync();
 
         await _context.SaveChangesAsync();
+        await RebuildDashboardSnapshotAsync("VOUCHER_DEACTIVATED", v.Id);
 
         return Ok(new { message = $"Voucher '{v.Code}' đã bị vô hiệu hóa." });
     }

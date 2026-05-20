@@ -13,6 +13,7 @@ import {
 import { getRoles } from "../../api/rolesApi";
 import { useNavigate } from "react-router-dom";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
+import { useAdminAuthStore } from "../../store/adminAuthStore";
 
 const ROLE_BADGE = {
   Admin: "bg-purple-50 text-purple-600",
@@ -291,6 +292,8 @@ function SkeletonRows() {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function UserListPage() {
   const navigate = useNavigate();
+  const permissions = useAdminAuthStore((state) => state.permissions || []);
+  const canChangeUserRole = permissions.includes("CHANGE_USER_ROLE");
 
   const [allUsers, setAllUsers] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -547,7 +550,7 @@ export default function UserListPage() {
     try {
       if (editingId) {
         const cur = allUsers.find((u) => u.id === editingId);
-        const roleChanged = fRoleId && cur && parseInt(fRoleId) !== cur.roleId;
+        const roleChanged = canChangeUserRole && fRoleId && cur && parseInt(fRoleId) !== cur.roleId;
 
         const promises = [
           updateUser(editingId, { fullName: fFullName, phone: fPhone || null, gender: fGender || null }),
@@ -805,14 +808,20 @@ export default function UserListPage() {
                 <label className="block text-sm font-medium mb-1">Vai trò</label>
                 <select
                   value={fRoleId}
-                  onChange={(e) => setFRoleId(e.target.value)}
-                  style={INPUT_STYLE}
-                >
+                    onChange={(e) => setFRoleId(e.target.value)}
+                    style={INPUT_STYLE}
+                    disabled={editingId && !canChangeUserRole}
+                  >
                   <option value="">-- Chọn vai trò --</option>
                   {roles.map((r) => (
                     <option key={r.id} value={r.id}>{r.name}</option>
                   ))}
-                </select>
+                  </select>
+                  {editingId && !canChangeUserRole ? (
+                    <div style={{ marginTop: 6, fontSize: 12, color: "var(--a-text-soft)" }}>
+                      Tài khoản của bạn không có quyền đổi vai trò người dùng.
+                    </div>
+                  ) : null}
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-1">Giới tính</label>

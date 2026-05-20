@@ -3,7 +3,7 @@ import AdminRoutes from './routes/AdminRoutes'
 import { useSignalR } from './hooks/useSignalR'
 
 function AppShell() {
-  const { forcedLogoutNotice } = useSignalR()
+  const { forcedLogoutNotice, sessionUpdateNotice } = useSignalR()
 
   return (
     <>
@@ -35,6 +35,39 @@ function AppShell() {
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.45 }}>
                 {forcedLogoutNotice.message}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {sessionUpdateNotice ? (
+        <div
+          style={{
+            position: 'fixed',
+            top: forcedLogoutNotice ? 124 : 24,
+            right: 24,
+            zIndex: 999,
+            minWidth: 280,
+            maxWidth: 360,
+            background: 'var(--a-info-bg, #eff6ff)',
+            color: 'var(--a-info, #1d4ed8)',
+            border: '1px solid var(--a-info-border, #93c5fd)',
+            borderRadius: 16,
+            boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
+            padding: '14px 16px',
+            fontFamily: "'Manrope', sans-serif",
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18, marginTop: 1 }}>
+              info
+            </span>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', opacity: 0.7 }}>
+                Quyền hạn
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.45 }}>
+                {sessionUpdateNotice.message}
               </div>
             </div>
           </div>

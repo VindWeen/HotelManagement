@@ -240,16 +240,16 @@ function BookingPaymentModal({ open, booking, mode, loading, onConfirm, onCancel
   if (!open || !booking) return null;
 
   const title = mode === "deposit"
-    ? "Thu cá»c booking"
+    ? "Thu cọc booking"
     : mode === "checkin"
-      ? "Thu thÃªm Ä‘á»ƒ nháº­n phÃ²ng"
-      : "HoÃ n tiá»n booking";
+      ? "Thu thêm để nhận phòng"
+      : "Hoàn tiền booking";
 
   const helper = mode === "deposit"
-    ? `Cáº§n tá»‘i thiá»ƒu ${formatCurrency(booking?.paymentSummary?.remainingToConfirm || 0)} Ä‘á»ƒ booking Ä‘Æ°á»£c xÃ¡c nháº­n.`
+    ? `Cần tối thiểu ${formatCurrency(booking?.paymentSummary?.remainingToConfirm || 0)} để booking được xác nhận.`
     : mode === "checkin"
-      ? `Cáº§n thu thÃªm ${formatCurrency(booking?.paymentSummary?.remainingToCheckIn || 0)} Ä‘á»ƒ Ä‘á»§ Ä‘iá»u kiá»‡n nháº­n phÃ²ng.`
-      : `Sá»‘ tiá»n Ä‘Ã£ thu trÆ°á»›c Ä‘Ã³: ${formatCurrency(booking?.depositAmount || 0)}.`;
+      ? `Cần thu thêm ${formatCurrency(booking?.paymentSummary?.remainingToCheckIn || 0)} để đủ điều kiện nhận phòng.`
+      : `Số tiền đã thu trước đó: ${formatCurrency(booking?.depositAmount || 0)}.`;
 
   return (
     <div style={{ ...MODAL_OVERLAY_STYLE, zIndex: 2200 }} onClick={(e) => e.target === e.currentTarget && onCancel()}>
@@ -257,19 +257,19 @@ function BookingPaymentModal({ open, booking, mode, loading, onConfirm, onCancel
         <h3 style={MODAL_TITLE_STYLE}>{title}</h3>
         <p style={MODAL_SUBTITLE_STYLE}>{helper}</p>
         <div style={{ display: "grid", gap: 12, marginBottom: 20 }}>
-          <input type="text" inputMode="numeric" value={form.amountPaid} onChange={(e) => setForm((prev) => ({ ...prev, amountPaid: formatMoneyInput(e.target.value) }))} placeholder="Sá»‘ tiá»n" style={FIELD_STYLE} />
+          <input type="text" inputMode="numeric" value={form.amountPaid} onChange={(e) => setForm((prev) => ({ ...prev, amountPaid: formatMoneyInput(e.target.value) }))} placeholder="Số tiền" style={FIELD_STYLE} />
           <select value={form.paymentMethod} onChange={(e) => setForm((prev) => ({ ...prev, paymentMethod: e.target.value }))} style={FIELD_STYLE}>
-            <option value="Cash">Tiá»n máº·t</option>
+            <option value="Cash">Tiền mặt</option>
             <option value="Momo">Momo</option>
             <option value="VNPay_Mock">VNPay</option>
-            <option value="Credit Card">Tháº» tÃ­n dá»¥ng</option>
-            <option value="Bank Transfer">Chuyá»ƒn khoáº£n</option>
+            <option value="Credit Card">Thẻ tín dụng</option>
+            <option value="Bank Transfer">Chuyển khoản</option>
           </select>
-          <input value={form.transactionCode} onChange={(e) => setForm((prev) => ({ ...prev, transactionCode: e.target.value }))} placeholder="MÃ£ giao dá»‹ch (náº¿u cÃ³)" style={FIELD_STYLE} />
-          <textarea value={form.note} onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))} placeholder="Ghi chÃº" style={{ ...FIELD_STYLE, minHeight: 80, resize: "none" }} />
+          <input value={form.transactionCode} onChange={(e) => setForm((prev) => ({ ...prev, transactionCode: e.target.value }))} placeholder="Mã giao dịch (nếu có)" style={FIELD_STYLE} />
+          <textarea value={form.note} onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))} placeholder="Ghi chú" style={{ ...FIELD_STYLE, minHeight: 80, resize: "none" }} />
         </div>
         <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={onCancel} style={MODAL_SECONDARY_BUTTON_STYLE}>ÄÃ³ng</button>
+          <button onClick={onCancel} style={MODAL_SECONDARY_BUTTON_STYLE}>Đóng</button>
           <button onClick={() => onConfirm({ ...form, amountPaid: parseMoneyInput(form.amountPaid) })} disabled={loading || parseMoneyInput(form.amountPaid) <= 0} style={{ ...MODAL_PRIMARY_BUTTON_STYLE, opacity: (parseMoneyInput(form.amountPaid) <= 0 || loading) ? 0.6 : 1 }}>
             {loading ? <div style={INLINE_LIGHT_SPINNER} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>payments</span>}
             Xác nhận
@@ -294,25 +294,25 @@ function AddRoomModal({ open, loading, roomTypes, booking, form, onChange, onCon
       <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 640, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)", padding: 30 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 22 }}>
           <div>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>ThÃªm phÃ²ng vÃ o booking</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>Thêm phòng vào booking</h3>
             <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-              ThÃªm má»™t háº¡ng phÃ²ng má»›i cho booking hiá»‡n táº¡i. Há»‡ thá»‘ng sáº½ tá»± gÃ¡n phÃ²ng phÃ¹ há»£p khi check-in.
+              Thêm một hạng phòng mới cho booking hiện tại. Hệ thống sẽ tự gán phòng phù hợp khi check-in.
             </p>
           </div>
           <button onClick={onCancel} className="action-btn" style={{ padding: "8px 12px", fontSize: 12, height: "fit-content" }}>
-            ÄÃ³ng
+            Đóng
           </button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14, marginBottom: 18 }}>
           <div style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Háº¡ng phÃ²ng</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", marginBottom: 8, textTransform: "uppercase", letterSpacing: ".05em" }}>Hạng phòng</div>
             <select
               value={form.roomTypeId}
               onChange={(e) => onChange("roomTypeId", e.target.value)}
               style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 14, fontWeight: 600, outline: "none", color: "#1c1917" }}
             >
-              <option value="">Chá»n háº¡ng phÃ²ng muá»‘n thÃªm</option>
+              <option value="">Chọn hạng phòng muốn thêm</option>
               {roomTypes.map((roomType) => (
                 <option key={roomType.id} value={roomType.id}>
                   {roomType.name}
@@ -347,7 +347,7 @@ function AddRoomModal({ open, loading, roomTypes, booking, form, onChange, onCon
             <textarea
               value={form.note}
               onChange={(e) => onChange("note", e.target.value)}
-              placeholder="VÃ­ dá»¥: ThÃªm phÃ²ng cho ngÆ°á»i thÃ¢n Ä‘i cÃ¹ng, cáº§n gáº§n phÃ²ng hiá»‡n táº¡i..."
+              placeholder="Ví dụ: Thêm phòng cho người thân đi cùng, cần gần phòng hiện tại..."
               style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 13, fontWeight: 500, outline: "none", color: "#1c1917", minHeight: 92, resize: "none" }}
             />
           </div>
@@ -363,11 +363,11 @@ function AddRoomModal({ open, loading, roomTypes, booking, form, onChange, onCon
               <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>#{booking?.bookingCode || "-"}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Háº¡ng phÃ²ng</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{selectedRoomType?.name || "ChÆ°a chá»n"}</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Hạng phòng</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{selectedRoomType?.name || "Chưa chọn"}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>GiÃ¡ niÃªm yáº¿t</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Giá niêm yết</div>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#4f645b" }}>
                 {selectedRoomType ? `${formatCurrency(selectedRoomType.basePrice || 0)}/đêm` : "-"}
               </div>
@@ -405,35 +405,35 @@ function EarlyCheckOutModal({ open, detail, loading, form, onChange, onConfirm, 
       <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 560, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)", padding: 30 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 22 }}>
           <div>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>Cáº­p nháº­t out sá»›m</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>Cập nhật out sớm</h3>
             <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-              Äiá»u chá»‰nh ngÃ y tráº£ phÃ²ng thá»±c táº¿ cho cháº·ng lÆ°u trÃº nÃ y Ä‘á»ƒ há»‡ thá»‘ng tÃ­nh láº¡i booking.
+              Điều chỉnh ngày trả phòng thực tế cho chặng lưu trú này để hệ thống tính lại booking.
             </p>
           </div>
           <button onClick={onCancel} className="action-btn" style={{ padding: "8px 12px", fontSize: 12, height: "fit-content" }}>
-            ÄÃ³ng
+            Đóng
           </button>
         </div>
 
         <div style={{ border: "1px solid #ecebe4", background: "#fafaf8", borderRadius: 16, padding: 16, marginBottom: 18 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 12 }}>
-            ThÃ´ng tin cháº·ng lÆ°u trÃº
+            Thông tin chặng lưu trú
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14 }}>
             <div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Háº¡ng phÃ²ng</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Hạng phòng</div>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{detail.roomTypeName || "-"}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>PhÃ²ng</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{detail.roomName || "ChÆ°a gÃ¡n phÃ²ng"}</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Phòng</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{detail.roomName || "Chưa gán phòng"}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Check-in hiá»‡n táº¡i</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Check-in hiện tại</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#1c1917" }}>{formatDate(detail.checkInDate)}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Check-out Ä‘ang lÆ°u</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Check-out đang lưu</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#1c1917" }}>{formatDate(detail.checkOutDate)}</div>
             </div>
           </div>
@@ -450,12 +450,12 @@ function EarlyCheckOutModal({ open, detail, loading, form, onChange, onConfirm, 
             style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 14, fontWeight: 600, outline: "none", color: "#1c1917" }}
           />
           <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
-            NgÃ y má»›i nÃªn náº±m trong khoáº£ng tá»« ngÃ y check-in Ä‘áº¿n ngÃ y check-out hiá»‡n táº¡i cá»§a cháº·ng nÃ y.
+            Ngày mới nên nằm trong khoảng từ ngày check-in đến ngày check-out hiện tại của chặng này.
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={onCancel} className="action-btn" style={{ flex: 1, justifyContent: "center" }}>Há»§y</button>
+          <button onClick={onCancel} className="action-btn" style={{ flex: 1, justifyContent: "center" }}>Đóng</button>
           <button
             onClick={onConfirm}
             disabled={!canSubmit || loading}
@@ -463,7 +463,7 @@ function EarlyCheckOutModal({ open, detail, loading, form, onChange, onConfirm, 
             style={{ flex: 1, justifyContent: "center", opacity: (!canSubmit || loading) ? 0.6 : 1 }}
           >
             {loading ? <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "white", borderRadius: "50%", animation: "spin .65s linear infinite" }} /> : <span className="material-symbols-outlined" style={{ fontSize: 18 }}>event_available</span>}
-            Cáº­p nháº­t out sá»›m
+            Cập nhật out sớm
           </button>
         </div>
       </div>
@@ -484,35 +484,35 @@ function ExtendStayModal({ open, detail, loading, form, onChange, onConfirm, onC
       <div style={{ background: "white", borderRadius: 24, width: "100%", maxWidth: 560, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)", padding: 30, animation: "modalSlideUp .3s ease-out" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 22 }}>
           <div>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>á»ž thÃªm ngÃ y</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: "#1c1917", margin: "0 0 6px" }}>Ở thêm ngày</h3>
             <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-              KÃ©o dÃ i thá»i gian lÆ°u trÃº cho cháº·ng phÃ²ng nÃ y. Náº¿u phÃ²ng hiá»‡n táº¡i bá»‹ trÃ¹ng lá»‹ch, há»‡ thá»‘ng sáº½ gá»£i Ã½ phÃ²ng thay tháº¿.
+              Kéo dài thời gian lưu trú cho chặng phòng này. Nếu phòng hiện tại bị trùng lịch, hệ thống sẽ gợi ý phòng thay thế.
             </p>
           </div>
           <button onClick={onCancel} className="action-btn" style={{ padding: "8px 12px", fontSize: 12, height: "fit-content" }}>
-            ÄÃ³ng
+            Đóng
           </button>
         </div>
 
         <div style={{ border: "1px solid #ecebe4", background: "#fafaf8", borderRadius: 16, padding: 16, marginBottom: 18 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 12 }}>
-            ThÃ´ng tin cháº·ng lÆ°u trÃº
+            Thông tin chặng lưu trú
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14 }}>
             <div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Háº¡ng phÃ²ng</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Hạng phòng</div>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{detail.roomTypeName || "-"}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>PhÃ²ng</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{detail.roomName || "ChÆ°a gÃ¡n phÃ²ng"}</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Phòng</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#1c1917" }}>{detail.roomName || "Chưa gán phòng"}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Check-in hiá»‡n táº¡i</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Check-in hiện tại</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#1c1917" }}>{formatDate(detail.checkInDate)}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Check-out Ä‘ang lÆ°u</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 4 }}>Check-out đang lưu</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#1c1917" }}>{formatDate(detail.checkOutDate)}</div>
             </div>
           </div>
@@ -528,7 +528,7 @@ function ExtendStayModal({ open, detail, loading, form, onChange, onConfirm, onC
             style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 14, border: "1.5px solid #e2e8e1", background: "#f9f8f3", fontSize: 14, fontWeight: 600, outline: "none", color: "#1c1917" }}
           />
           <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
-            NgÃ y má»›i pháº£i sau ngÃ y check-out hiá»‡n táº¡i cá»§a cháº·ng nÃ y.
+            Ngày mới phải sau ngày check-out hiện tại của chặng này.
           </div>
         </div>
 
@@ -604,19 +604,19 @@ function CheckoutDraftModal({ open, booking, draftInvoice, loading, confirming, 
           {loading ? (
             <div style={{textAlign:'center', padding:'40px 0', color:'var(--a-text-muted)'}}>
               <div style={{width:32, height:32, border:'3px solid var(--a-border)', borderTopColor:'var(--a-primary)', borderRadius:'50%', animation:'spin .65s linear infinite', margin:'0 auto 12px'}}/>
-              <p style={{fontSize:13, margin:0}}>Äang táº£i hÃ³a Ä‘Æ¡n...</p>
+              <p style={{fontSize:13, margin:0}}>Đang tải hóa đơn...</p>
             </div>
           ) : (<>
             <div style={{marginBottom:18}}>
-              <div style={secL}>Chi tiáº¿t lÆ°u trÃº</div>
+              <div style={secL}>Chi tiết lưu trú</div>
               <div style={{border:'1px solid var(--a-border)', borderRadius:12, overflow:'hidden'}}>
                 <table style={{width:'100%', borderCollapse:'collapse'}}>
                   <thead><tr style={{background:'var(--a-surface-raised)'}}>
-                    <th style={thS}>PhÃ²ng</th><th style={thS}>Háº¡ng</th><th style={thS}>Check-in</th><th style={thS}>Check-out</th><th style={{...thS,textAlign:'right'}}>GiÃ¡/Ä‘Ãªm</th>
+                    <th style={thS}>Phòng</th><th style={thS}>Hạng</th><th style={thS}>Check-in</th><th style={thS}>Check-out</th><th style={{...thS,textAlign:'right'}}>Giá/đêm</th>
                   </tr></thead>
                   <tbody>
                     {details2.length===0
-                      ? <tr><td colSpan={5} style={{...tdS,textAlign:'center',color:'var(--a-text-muted)'}}>KhÃ´ng cÃ³ dá»¯ liá»‡u</td></tr>
+                      ? <tr><td colSpan={5} style={{...tdS,textAlign:'center',color:'var(--a-text-muted)'}}>Không có dữ liệu</td></tr>
                       : details2.map((d,i) => <tr key={i}><td style={tdS}>{d.roomNumber || d.roomName || '-'}</td><td style={tdS}>{d.roomTypeName||'-'}</td><td style={tdS}>{fd(d.checkInDate)}</td><td style={tdS}>{fd(d.checkOutDate)}</td><td style={{...tdS,textAlign:'right',fontWeight:700}}>{fc(d.pricePerNight||0)}</td></tr>)}
                   </tbody>
                 </table>
@@ -624,15 +624,15 @@ function CheckoutDraftModal({ open, booking, draftInvoice, loading, confirming, 
             </div>
 
             <div style={{marginBottom:18}}>
-              <div style={secL}>Dá»‹ch vá»¥ Ä‘Ã£ sá»­ dá»¥ng</div>
+              <div style={secL}>Dịch vụ đã sử dụng</div>
               <div style={{border:'1px solid var(--a-border)', borderRadius:12, overflow:'hidden'}}>
                 <table style={{width:'100%', borderCollapse:'collapse'}}>
                   <thead><tr style={{background:'var(--a-surface-raised)'}}>
-                    <th style={thS}>PhÃ²ng</th><th style={thS}>Dá»‹ch vá»¥</th><th style={{...thS,textAlign:'right'}}>SL</th><th style={{...thS,textAlign:'right'}}>ÄÆ¡n giÃ¡</th><th style={{...thS,textAlign:'right'}}>ThÃ nh tiá»n</th>
+                    <th style={thS}>Phòng</th><th style={thS}>Dịch vụ</th><th style={{...thS,textAlign:'right'}}>SL</th><th style={{...thS,textAlign:'right'}}>Đơn giá</th><th style={{...thS,textAlign:'right'}}>Thành tiền</th>
                   </tr></thead>
                   <tbody>
                     {services2.length===0
-                      ? <tr><td colSpan={5} style={{...tdS,textAlign:'center',color:'var(--a-text-muted)'}}>KhÃ´ng cÃ³ dá»‹ch vá»¥</td></tr>
+                      ? <tr><td colSpan={5} style={{...tdS,textAlign:'center',color:'var(--a-text-muted)'}}>Không có dịch vụ</td></tr>
                       : services2.map((d,i) => <tr key={i}><td style={tdS}>{d.roomNumber||'-'}</td><td style={tdS}>{d.serviceName||'-'}</td><td style={{...tdS,textAlign:'right'}}>{d.quantity||0}</td><td style={{...tdS,textAlign:'right'}}>{fc(d.unitPrice||0)}</td><td style={{...tdS,textAlign:'right',fontWeight:700}}>{fc(d.totalAmount||0)}</td></tr>)}
                   </tbody>
                 </table>
@@ -640,15 +640,15 @@ function CheckoutDraftModal({ open, booking, draftInvoice, loading, confirming, 
             </div>
 
             <div style={{marginBottom:18}}>
-              <div style={secL}>Tháº¥t thoÃ¡t / Thiáº¿t bá»‹</div>
+              <div style={secL}>Thất thoát / Thiết bị</div>
               <div style={{border:'1px solid var(--a-border)', borderRadius:12, overflow:'hidden'}}>
                 <table style={{width:'100%', borderCollapse:'collapse'}}>
                   <thead><tr style={{background:'var(--a-surface-raised)'}}>
-                    <th style={thS}>PhÃ²ng</th><th style={thS}>Váº­t tÆ°</th><th style={{...thS,textAlign:'right'}}>SL</th><th style={{...thS,textAlign:'right'}}>ÄÆ¡n giÃ¡</th><th style={{...thS,textAlign:'right'}}>ThÃ nh tiá»n</th>
+                    <th style={thS}>Phòng</th><th style={thS}>Vật tư</th><th style={{...thS,textAlign:'right'}}>SL</th><th style={{...thS,textAlign:'right'}}>Đơn giá</th><th style={{...thS,textAlign:'right'}}>Thành tiền</th>
                   </tr></thead>
                   <tbody>
                     {damages2.length===0
-                      ? <tr><td colSpan={5} style={{...tdS,textAlign:'center',color:'var(--a-text-muted)'}}>KhÃ´ng cÃ³ tháº¥t thoÃ¡t</td></tr>
+                      ? <tr><td colSpan={5} style={{...tdS,textAlign:'center',color:'var(--a-text-muted)'}}>Không có thất thoát</td></tr>
                       : damages2.map((d,i) => <tr key={i}><td style={tdS}>{d.roomNumber||'-'}</td><td style={tdS}>{d.itemName||'-'}</td><td style={{...tdS,textAlign:'right'}}>{d.quantity||0}</td><td style={{...tdS,textAlign:'right'}}>{fc(d.penaltyAmount||0)}</td><td style={{...tdS,textAlign:'right',fontWeight:700,color:'var(--a-error)'}}>{fc(d.totalAmount||0)}</td></tr>)}
                   </tbody>
                 </table>
@@ -657,30 +657,30 @@ function CheckoutDraftModal({ open, booking, draftInvoice, loading, confirming, 
 
             <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:18}}>
               <div>
-                <div style={secL}>Äiá»u chá»‰nh</div>
+                <div style={secL}>Điều chỉnh</div>
                 <div style={{border:'1px solid var(--a-border)', borderRadius:12, overflow:'hidden'}}>
                   <table style={{width:'100%', borderCollapse:'collapse'}}>
                     <thead><tr style={{background:'var(--a-surface-raised)'}}>
-                      <th style={thS}>Loáº¡i</th><th style={thS}>LÃ½ do</th><th style={{...thS,textAlign:'right'}}>Sá»‘ tiá»n</th>
+                      <th style={thS}>Loại</th><th style={thS}>Lý do</th><th style={{...thS,textAlign:'right'}}>Số tiền</th>
                     </tr></thead>
                     <tbody>
                       {adjs2.length===0
-                        ? <tr><td colSpan={3} style={{...tdS,textAlign:'center',color:'var(--a-text-muted)'}}>KhÃ´ng cÃ³</td></tr>
-                        : adjs2.map((d,i) => <tr key={i}><td style={tdS}>{d.adjustmentType==='Discount'?'Giáº£m trá»«':'Phá»¥ phÃ­'}</td><td style={tdS}>{d.reason||'-'}</td><td style={{...tdS,textAlign:'right',fontWeight:700,color:d.adjustmentType==='Discount'?'var(--a-warning)':'var(--a-error)'}}>{d.adjustmentType==='Discount'?'-':'+'}{fc(d.amount)}</td></tr>)}
+                        ? <tr><td colSpan={3} style={{...tdS,textAlign:'center',color:'var(--a-text-muted)'}}>Không có</td></tr>
+                        : adjs2.map((d,i) => <tr key={i}><td style={tdS}>{d.adjustmentType==='Discount'?'Giảm trừ':'Phụ phí'}</td><td style={tdS}>{d.reason||'-'}</td><td style={{...tdS,textAlign:'right',fontWeight:700,color:d.adjustmentType==='Discount'?'var(--a-warning)':'var(--a-error)'}}>{d.adjustmentType==='Discount'?'-':'+'}{fc(d.amount)}</td></tr>)}
                     </tbody>
                   </table>
                 </div>
               </div>
               <div>
-                <div style={secL}>Lá»‹ch sá»­ thanh toÃ¡n</div>
+                <div style={secL}>Lịch sử thanh toán</div>
                 <div style={{border:'1px solid var(--a-border)', borderRadius:12, overflow:'hidden'}}>
                   <table style={{width:'100%', borderCollapse:'collapse'}}>
                     <thead><tr style={{background:'var(--a-surface-raised)'}}>
-                      <th style={thS}>NgÃ y</th><th style={thS}>PhÆ°Æ¡ng thá»©c</th><th style={{...thS,textAlign:'right'}}>Sá»‘ tiá»n</th>
+                      <th style={thS}>Ngày</th><th style={thS}>Phương thức</th><th style={{...thS,textAlign:'right'}}>Số tiền</th>
                     </tr></thead>
                     <tbody>
                       {pays2.length===0
-                        ? <tr><td colSpan={3} style={{...tdS,textAlign:'center',color:'var(--a-text-muted)'}}>ChÆ°a cÃ³</td></tr>
+                        ? <tr><td colSpan={3} style={{...tdS,textAlign:'center',color:'var(--a-text-muted)'}}>Chưa có</td></tr>
                         : pays2.map((d,i) => <tr key={i}><td style={tdS}>{fd(d.paymentDate)}</td><td style={tdS}>{d.paymentMethod||'-'}</td><td style={{...tdS,textAlign:'right',fontWeight:700,color:'var(--a-success)'}}>{fc(d.amountPaid||0)}</td></tr>)}
                     </tbody>
                   </table>
@@ -690,41 +690,41 @@ function CheckoutDraftModal({ open, booking, draftInvoice, loading, confirming, 
 
             <div style={{background:'var(--a-surface-raised)', borderRadius:14, padding:'16px 20px', border:'1px solid var(--a-border)'}}>
               {[
-                ['Tiá»n phÃ²ng', fc(invToPrint?.totalRoomAmount||0)],
-                ['Tiá»n dá»‹ch vá»¥', fc(invToPrint?.totalServiceAmount||0)],
-                ['Bá»“i thÆ°á»ng', fc(invToPrint?.totalDamageAmount||0)],
-                ['Phá»¥ phÃ­', fc(invToPrint?.adjustmentAmount||0)],
-                ['Chiáº¿t kháº¥u voucher', '- '+fc(invToPrint?.discountAmount||0)],
-                ['Giáº£m trá»« thá»§ cÃ´ng', '- '+fc(invToPrint?.manualDiscountAmount||0)],
-                ['Thuáº¿', fc(invToPrint?.taxAmount||0)],
-                ['ÄÃ£ thanh toÃ¡n', fc(invToPrint?.paidAmount||0)],
-                ['Tiá»n cá»c', fc(invToPrint?.depositAmount||0)],
-                ['Tá»•ng cáº§n thu', fc(invToPrint?.finalTotal||0)]
+                ['Tiền phòng', fc(invToPrint?.totalRoomAmount||0)],
+                ['Tiền dịch vụ', fc(invToPrint?.totalServiceAmount||0)],
+                ['Bồi thường', fc(invToPrint?.totalDamageAmount||0)],
+                ['Phụ phí', fc(invToPrint?.adjustmentAmount||0)],
+                ['Chiết khấu voucher', '- '+fc(invToPrint?.discountAmount||0)],
+                ['Giảm trừ thủ công', '- '+fc(invToPrint?.manualDiscountAmount||0)],
+                ['Thuế', fc(invToPrint?.taxAmount||0)],
+                ['Đã thanh toán', fc(invToPrint?.paidAmount||0)],
+                ['Tiền cọc', fc(invToPrint?.depositAmount||0)],
+                ['Tổng cần thu', fc(invToPrint?.finalTotal||0)]
               ].map(([l,v],i) => (
-                <div key={i} style={{display:'flex', justifyContent:'space-between', fontSize:13, color:l==='Tá»•ng cáº§n thu'?'var(--a-text)':'var(--a-text-muted)', fontWeight:l==='Tá»•ng cáº§n thu'?800:400, marginTop:l==='Tá»•ng cáº§n thu'?8:0, paddingTop:l==='Tá»•ng cáº§n thu'?8:0, borderTop:l==='Tá»•ng cáº§n thu'?'1px solid var(--a-border)':'none', marginBottom:6}}>
+                <div key={i} style={{display:'flex', justifyContent:'space-between', fontSize:13, color:l==='Tổng cần thu'?'var(--a-text)':'var(--a-text-muted)', fontWeight:l==='Tổng cần thu'?800:400, marginTop:l==='Tổng cần thu'?8:0, paddingTop:l==='Tổng cần thu'?8:0, borderTop:l==='Tổng cần thu'?'1px solid var(--a-border)':'none', marginBottom:6}}>
                   <span>{l}</span><span style={{fontWeight:700, color:'var(--a-text)'}}>{v}</span>
                 </div>
               ))}
               <div style={{height:1, background:'var(--a-border)', margin:'10px 0'}}/>
               <div style={{display:'flex', justifyContent:'space-between', fontSize:16, fontWeight:800}}>
-                <span style={{color:'var(--a-text)'}}>CÃ²n láº¡i</span>
-                <span style={{color:outstanding>0?'var(--a-error)':'var(--a-success)'}}>{outstanding>0?fc(outstanding):'ÄÃ£ thanh toÃ¡n Ä‘á»§'}</span>
+                <span style={{color:'var(--a-text)'}}>Còn lại</span>
+                <span style={{color:outstanding>0?'var(--a-error)':'var(--a-success)'}}>{outstanding>0?fc(outstanding):'Đã thanh toán đủ'}</span>
               </div>
-              {outstanding>0 && <div style={{marginTop:8, padding:'8px 12px', background:'var(--a-warning-bg)', borderRadius:8, fontSize:12, color:'var(--a-warning)', fontWeight:600}}>âš  KhÃ¡ch cáº§n thanh toÃ¡n thÃªm {fc(outstanding)} trÆ°á»›c khi rá»i.</div>}
+              {outstanding>0 && <div style={{marginTop:8, padding:'8px 12px', background:'var(--a-warning-bg)', borderRadius:8, fontSize:12, color:'var(--a-warning)', fontWeight:600}}>âš  KhÃ¡ch cáº§n thanh toÃ¡n thÃªm {fc(outstanding)} trÆ°á»›c khi rá» i.</div>}
             </div>
           </>)}
         </div>
 
         <div style={{padding:'14px 24px 20px', display:'flex', gap:10, borderTop:'1px solid var(--a-border)'}}>
-          <button onClick={onCancel} style={{...MODAL_SECONDARY_BUTTON_STYLE, flex:'0 0 auto', padding:'10px 16px'}}>ÄÃ³ng</button>
+          <button onClick={onCancel} style={{...MODAL_SECONDARY_BUTTON_STYLE, flex:'0 0 auto', padding:'10px 16px'}}>Đóng</button>
           <button onClick={() => printInvoiceDocument(invToPrint, 'draft')} disabled={loading}
             style={{...MODAL_SECONDARY_BUTTON_STYLE, flex:'0 0 auto', padding:'10px 16px', display:'flex', alignItems:'center', gap:6, opacity:loading?0.5:1}}>
-            <span className="material-symbols-outlined" style={{fontSize:16}}>draft</span>In báº£n nhÃ¡p
+            <span className="material-symbols-outlined" style={{fontSize:16}}>draft</span>In bản nháp
           </button>
           <button onClick={onConfirm} disabled={confirming||loading}
             style={{...MODAL_PRIMARY_BUTTON_STYLE, flex:1, opacity:(confirming||loading)?0.7:1, background:'linear-gradient(135deg,#1c2e26,#2d4a3e)'}}>
             {confirming ? <div style={INLINE_LIGHT_SPINNER}/> : <span className="material-symbols-outlined" style={{fontSize:16}}>print</span>}
-            {confirming ? 'Äang xá»­ lÃ½...' : 'XÃ¡c nháº­n & In hÃ³a Ä‘Æ¡n tháº­t'}
+            {confirming ? 'Đang xử lý...' : 'Xác nhận & In hóa đơn thật'}
           </button>
         </div>
       </div>
@@ -806,7 +806,7 @@ export default function BookingDetailPage() {
       setBooking(payload.data || payload);
       setTimeline(payload.timeline || []);
     } catch (e) {
-      showToast(e?.response?.data?.message || "KhÃ´ng thá»ƒ táº£i chi tiáº¿t booking.", "error");
+      showToast(e?.response?.data?.message || "Không thể tải chi tiết booking.", "error");
     } finally {
       setLoading(false);
     }
@@ -860,7 +860,7 @@ export default function BookingDetailPage() {
       setCheckoutDraftInvoice(draft);
     } catch (e) {
       setCheckoutDraftOpen(false);
-      showToast(e?.response?.data?.message || "KhÃ´ng thá»ƒ táº£i hÃ³a Ä‘Æ¡n nhÃ¡p.", "error");
+      showToast(e?.response?.data?.message || "Không thể tải hóa đơn nháp.", "error");
     } finally {
       setCheckoutDraftLoading(false);
     }
@@ -879,9 +879,9 @@ export default function BookingDetailPage() {
       if (refreshedInvoice) {
         printInvoiceDocument(refreshedInvoice, "final");
       }
-      showToast("ÄÃ£ xÃ¡c nháº­n vÃ  in hÃ³a Ä‘Æ¡n tháº­t.");
+      showToast("Đã xác nhận và in hóa đơn thật.");
     } catch (e) {
-      showToast(e?.response?.data?.message || "KhÃ´ng thá»ƒ xÃ¡c nháº­n hÃ³a Ä‘Æ¡n.", "error");
+      showToast(e?.response?.data?.message || "Không thể xác nhận hóa đơn.", "error");
     } finally {
       setCheckoutConfirming(false);
     }
@@ -925,17 +925,17 @@ export default function BookingDetailPage() {
             const created = await createInvoiceFromBooking(id);
             const invoiceId = created?.data?.invoiceId;
             if (invoiceId) {
-              showToast("ÄÃ£ táº¡o hÃ³a Ä‘Æ¡n cho booking.");
+              showToast("Đã tạo hóa đơn cho booking.");
               navigate(`/admin/invoices/${invoiceId}`);
               return;
             }
           } catch (createError) {
-            showToast(createError?.response?.data?.message || "KhÃ´ng thá»ƒ táº¡o hÃ³a Ä‘Æ¡n cho booking nÃ y.", "error");
+            showToast(createError?.response?.data?.message || "Không thể tạo hóa đơn cho booking này.", "error");
             return;
           }
         }
 
-        showToast(e?.response?.data?.message || "KhÃ´ng tÃ¬m tháº¥y hÃ³a Ä‘Æ¡n cá»§a booking nÃ y.", "error");
+        showToast(e?.response?.data?.message || "Không tìm thấy hóa đơn của booking này.", "error");
         return;
       }
     }
@@ -947,11 +947,11 @@ export default function BookingDetailPage() {
     }
 
     try {
-      if (action === "checkin") { await checkIn(id); showToast("ÄÃ£ Check-in thÃ nh cÃ´ng."); }
-      if (action === "checkout") { await checkOut(id); showToast("ÄÃ£ Check-out thÃ nh cÃ´ng."); }
+      if (action === "checkin") { await checkIn(id); showToast("Đã Check-in thành công."); }
+      if (action === "checkout") { await checkOut(id); showToast("Đã Check-out thành công."); }
       await load();
     } catch (e) {
-      showToast(e?.response?.data?.message || "Thao tÃ¡c tháº¥t báº¡i.", "error");
+      showToast(e?.response?.data?.message || "Thao tác thất bại.", "error");
     }
   };
 
@@ -973,11 +973,11 @@ export default function BookingDetailPage() {
         note: payload.note || null,
       });
 
-      showToast(paymentMode === "refund" ? "ÄÃ£ ghi nháº­n hoÃ n tiá»n booking." : "ÄÃ£ ghi nháº­n thanh toÃ¡n booking.");
+      showToast(paymentMode === "refund" ? "Đã ghi nhận hoàn tiền booking." : "Đã ghi nhận thanh toán booking.");
       setPaymentModalOpen(false);
       await load();
     } catch (e) {
-      showToast(e?.response?.data?.message || "KhÃ´ng thá»ƒ ghi nháº­n thanh toÃ¡n booking.", "error");
+      showToast(e?.response?.data?.message || "Không thể ghi nhận thanh toán booking.", "error");
     } finally {
       setPaymentLoading(false);
     }
@@ -988,16 +988,16 @@ export default function BookingDetailPage() {
     try {
       if (checkInDetailTarget) {
         await checkInRoom(id, { bookingDetailId: checkInDetailTarget, ...payload });
-        showToast("ÄÃ£ check-in phÃ²ng vÃ  cáº­p nháº­t há»“ sÆ¡ khÃ¡ch thÃ nh cÃ´ng.");
+        showToast("Đã check-in phòng và cập nhật hồ sơ khách thành công.");
       } else {
         await checkIn(id, payload);
-        showToast("ÄÃ£ check-in vÃ  cáº­p nháº­t há»“ sÆ¡ khÃ¡ch thÃ nh cÃ´ng.");
+        showToast("Đã check-in và cập nhật hồ sơ khách thành công.");
       }
       setCheckInModalOpen(false);
       setCheckInDetailTarget(null);
       await load();
     } catch (e) {
-      showToast(e?.response?.data?.message || "Check-in tháº¥t báº¡i.", "error");
+      showToast(e?.response?.data?.message || "Check-in thất bại.", "error");
     } finally {
       setCheckInLoading(false);
     }
@@ -1012,10 +1012,10 @@ export default function BookingDetailPage() {
 
     try {
       await checkInRoom(id, { bookingDetailId: detailId });
-      showToast("ÄÃ£ check-in phÃ²ng thÃ nh cÃ´ng.");
+      showToast("Đã check-in phòng thành công.");
       await load();
     } catch (e) {
-      showToast(e?.response?.data?.message || "Check-in tá»«ng phÃ²ng tháº¥t báº¡i.", "error");
+      showToast(e?.response?.data?.message || "Check-in phòng thất bại.", "error");
     }
   };
 
@@ -1039,7 +1039,7 @@ export default function BookingDetailPage() {
     setExtendStayLoading(true);
     try {
       await extendStay(id, { bookingDetailId: detail.id, newCheckOutDate: rawDate });
-      showToast("ÄÃ£ cáº­p nháº­t á»Ÿ thÃªm ngÃ y.");
+      showToast("Đã cập nhật ở thêm ngày.");
       setExtendStayConflict(null);
       setExtendStayTarget(null);
       await load();
@@ -1054,9 +1054,9 @@ export default function BookingDetailPage() {
           currentRoomTypeId: payload.data.currentRoomTypeId,
           suggestions: payload.data.suggestions || [],
         });
-        showToast("PhÃ²ng hiá»‡n táº¡i bá»‹ trÃ¹ng lá»‹ch. HÃ£y chá»n má»™t phÃ²ng thay tháº¿ bÃªn dÆ°á»›i.", "warning");
+        showToast("Phòng hiện tại bị trùng lịch. Hãy chọn một phòng thay thế bên dưới.", "warning");
       } else {
-        showToast(payload?.message || "á»ž thÃªm ngÃ y tháº¥t báº¡i.", "error");
+        showToast(payload?.message || "Ở thêm ngày thất bại.", "error");
       }
     } finally {
       setExtendStayLoading(false);
@@ -1072,11 +1072,11 @@ export default function BookingDetailPage() {
         newCheckOutDate: extendStayConflict.newCheckOutDate,
         targetRoomId: roomId,
       });
-      showToast("ÄÃ£ Ä‘á»•i phÃ²ng thay tháº¿ vÃ  cáº­p nháº­t á»Ÿ thÃªm ngÃ y.");
+      showToast("Đã đổi phòng thay thế và cập nhật ở thêm ngày.");
       setExtendStayConflict(null);
       await load();
     } catch (e) {
-      showToast(e?.response?.data?.message || "Äá»•i sang phÃ²ng thay tháº¿ tháº¥t báº¡i.", "error");
+      showToast(e?.response?.data?.message || "Đổi sang phòng thay thế thất bại.", "error");
     }
   };
 
@@ -1102,11 +1102,11 @@ export default function BookingDetailPage() {
     setEarlyCheckOutLoading(true);
     try {
       await earlyCheckOut(id, { bookingDetailId: earlyCheckOutTarget.id, newCheckOutDate: earlyCheckOutForm.newCheckOutDate });
-      showToast("ÄÃ£ cáº­p nháº­t out sá»›m vÃ  tÃ­nh láº¡i booking.");
+      showToast("Đã cập nhật out sớm và tính lại booking.");
       setEarlyCheckOutTarget(null);
       await load();
     } catch (e) {
-      showToast(e?.response?.data?.message || "Out sá»›m tháº¥t báº¡i.", "error");
+      showToast(e?.response?.data?.message || "Out sớm thất bại.", "error");
     } finally {
       setEarlyCheckOutLoading(false);
     }
@@ -1123,11 +1123,11 @@ export default function BookingDetailPage() {
         checkOutDate: addRoomForm.checkOutDate,
         note: addRoomForm.note?.trim() || null,
       });
-      showToast("ÄÃ£ thÃªm phÃ²ng vÃ o booking.");
+      showToast("Đã thêm phòng vào booking.");
       setAddRoomModalOpen(false);
       await load();
     } catch (e) {
-      showToast(e?.response?.data?.message || "ThÃªm phÃ²ng tháº¥t báº¡i.", "error");
+      showToast(e?.response?.data?.message || "Thêm phòng thất bại.", "error");
     } finally {
       setAddRoomLoading(false);
     }
@@ -1140,11 +1140,11 @@ export default function BookingDetailPage() {
     setCancelLoading(true);
     try {
       await cancelBooking(id, normalizedReason);
-      showToast("ÄÃ£ há»§y booking thÃ nh cÃ´ng.");
+      showToast("Đã hủy booking thành công.");
       setCancelModalOpen(false);
       await load();
     } catch (e) {
-      showToast(e?.response?.data?.message || "Há»§y tháº¥t báº¡i.", "error");
+      showToast(e?.response?.data?.message || "Hủy thất bại.", "error");
     } finally {
       setCancelLoading(false);
     }

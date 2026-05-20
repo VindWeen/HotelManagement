@@ -1,86 +1,150 @@
-// Axios instance + Request/Response Interceptor
-// src/api/axios.js
 import axios from 'axios';
 
-// ─── Tạo Axios Instance toàn cục ─────────────────────────────────────────────
-// baseURL đọc từ .env → VITE_API_URL=http://localhost:5279/api
+const baseURL = import.meta.env.VITE_API_URL;
+
 const axiosClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
+    baseURL,
     headers: { 'Content-Type': 'application/json' },
 });
 
-// ─── Request Interceptor ──────────────────────────────────────────────────────
-// Chạy trước mỗi request:
-//   1. Gắn JWT Token vào Header "Authorization: Bearer ..."
-//   2. Bật loading spinner toàn màn hình
+let isRefreshing = false;
+let pendingRequests = [];
+
+const resolvePendingRequests = (error, token = null) => {
+    pendingRequests.forEach(({ resolve, reject }) => {
+        if (error) {
+            reject(error);
+            return;
+        }
+
+        resolve(token);
+    });
+
+    pendingRequests = [];
+};
+
+const getStoredToken = () => sessionStorage.getItem('token') || localStorage.getItem('token');
+const getStoredRefreshToken = () => sessionStorage.getItem('refreshToken') || localStorage.getItem('refreshToken');
+
+const syncAuthSession = async (payload) => {
+    const { useAdminAuthStore } = await import('../store/adminAuthStore');
+    const updateSession = useAdminAuthStore.getState().updateSession;
+    updateSession({
+        token: payload?.token,
+        refreshToken: payload?.refreshToken,
+        user: payload ? {
+            id: payload.userId,
+            fullName: payload.fullName,
+            email: payload.email,
+            role: payload.role,
+            avatarUrl: payload.avatarUrl ?? null,
+        } : null,
+        permissions: payload?.permissions || [],
+    });
+};
+
+const clearClientAuth = async () => {
+    const { useAdminAuthStore } = await import('../store/adminAuthStore');
+    useAdminAuthStore.getState().clearAuth();
+};
+
+const setGlobalLoading = (value) => {
+    import('../store/loadingStore').then(({ useLoadingStore }) => {
+        useLoadingStore.getState().setLoading(value);
+    });
+};
+
+const refreshAccessToken = async () => {
+    const refreshToken = getStoredRefreshToken();
+    if (!refreshToken) {
+        throw new Error('Missing refresh token');
+    }
+
+    const response = await axios.post(`${baseURL}/Auth/refresh-token`, { refreshToken }, {
+        headers: { 'Content-Type': 'application/json' },
+    });
+
+    await syncAuthSession(response.data);
+    return response.data?.token;
+};
+
 axiosClient.interceptors.request.use(
     (config) => {
-        // Lấy token từ sessionStorage hoặc localStorage
-        // Zustand store không thể gọi hook ở đây → đọc Storage trực tiếp
-        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const token = getStoredToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // Bật spinner — dùng .getState() vì đây không phải React component
-        // import lazy để tránh circular dependency (loadingStore import axios)
-        import('../store/loadingStore').then(({ useLoadingStore }) => {
-            useLoadingStore.getState().setLoading(true);
-        });
-
+        setGlobalLoading(true);
         return config;
     },
     (error) => {
-        // Lỗi ngay lúc gửi request (network config error)
-        import('../store/loadingStore').then(({ useLoadingStore }) => {
-            useLoadingStore.getState().setLoading(false);
-        });
+        setGlobalLoading(false);
         return Promise.reject(error);
     }
 );
 
-// ─── Response Interceptor ─────────────────────────────────────────────────────
-// Chạy sau mỗi response:
-//   - Success: tắt loading, trả về response
-//   - Error: tắt loading, xử lý 401 / 403 tập trung
 axiosClient.interceptors.response.use(
     (response) => {
-        // Request thành công → tắt spinner
-        import('../store/loadingStore').then(({ useLoadingStore }) => {
-            useLoadingStore.getState().setLoading(false);
-        });
+        setGlobalLoading(false);
         return response;
     },
     async (error) => {
-        // Bất kỳ lỗi nào → tắt spinner trước
-        import('../store/loadingStore').then(({ useLoadingStore }) => {
-            useLoadingStore.getState().setLoading(false);
-        });
+        setGlobalLoading(false);
 
         const status = error.response?.status;
+        const originalRequest = error.config || {};
 
-        if (status === 401) {
-            // Chỉ redirect về /login nếu user đang có token (token hết hạn / không hợp lệ)
-            // Nếu không có token (public API), không redirect — để component tự xử lý
-            const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-            if (token) {
-                import('../store/adminAuthStore').then(({ useAdminAuthStore }) => {
-                    useAdminAuthStore.getState().clearAuth();
-                });
+        if (status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/Auth/refresh-token')) {
+            const token = getStoredToken();
+            const refreshToken = getStoredRefreshToken();
+
+            if (!token || !refreshToken) {
+                await clearClientAuth();
                 window.location.href = '/login';
+                return Promise.reject(error);
             }
-            // Public API call without token → silently reject, caller uses .catch(() => {})
+
+            originalRequest._retry = true;
+
+            if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                    pendingRequests.push({
+                        resolve: (nextToken) => {
+                            originalRequest.headers = originalRequest.headers || {};
+                            originalRequest.headers.Authorization = `Bearer ${nextToken}`;
+                            resolve(axiosClient(originalRequest));
+                        },
+                        reject,
+                    });
+                });
+            }
+
+            isRefreshing = true;
+
+            try {
+                const nextToken = await refreshAccessToken();
+                resolvePendingRequests(null, nextToken);
+                originalRequest.headers = originalRequest.headers || {};
+                originalRequest.headers.Authorization = `Bearer ${nextToken}`;
+                return axiosClient(originalRequest);
+            } catch (refreshError) {
+                resolvePendingRequests(refreshError, null);
+                await clearClientAuth();
+                window.location.href = '/login';
+                return Promise.reject(refreshError);
+            } finally {
+                isRefreshing = false;
+            }
         }
 
         if (status === 403) {
-            // Đã đăng nhập nhưng không đủ quyền → KHÔNG logout
-            // Chỉ hiện thông báo, để component tự xử lý nếu cần
-            console.warn('[Axios] 403 Forbidden — Không đủ quyền thực hiện thao tác này.');
-            // Notification sẽ được show ở component hoặc qua error.response.status
+            console.warn('[Axios] 403 Forbidden â€” KhĂ´ng Ä‘á»§ quyá»n thá»±c hiá»‡n thao tĂ¡c nĂ y.');
         }
 
         return Promise.reject(error);
     }
 );
 
+export { refreshAccessToken };
 export default axiosClient;

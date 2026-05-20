@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createVoucher, getVouchers, updateVoucher } from "../../api/vouchersApi";
+import { createVoucher, getEligibleVoucherUsers, getVouchers, updateVoucher } from "../../api/vouchersApi";
 import { getAdminRoomTypes } from "../../api/roomTypesApi";
-import { getUsers } from "../../api/userManagementApi";
 import { getMemberships } from "../../api/membershipsApi";
 import { useResponsiveAdmin } from "../../hooks/useResponsiveAdmin";
 
@@ -279,7 +278,10 @@ export default function VoucherAdminPage() {
   const { isMobile, isTablet } = useResponsiveAdmin();
   const [rows, setRows] = useState([]);
   const [roomTypes, setRoomTypes] = useState([]);
-  const [guests, setGuests] = useState([]);
+  const [eligibleUsers, setEligibleUsers] = useState([]);
+  const [eligibleUsersPage, setEligibleUsersPage] = useState(1);
+  const [eligibleUsersHasMore, setEligibleUsersHasMore] = useState(false);
+  const [eligibleUsersLoading, setEligibleUsersLoading] = useState(false);
   const [memberships, setMemberships] = useState([]);
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState("");
@@ -298,13 +300,15 @@ export default function VoucherAdminPage() {
     setLoading(true);
     setErrorMessage("");
     try {
-      const [voucherRes, roomTypeRes] = await Promise.all([
+      const [voucherRes, roomTypeRes, membershipRes] = await Promise.all([
         getVouchers({ page: 1, pageSize: 200, keyword, status: status || undefined, audienceType: audienceType || undefined }),
         getAdminRoomTypes(),
+        getMemberships({ page: 1, pageSize: 200 }),
       ]);
       setRows(voucherRes.data?.data || []);
       const roomTypePayload = roomTypeRes.data?.data || roomTypeRes.data || [];
       setRoomTypes(Array.isArray(roomTypePayload) ? roomTypePayload : []);
+      setMemberships(membershipRes.data?.data || membershipRes.data || []);
     } catch (error) {
       setErrorMessage(error?.response?.data?.message || "Không thể tải danh sách voucher.");
     } finally {
@@ -315,34 +319,6 @@ export default function VoucherAdminPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadTargets = async () => {
-      try {
-        const [usersRes, membershipRes] = await Promise.all([
-          getUsers({ page: 1, pageSize: 500 }),
-          getMemberships({ page: 1, pageSize: 200 }),
-        ]);
-
-        if (cancelled) return;
-
-        const userList = usersRes.data?.data || [];
-        setGuests(Array.isArray(userList) ? userList : []);
-        setMemberships(membershipRes.data?.data || membershipRes.data || []);
-      } catch {
-        if (!cancelled) {
-          setGuests([]);
-          setMemberships([]);
-        }
-      }
-    };
-
-    loadTargets();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const stats = useMemo(() => {
     const activeCount = rows.filter((item) => item.isActive).length;
@@ -362,21 +338,6 @@ export default function VoucherAdminPage() {
     [roomTypes],
   );
 
-  const filteredGuests = useMemo(() => {
-    const keyword = guestSearch.trim().toLowerCase();
-    if (!keyword) return guests;
-    return guests.filter((guest) =>
-      [guest.fullName, guest.email, guest.phone, guest.roleName]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(keyword))
-    );
-  }, [guestSearch, guests]);
-
-  const guestRecipients = useMemo(
-    () => guests.filter((guest) => guest.roleName === "Guest" && guest.status !== false && guest.email),
-    [guests],
-  );
-
   const selectedMembership = useMemo(
     () => memberships.find((item) => String(item.id) === String(form.targetMembershipId || "")) || null,
     [memberships, form.targetMembershipId],
@@ -390,25 +351,15 @@ export default function VoucherAdminPage() {
 
   const estimatedRecipientCount = useMemo(() => {
     if (form.audienceType === "USER") return form.targetUserIds.length;
-    if (form.audienceType === "BIRTHDAY_MONTH") {
-      return guestRecipients.filter((guest) => {
-        if (!guest.dateOfBirth) return false;
-        const date = new Date(guest.dateOfBirth);
-        return !Number.isNaN(date.getTime()) && date.getMonth() + 1 === birthdayTargetMonth;
-      }).length;
-    }
-    if (form.audienceType === "MEMBERSHIP") {
-      return guestRecipients.filter((guest) => String(guest.membershipId || "") === String(form.targetMembershipId || "")).length;
-    }
-    return guestRecipients.length;
-  }, [birthdayTargetMonth, form.audienceType, form.targetMembershipId, form.targetUserIds.length, guestRecipients]);
+    return null;
+  }, [form.audienceType, form.targetUserIds.length]);
 
   const emailAudienceHint = useMemo(() => {
     if (form.audienceType === "USER") {
-      return `Email sẽ gửi cho ${estimatedRecipientCount} khách đang được chọn.`;
+      return `Email sẽ gửi cho ${estimatedRecipientCount ?? 0} người dùng đang được chọn.`;
     }
     if (form.audienceType === "BIRTHDAY_MONTH") {
-      return `Email sẽ gửi cho khách Guest có tháng sinh là tháng ${birthdayTargetMonth}.`;
+      return `Email sẽ gửi cho người dùng có tháng sinh là tháng ${birthdayTargetMonth}.`;
     }
     if (form.audienceType === "MEMBERSHIP") {
       return selectedMembership
@@ -416,9 +367,9 @@ export default function VoucherAdminPage() {
         : "Chọn hạng thành viên để xác định người nhận email.";
     }
     if (form.audienceType === "HOLIDAY") {
-      return "Email sẽ gửi cho toàn bộ khách Guest đang hoạt động.";
+      return "Email sẽ gửi cho toàn bộ người dùng đang hoạt động.";
     }
-    return "Email sẽ gửi cho toàn bộ khách Guest đang hoạt động.";
+    return "Email sẽ gửi cho toàn bộ người dùng đang hoạt động.";
   }, [birthdayTargetMonth, estimatedRecipientCount, form.audienceType, selectedMembership]);
 
   const openCreateModal = () => {
@@ -435,6 +386,9 @@ export default function VoucherAdminPage() {
       }),
     });
     setGuestSearch("");
+    setEligibleUsers([]);
+    setEligibleUsersPage(1);
+    setEligibleUsersHasMore(false);
     setErrorMessage("");
     setModalOpen(true);
   };
@@ -460,9 +414,47 @@ export default function VoucherAdminPage() {
       isActive: item.isActive !== false,
     });
     setGuestSearch("");
+    setEligibleUsers([]);
+    setEligibleUsersPage(1);
+    setEligibleUsersHasMore(false);
     setErrorMessage("");
     setModalOpen(true);
   };
+
+  const loadEligibleUsers = useCallback(async (pageToLoad = 1, append = false) => {
+    if (!modalOpen || form.audienceType !== "USER") return;
+    setEligibleUsersLoading(true);
+    try {
+      const response = await getEligibleVoucherUsers({
+        keyword: guestSearch || undefined,
+        page: pageToLoad,
+        pageSize: 20,
+      });
+      const items = response.data?.data || [];
+      const pagination = response.data?.pagination || {};
+      setEligibleUsers((prev) => (append ? [...prev, ...items] : items));
+      setEligibleUsersPage(pageToLoad);
+      setEligibleUsersHasMore((pagination.currentPage || pageToLoad) < (pagination.totalPages || 1));
+    } catch (loadError) {
+      if (!append) {
+        setEligibleUsers([]);
+      }
+      setErrorMessage(loadError?.response?.data?.message || "KhĂ´ng thá»ƒ táº£i danh sĂ¡ch ngÆ°á»i dĂ¹ng.");
+    } finally {
+      setEligibleUsersLoading(false);
+    }
+  }, [form.audienceType, guestSearch, modalOpen]);
+
+  useEffect(() => {
+    if (!modalOpen || form.audienceType !== "USER") return;
+    const timer = setTimeout(() => {
+      loadEligibleUsers(1, false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [modalOpen, form.audienceType, guestSearch, loadEligibleUsers]);
+
+  const userOptions = eligibleUsers;
+  const filteredUsers = eligibleUsers;
 
   const regenerateVoucherCode = () => {
     setForm((prev) => ({
@@ -507,7 +499,7 @@ export default function VoucherAdminPage() {
       setErrorMessage("Giá trị giảm phải lớn hơn 0.");
       return;
     }
-    if (form.discountType === "PERCENT" && (Number(form.discountValue) < 1 || Number(form.discountValue) > 100)) {
+    if (form.discountType === "PERCENT" && (Number(form.discountValue) <= 0 || Number(form.discountValue) > 100)) {
       setErrorMessage("Voucher phần trăm chỉ được nhập từ 1 đến 100.");
       return;
     }
@@ -596,15 +588,15 @@ export default function VoucherAdminPage() {
     });
   };
 
-  const selectAllFilteredGuests = () => {
-    setForm((prev) => ({
-      ...prev,
-      targetUserIds: Array.from(new Set([...prev.targetUserIds, ...filteredGuests.map((guest) => Number(guest.id))])),
-    }));
-  };
-
   const clearTargetUsers = () => {
     setForm((prev) => ({ ...prev, targetUserIds: [] }));
+  };
+
+  const selectAllFilteredUsers = () => {
+    setForm((prev) => ({
+      ...prev,
+      targetUserIds: Array.from(new Set([...prev.targetUserIds, ...filteredUsers.map((user) => Number(user.id))])),
+    }));
   };
 
   const pushToast = useCallback((msg, type = "success") => {
@@ -901,7 +893,7 @@ export default function VoucherAdminPage() {
                   Khách được áp dụng <span style={{ color: "var(--a-text)" }}>({form.targetUserIds.length} đã chọn)</span>
                 </label>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button className="voucher-ghost" type="button" onClick={selectAllFilteredGuests} style={{ ...secondaryButton, height: 34 }}>Chọn tất cả đang lọc</button>
+                  <button className="voucher-ghost" type="button" onClick={selectAllFilteredUsers} style={{ ...secondaryButton, height: 34 }}>Chọn tất cả đang lọc</button>
                   <button className="voucher-ghost" type="button" onClick={clearTargetUsers} style={{ ...secondaryButton, height: 34 }}>Bỏ chọn hết</button>
                 </div>
               </div>
@@ -913,11 +905,11 @@ export default function VoucherAdminPage() {
                 placeholder="Tìm theo tên, email, số điện thoại..."
               />
               <div style={{ display: "grid", gap: 8, maxHeight: 220, overflowY: "auto", border: "1px solid var(--a-border)", borderRadius: 12, padding: 10, background: "var(--a-bg)" }}>
-                {guests.length === 0 ? (
+                {userOptions.length === 0 && !eligibleUsersLoading ? (
                   <div style={{ color: "var(--a-text-soft)", fontSize: 13 }}>Chưa tải được danh sách khách.</div>
-                ) : filteredGuests.length === 0 ? (
+                ) : filteredUsers.length === 0 && !eligibleUsersLoading ? (
                   <div style={{ color: "var(--a-text-soft)", fontSize: 13 }}>Không có khách nào khớp từ khóa.</div>
-                ) : filteredGuests.map((guest) => {
+                ) : filteredUsers.map((guest) => {
                   const isSelectedGuest = form.targetUserIds.includes(Number(guest.id));
                   return (
                     <label
@@ -976,7 +968,21 @@ export default function VoucherAdminPage() {
                     </label>
                   );
                 })}
+                {eligibleUsersLoading ? (
+                  <div style={{ color: "var(--a-text-soft)", fontSize: 13 }}>Đang tải danh sách người dùng...</div>
+                ) : null}
               </div>
+              {eligibleUsersHasMore ? (
+                <button
+                  className="voucher-ghost"
+                  type="button"
+                  onClick={() => loadEligibleUsers(eligibleUsersPage + 1, true)}
+                  disabled={eligibleUsersLoading}
+                  style={{ ...secondaryButton, justifySelf: "start", height: 36, opacity: eligibleUsersLoading ? 0.7 : 1 }}
+                >
+                  {eligibleUsersLoading ? "Đang tải..." : "Tải thêm người dùng"}
+                </button>
+              ) : null}
             </div>
           ) : null}
 
@@ -1027,9 +1033,9 @@ export default function VoucherAdminPage() {
               <input
                 className="voucher-input"
                 type="number"
-                min={form.discountType === "PERCENT" ? "1" : "0"}
+                min={form.discountType === "PERCENT" ? "0.01" : "0"}
                 max={form.discountType === "PERCENT" ? "100" : undefined}
-                step={form.discountType === "PERCENT" ? "1" : "1000"}
+                step={form.discountType === "PERCENT" ? "0.01" : "1000"}
                 value={form.discountValue}
                 onChange={(e) => setForm((prev) => ({ ...prev, discountValue: e.target.value }))}
                 style={inputStyle}
@@ -1061,7 +1067,7 @@ export default function VoucherAdminPage() {
               <input className="voucher-input" type="number" min="1" value={form.usageLimit} onChange={(e) => setForm((prev) => ({ ...prev, usageLimit: e.target.value }))} style={inputStyle} placeholder="Để trống nếu không giới hạn" />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Tối đa / người</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--a-text-muted)", marginBottom: 6 }}>Lượt dùng / người</label>
               <input className="voucher-input" type="number" min="1" value={form.maxUsesPerUser} onChange={(e) => setForm((prev) => ({ ...prev, maxUsesPerUser: e.target.value }))} style={inputStyle} required />
             </div>
           </div>

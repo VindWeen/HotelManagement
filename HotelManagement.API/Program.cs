@@ -27,13 +27,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .WithOrigins(
-                "http://localhost:5173",
-                "http://localhost:5174",
-                "http://localhost:3000",
-                "http://127.0.0.1:5500",
-                "null"
-            )
+            .SetIsOriginAllowed(origin => true) // Cho phép tất cả các domain (bao gồm ngrok)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();   // ← BẮT BUỘC cho SignalR
@@ -157,6 +151,7 @@ builder.Services.AddScoped<IAuditTrailService, AuditTrailService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<ISystemSettingsService, SystemSettingsService>();
 builder.Services.AddScoped<IBookingStatusFlowService, BookingStatusFlowService>();
 builder.Services.AddScoped<IVoucherValidationService, VoucherValidationService>();
 builder.Services.AddScoped<IVoucherAudienceService, VoucherAudienceService>();

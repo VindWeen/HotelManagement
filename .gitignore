@@ -45,3 +45,7 @@ update.txt
 .repomixignore
 repomix-output.xml
 .dotnet-home
+
+.ngrok
+ngrok.exe
+.tmp-build

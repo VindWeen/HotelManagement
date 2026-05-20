@@ -191,7 +191,7 @@ export default function AdminRoutes() {
         <Route
           path="vouchers"
           element={
-            <RequirePermission permission="MANAGE_BOOKINGS">
+            <RequirePermission permission="MANAGE_VOUCHERS">
               {withSuspense(<VoucherAdminPage />)}
             </RequirePermission>
           }

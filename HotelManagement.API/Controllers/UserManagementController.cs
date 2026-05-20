@@ -21,17 +21,31 @@ public class UserManagementController : ControllerBase
     private readonly IEmailService _email;
     private readonly IAuditTrailService _auditTrail;
     private readonly ISessionInvalidationService _sessionInvalidation;
+    private readonly IRoleDashboardPeriodService _dashboardService;
 
     public UserManagementController(
         AppDbContext db,
         IEmailService email,
         IAuditTrailService auditTrail,
-        ISessionInvalidationService sessionInvalidation)
+        ISessionInvalidationService sessionInvalidation,
+        IRoleDashboardPeriodService dashboardService)
     {
         _db = db;
         _email = email;
         _auditTrail = auditTrail;
         _sessionInvalidation = sessionInvalidation;
+        _dashboardService = dashboardService;
+    }
+
+    private Task RebuildDashboardSnapshotAsync(string eventType, int? eventRefId, CancellationToken cancellationToken = default)
+    {
+        var currentUserId = JwtHelper.GetUserId(User);
+        return _dashboardService.RebuildAffectedDashboardsAsync(
+            eventType,
+            DateTime.UtcNow,
+            currentUserId > 0 ? currentUserId : null,
+            eventRefId,
+            cancellationToken);
     }
 
     // GET /api/UserManagement?roleId=&page=&pageSize=
@@ -181,7 +195,7 @@ public class UserManagementController : ControllerBase
 
     // POST /api/UserManagement
     [HttpPost]
-    [RequirePermission(PermissionCodes.ManageUsers)]
+    [RequirePermission(PermissionCodes.CreateUsers)]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
         var emailExists = await _db.Users
@@ -258,6 +272,7 @@ public class UserManagementController : ControllerBase
             Action  = NotificationAction.CreateUser
         };
 
+        await RebuildDashboardSnapshotAsync("USER_CREATED", user.Id);
         return StatusCode(201, new { message = "Tạo tài khoản nhân viên thành công.", userId = user.Id, notification });
     }
 
@@ -367,7 +382,7 @@ public class UserManagementController : ControllerBase
 
     // PUT /api/UserManagement/{id}/change-role
     [HttpPut("{id:int}/change-role")]
-    [RequirePermission(PermissionCodes.ManageUsers)]
+    [RequirePermission(PermissionCodes.ChangeUserRole)]
     public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeRoleRequest request)
     {
         var user = await _db.Users.FindAsync(id);
@@ -408,9 +423,9 @@ public class UserManagementController : ControllerBase
             Action  = NotificationAction.UpdateUser
         };
 
-        await _sessionInvalidation.InvalidateUserAsync(
+        await _sessionInvalidation.RefreshUserSessionAsync(
             id,
-            "Vai trò của bạn đã thay đổi. Vui lòng đăng nhập lại.",
+            "Vai trò của bạn đã thay đổi. Phiên làm việc sẽ được cập nhật ngay.",
             "role_changed");
 
         return Ok(new { oldRoleId, newRoleId = request.NewRoleId, newRoleName = role.Name, notification });

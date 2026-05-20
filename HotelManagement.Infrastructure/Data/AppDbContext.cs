@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<Membership> Memberships => Set<Membership>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<ActivityLogRead> ActivityLogReads => Set<ActivityLogRead>();
@@ -106,6 +107,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Equipment>().ToTable("Equipments");
         modelBuilder.Entity<RoomInventory>().ToTable("Room_Inventory");
         modelBuilder.Entity<RolePermission>().ToTable("Role_Permissions");
+        modelBuilder.Entity<SystemSetting>().ToTable("System_Settings");
         modelBuilder.Entity<BookingDetail>().ToTable("Booking_Details");
         modelBuilder.Entity<ServiceCategory>().ToTable("Service_Categories");
         modelBuilder.Entity<OrderService>().ToTable("Order_Services");
@@ -190,6 +192,12 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<VoucherTargetUser>()
             .HasKey(vtu => new { vtu.VoucherId, vtu.UserId });
+
+        modelBuilder.Entity<SystemSetting>()
+            .HasOne(s => s.UpdatedByUser)
+            .WithMany()
+            .HasForeignKey(s => s.UpdatedBy)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // ── 3. Unique Indexes ─────────────────────────────────────
         modelBuilder.Entity<User>()

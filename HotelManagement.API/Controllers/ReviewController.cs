@@ -37,13 +37,31 @@ public class ReviewsController : ControllerBase
     private readonly Cloudinary _cloudinary;
     private readonly IActivityLogService _activityLog;
     private readonly IAuditTrailService _auditTrail;
+    private readonly IRoleDashboardPeriodService _dashboardService;
 
-    public ReviewsController(AppDbContext context, Cloudinary cloudinary, IActivityLogService activityLog, IAuditTrailService auditTrail)
+    public ReviewsController(
+        AppDbContext context,
+        Cloudinary cloudinary,
+        IActivityLogService activityLog,
+        IAuditTrailService auditTrail,
+        IRoleDashboardPeriodService dashboardService)
     {
         _context = context;
         _cloudinary = cloudinary;
         _activityLog = activityLog;
         _auditTrail = auditTrail;
+        _dashboardService = dashboardService;
+    }
+
+    private Task RebuildDashboardSnapshotAsync(string eventType, int? eventRefId, CancellationToken cancellationToken = default)
+    {
+        var currentUserId = JwtHelper.GetUserId(User);
+        return _dashboardService.RebuildAffectedDashboardsAsync(
+            eventType,
+            DateTime.UtcNow,
+            currentUserId > 0 ? currentUserId : null,
+            eventRefId,
+            cancellationToken);
     }
 
     // ================= UPLOAD ẢNH =================
@@ -340,6 +358,8 @@ public async Task<IActionResult> Create([FromForm] CreateReviewRequest request)
         NewValue = $"{{\"bookingId\":{review.BookingId},\"rating\":{review.Rating},\"hasImage\":{(!string.IsNullOrEmpty(review.ImageUrl)).ToString().ToLower()}}}"
     });
 
+    await RebuildDashboardSnapshotAsync("REVIEW_CREATED", review.Id);
+
     return Ok(new
     {
         message = "Đánh giá đã được gửi, chờ admin duyệt",
@@ -408,6 +428,8 @@ public async Task<IActionResult> Create([FromForm] CreateReviewRequest request)
             CreatedAt = DateTime.UtcNow
         });
         await _context.SaveChangesAsync();
+
+        await RebuildDashboardSnapshotAsync("REVIEW_MODERATED", review.Id);
 
         return Ok(new
         {

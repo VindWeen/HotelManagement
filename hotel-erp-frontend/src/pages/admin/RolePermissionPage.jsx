@@ -23,16 +23,21 @@ const PERMISSION_LABELS = {
   MANAGE_USERS: "Quản lý người dùng",
   CREATE_USERS: "Tạo người dùng",
   VIEW_USERS: "Xem người dùng",
+  CHANGE_USER_ROLE: "Đổi vai trò người dùng",
   MANAGE_ROLES: "Quản lý vai trò",
   VIEW_ROLES: "Xem vai trò",
   EDIT_ROLES: "Chỉnh sửa phân quyền",
+  EDIT_ROLE_PERMISSIONS: "Chỉnh sửa quyền vai trò",
   MANAGE_ROOMS: "Quản lý phòng",
   MANAGE_INVENTORY: "Quản lý vật tư",
   MANAGE_BOOKINGS: "Quản lý booking",
+  MANAGE_VOUCHERS: "Quản lý voucher",
   MANAGE_INVOICES: "Quản lý hóa đơn",
   MANAGE_SERVICES: "Quản lý dịch vụ",
   VIEW_REPORTS: "Xem báo cáo",
   MANAGE_CONTENT: "Quản lý nội dung",
+  MANAGE_SYSTEM_SETTINGS: "Quản lý cài đặt hệ thống",
+  VIEW_SYSTEM_SETTINGS: "Xem cài đặt hệ thống",
 };
 
 const getPermissionLabel = (permission) =>
@@ -300,6 +305,7 @@ function PermissionModal({
   showToast,
 }) {
   const canEditRole = canEdit && !isProtectedRole(role?.name);
+  const roleEditCodes = ["EDIT_ROLE_PERMISSIONS", "EDIT_ROLES"];
   const [checked, setChecked] = useState(() => {
     const map = {};
     const hasManageRoles = (initialPerms || []).some(
@@ -312,7 +318,7 @@ function PermissionModal({
         ) ||
         (hasManageRoles &&
           (p.permissionCode === "VIEW_ROLES" ||
-            p.permissionCode === "EDIT_ROLES"));
+            roleEditCodes.includes(p.permissionCode)));
     });
     return map;
   });
@@ -325,7 +331,10 @@ function PermissionModal({
 
   const setCheckedByCode = (map, code, value) => {
     permissionsCatalog.forEach((permission) => {
-      if (permission.permissionCode === code) {
+      const targetCodes = code === "ROLE_EDIT"
+        ? roleEditCodes
+        : [code];
+      if (targetCodes.includes(permission.permissionCode)) {
         map[permission.id] = value;
       }
     });
@@ -335,12 +344,12 @@ function PermissionModal({
     const hasManageRoles = getCheckedByCode(map, "MANAGE_ROLES");
     if (hasManageRoles) {
       setCheckedByCode(map, "VIEW_ROLES", true);
-      setCheckedByCode(map, "EDIT_ROLES", true);
+      setCheckedByCode(map, "ROLE_EDIT", true);
       return map;
     }
 
     const hasView = getCheckedByCode(map, "VIEW_ROLES");
-    const hasEdit = getCheckedByCode(map, "EDIT_ROLES");
+    const hasEdit = roleEditCodes.some((code) => getCheckedByCode(map, code));
     if (!hasView || !hasEdit) {
       setCheckedByCode(map, "MANAGE_ROLES", false);
     }
@@ -357,11 +366,11 @@ function PermissionModal({
       if (code === "MANAGE_ROLES") {
         const enabled = !!next[id];
         setCheckedByCode(next, "VIEW_ROLES", enabled);
-        setCheckedByCode(next, "EDIT_ROLES", enabled);
+        setCheckedByCode(next, "ROLE_EDIT", enabled);
         return syncRolePermissionDependency(next);
       }
 
-      if (code === "VIEW_ROLES" || code === "EDIT_ROLES") {
+      if (code === "VIEW_ROLES" || roleEditCodes.includes(code)) {
         return syncRolePermissionDependency(next);
       }
 
@@ -863,7 +872,7 @@ export default function RolePermissionPage() {
           role={selectedRole}
           initialPerms={selectedRolePerms}
           permissionsCatalog={permissionsCatalog}
-          canEdit={hasPermission("EDIT_ROLES")}
+          canEdit={hasPermission("EDIT_ROLE_PERMISSIONS")}
           onClose={() => {
             setSelectedRole(null);
             setSelectedRolePerms([]);
@@ -989,7 +998,7 @@ export default function RolePermissionPage() {
                       </div>
                     </div>
                     <div style={{ fontSize: 13, color: "var(--a-text-muted)", lineHeight: 1.45 }}>{role.description || "Chưa có mô tả"}</div>
-                    {hasPermission("EDIT_ROLES") && (
+                    {hasPermission("EDIT_ROLE_PERMISSIONS") && (
                       <button className="perm-btn" onClick={() => openPermission(role)} disabled={isProtectedRole(role.name)} style={{ opacity: isProtectedRole(role.name) ? 0.55 : 1, cursor: isProtectedRole(role.name) ? "not-allowed" : "pointer", width: "100%", justifyContent: "center" }}>
                         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>shield_lock</span>
                         {isProtectedRole(role.name) ? "Đã khóa" : "Phân quyền"}
@@ -1126,7 +1135,7 @@ export default function RolePermissionPage() {
                         <td
                           style={{ padding: "20px 28px", textAlign: "right" }}
                         >
-                          {hasPermission("EDIT_ROLES") && (
+                          {hasPermission("EDIT_ROLE_PERMISSIONS") && (
                             <button
                               className="perm-btn"
                               onClick={() => openPermission(role)}
@@ -1256,9 +1265,9 @@ export default function RolePermissionPage() {
             }}
           >
             Tài khoản có quyền <strong>VIEW_ROLES</strong> có thể xem danh sách
-            vai trò. Chỉ tài khoản có quyền <strong>EDIT_ROLES</strong> mới có
-            thể thay đổi phân quyền. Các thay đổi sẽ được áp dụng ngay khi người
-            dùng đăng nhập lại.
+            vai trò. Chỉ tài khoản có quyền <strong>EDIT_ROLE_PERMISSIONS</strong> mới có
+            thể thay đổi phân quyền. Các thay đổi sẽ được áp dụng ngay trong phiên
+            làm việc của người dùng khi hệ thống cập nhật quyền.
           </p>
         </div>
       </div>
