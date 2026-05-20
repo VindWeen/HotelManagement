@@ -449,21 +449,15 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const loadPeriodDashboard = useCallback(async (isMounted = { current: true }) => {
+  const loadPeriodDashboard = useCallback(async () => {
     setPeriodLoading(true);
     try {
       const res = await getCurrentDashboard(null, periodType);
-      if (isMounted.current) {
-        setPeriodDashboard(res.data);
-      }
+      setPeriodDashboard(res.data);
     } catch {
-      if (isMounted.current) {
-        setPeriodDashboard(null);
-      }
+      setPeriodDashboard(null);
     } finally {
-      if (isMounted.current) {
-        setPeriodLoading(false);
-      }
+      setPeriodLoading(false);
     }
   }, [periodType]);
 
@@ -473,18 +467,16 @@ export default function DashboardPage() {
 
   // ── Fetch Period Dashboard khi periodType thay đổi ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const isMounted = { current: true };
-    loadPeriodDashboard(isMounted);
-    return () => { isMounted.current = false; };
+    loadPeriodDashboard();
   }, [loadPeriodDashboard]);
 
-  const handleRebuildAll = async () => {
+  const handleRefreshAll = async () => {
     setPeriodRebuilding(true);
     try {
       await rebuildAllCurrent();
       await Promise.all([fetchAll(), loadPeriodDashboard()]);
     } catch (e) {
-      console.error("Rebuild failed:", e);
+      console.error("Dashboard refresh failed:", e);
     } finally {
       setPeriodRebuilding(false);
     }
@@ -586,7 +578,7 @@ export default function DashboardPage() {
     filteredBookings.forEach((b) => { bookingsByStatus[b.status] = (bookingsByStatus[b.status] || 0) + 1; });
 
     return { totalRevenue, todayRevenue, activeBookings, pendingBookings, newUsersThisMonth, revenueByDay, bookingsByStatus };
-  }, [activePeriodRange, allInvoices, bookings, allUsers]);
+  }, [activePeriodRange, allInvoices, allUsers, bookings, periodType]);
 
   const activePeriodLabel = periodType === "DAILY"
     ? "Ngày"
@@ -1158,7 +1150,7 @@ export default function DashboardPage() {
               </span>
             </p>
           </div>
-          <button className="refresh-btn" onClick={handleRebuildAll} disabled={periodLoading || periodRebuilding}>
+          <button className="refresh-btn" onClick={handleRefreshAll} disabled={loading || periodLoading || periodRebuilding}>
             <span className="material-symbols-outlined" style={{ fontSize: 18, ...((periodLoading || periodRebuilding) ? { animation: "spin .7s linear infinite" } : {}) }}>
               refresh
             </span>
@@ -1170,7 +1162,7 @@ export default function DashboardPage() {
         <div className="card-in admin-card" style={{ padding: 22, marginBottom: 24, borderRadius: 18 }}>
           <div className="period-dashboard-layout">
             <div>
-              {/* Header */}
+          {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
             <div>
               <h4 style={{ fontSize: 15, fontWeight: 800, color: "var(--a-text)", margin: "0 0 2px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -1202,20 +1194,6 @@ export default function DashboardPage() {
                   {pt === "DAILY" ? "Ngày" : pt === "WEEKLY" ? "Tuần" : "Tháng"}
                 </button>
               ))}
-              <button
-                onClick={handleRebuildAll}
-                disabled={periodRebuilding}
-                style={{
-                  padding: "6px 14px", borderRadius: 10, border: "1.5px solid var(--a-border)",
-                  background: "var(--a-surface)", color: "var(--a-text-muted)",
-                  fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 12,
-                  cursor: periodRebuilding ? "not-allowed" : "pointer",
-                  display: "flex", alignItems: "center", gap: 4, opacity: periodRebuilding ? 0.7 : 1,
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 14, ...(periodRebuilding ? { animation: "spin .7s linear infinite" } : {}) }}>sync</span>
-                {periodRebuilding ? "Rebuilding..." : "Rebuild"}
-              </button>
             </div>
           </div>
 
@@ -1297,7 +1275,7 @@ export default function DashboardPage() {
             <div style={{ textAlign: "center", padding: "20px 0", color: "var(--a-text-muted)" }}>
               <span className="material-symbols-outlined" style={{ fontSize: 36, display: "block", marginBottom: 8, opacity: 0.35 }}>bar_chart</span>
               <p style={{ fontSize: 13, margin: 0 }}>Chưa có dữ liệu cho kỳ này.</p>
-              <p style={{ fontSize: 12, margin: "4px 0 0", opacity: 0.7 }}>Nhấn <strong>Rebuild</strong> để tạo snapshot.</p>
+              <p style={{ fontSize: 12, margin: "4px 0 0", opacity: 0.7 }}>Dashboard sẽ hiển thị ngay khi hệ thống có snapshot cho kỳ đã chọn.</p>
             </div>
           ) : null}
 

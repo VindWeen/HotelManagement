@@ -257,6 +257,7 @@ export default function AdminLayout() {
                   <span className="material-symbols-outlined">menu</span>
                 </button>
               )}
+              {!isMobile ? <WeatherWidget /> : null}
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 16, marginLeft: 12 }}>
